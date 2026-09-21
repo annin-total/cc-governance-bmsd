@@ -42,7 +42,7 @@
 | 契約の差し替え（テスト） | 契約の定数は import 時に束縛される。列を足す・重複させる検証では、`contract` と、それを再輸出している `shared` / `db` の**同名の名前をすべて差し替える**。差し替えはテストの中に閉じ、本番コードに差し替え用の入口を作らない |
 | 契約が公開するもの | 定数 `HOOK_FIELDS` / `EXTRA_COLUMNS` / `POLICY` / `POLICY_COLUMNS` / `CSV_COLUMNS`、関数 `dig(obj, path)` / `coerce(value, type)` / `to_day(ts)` / `ddl()`。`shared.py` はこの 9 つをすべて再輸出する |
 | 列型の語彙 | `VARCHAR(n)` / `INTEGER` / `BIGINT` / `DOUBLE` の 4 種。`coerce()` は型文字列の先頭トークンで判定する |
-| `POLICY` の中身 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` = `"60"`、`extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` = `True` の 2 項目。`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` は Claude Code の公式ドキュメントに記載された環境変数で、コンテキストの何 % で自動圧縮を始めるかを 1〜100 の整数で与える。低い値ほど早く圧縮し、既定より高い値は無視される |
+| `POLICY` の中身 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` = `"60"`、`extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` = `True`、`env.FORCE_AUTOUPDATE_PLUGINS` = `"1"` の 3 項目。`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` は Claude Code の公式ドキュメントに記載された環境変数で、コンテキストの何 % で自動圧縮を始めるかを 1〜100 の整数で与える。低い値ほど早く圧縮し、既定より高い値は無視される |
 | `POLICY` の値の文字列表現 | 契約の `coerce` の規則（設計書 §3.2 の型変換の表）を正本とする。端末が `policy_state.value` に書く表現も、画面が準拠判定に使う表現も、これと同一のものを使う |
 | `CSV_COLUMNS` の形 | 要素は `(CSV ヘッダ名, DB 列名, 型)` の 3 つ組。`source_file` は CSV に対応するヘッダを持たないため、ヘッダ名を `None` として同じ列に並べる。これにより `cost_daily` の DDL も INSERT 列も `CSV_COLUMNS` 1 つから導ける |
 | インデックスの定義 | `db.py` の定数として持つ。**契約には置かない。** 端末側はインデックスを知る必要がないため |
@@ -103,7 +103,7 @@ no tests ran
 - `HOOK_FIELDS` に、設計書 §3.2 の 12 項目を `(列名, キーパス, 型)` の 3 つ組で置く
 - `EXTRA_COLUMNS` に、端末側で組み立てる 7 列を `(列名, 型)` で置く
 - `POLICY_COLUMNS` に、`policy_state` の 10 列を `(列名, 型)` で、設計書 §5.2 の表の順に置く
-- `POLICY` に 2 項目を置く。キーは `settings.json` 内の `.` 区切りパス
+- `POLICY` に 3 項目を置く。キーは `settings.json` 内の `.` 区切りパス
 - `CSV_COLUMNS` に、AI Gateway CSV の 12 ヘッダと `source_file` を `(CSV ヘッダ名, DB 列名, 型)` で置く。`source_file` のヘッダ名は `None`
 - 定数以外は何も置かない（関数は以降のタスクで足す）
 
@@ -119,8 +119,11 @@ no tests ran
 | 4 | `CSV_COLUMNS` の DB 列名の並び | `day, user_email, provider, model, currency, cost, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cached_input_tokens, uncached_input_tokens, source_file`（13 列） |
 | 5 | `CSV_COLUMNS` のうちヘッダ名が `None` の要素 | `source_file` の 1 つだけ |
 | 6 | 5 定数に現れる型文字列の先頭トークンの集合 | `{"VARCHAR", "INTEGER", "BIGINT", "DOUBLE"}` の部分集合 |
-| 7 | `POLICY` のキー | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` と `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` の 2 つ |
+| 7 | `POLICY` のキー | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` / `env.FORCE_AUTOUPDATE_PLUGINS` の 3 つ |
 | 8 | `contract.py` が import しているモジュール | 標準ライブラリのみ（サードパーティを import していない） |
+| 9 | `events` の 19 列と `policy_state` の 10 列を、それぞれ型が宣言する最大長の ASCII 文字で埋め、`kind` を加えた 1 行の JSON にしたときのバイト数 | いずれも **4,096 バイト未満**（現状は `events` 3,800 バイト・`policy_state` 1,375 バイト） |
+
+ケース 9 は、端末が `queue.jsonl` へ `O_APPEND` で追記する 1 回の `write` が `PIPE_BUF`（4,096 バイト）未満であるときにだけ原子的であることに由来する（設計書 §3.5）。契約に列を足すたびに、この余裕が残っていることをここで確かめる。
 
 **完了の判定**
 
@@ -131,7 +134,7 @@ pytest tests/test_contract_constants.py -q
 期待出力（末尾行）:
 
 ```
-8 passed
+9 passed
 ```
 
 **コミット:** `feat(contract): 契約の 5 定数を追加`
@@ -535,7 +538,7 @@ pytest -q tests/test_contract_*.py tests/test_shared_import.py tests/test_db_*.p
 期待出力（末尾行）:
 
 ```
-75 passed
+76 passed
 ```
 
 - [ ] 下記が何も出力しない（契約の正本が 1 つだけであること）

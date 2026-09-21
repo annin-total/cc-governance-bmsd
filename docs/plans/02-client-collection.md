@@ -40,6 +40,8 @@ README §5 の共通制約に加えて、本計画だけに効く前提を置く
 | --- | --- |
 | 計画 [1] の完了 | `governance/hooks/contract.py` が `main` にあり、定数 `HOOK_FIELDS` / `EXTRA_COLUMNS` / `POLICY` / `POLICY_COLUMNS` / `CSV_COLUMNS` と関数 `dig(obj, path)` / `coerce(value, type)` / `to_day(ts)` / `ddl()` を持つ |
 | `day` の算出 | 契約の `to_day(ts)` を呼ぶ。端末側で式を書かない |
+| 端末の状態の置き場所 | `${CLAUDE_PLUGIN_DATA}`（プラグインの永続データ置き場。`~/.claude/plugins/data/<識別子>/` を指し、hook に環境変数として渡る）。この変数が渡らない経路では `~/.claude/cc-governance/` を使う。`identity.json` / `queue.jsonl` / `spool/` / `sent_at` はすべてここに置く。**解決規則は `_queue.py` の 1 か所に置き、`_identity.py` はそれを呼ぶ** |
+| テストの隔離 | `CLAUDE_PLUGIN_DATA` を一時ディレクトリに向ける。代替の経路を検査するケースだけ、`CLAUDE_PLUGIN_DATA` を外したうえで `HOME` を差し替える |
 | 端末の依存 | **標準ライブラリのみ。** 端末に追加インストールを要求しない。HTTP は `urllib.request` で行う |
 | 端末の Python | サーバと同じく 3.9 で動く構文に留める。端末の `python3` の版を選べないため |
 | 送信ヘッダ | 受信トークンは `X-Ingest-Token` に載せる。計画 [4] のサーバ側と同一の名前 |
@@ -135,7 +137,7 @@ grep -rl 'SENTINEL-' tests/fixtures/hook_inputs/ | wc -l
 **やること**
 
 - `user_email` を、環境変数 `CC_GOVERNANCE_USER_EMAIL` → `git config --global user.email` → `None` の順に解決する。小文字化だけを行い、書式の検査はしない
-- 解決結果を `~/.claude/cc-governance/identity.json` にキャッシュし、**2 回目以降は subprocess を起動しない**
+- 解決結果を状態ディレクトリの `identity.json` にキャッシュし、**2 回目以降は subprocess を起動しない**
 - 解決できなかった場合も、その結果をキャッシュする。毎回 `git` を呼びに行く状態を作らない
 - `host` は `platform.node()` を返す
 - `event_id` は呼び出しごとに `uuid.uuid4()` の文字列を返す
@@ -360,11 +362,12 @@ pytest tests/client/test_context.py -q
 
 **やること**
 
-- `~/.claude/cc-governance/` 配下のパスを解決する。親ディレクトリが無ければ作る
+- 状態ディレクトリのパスを解決する。`${CLAUDE_PLUGIN_DATA}` があればその配下、無ければ `~/.claude/cc-governance/` 配下とする。親ディレクトリが無ければ作る
 - 1 行分の dict を受け取り、`queue.jsonl` に追記する。**`open(..., "a")` で開き、`write` は 1 回**。ロックもインデックスも持たない。hook 内で行う同期 I/O はこれだけである
+- **1 行は 4,096 バイト未満に収まる。** `O_APPEND` での 1 回の `write` が原子的であるのは `PIPE_BUF`（4,096 バイト）未満のときだけであり、複数のセッションが同時に追記しても行が混ざらない根拠がここにある（設計書 §3.5）。上限の担保は契約側にあり（計画 [1] タスク 2 ケース 9）、本計画はその行が実際にその大きさで書かれることを確かめる
 - `queue.jsonl` を `spool/<epoch>-<uuid4hex>.jsonl` に `os.rename` する退避を置く。**ファイル名に UUID を含める**
 - `queue.jsonl` が無い・0 バイトのときは退避を行わない
-- 送信条件の判定を置く。`queue.jsonl` の行数が閾値以上、または `sent_at` の mtime から閾値秒以上経過していれば真。`sent_at` が無ければ真
+- 送信条件の判定を置く。**`sent_at` の mtime から閾値秒以上経過していれば真**。`sent_at` が無ければ真。`queue.jsonl` が無ければ偽（送るものが無い）。行数による条件を持たない
 - `sent_at` の mtime を現在時刻に更新する処理を置く
 - spool の破棄を置く。合計サイズが上限を超える、または mtime が保持日数より古いファイルを、**古い順に**削除する
 - いずれの関数も、失敗を呼び出し元に伝える必要はない。例外を外に出さない
@@ -381,25 +384,25 @@ pytest tests/client/test_context.py -q
 | 4 | 値に改行を含む行を追記 | 1 行に収まる（行数が 1） |
 | 5 | 値に非 ASCII を含む行を追記 | 読み戻した値が元と一致 |
 | 6 | 親ディレクトリが無い状態で追記 | ディレクトリを作って成功する |
-| 7 | 3 行入った状態で退避 | `queue.jsonl` が消え、`spool/` に 1 ファイル。行数 3、内容一致 |
-| 8 | 退避後のファイル名 | `<10 桁以上の数字>-<32 桁の 16 進>.jsonl` に一致 |
-| 9 | 時刻を固定したまま退避を 2 回（間に `queue.jsonl` を作り直す） | `spool/` に **2 ファイル**。合計行数が保存される |
-| 10 | `queue.jsonl` が無い状態で退避 | 例外なし。`spool/` にファイルを作らない |
-| 11 | `queue.jsonl` が 0 バイトの状態で退避 | 例外なし。`spool/` にファイルを作らない |
-| 12 | 送信条件: 199 行、`sent_at` が 1 分前 | 偽 |
-| 13 | 送信条件: 200 行、`sent_at` が 1 分前 | 真 |
-| 14 | 送信条件: 201 行、`sent_at` が 1 分前 | 真 |
-| 15 | 送信条件: 1 行、`sent_at` が 9 分 59 秒前 | 偽 |
-| 16 | 送信条件: 1 行、`sent_at` が 10 分 1 秒前 | 真 |
-| 17 | 送信条件: 1 行、`sent_at` が無い | 真 |
-| 18 | 送信条件: `queue.jsonl` が無い | 偽（送るものが無い） |
-| 19 | `sent_at` の更新を呼ぶ | ファイルが作られ、mtime が現在時刻に近い |
-| 20 | 破棄: spool 合計 4.9MB、いずれも 1 日前 | 1 件も削除しない |
-| 21 | 破棄: 1MB × 6 件（mtime が 1 分ずつ古い） | 合計 5MB 以下になるまで**古い順に**削除。残るのは新しい 5 件 |
-| 22 | 破棄: mtime が 7 日 1 秒前の 1 件、合計 1KB | 削除する |
-| 23 | 破棄: mtime が 6 日前の 1 件 | 残す |
-| 24 | 破棄: `spool/` が無い | 例外なし |
-| 25 | 破棄: `spool/` に `.jsonl` 以外のファイル | 対象にしない。例外なし |
+| 7 | 契約の全列を型が宣言する最大長の ASCII 文字で埋めた行を追記 | 書き込まれた 1 行が、改行を含めて **4,096 バイト未満** |
+| 8 | 3 行入った状態で退避 | `queue.jsonl` が消え、`spool/` に 1 ファイル。行数 3、内容一致 |
+| 9 | 退避後のファイル名 | `<10 桁以上の数字>-<32 桁の 16 進>.jsonl` に一致 |
+| 10 | 時刻を固定したまま退避を 2 回（間に `queue.jsonl` を作り直す） | `spool/` に **2 ファイル**。合計行数が保存される |
+| 11 | `queue.jsonl` が無い状態で退避 | 例外なし。`spool/` にファイルを作らない |
+| 12 | `queue.jsonl` が 0 バイトの状態で退避 | 例外なし。`spool/` にファイルを作らない |
+| 13 | 送信条件: `sent_at` が 9 分 59 秒前 | 偽 |
+| 14 | 送信条件: `sent_at` が 10 分 1 秒前 | 真 |
+| 15 | 送信条件: `sent_at` が無い | 真 |
+| 16 | 送信条件: `queue.jsonl` が無い | 偽（送るものが無い） |
+| 17 | `sent_at` の更新を呼ぶ | ファイルが作られ、mtime が現在時刻に近い |
+| 18 | 破棄: spool 合計 4.9MB、いずれも 1 日前 | 1 件も削除しない |
+| 19 | 破棄: 1MB × 6 件（mtime が 1 分ずつ古い） | 合計 5MB 以下になるまで**古い順に**削除。残るのは新しい 5 件 |
+| 20 | 破棄: mtime が 7 日 1 秒前の 1 件、合計 1KB | 削除する |
+| 21 | 破棄: mtime が 6 日前の 1 件 | 残す |
+| 22 | 破棄: `spool/` が無い | 例外なし |
+| 23 | 破棄: `spool/` に `.jsonl` 以外のファイル | 対象にしない。例外なし |
+
+ケース 13〜16 が送信条件のすべてである。**行数による条件を持たない**（設計書 §3.5）。hook が同期的に行うのは 1 回の追記と、この判定のための `stat` だけになる。
 
 **完了の判定**
 
@@ -410,7 +413,7 @@ pytest tests/client/test_queue.py -q
 期待出力（末尾行）:
 
 ```
-25 passed
+23 passed
 ```
 
 **コミット:** `feat(client): ローカルキューの追記・退避・上限での破棄を追加`
@@ -442,7 +445,6 @@ pytest tests/client/test_queue.py -q
 | --- | --- | --- |
 | `ingest_url` | 空文字 | `/ingest` の完全な URL。サブパスを含む |
 | `ingest_token` | 空文字 | `X-Ingest-Token` に載せる値 |
-| `flush_lines` | `200` | この行数以上で送信する |
 | `flush_interval_sec` | `600` | 前回送信からこの秒数以上で送信する |
 | `timeout_sec` | `60` | POST のタイムアウト |
 | `spool_max_bytes` | `5242880` | spool 合計の上限 |
@@ -507,7 +509,9 @@ pytest tests/client/test_sender.py -q
 - 送信条件が偽なら何もしない
 - 標準出力に何も書かない
 
-**根拠:** 設計書 §3.9（冒頭 2 行で判定し即 `exit 0`）、§3.5（送信の起動条件と起動方法）
+**無効化スイッチが止めるのは利用ログの収集とお知らせの表示だけである**（設計書 §3.9）。`collect.py` は標準入力を読む前に降りるため送信も起こさないが、**送信そのものが止まるわけではない。** 設定の適用・その記録・送信は `session_start.py` が行い、無効化された端末でも動く（計画 [3] タスク 11）。止めると、無効化した端末が準拠率の分母から静かに消える。
+
+**根拠:** 設計書 §3.9（冒頭 2 行で判定し即 `exit 0`・止めるのは収集と表示だけ）、§3.5（送信の起動条件と起動方法）
 
 **テスト**
 
@@ -578,10 +582,10 @@ pytest tests/client/test_collect_entry.py -q
 | 11 | `transcript_path` が数値 |
 | 12 | `config.json` を壊した状態 |
 | 13 | `config.json` を削除した状態 |
-| 14 | `~/.claude/cc-governance/` を読み取り専用にした状態 |
+| 14 | 状態ディレクトリを読み取り専用にした状態 |
 | 15 | `queue.jsonl` をディレクトリに置き換えた状態 |
 | 16 | `identity.json` を壊した状態 |
-| 17 | `HOME` を存在しないパスに設定した状態 |
+| 17 | `CLAUDE_PLUGIN_DATA` と `HOME` の両方を存在しないパスに設定した状態 |
 | 18 | `ingest_url` を解決できないホストにした状態で送信条件を満たす |
 | 19 | 引数に空文字を渡す |
 | 20 | 引数を 5 つ渡す |
@@ -607,7 +611,7 @@ pytest -q tests/client/
 期待出力（末尾行）:
 
 ```
-155 passed
+153 passed
 ```
 
 **コミット:** `test(client): 壊れた入力でも exit 0 することを検証`
@@ -632,12 +636,20 @@ pytest -q tests/client/
 | `PreCompact` | `PreCompact` |
 | `Stop` | `Stop` |
 
-- コマンドは `${CLAUDE_PLUGIN_ROOT}/hooks/collect.py` を `python3` で実行し、hook 名を第 1 引数に渡す形とする
+- コマンドは **`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/collect.py" <hook名>` の形の 1 行**とする
 - `PostToolUse` / `PostToolUseFailure` の `matcher` はすべてのツールに一致させる
 - 各 hook に `timeout` を置き、5 秒を超えないようにする
 - **`SessionEnd` を登録しない。** サンプルに 8 件あるが、設計書 §3.3 の 7 種に含まれない
 
-**根拠:** 設計書 §3.3（登録は 7 種にとどめ、網羅登録はしない）
+**コマンド文字列は設計事項である。** hook の実行は、登録したコマンド文字列とともに利用者の画面に表示されうる。hook 自身が何も出力しなくても、この表示は止められない（設計書 §3.3）。次を守る。
+
+- パイプ・`;`・`&&`・リダイレクトを含めない。**条件分岐も後処理も Python 側に置く**
+- 無効化スイッチの判定も Python 側で行う。コマンド文字列を条件付きにしない
+- **1 行 100 文字未満**に収める。最長の `UserPromptExpansion` で 68 文字であり、余裕がある。この検査はリリース時にも行う（計画 [7]）
+
+長いワンライナーを登録すると、ツールを実行するたびにその全文が画面に流れる。「得体の知れないものが動いている」という印象は、施策の推進そのものの妨げになる。
+
+**根拠:** 設計書 §3.3（登録は 7 種にとどめ、網羅登録はしない。コマンド文字列は利用者から見える設計物である）
 
 **完了の判定**
 
@@ -666,6 +678,28 @@ jq -r '[.hooks[][].hooks[].command] | length' governance/hooks/hooks.json
 6
 ```
 
+コマンド文字列が制約を満たすことを確かめる。
+
+```
+jq -r '.hooks[][].hooks[].command | "\(length)\t\(.)"' governance/hooks/hooks.json | sort -rn | head -1
+```
+
+期待出力（1 行目の数が 100 未満であること）:
+
+```
+68	python3 "${CLAUDE_PLUGIN_ROOT}/hooks/collect.py" UserPromptExpansion
+```
+
+```
+jq -r '.hooks[][].hooks[].command' governance/hooks/hooks.json | grep -c '[|;&>]'
+```
+
+期待出力:
+
+```
+0
+```
+
 **コミット:** `feat(client): 収集分の hook 登録を追加`
 
 ---
@@ -677,7 +711,7 @@ jq -r '[.hooks[][].hooks[].command] | length' governance/hooks/hooks.json
 
 **やること**
 
-利用者本人の `~/.claude/` に触れずに確認する。**`HOME` を差し替えた隔離環境**を作り、その中の作業ディレクトリの `.claude/settings.json` に hook を登録して `claude -p` を走らせる。端末の状態ディレクトリ（`~/.claude/cc-governance/`）も、差し替えた `HOME` の下に作られる。
+利用者本人の `~/.claude/` に触れずに確認する。**`HOME` を差し替え、`CLAUDE_PLUGIN_DATA` を隔離側へ向けた環境**を作り、その中の作業ディレクトリの `.claude/settings.json` に hook を登録して `claude -p` を走らせる。状態ディレクトリの解決は `${CLAUDE_PLUGIN_DATA}` を先に見るため、この 2 つを差し替えれば、どちらの経路で解決されても隔離側に落ちる。
 
 **手順**
 
@@ -690,9 +724,10 @@ export REPO="$(pwd)"
 export PLUGIN="$REPO/governance"
 export VERIFY="$REPO/local/verify-hooks"          # local/ は git 管理外
 export ISOLATED_HOME="$VERIFY/home"
-export CC_STATE="$ISOLATED_HOME/.claude/cc-governance"
-mkdir -p "$ISOLATED_HOME/.claude" "$VERIFY/work/.claude"
-HOME="$ISOLATED_HOME" python3 -c 'import os; print(os.path.expanduser("~/.claude/cc-governance"))'
+export CC_STATE="$VERIFY/state"
+mkdir -p "$ISOLATED_HOME/.claude" "$VERIFY/work/.claude" "$CC_STATE"
+HOME="$ISOLATED_HOME" CLAUDE_PLUGIN_DATA="$CC_STATE" python3 -c \
+  'import os; print(os.environ.get("CLAUDE_PLUGIN_DATA") or os.path.expanduser("~/.claude/cc-governance"))'
 ```
 
 期待出力: `$CC_STATE` と一致する 1 行。
@@ -702,7 +737,7 @@ HOME="$ISOLATED_HOME" python3 -c 'import os; print(os.path.expanduser("~/.claude
 続けて、本人の状態ディレクトリの指紋を控える。手順 9 で一致を確かめる。
 
 ```bash
-ls -aR "$HOME/.claude/cc-governance" 2>&1 | shasum -a 256
+ls -aR "$HOME/.claude/plugins/data" "$HOME/.claude/cc-governance" 2>&1 | shasum -a 256
 ```
 
 2. 検証用ディレクトリにだけ hook を登録する
@@ -732,7 +767,8 @@ settings-ok
 3. 非対話で 1 往復させる
 
 ```bash
-cd "$VERIFY/work" && HOME="$ISOLATED_HOME" claude -p "ls を実行して、結果の行数だけを答えて"
+cd "$VERIFY/work" && HOME="$ISOLATED_HOME" CLAUDE_PLUGIN_DATA="$CC_STATE" \
+  claude -p "ls を実行して、結果の行数だけを答えて"
 ```
 
 4. 収集された行を確認する
@@ -764,7 +800,8 @@ jq -r 'keys[]' "$CC_STATE/queue.jsonl" | sort -u
 
 ```bash
 rm -f "$CC_STATE/queue.jsonl"
-cd "$VERIFY/work" && HOME="$ISOLATED_HOME" CC_GOVERNANCE_DISABLE=1 claude -p "1 + 1 は"
+cd "$VERIFY/work" && HOME="$ISOLATED_HOME" CLAUDE_PLUGIN_DATA="$CC_STATE" \
+  CC_GOVERNANCE_DISABLE=1 claude -p "1 + 1 は"
 ls "$CC_STATE/queue.jsonl" 2>&1
 ```
 
@@ -787,7 +824,7 @@ case "$VERIFY" in
   "$REPO/local/"*) rm -rf "$VERIFY" ;;
   *) echo "VERIFY が local/ の外を指している。削除しない" ;;
 esac
-ls -aR "$HOME/.claude/cc-governance" 2>&1 | shasum -a 256
+ls -aR "$HOME/.claude/plugins/data" "$HOME/.claude/cc-governance" 2>&1 | shasum -a 256
 ```
 
 **期待:** 最後の指紋が手順 1 で控えたものと一致する。一致しなければ、隔離が効かないまま本人の状態ディレクトリを触っている。
@@ -808,7 +845,7 @@ ls -aR "$HOME/.claude/cc-governance" 2>&1 | shasum -a 256
 | # | 条件 | 確かめ方 |
 | --- | --- | --- |
 | 1 | `governance/hooks/` に `collect.py` / `_context.py` / `_queue.py` / `_sender.py` / `_identity.py` / `hooks.json` があり、`governance/config.json` がある | `ls` |
-| 2 | 本計画のテストが通る | `pytest -q tests/client/` が `155 passed` |
+| 2 | 本計画のテストが通る | `pytest -q tests/client/` が `153 passed` |
 | 3 | どの Python ファイルも 200 行以内 | `wc -l governance/hooks/*.py` |
 | 4 | 端末側が標準ライブラリしか使っていない | `grep -n '^import\|^from' governance/hooks/*.py` の結果に第三者パッケージが無い |
 | 5 | 契約の複製が無い | `grep -rn 'HOOK_FIELDS = \|EXTRA_COLUMNS = ' governance/` が `contract.py` の 2 行だけを返す |

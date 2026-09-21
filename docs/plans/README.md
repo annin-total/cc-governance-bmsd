@@ -128,11 +128,17 @@ hook 入力の実サンプルを fixture に使うときは、**自由文の値�
 | 受信トークンのヘッダ名 | `X-Ingest-Token` | [2] [4] |
 | `/ingest` の応答ボディ | `{"stored": n, "dropped": n}` | [4] |
 | 効果測定の対象 `provider` | `aws-bedrock`（他社は `openai` として別行に出る） | [5] [6] |
-| `apply_result` の値域 | `already_ok` / `applied` / `skipped_conflict` / `parse_failed` / `write_failed` | [3] [5] |
+| `apply_result` の値域 | `already_ok` / `applied` / `skipped_conflict` / `skipped_missing` / `parse_failed` / `write_failed` | [3] [5] |
 | `policy_state` の値の文字列表現 | 契約の `coerce(value, "VARCHAR(255)")`。**真偽値は小文字の `true` / `false`** | [1] [3] [5] |
 | 直近を見る窓 | 健全性・配布物の比較は **7 日**、離脱端末の判定は **14 日**、その走査範囲は **30 日** | [5] |
 | コンテキスト分布のビン幅 | 20,000 トークン | [5] |
-| `POLICY` の項目 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` と `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` の 2 つ | [1] [3] [5] [7] |
+| `POLICY` の項目 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` / `env.FORCE_AUTOUPDATE_PLUGINS` の 3 つ | [1] [3] [5] [7] |
+| 入れ子のエントリの新規作成 | `env` セクションは無ければ作る。**それ以外の入れ子は作らない。** エントリが無ければ書かずに `skipped_missing` を記録する | [3] [5] |
+| 端末の状態の置き場所 | `${CLAUDE_PLUGIN_DATA}` 配下。この変数が渡らない経路では `~/.claude/cc-governance/` を使う。`identity.json` / `seen.json` / `queue.jsonl` / `spool/` / `sent_at` をここに置く | [2] [3] [7] |
+| キューの 1 行の上限 | **4,096 バイト未満**（`O_APPEND` での 1 回の `write` が原子的である条件） | [1] [2] |
+| 送信の起動条件 | **前回送信から 10 分以上経過している**（`sent_at` の mtime で判定）。行数による条件を持たない | [2] |
+| hook のコマンド文字列 | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/collect.py" <hook名>` の形の 1 行。パイプ・`;`・`&&`・リダイレクトを含めない。**1 行 100 文字未満** | [2] [7] |
+| お知らせ 1 件の上限 | **2,000 文字未満** | [3] [7] |
 | CSV 取込の起動 | ボタンは 1 つ。押すたびに全ファイルを取り直す。未取込判定を持たない | [5] [6] |
 | 本番の依存 | 直接依存 3 つ、推移的依存を含めて 9 パッケージ。`markupsafe` だけがコンパイル済み拡張を含む | [8] |
 

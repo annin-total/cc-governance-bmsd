@@ -33,12 +33,15 @@
 | --- | --- |
 | コマンドのカレントディレクトリ | すべて `cc-governance-bmsd/`。本書のパスはこのディレクトリからの相対で書く |
 | テストの置き場所 | `cc-governance-bmsd/tests/client/`（README §4）。**`governance/` の中には置かない**（このフォルダはそのままマーケットプレイスへ差し込まれる。設計書 §8.3） |
-| `POLICY` の中身 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` = `"60"`、`extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` = `True` の 2 項目（設計書 §3.6）。テストは項目数に依存しない書き方にする。本書の表では、この 2 つを `env…` / `…autoUpdate` と略記する |
-| 自動更新の設定の性質 | マーケットプレイスの登録をやり直すと外れうるため、**一度合わせたら終わりではなく、毎回のセッション開始で戻す対象である**（設計書 §8.5）。既に正しい値なら `already_ok`、外れていれば `applied` になる |
+| `POLICY` の中身 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` = `"60"`、`extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` = `True`、`env.FORCE_AUTOUPDATE_PLUGINS` = `"1"` の 3 項目（設計書 §3.6）。テストは項目数に依存しない書き方にする。本書の表では、この 3 つを `env.PCT` / `…autoUpdate` / `env.FORCE` と略記する |
+| 入れ子のエントリの新規作成 | **`env` セクションは無ければ作ってよいが、それ以外は作らない**（設計書 §3.6）。`extraKnownMarketplaces.<名前>` はマーケットプレイスの登録が作るエントリであり、こちらが作ると `source` を持たない壊れた定義が利用者の設定に生まれる。エントリが無ければ書かずに `skipped_missing` を記録する |
+| 自動更新の設定の性質 | マーケットプレイスの登録をやり直すと外れうるため、**一度合わせたら終わりではなく、毎回のセッション開始で戻す対象である**（設計書 §8.5）。既に正しい値なら `already_ok`、外れていれば `applied`、エントリそのものが無ければ `skipped_missing` になる |
+| `FORCE_AUTOUPDATE_PLUGINS` を配る理由 | Claude Code 本体の自動更新を止めている端末でも、プラグインの更新だけは生かすため（設計書 §3.6）。組織の方針で本体の更新を抑止していると、それに巻き込まれて配布経路が死ぬ |
 | `60` が効く理由 | `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` は 1〜100 の割合で、低い値ほど早く自動圧縮が走る。**既定より高い値は無視される。** `60` は既定より低いため効く |
 | `env` が hook に渡ること | `settings.json` の `env` に書いた環境変数は、hook プロセスを含む子プロセスに渡る。実機確認（タスク 12）はこれを利用する |
 | 設定ファイルのパスの解決 | 環境変数 `CLAUDE_CONFIG_DIR` があればそのディレクトリ、無ければ `~/.claude` の下の `settings.json`。Claude Code 自身が設定ディレクトリを同じ規則で解決するため、差し替えても本体と対象がずれない。**`CLAUDE_CONFIG_DIR` が実際に効くかはタスク 12 で確認する。効かなければ実機確認を `HOME` 差し替えに切り替える**（コード側の規則は変えない） |
-| 状態ディレクトリ（`seen.json`）のパス | [2] の `_identity` / `_queue` が使う解決規則にそのまま従う。この計画で別の規則を作らない |
+| 状態ディレクトリ（`seen.json`）のパス | [2] の `_identity` / `_queue` が使う解決規則にそのまま従う（`${CLAUDE_PLUGIN_DATA}`、無ければ `~/.claude/cc-governance/`）。この計画で別の規則を作らない |
+| お知らせの見え方 | 表示には **`SessionStart:<source> says: ` の接頭辞**が付く（`source` は `startup` / `resume` / `clear` / `compact`）。複数行では接頭辞が付くのは 1 行目だけである。**お知らせ 1 件は 2,000 文字未満**に収める（設計書 §3.7） |
 | `value` / `prev_value` の文字列表現 | 契約の `coerce(value, "VARCHAR(255)")` に従う（設計書 §3.2 の型変換の表）。文字列はそのまま、真偽値は `true` / `false`（小文字）、数値は十進表記、キーが無い場合は `None` |
 | 適用の対象範囲 | `POLICY` に列挙されたキーだけ。撤回（`POLICY` から消えたキーの削除）は行わない（設計書 §8.3） |
 | 上書き前の値の保存 | しない（設計書 §11.2）。`prev_value` として policy イベントに載せるところまでが保存の全部である |
@@ -46,7 +49,7 @@
 
 ### 書き込み失敗の扱い
 
-書き込み自体の失敗（`os.replace` の失敗・一時ファイルへの書き込みの失敗・ディスク不足・権限不足）は、`apply_result` の 5 つ目の区分 `write_failed` として記録する（設計書 §3.6・§5.2）。例外は呼び出し元に漏らさず、一時ファイルを残さず、**そのキーの policy イベントは積む。** 積まなければ、書き込みに失敗し続けている端末が画面から静かに消える。同じ計画の「エラーでもイベントは積む」（タスク 7-5）と同じ理由である。この区分はタスク 4-9 / 4-10・6-6・7-6 で固定する。
+書き込み自体の失敗（`os.replace` の失敗・一時ファイルへの書き込みの失敗・ディスク不足・権限不足）は、`apply_result` の 6 区分のうち `write_failed` として記録する（設計書 §3.6・§5.2）。例外は呼び出し元に漏らさず、一時ファイルを残さず、**そのキーの policy イベントは積む。** 積まなければ、書き込みに失敗し続けている端末が画面から静かに消える。同じ計画の「エラーでもイベントは積む」（タスク 7-5）と同じ理由である。この区分はタスク 4-9 / 4-10・6-6・7-6 で固定する。
 
 ---
 
@@ -70,7 +73,7 @@
 
 ```
 $ python -m pytest tests/client/ -q
-155 passed
+153 passed
 ```
 
 （[2] が置いた端末側のテストが、土台を触っても通ったままであることを確かめる）
@@ -94,22 +97,25 @@ governance 0.1.0
 
 **テスト:**
 
+期待値は `env.PCT` / `…autoUpdate` / `env.FORCE` の順に書く。
+
 | # | 入力（`settings.json` の中身） | 期待値 |
 | --- | --- | --- |
-| 2-1 | `{}` | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` → `None`、`…autoUpdate` → `None` |
+| 2-1 | `{}` | `None` / `None` / `None` |
 | 2-2 | ファイルが存在しない | 2-1 と同じ。例外を投げない |
-| 2-3 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"80"}}` | `"80"` / `None` |
-| 2-4 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60"},"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"autoUpdate":true}}}` | `"60"` / `"true"` |
-| 2-5 | `{"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"autoUpdate":false}}}` | `None` / `"false"`（**`false` を「キーが無い」と混同しない**） |
-| 2-6 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":60}}`（数値） | `"60"`（十進表記の文字列） |
-| 2-7 | `{"env":"proxy"}`（`env` が dict でない） | `None`。例外を投げない |
-| 2-8 | `{"env":{}}` | `None` |
+| 2-3 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"80"}}` | `"80"` / `None` / `None` |
+| 2-4 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60"},"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"autoUpdate":true}}}` | `"60"` / `"true"` / `None` |
+| 2-5 | `{"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"autoUpdate":false}}}` | `None` / `"false"` / `None`（**`false` を「キーが無い」と混同しない**） |
+| 2-6 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":60}}`（数値） | `"60"`（十進表記の文字列） / `None` / `None` |
+| 2-7 | `{"env":"proxy"}`（`env` が dict でない） | 3 つとも `None`。例外を投げない |
+| 2-8 | `{"env":{}}` | 3 つとも `None` |
+| 2-9 | `{"env":{"FORCE_AUTOUPDATE_PLUGINS":"1"}}` | `None` / `None` / `"1"`（同じ `env` セクションから 2 本のキーパスを独立に引く） |
 
 **完了の判定:**
 
 ```
 $ python -m pytest tests/client/test_settings.py -q -k read
-8 passed
+9 passed
 ```
 
 **コミット:** `feat: settings.json の読み取りと prev_value の解決`
@@ -128,18 +134,19 @@ $ python -m pytest tests/client/test_settings.py -q -k read
 
 | # | 入力 | 期待値 |
 | --- | --- | --- |
-| 3-1 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60"},"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"autoUpdate":true}}}` | 両キーとも `apply_result` = `already_ok` |
+| 3-1 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60","FORCE_AUTOUPDATE_PLUGINS":"1"},"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"autoUpdate":true}}}` | 3 キーとも `apply_result` = `already_ok` |
 | 3-2 | 3-1 と同じ。実行前に `os.utime` で `st_mtime_ns` を固定値に設定 | 実行後の `st_mtime_ns` が実行前と**ビット一致** |
 | 3-3 | 3-1 と同じ | ファイルのバイト列が 1 バイトも変わらない（整形・キー順の入れ替えも起きない） |
 | 3-4 | 3-1 と同じ | 同じディレクトリに一時ファイルが残らない（実行後のディレクトリ内のファイル数が 1） |
-| 3-5 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60"}}`（`extraKnownMarketplaces` が無い） | `env…` → `already_ok`、`…autoUpdate` → `applied`。**1 項目でも差分があれば書く** |
-| 3-6 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":60}}`（数値の 60） | `env…` → `applied`（文字列 `"60"` に書き換える。型の差を一致とみなさない） |
+| 3-5 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60"},"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"autoUpdate":true}}}`（`env.FORCE_AUTOUPDATE_PLUGINS` が無い） | `env.PCT` → `already_ok`、`…autoUpdate` → `already_ok`、`env.FORCE` → `applied`。**1 項目でも差分があれば書く** |
+| 3-6 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":60,"FORCE_AUTOUPDATE_PLUGINS":"1"}}`（数値の 60） | `env.PCT` → `applied`（文字列 `"60"` に書き換える。型の差を一致とみなさない） |
+| 3-7 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60","FORCE_AUTOUPDATE_PLUGINS":"1"}}`（`extraKnownMarketplaces` が無い） | `env` の 2 つ → `already_ok`、`…autoUpdate` → `skipped_missing`。**`st_mtime_ns` が不変**（書ける差分が 1 つも無いのでファイルを開かない） |
 
 **完了の判定:**
 
 ```
 $ python -m pytest tests/client/test_settings.py -q -k already_ok
-6 passed
+7 passed
 ```
 
 **コミット:** `feat: ポリシー値と一致していれば settings.json を書かない`
@@ -150,9 +157,11 @@ $ python -m pytest tests/client/test_settings.py -q -k already_ok
 
 **ファイル:** `governance/hooks/_settings.py`, `tests/client/test_settings.py`
 **依存:** タスク 3
-**やること:** 差分のあるキーだけを書き込む。**同じディレクトリに一時ファイルを作り、`os.replace` で置き換える**（別ディレクトリに作るとクロスデバイスで `os.replace` が失敗する）。書き込むのは読み取った dict にポリシー値を反映したものであり、ポリシー対象外のキーには触れない。入れ子のキーは途中の段を必要な分だけ作り、書き換えるのは末端の 1 キーだけとする。書き込みに失敗したときは例外を外に出さず、一時ファイルを残さず、差分のあったキーの結果を `write_failed` とする。
+**やること:** 差分のあるキーだけを書き込む。**同じディレクトリに一時ファイルを作り、`os.replace` で置き換える**（別ディレクトリに作るとクロスデバイスで `os.replace` が失敗する）。書き込むのは読み取った dict にポリシー値を反映したものであり、ポリシー対象外のキーには触れない。書き換えるのは末端の 1 キーだけとする。書き込みに失敗したときは例外を外に出さず、一時ファイルを残さず、差分のあったキーの結果を `write_failed` とする。
 
-**根拠:** 設計書 §3.6 手順 4
+**入れ子のエントリを新規に作らない。** `env` セクションだけは無ければ作る。それ以外の段が欠けているときは、そのキーを書かずに `skipped_missing` を返す。`extraKnownMarketplaces.<名前>` はマーケットプレイスの登録が作るエントリであり、こちらが作ると **`source` を持たない壊れた定義**が利用者の設定に生まれる。**ここは利用者の設定を壊す経路であり、テストを落とさない。**
+
+**根拠:** 設計書 §3.6 手順 4、同節「入れ子の途中のキーが存在しないとき」
 
 **テスト:**
 
@@ -166,24 +175,29 @@ $ python -m pytest tests/client/test_settings.py -q -k already_ok
 
 | # | 入力 | 期待値 |
 | --- | --- | --- |
-| 4-1 | 基準 | 実行後のトップレベルのキーは `model` / `permissions` / `env` / `statusLine` / `extraKnownMarketplaces` の 5 つ。**元の 4 つが 1 つも失われない** |
+| 4-1 | 基準 | 実行後のトップレベルのキーは `model` / `permissions` / `env` / `statusLine` の 4 つ。**元の 4 つが 1 つも失われず、`extraKnownMarketplaces` も増えない** |
 | 4-2 | 基準 | `model` == `"opus"`、`permissions` == `{"allow":["Bash(ls:*)"]}`、`statusLine` == `{"type":"command","command":"echo hi"}`（値も変わらない） |
-| 4-3 | 基準 | `env` のキーは `HTTP_PROXY` と `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` の 2 つ。`env.HTTP_PROXY` == `"http://proxy.example:8080"` |
-| 4-4 | 基準 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` == `"60"`、`extraKnownMarketplaces["cc-marketplace-governance-bmsd"]["autoUpdate"]` == `true`（**3 段の入れ子が新規に作られる**） |
-| 4-5 | `{}` | `env` セクションが新規に作られ、`{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60"}` になる |
-| 4-6 | ファイルが存在しない | ファイルが新規に作られ、内容は 4-5 と同じ（＋ 3 段の `extraKnownMarketplaces`）。`apply_result` は両方 `applied` |
+| 4-3 | 基準 | `env` のキーは `HTTP_PROXY` / `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `FORCE_AUTOUPDATE_PLUGINS` の 3 つ。`env.HTTP_PROXY` == `"http://proxy.example:8080"` |
+| 4-4 | 基準 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` == `"60"`、`env.FORCE_AUTOUPDATE_PLUGINS` == `"1"`。`…autoUpdate` は `skipped_missing` で書かれない |
+| 4-5 | `{}` | `env` セクションが新規に作られ、`{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60","FORCE_AUTOUPDATE_PLUGINS":"1"}` になる。トップレベルのキーは `env` の 1 つだけ |
+| 4-6 | ファイルが存在しない | ファイルが新規に作られ、内容は 4-5 と同じ。`apply_result` は `env` の 2 つが `applied`、`…autoUpdate` が `skipped_missing` |
 | 4-7 | 基準 | 実行後のファイルが JSON として読み直せる。末尾に改行が 1 つある |
 | 4-8 | 基準 | 実行後、同じディレクトリに一時ファイルが残らない（ファイル数が 1） |
 | 4-9 | 基準。`os.replace` を例外を投げるものに差し替える | 例外が呼び出し元に漏れない。**元のファイルのバイト列と `st_mtime_ns` が不変**。一時ファイルが残らない。差分のあったキーの `apply_result` が `write_failed` |
 | 4-10 | 基準。一時ファイルへの `write` を途中で例外にする | 4-9 と同じ |
-| 4-11 | 基準。`env` が `{"HTTP_PROXY":"..."}` で、`…autoUpdate` が既に `true` | `…autoUpdate` → `already_ok`、`env…` → `applied`。書き込み後も `…autoUpdate` == `true` |
-| 4-12 | 基準に `"extraKnownMarketplaces":{"other-marketplace":{"autoUpdate":true},"cc-marketplace-governance-bmsd":{"source":{"source":"github","repo":"x/y"},"autoUpdate":false}}` を足したもの（登録をやり直して自動更新が外れた状態） | `…autoUpdate` → `applied` で `true` に戻る。`other-marketplace` のエントリと、同じエントリ内の `source` が**1 つも失われない**（3 段の入れ子のうち、書き換えるのは末端 1 キーだけ） |
+| 4-11 | 基準に `"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"source":{"source":"github","repo":"x/y"},"autoUpdate":true}}` を足したもの | `…autoUpdate` → `already_ok`、`env` の 2 つ → `applied`。書き込み後も `…autoUpdate` == `true`、`source` が保たれる |
+| 4-12 | 基準に `"extraKnownMarketplaces":{"other-marketplace":{"autoUpdate":true},"cc-marketplace-governance-bmsd":{"source":{"source":"github","repo":"x/y"},"autoUpdate":false}}` を足したもの（登録をやり直して自動更新が外れた状態） | `…autoUpdate` → `applied` で `true` に戻る。`other-marketplace` のエントリと、同じエントリ内の `source` が**1 つも失われない**（書き換えるのは末端 1 キーだけ） |
+| 4-13 | 基準（`extraKnownMarketplaces` そのものが無い） | `…autoUpdate` → `skipped_missing`。実行後のファイルに `extraKnownMarketplaces` が**現れない** |
+| 4-14 | 基準に `"extraKnownMarketplaces":{"other-marketplace":{"source":{"source":"github","repo":"x/y"},"autoUpdate":true}}` を足したもの（その名前のエントリが無い） | `…autoUpdate` → `skipped_missing`。`cc-marketplace-governance-bmsd` のエントリが**作られない**。`other-marketplace` が 1 つも失われない |
+| 4-15 | 基準に `"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"source":{"source":"github","repo":"x/y"}}}` を足したもの（エントリはあるが `autoUpdate` キーが無い） | `…autoUpdate` → `applied`。`autoUpdate` == `true` になり、`source` が失われない（**末端キーの欠落はエントリの欠落ではない**） |
+
+ケース 4-13 / 4-14 / 4-15 が境界である。**作ってよいのは `env` セクションだけであり、`extraKnownMarketplaces` の段は作らない。** 作ると `source` を持たない壊れた定義が利用者の設定に残る。
 
 **完了の判定:**
 
 ```
 $ python -m pytest tests/client/test_settings.py -q -k apply
-12 passed
+15 passed
 ```
 
 **コミット:** `feat: settings.json への原子的な書き込みと既存設定の保全`
@@ -208,12 +222,12 @@ $ python -m pytest tests/client/test_settings.py -q -k apply
 
 | # | 入力と割り込み | 期待値 |
 | --- | --- | --- |
-| 5-1 | `{"model":"opus"}` → 割り込みで `{"model":"sonnet"}` に上書き | 両キーとも `apply_result` = `skipped_conflict` |
-| 5-2 | 5-1 と同じ | **実行後のファイルの内容が `{"model":"sonnet"}` のまま。**`env` も `extraKnownMarketplaces` も足されていない（利用者の変更が黙って巻き戻らない） |
-| 5-3 | 5-1 と同じ | `prev_value` は**読み取り時点の値**（`env…` → `None`、`…autoUpdate` → `None`）。割り込み後の値を読み直さない |
+| 5-1 | `{"model":"opus","extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"source":{"source":"github","repo":"x/y"}}}}` → 割り込みで `{"model":"sonnet"}` に上書き | 3 キーとも `apply_result` = `skipped_conflict`（3 キーすべてが書き込み対象になる入力を使う） |
+| 5-2 | 5-1 と同じ | **実行後のファイルの内容が `{"model":"sonnet"}` のまま。**`env` も足されておらず、`extraKnownMarketplaces` も戻っていない（利用者の変更が黙って巻き戻らない） |
+| 5-3 | 5-1 と同じ | `prev_value` は**読み取り時点の値**（3 つとも `None`）。割り込み後の値を読み直さない |
 | 5-4 | 5-1 と同じ | 一時ファイルが残らない |
 | 5-5 | 割り込みで**内容は同じだが mtime だけ進める** | `skipped_conflict`。内容の比較ではなく mtime の比較で諦める |
-| 5-6 | `{"model":"opus"` （閉じ括弧が無い） | 両キーとも `parse_failed`。**ファイルのバイト列と `st_mtime_ns` が不変** |
+| 5-6 | `{"model":"opus"` （閉じ括弧が無い） | 3 キーとも `parse_failed`。**ファイルのバイト列と `st_mtime_ns` が不変** |
 | 5-7 | 5-6 と同じ | `prev_value` は `None`。例外が呼び出し元に漏れない |
 | 5-8 | 空ファイル（0 バイト） | `parse_failed`。ファイルが 0 バイトのまま |
 | 5-9 | `[1,2,3]`（トップレベルが list） | `parse_failed`。ファイル不変 |
@@ -223,7 +237,7 @@ $ python -m pytest tests/client/test_settings.py -q -k apply
 
 ```
 $ python -m pytest tests/client/test_settings.py -q
-36 passed
+41 passed
 ```
 
 ```
@@ -237,11 +251,11 @@ $ wc -l governance/hooks/_settings.py
 
 ---
 
-### タスク 6: `apply_result` の 5 通りが揃うことの確認
+### タスク 6: `apply_result` の 6 通りが揃うことの確認
 
 **ファイル:** `tests/client/test_settings.py`
 **依存:** タスク 5
-**やること:** 5 つの区分がそれぞれ独立したテストケースとして出ることを、1 つのテストで横断的に確かめる。`prev_value` の 3 通り（キーが無い / 別の値 / 既にポリシー値）も併せて縛る。
+**やること:** 6 つの区分がそれぞれ独立したテストケースとして出ることを、1 つのテストで横断的に確かめる。`prev_value` の 3 通り（キーが無い / 別の値 / 既にポリシー値）も併せて縛る。
 
 **根拠:** 設計書 §3.6（policy イベントが持つもの）、§5.2（準拠の判定は `prev_value` で行う）
 
@@ -251,21 +265,22 @@ $ wc -l governance/hooks/_settings.py
 | --- | --- | --- | --- |
 | 6-1 | `{}` | `None` | `applied` |
 | 6-2 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"80"}}` | `"80"` | `applied` |
-| 6-3 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60"},"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"autoUpdate":true}}}` | `"60"` | `already_ok` |
-| 6-4 | `{"model":"opus"}` + 割り込み（タスク 5 と同じ） | `None` | `skipped_conflict` |
+| 6-3 | `{"env":{"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE":"60","FORCE_AUTOUPDATE_PLUGINS":"1"},"extraKnownMarketplaces":{"cc-marketplace-governance-bmsd":{"autoUpdate":true}}}` | `"60"` | `already_ok` |
+| 6-4 | 5-1 と同じ入力 + 割り込み（タスク 5 と同じ） | `None` | `skipped_conflict` |
 | 6-5 | 壊れた JSON | `None` | `parse_failed` |
 | 6-6 | `{}` + `os.replace` を例外にする（タスク 4-9 と同じ） | `None` | `write_failed` |
-| 6-7 | 6-1〜6-6 をまとめて実行 | — | 観測された `apply_result` の集合が `{already_ok, applied, skipped_conflict, parse_failed, write_failed}` と**完全に一致**する |
-| 6-8 | 6-1〜6-6 | `value` はすべての場合に `"60"`（ポリシー値。書けたかどうかに依らない） | — |
+| 6-7 | `{}`（`…autoUpdate` の行を見る） | — | `skipped_missing`（`env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` の行は `applied`） |
+| 6-8 | 6-1〜6-7 をまとめて実行 | — | 観測された `apply_result` の集合が `{already_ok, applied, skipped_conflict, skipped_missing, parse_failed, write_failed}` と**完全に一致**する |
+| 6-9 | 6-1〜6-7 | `value` はすべての場合に、そのキーのポリシー値（書けたかどうかに依らない） | — |
 
 **完了の判定:**
 
 ```
 $ python -m pytest tests/client/test_settings.py -q -k result
-8 passed
+9 passed
 ```
 
-**コミット:** `test: apply_result の 5 区分と prev_value の 3 通りを縛る`
+**コミット:** `test: apply_result の 6 区分と prev_value の 3 通りを縛る`
 
 ---
 
@@ -283,19 +298,20 @@ $ python -m pytest tests/client/test_settings.py -q -k result
 
 | # | 入力 | 期待値 |
 | --- | --- | --- |
-| 7-1 | 基準（タスク 4） | キューに積まれる policy イベントが 2 行（`POLICY` の項目数と一致） |
-| 7-2 | 7-1 | 各行の `key_name` が `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate`。`.` を含むキーがそのまま入る |
+| 7-1 | 基準（タスク 4） | キューに積まれる policy イベントが 3 行（`POLICY` の項目数と一致） |
+| 7-2 | 7-1 | 各行の `key_name` が `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` / `env.FORCE_AUTOUPDATE_PLUGINS`。`.` を含むキーがそのまま入る |
 | 7-3 | 7-1 | `plugin_version` が `plugin.json` の `version`（`0.1.0`）と一致 |
 | 7-4 | 7-1 | 2 行の `event_id` が互いに異なる |
 | 7-5 | 壊れた JSON を与える | `parse_failed` の行が 2 行積まれる。**エラーでもイベントは積む**（未適用の端末が画面から消えない） |
 | 7-6 | 書き込みを失敗させる（タスク 4-9 と同じ） | `write_failed` の行が積まれる。**書き込みに失敗し続けている端末も画面に残る** |
 | 7-7 | `_queue` への追記を例外にする | 例外が漏れない。設定ファイルには既にポリシー値が入っている |
+| 7-8 | `extraKnownMarketplaces` が無い状態 | `…autoUpdate` の行が `skipped_missing` として積まれる。**書けなかったキーも記録する**（この結果が出ること自体が異常の印であり、サーバに届かなければ気づけない） |
 
 **完了の判定:**
 
 ```
 $ python -m pytest tests/client/test_session_start.py -q -k policy_event
-7 passed
+8 passed
 ```
 
 **コミット:** `feat: 適用結果を policy イベントとしてキューに積む`
@@ -344,6 +360,8 @@ $ python -m pytest tests/client/test_session_start.py -q -k notices
 
 - 未読のお知らせを、hook の JSON 出力の **`systemMessage`** として返す。モデルに渡る経路（素の標準出力・`additionalContext`）には**一切載せない**
 - **既読に加えるのは出力が成功した後**。`seen.json` の更新は、標準出力への書き出しと `flush` が例外なく終わってから行う
+- 表示には **`SessionStart:<source> says: ` の接頭辞**が付く（`source` は `startup` / `resume` / `clear` / `compact`）。利用者はこの接頭辞込みで文面を読むため、**文面の先頭に「【お知らせ】」のような目印を重ねない**。複数行の場合、接頭辞が付くのは 1 行目だけである
+- **お知らせ 1 件の文面は 2,000 文字未満**に収める。これを超えると Claude Code は出力をファイルに退避し、先頭のプレビューとファイルパスだけを表示する。`notices.json` の各要素がこの上限を満たすことは、リリース時の検査で見る（計画 [7]）
 
 **根拠:** 設計書 §3.7。素の標準出力はモデルが読む文脈として扱われるため、そのまま出すとお知らせの宛先が人ではなくモデルになる。業務指示を含む文面が全セッションでモデルへの指示として注入されると、**コストを下げる施策の効果測定に、モデルの応答傾向の変化が交絡する**。
 
@@ -407,7 +425,7 @@ $ python -m pytest tests/client/test_session_start.py -q -k order
 
 **ファイル:** `governance/hooks/session_start.py`
 **依存:** タスク 10
-**やること:** 環境変数 `CC_GOVERNANCE_DISABLE` が**空でない値**に設定されているとき、お知らせの表示と収集を飛ばす。**設定の適用はこのスイッチでは止まらない。**
+**やること:** 環境変数 `CC_GOVERNANCE_DISABLE` が**空でない値**に設定されているとき、お知らせの表示と収集を飛ばす。**設定の適用・その記録・送信はこのスイッチでは止まらない。**
 
 **根拠:** 設計書 §3.9。止められるようにすると「利用者が施策を選択的に適用できる」ことと同義になり、§3.6 が強制のみを選んだ理由（準拠者と非準拠者の差が施策の効果なのか自己選択なのかを区別できなくなる）がそのまま崩れる。
 
@@ -422,19 +440,20 @@ $ python -m pytest tests/client/test_session_start.py -q -k order
 | 11-5 | `""`（空文字列） | `"60"` が入る | 出る | 増える（11-1 と同じ） |
 | 11-6 | `"1"` | **policy イベントはキューに積まれる**（適用が止まらない以上、その記録も止めない） | — | — |
 | 11-7 | `"1"` | — | 標準出力が JSON としてパースできる。終了コード 0 | — |
+| 11-8 | `"1"`、送信条件が真 | **送信プロセスが 1 回起動する**（送信は止まらない） | — | — |
 
-**このスイッチは「適用の記録」も止めない。** 適用だけ行って記録を止めると、無効化した端末が準拠率の分母から静かに消え、施策の効果が実態より良く見える。
+**このスイッチは「適用の記録」も「送信」も止めない。** 適用だけ行って記録を止めると、無効化した端末が準拠率の分母から静かに消え、施策の効果が実態より良く見える。**送信まで止めると同じことが起きる。** 積んだ policy イベントが端末に溜まるだけで、サーバには一度も届かない。止めるのは利用ログの収集とお知らせの表示であって、ガバナンスとその記録の伝達ではない。
 
 **完了の判定:**
 
 ```
 $ python -m pytest tests/client/test_session_start.py -q -k disable
-7 passed
+8 passed
 ```
 
 ```
 $ python -m pytest tests/client/test_settings.py tests/client/test_session_start.py -q
-84 passed
+92 passed
 ```
 
 （`tests/client/` には [2] のテストも入っているため、本計画が足した 2 ファイルに絞って数える）
@@ -450,6 +469,8 @@ $ python -m pytest tests/client/test_settings.py tests/client/test_session_start
 **やること:**
 
 - `SessionStart` に `session_start.py` を登録する。matcher は指定せず全 source で発火させる（`source` は hook 入力から取る。設計書 §3.2）。起動の書き方（`python3` の呼び方・`${CLAUDE_PLUGIN_ROOT}` の使い方）は [2] が他の 6 種で採ったものに揃える
+- **コマンド文字列の制約も [2] と同じに揃える**（1 行・パイプや `;` や `&&` やリダイレクトを含めない・100 文字未満。設計書 §3.3）。登録する `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py" SessionStart` は 67 文字である
+- `SessionStart` は `startup` / `resume` / `clear` / `compact` の **4 契機**で発火する。`/clear` のたびにも、自動圧縮が走るたびにも設定の適用とお知らせの判定が走る
 - 実機確認を行う
 
 **実機確認の手順。利用者本人の `~/.claude/settings.json` を対象にしてはならない。**
@@ -465,10 +486,16 @@ $ shasum -a 256 ~/.claude/settings.json; stat -f '%m' ~/.claude/settings.json
 2. git 管理外の `local/` の下に隔離ディレクトリを作り、そこを `CLAUDE_CONFIG_DIR` に向けて Claude Code を 1 回走らせる
 
 ```
-$ mkdir -p local/isolated-claude && CLAUDE_CONFIG_DIR=$PWD/local/isolated-claude claude -p 'ok' >/dev/null
-$ python -c "import json;d=json.load(open('local/isolated-claude/settings.json'));print(d['env']['CLAUDE_AUTOCOMPACT_PCT_OVERRIDE'], d['extraKnownMarketplaces']['cc-marketplace-governance-bmsd']['autoUpdate'])"
-60 True
+$ mkdir -p local/isolated-claude/state
+$ CLAUDE_CONFIG_DIR=$PWD/local/isolated-claude CLAUDE_PLUGIN_DATA=$PWD/local/isolated-claude/state \
+    claude -p 'ok' >/dev/null
+$ python -c "import json;d=json.load(open('local/isolated-claude/settings.json'));print(d['env']['CLAUDE_AUTOCOMPACT_PCT_OVERRIDE'], d['env']['FORCE_AUTOUPDATE_PLUGINS'], 'extraKnownMarketplaces' in d)"
+60 1 False
 ```
+
+**`extraKnownMarketplaces` が `False` になるのが正しい。** この隔離環境はマーケットプレイスを登録していないため、そのエントリが存在しない。**エントリを作らずに `skipped_missing` を記録する**のが設計である（設計書 §3.6）。ここで `True` が出たら、作ってはいけない入れ子を作っている。
+
+`CLAUDE_PLUGIN_DATA` を向けるのは、状態ディレクトリ（`queue.jsonl` 等）を隔離側に落とすためである。向けないと利用者本人の `~/.claude/cc-governance/` に書かれる。
 
 `local/isolated-claude/settings.json` が作られなければ `CLAUDE_CONFIG_DIR` が効いていない。その場合は `HOME` を差し替えた隔離環境に切り替える（`HOME=$PWD/local/isolated-home claude -p 'ok'`）。**どちらでも動かない場合はここで止め、本人の設定ファイルを対象にした確認に切り替えない。**
 
@@ -483,14 +510,18 @@ $ shasum -a 256 ~/.claude/settings.json; stat -f '%m' ~/.claude/settings.json
 4. もう一度走らせ、2 回目の policy イベントの `prev_value` が `"60"` になっていることを確かめる。**`prev_value` が `"60"` になって初めて、準拠判定の材料が成立する**（設計書 §5.2）
 
 ```
-$ python -c "import json,sys;[print(e['key_name'],repr(e['prev_value']),e['apply_result']) for e in map(json.loads,open('local/isolated-claude/cc-governance/queue.jsonl')) if e.get('key_name')]"
+$ python -c "import json,sys;[print(e['key_name'],repr(e['prev_value']),e['apply_result']) for e in map(json.loads,open('local/isolated-claude/state/queue.jsonl')) if e.get('key_name')]"
 env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE None applied
-extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate None applied
+extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate None skipped_missing
+env.FORCE_AUTOUPDATE_PLUGINS None applied
 env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE '60' already_ok
-extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate 'true' already_ok
+extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate None skipped_missing
+env.FORCE_AUTOUPDATE_PLUGINS '1' already_ok
 ```
 
-5. **`systemMessage` が画面に出るか、文字数の上限があるかを確認する**（設計書 §11.3 の未検証事項）。`notices.json` に短い文面と 2,000 文字の文面を 1 件ずつ置いて対話モードで起動し、表示の有無と切り詰めの有無を見る。結果を設計書 §3.7 に反映する
+1 回の起動につき 3 行（`POLICY` の項目数）が積まれる。`…autoUpdate` が 2 回とも `skipped_missing` であることは、この隔離環境にマーケットプレイスの登録が無いことの反映である。
+
+5. **`systemMessage` が接頭辞つきで画面に出ることを確認する。** `notices.json` に短い文面と 1,999 文字の文面を 1 件ずつ置いて対話モードで起動し、次を見る — `SessionStart:startup says: ` の接頭辞が付くこと、1,999 文字の文面が切り詰められずファイルへの退避も起きないこと、接頭辞が付くのが 1 行目だけであること（設計書 §3.7）
 
 6. 既に別の値を持つ端末の挙動を確認する。隔離ディレクトリの `settings.json` の `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` を手で `"95"` に書き換えてから走らせ、`prev_value` が `"95"`・`apply_result` が `applied` になり、**同じファイル内の他のキーが失われていない**ことを確かめる
 
@@ -514,22 +545,24 @@ $ python -c "import json;print(len(json.load(open('governance/hooks/hooks.json')
 | # | 条件 | 確かめ方 |
 | --- | --- | --- |
 | 1 | ポリシー対象外のキーが、書き込みの前後で 1 つも失われず値も変わらない | タスク 4-1 / 4-2 / 4-3 |
-| 2 | `env` セクションの中に書き込め、同セクションの既存キーが保たれる。3 段の入れ子（`extraKnownMarketplaces`）も末端だけが書き換わり、兄弟キーが保たれる | タスク 4-3 / 4-5 / 4-12 |
+| 2 | `env` セクションの中に書き込め、同セクションの既存キーが保たれる。`extraKnownMarketplaces` は末端だけが書き換わり、兄弟キーと `source` が保たれる | タスク 4-3 / 4-5 / 4-12 |
+| 2-b | **`env` 以外の入れ子のエントリを新規に作らない。** エントリが無ければ書かずに `skipped_missing` を記録する | タスク 4-13 / 4-14 / 4-15 |
 | 3 | 差分がなければファイルを一切触らない（`st_mtime_ns` が不変） | タスク 3-2 / 3-3 |
 | 4 | mtime が変わっていたら書かず、利用者の変更が巻き戻らない | タスク 5-1 / 5-2 |
 | 5 | パース失敗時にファイルを一切変更しない | タスク 5-6 / 5-8 / 5-9 |
 | 6 | 書き込み失敗時も元のファイルが壊れず、一時ファイルが残らず、`write_failed` が記録されてイベントも積まれる | タスク 4-9 / 4-10 / 7-6 |
-| 7 | `apply_result` の 5 区分と `prev_value` の 3 通りがすべて出る | タスク 6-7 / 6-8 |
+| 7 | `apply_result` の 6 区分と `prev_value` の 3 通りがすべて出る | タスク 6-8 / 6-9 |
 | 8 | お知らせが `systemMessage` にだけ現れ、モデルに渡る経路に現れない | タスク 9-2 / 9-3 / 9-4 |
 | 9 | 出力が失敗したら既読にならず、次回また出る | タスク 9-8 / 9-9 |
 | 10 | `seen.json` が壊れていても例外にならない | タスク 8-5 / 8-6 / 8-7 |
 | 11 | 収集が失敗しても設定の適用とお知らせは完了している | タスク 10-2 |
-| 12 | `CC_GOVERNANCE_DISABLE` で止まるのはお知らせと収集だけで、適用は止まらない | タスク 11-2 / 11-6 |
+| 12 | `CC_GOVERNANCE_DISABLE` で止まるのはお知らせと収集だけで、適用・記録・送信は止まらない | タスク 11-2 / 11-6 / 11-8 |
 | 13 | 終了コードが常に 0 で、標準エラーが空 | タスク 10-5 / 11-7 |
 | 14 | `_settings.py` と `session_start.py` が 200 行以内 | タスク 5 / タスク 11 の `wc -l` |
 | 15 | 実機で隔離環境の設定ファイルだけが書き換わり、本人のものは不変 | タスク 12 手順 3 |
 | 16 | 2 回目の起動で `prev_value` が `"60"` になる | タスク 12 手順 4 |
-| 17 | `systemMessage` の表示可否と文字数上限が判明し、設計書 §3.7 に反映されている | タスク 12 手順 5 |
+| 17 | `systemMessage` が `SessionStart:<source> says: ` の接頭辞つきで表示され、1,999 文字の文面が切り詰められない | タスク 12 手順 5 |
+| 18 | 隔離環境に `extraKnownMarketplaces` が作られず、`…autoUpdate` が `skipped_missing` として記録される | タスク 12 手順 2 / 手順 4 |
 
 完了したら `feat/client-policy-notices` を `main` にマージする。
 
