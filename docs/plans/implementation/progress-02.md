@@ -267,3 +267,66 @@ collect.EXTRA_COLUMNS += (("plugin_version","VARCHAR(32)"),)
 | M-10 | R-29 の振る舞い（`NaN` / `Infinity` / float が `None` になる）を固定するテストが無い |
 | M-11 | C-1 の parametrize が `list` / `dict` を含んでいない（実測ではどちらも安全） |
 | M-12 | サロゲートを含む文字列が `coerce` を素通りして行に載る。`json.dumps(ensure_ascii=False)` で書き出すと例外になる。**`_queue.py`（タスク 6）の書き出し方で判断が要る** |
+
+## タスク 6〜7 の結果
+
+**219 passed**（既存 177 + 22 + 20）。レビュー結果は **Spec ✅ / Approved**、Critical なし。
+
+### レビュアが実測で確認したこと
+
+- **`_state_dir()` の遅延評価**：`HOME` を import 後に差し替えても追従。`_identity._state_dir is _queue._state_dir` が `True`
+- **`_sender.py` が例外を漏らさない**：実物をコピーしたツリーで**別プロセスとして 12 通り**起動し、
+  全件 `rc=0` / stderr 空 / ファイル残存（config 欠落・壊れた JSON・不正な URL・存在しないホスト・型の壊れた設定値）
+- **実 detach**：3 秒かけて応答する HTTP サーバを立てて `launch()` を呼び、
+  `launch()` の戻りが 0.008 秒（待たない）、子プロセスが別セッション、spool が空になり受信 2 件を確認
+- **冪等性の検査が本物**：時刻を固定して `rotate` を 2 回 → UUID が無ければ 1 ファイルに上書きされて落ちる形になっている
+- **「古い順」の破棄が本物**：最古の名前が消えていること **かつ** 残り 5 件を主張している
+
+### 制御側の独立検証
+
+`ensure_ascii=True` の選択が正しいことを実測した。
+
+```
+ensure_ascii=True  : 孤立サロゲートを含む行の追記が成功し、読み戻しも一致
+ensure_ascii=False : write の段で UnicodeEncodeError
+                     （json.dumps 自体は通るため見落としやすい経路）
+```
+
+### モジュール名が標準ライブラリと衝突していた
+
+**`governance/hooks/_queue.py` は CPython の標準ライブラリ `_queue`（`queue` モジュールの C 実装）と同名である。**
+
+制御側の実測:
+
+```
+import queue した時点で sys.modules['_queue'] が配布物の _queue.py になる
+queue.SimpleQueue が queue._PySimpleQueue（純 Python 実装）へ静かに降格する
+
+builtin は sys.path[0] より優先される（実証済み）
+→ _queue が sys.builtin_module_names に入るビルドでは、配布した _queue.py が読まれず、
+  _sender.py の _queue.rotate が AttributeError になり、except に飲まれて無言で何もしない
+```
+
+手元の 3 種の Python（3.9.6 / 3.13 / 3.14）はいずれも `_queue` が共有拡張のため、この環境では起きない。
+しかし**端末の Python の版・ビルドを選べない**（premises）以上、配布物が標準ライブラリ名を覆うのは避けたい。
+失敗の形が「無言で送信が止まる」であり、フェイルオープンで気づきにくい。
+
+- **R-38: `_queue.py` を `_spool.py` に改名する（利用者の承認済み）。**
+  外部の振る舞い（hook 登録・契約）は変わらない。spool を扱うモジュールなので名前としても適切である。
+  **設計書 §3.1 のファイル一覧と計画 [3] の記述とはずれる。設計書は変更しない（利用者の指示）。**
+  外れたときの損 — ドキュメントとコードでファイル名が食い違う。この台帳が説明になる。
+
+### 先送りした Minor
+
+| # | 指摘 |
+| --- | --- |
+| M-13 | `append` が毎回 `mkdir(exist_ok=True)` を呼ぶため、同期 I/O が「追記 1 回」より多い。計画書のケース 6 が要求しているため仕様どおり |
+| M-14 | `should_send` が 3 回 stat する。`os.stat` 1 回 + `FileNotFoundError` 分岐で 2 回に減る |
+| M-15 | `except (urllib.error.URLError, OSError)` の `URLError` は `OSError` の派生で冗長 |
+| M-16 | `mark_sent` を既存ファイルがある状態で呼ぶケースが無い（本番で支配的なのはこちら） |
+| M-17 | 「終了コード 0」を別プロセスで確認するテストが無い（レビュアが 12 通り実測済み） |
+
+### 申し送り
+
+**`mark_sent()` を呼ぶ経路がまだ無い。** `_sender.run()` は `rotate` → `prune` → POST しか行わない。
+**タスク 8 の結線で hook 側が `mark_sent()` を呼ばないと `should_send()` が常に真になり、毎 hook で `launch()` が走る。**
