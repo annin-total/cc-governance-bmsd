@@ -345,3 +345,110 @@ def test_apply_4_15_leaf_missing_is_not_entry_missing(tmp_path):
     entry = data["extraKnownMarketplaces"]["cc-marketplace-governance-bmsd"]
     assert entry["autoUpdate"] is True
     assert entry["source"] == {"source": "github", "repo": "x/y"}
+
+
+# ---- タスク 5: mtime の衝突とパース失敗 ----
+
+_CONFLICT_INPUT = {
+    "model": "opus",
+    "extraKnownMarketplaces": {
+        "cc-marketplace-governance-bmsd": {"source": {"source": "github", "repo": "x/y"}}
+    },
+}
+
+
+def _interrupt_after_read(monkeypatch, path, new_content):
+    """置換直前（一時ファイル作成時）に、テスト側が別内容で settings.json を上書きする。"""
+    original_mkstemp = _settings.tempfile.mkstemp
+
+    def _mkstemp(*args, **kwargs):
+        path.write_text(json.dumps(new_content), encoding="utf-8")
+        os.utime(path, ns=(999_000_000_000, 999_000_000_000))
+        return original_mkstemp(*args, **kwargs)
+
+    monkeypatch.setattr(_settings.tempfile, "mkstemp", _mkstemp)
+
+
+def test_conflict_5_1_both_skipped(tmp_path, monkeypatch):
+    path = _write_settings(tmp_path, _CONFLICT_INPUT)
+    _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][3] == "skipped_conflict"
+    assert rows[AUTOUPDATE_KEY][3] == "skipped_conflict"
+
+
+def test_conflict_5_2_file_keeps_interrupted_content(tmp_path, monkeypatch):
+    path = _write_settings(tmp_path, _CONFLICT_INPUT)
+    _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
+    _settings.apply_settings(path, POLICY)
+    assert json.loads(path.read_text(encoding="utf-8")) == {"model": "sonnet"}
+
+
+def test_conflict_5_3_prev_value_is_read_time_value(tmp_path, monkeypatch):
+    path = _write_settings(tmp_path, _CONFLICT_INPUT)
+    _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][2] is None
+    assert rows[AUTOUPDATE_KEY][2] is None
+
+
+def test_conflict_5_4_no_tmp_file_left(tmp_path, monkeypatch):
+    path = _write_settings(tmp_path, _CONFLICT_INPUT)
+    _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
+    _settings.apply_settings(path, POLICY)
+    assert len(list(tmp_path.iterdir())) == 1
+
+
+def test_conflict_5_5_same_content_different_mtime(tmp_path, monkeypatch):
+    path = _write_settings(tmp_path, _CONFLICT_INPUT)
+    _interrupt_after_read(monkeypatch, path, _CONFLICT_INPUT)
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][3] == "skipped_conflict"
+    assert rows[AUTOUPDATE_KEY][3] == "skipped_conflict"
+
+
+def test_parse_failed_5_6_truncated_json(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text('{"model":"opus"', encoding="utf-8")
+    before_bytes = path.read_bytes()
+    before_mtime = path.stat().st_mtime_ns
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][3] == "parse_failed"
+    assert rows[AUTOUPDATE_KEY][3] == "parse_failed"
+    assert path.read_bytes() == before_bytes
+    assert path.stat().st_mtime_ns == before_mtime
+
+
+def test_parse_failed_5_7_prev_value_none_no_exception(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text('{"model":"opus"', encoding="utf-8")
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][2] is None
+    assert rows[AUTOUPDATE_KEY][2] is None
+
+
+def test_parse_failed_5_8_empty_file(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text("", encoding="utf-8")
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][3] == "parse_failed"
+    assert path.read_bytes() == b""
+
+
+def test_parse_failed_5_9_top_level_list(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text("[1,2,3]", encoding="utf-8")
+    before_bytes = path.read_bytes()
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][3] == "parse_failed"
+    assert path.read_bytes() == before_bytes
+
+
+def test_parse_failed_5_10_unreadable_file(tmp_path):
+    path = _write_settings(tmp_path, {"model": "opus"})
+    os.chmod(path, 0o000)
+    try:
+        rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    finally:
+        os.chmod(path, 0o600)
+    assert rows[PCT_KEY][3] == "parse_failed"
