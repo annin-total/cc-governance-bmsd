@@ -34,15 +34,17 @@
 | 作業ディレクトリ | 本書のコマンドとパスはすべて `cc-governance-bmsd/`（開発リポジトリのルート）を基準とする |
 | テストの置き場所 | `cc-governance-bmsd/tests/`。**サーバのディレクトリ配下には置かない**（§6 の grep の対象から外すため） |
 | 基準日（today） | `queries_*.py` は現在時刻を読まない。**基準日を epoch 日の引数として受け取る。** 算出は `app.py` が行う。これによりテストが時刻に依存しない |
-| 窓の長さ | `queries_*.py` の定数として持つ。`RECENT_DAYS = 7`（直近／前の比較、準拠率の分母、**「最後に観測した値」の窓**）、`STALE_DAYS = 14`（イベントが途絶えた閾値）、`STALE_SCAN_DAYS = 30`（途絶え検出の走査窓）、`EVENT_STUDY_SPAN = 14`（相対日の片側）、`CONTEXT_BIN = 20000`（コンテキスト分布のビン幅） |
-| 途絶え端末の検出範囲 | 全期間を走査しない。**`STALE_SCAN_DAYS` の窓内**で端末ごとの最終 `day` を取り、基準日との差が `STALE_DAYS` 以上のものを並べる |
+| 窓の長さ | `queries_*.py` の定数として持つ。`RECENT_DAYS = 7`（直近／前の比較）、`POLICY_DAYS = 30`（`/policy` の窓。**準拠率の分母・「最後に観測した値」・未導入者の判定・途絶え検出の走査範囲**）、`STALE_DAYS = 14`（イベントが途絶えた閾値）、`EVENT_STUDY_SPAN = 14`（相対日の片側）、`CONTEXT_BIN = 20000`（コンテキスト分布のビン幅） |
+| 途絶え端末の検出 | 判定の対象は **`policy_state`** である（設計書 §7.2）。`POLICY_DAYS` の窓内で端末ごとの最終 `day` を取り、基準日との差が `STALE_DAYS` 以上のものを並べる。全期間を走査しない。**`events` で判定しない。** 無効化スイッチ（設計書 §3.9）を入れた端末は利用ログを送らないため、`events` で判定すると恒久的にこの一覧に並ぶ |
 | ポリシー値の文字列表現 | 契約の `POLICY` から `shared` 経由で得る。`policy_state.value` / `prev_value` に端末が書く表現は契約の `coerce(value, "VARCHAR(255)")` の規則に従い、**真偽値は小文字の `true` / `false`** である。比較にはこの表現をそのまま使い、**画面側で別の変換規則を持たない** |
 | 準拠の畳み込み | 判定は端末（`user_email` × `host`）単位で出るが、**率は利用者単位で数える。1 台でも未準拠なら、その利用者は未準拠とする**（設計書 §7.2）。一覧には端末を行として出す |
 | `plugin_version` の分布 | 端末（`user_email` × `host`）ごとの**最新行**の版で数える。「最後に観測した値」と同じ window 関数を使う |
 | 突合率 | **人数で測る。** 直近 `RECENT_DAYS` 日に `events` を送った `user_email` の異なり数を分母とし、そのうち同じ期間の `cost_daily` にも存在する `user_email` の異なり数を分子とする。**件数ではなく人数である** |
 | `DISTINCT event_id` を通す範囲 | 設計書 §9.2 の「分子も分母も `DISTINCT event_id` を通す」は、**件数と NULL 率のクエリに掛かる規約**である。突合率は `user_email` の異なり数で測るため、この規約の対象ではない |
 | 在籍（`/effect` の分母） | **`cost_daily` に取り込まれている `day` の全体範囲**に、その利用者の「準拠開始日 + 相対日」が収まるとき在籍とみなす。利用者ごとの行の有無では判定しない（それでは規約 1 の 0 埋めが無意味になる） |
-| 効果測定の対象 provider | `queries_policy.py` の定数として持つ。値は **`aws-bedrock`**（他社は `openai` として別行に出る。README §5.1） |
+| 効果測定の基準にする施策項目 | **`env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` に固定する**（設計書 §7.1）。他の 2 項目は配布経路の維持であり、コストに直接効かない |
+| 効果測定の対象 provider | `queries_policy.py` の定数として持つ。**値は最初の CSV 取込の後に確定させる**（設計書 §7.1）。本書のテストは `aws-bedrock` を想定値として使う（他社は `openai` として別行に出る。README §5.1）。上流の変化に人手で追随する箇所（設計書 §9.3）には含めない |
+| 全期間スキャンの射程 | 「`day` で絞らない全期間集計を画面に置かない」は **`events` に対しての前提**である（設計書 §5.1）。`policy_state` の準拠開始日は性質上すべての行を見るが、`(key_name, prev_value, user_email)` のインデックスで完結する |
 
 ---
 
@@ -74,8 +76,8 @@
 | e6 | 20002 | u2 | PostToolUse | s3 | Skill | pdf | | | | default | |
 | e7 | 20003 | u2 | UserPromptExpansion | s3 | | | review | user | | default | |
 | e8 | 20003 | u2 | PostToolUse | s3 | Skill | xlsx | | | | default | |
-| e9 | 20004 | u1 | PostToolUse | s4 | Read | | | | | acceptEdits | |
-| e10 | 20004 | u3 | PostToolUse | s5 | Grep | | | | | default | |
+| e9 | 20004 | u1 | PostToolUse | s4 | Read | | | | ag1 | acceptEdits | |
+| e10 | 20004 | u3 | PostToolUse | s5 | Grep | | | | ag2 | default | |
 | e11 | 20004 | u3 | PreCompact | s5 | | | | | | default | 120000 |
 | e12 | 20004 | u3 | Stop | s5 | | | | | | default | 150000 |
 | e13 | 20002 | u8 | PostToolUse | s8 | Read | | | | | default | |
@@ -90,9 +92,9 @@
 - `command_name` / `command_source` は `UserPromptExpansion` にしか届かない。他の hook の行に置かない
 - **`tool_name` は `PostToolUse` と `PostToolUseFailure` にのみ届く。** これらの行では必ず非 NULL になり、それ以外の hook の行では必ず NULL になる
 - **`skill_name` は `tool_input.skill` 由来であり、`tool_name` が `Skill` の行にのみ現れる。** `tool_name` が他の値の行に `skill_name` を置かない
-- **`agent_id` は全行 NULL とする。** 実サンプルに 1 件も現れておらず、届くかどうかが未検証である（設計書 §11.3）。この列を主題にした集計を画面に置かないため、fixture でも値を入れない
+- **`agent_id` はサブエージェント内のツール呼出にのみ付く**（設計書 §7.3）。`PostToolUse` の行にだけ置き、親のツール呼出（e1〜e8 など）には置かない
 
-直近 7 日は `day >= 19999`（e1〜e13 の 13 件）、前 7 日は `19992 <= day <= 19998`（e14〜e16 の 3 件）。**e17 はどちらの窓にも入らない。**途絶え端末の判定（`STALE_SCAN_DAYS = 30` の窓、基準日との差が `STALE_DAYS = 14` 以上）でだけ現れる 1 台である。
+直近 7 日は `day >= 19999`（e1〜e13 の 13 件）、前 7 日は `19992 <= day <= 19998`（e14〜e16 の 3 件）。**e17 はどちらの窓にも入らない。** 無効化スイッチ（設計書 §3.9）を入れた端末 u10 / h10 の最後のイベントであり、途絶えを `events` で判定した場合にだけ現れる 1 台である。
 
 **既知データ `policy_state`**（`K` = `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`、ポリシー値 `60`。`A` = `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate`、ポリシー値は真偽値であり、契約の `coerce` により小文字の `true` として記録される。`F` = `env.FORCE_AUTOUPDATE_PLUGINS`、ポリシー値 `1`）
 
@@ -114,6 +116,8 @@
 | p14 | 3200 | 20002 | u1 | h1 | F | 1 | 1 | already_ok | 1.4.0 |
 | p15 | 1700 | 20000 | u2 | h2 | F | 1 | 1 | already_ok | 1.3.0 |
 | p16 | 4300 | 20003 | u3 | h3b | A | true | | skipped_missing | 1.3.0 |
+| p17 | 700 | 19970 | u11 | h11 | K | 60 | 60 | already_ok | 1.4.0 |
+| p18 | 5100 | 20004 | u10 | h10 | K | 60 | 60 | already_ok | 1.4.0 |
 
 **投入順は p8 を p9 より先にする。** `ORDER BY ts DESC` が効いていない実装は u5 の現在値を取り違える。
 
@@ -123,7 +127,13 @@
 
 **`apply_result` の値域は `already_ok` / `applied` / `skipped_conflict` / `skipped_missing` / `parse_failed` / `write_failed` の 6 つである**（設計書 §5.2）。p16 の `skipped_missing` は、マーケットプレイスのエントリが無い端末で `A` が書かれなかった状態である。**準拠の判定は `prev_value` だけで行い、`apply_result` で行を絞らない。** 書けなかった端末も未準拠として数える。
 
-**p12 は `RECENT_DAYS` の窓（`day >= 19999`）より前にしか行が無い端末である。** 「最後に観測した値」の一覧から外れることの検証に使う。
+**p12 は u7 / h7 の唯一の行であり、`POLICY_DAYS` の窓（`day >= 19976`）の中にありながら基準日との差が 15 日ある。** 途絶え端末の判定に使う。
+
+**p17 は `POLICY_DAYS` の窓より前にしか行が無い端末である。** 「最後に観測した値」の一覧から外れることの検証に使う。
+
+**p18 は無効化スイッチを入れた端末である。** 利用ログ（`events`）は 19988 の e17 で途絶えているが、設定の適用とその記録は止まらない（設計書 §3.9）ため `policy_state` には 20004 の行がある。**途絶えの判定を `events` で行うと、この端末が誤って並ぶ。**
+
+**`A` のキー名 `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` は 64 文字である。** `policy_state.key_name` は `VARCHAR(128)` であり（設計書 §5.2）、fixture には略記ではなく実キーをそのまま入れる。
 
 **`SessionStart` は `startup` / `resume` / `clear` / `compact` の 4 契機で発火する**（設計書 §5.2）。1 人 1 日に複数行が積まれるのが常態であり、fixture の u1 が 1 日 1 行でないのはそのためである。140 名 × 1 日 8 回 × 年 250 日 × 3 項目で年間 84 万行になる。
 
@@ -174,11 +184,11 @@ python -m pytest -q tests/test_fixtures.py
 
 | 画面の要素 | どのテーブルの何を、どの軸で | 完了をどう判定するか |
 | --- | --- | --- |
-| 最後に観測した値 | 直近 `RECENT_DAYS` 日に `day` で絞った `policy_state` の `prev_value` を、`user_email` × `host` で区切り `ts` の降順に採番した最新 1 行。**全期間に window 関数を走らせない**（設計書 §7.2） | 窓の中に行がある端末の数と同じ行数が返り、各行が最新の値であること。**窓より前にしか行が無い端末は一覧から外れる** |
-| 準拠率（施策項目別） | 分母は直近 `RECENT_DAYS` 日に `cost_daily` に行がある `user_email` の異なり数。分子はそのうち、**持っている端末のすべてで**最新の `prev_value` がポリシー値に一致する `user_email` の異なり数。**1 台でも未準拠なら、その利用者は未準拠とする**（設計書 §7.2） | 項目ごとに 1 行返ること。2 台持ちの利用者が、片方だけ準拠している状態で分子に入らないこと |
+| 最後に観測した値 | 直近 `POLICY_DAYS` 日に `day` で絞った `policy_state` の `prev_value` を、`user_email` × `host` で区切り `ts` の降順に採番した最新 1 行。**全期間に window 関数を走らせない**（設計書 §7.2） | 窓の中に行がある端末の数と同じ行数が返り、各行が最新の値であること。**窓より前にしか行が無い端末は一覧から外れる** |
+| 準拠率（施策項目別） | 分母は直近 `POLICY_DAYS` 日に `cost_daily` に行がある `user_email` の異なり数。分子はそのうち、**持っている端末のすべてで**最新の `prev_value` がポリシー値に一致する `user_email` の異なり数。**1 台でも未準拠なら、その利用者は未準拠とする**（設計書 §7.2） | 項目ごとに 1 行返ること。2 台持ちの利用者が、片方だけ準拠している状態で分子に入らないこと |
 | 未準拠者の一覧 | 最新 1 行のうち `prev_value` がポリシー値と一致しないもの。`user_email` / `host` / 最後に観測した値 / 最終観測日 | 準拠率の分子に入らなかった端末がそのまま並ぶこと |
-| 未導入者の一覧 | 直近 `RECENT_DAYS` 日の `cost_daily` に居て、同期間の `policy_state` に居ない `user_email` | `policy_state` が空の利用者だけが並ぶこと |
-| イベントが途絶えた端末 | `STALE_SCAN_DAYS` の窓内で `events` の `user_email` × `host` ごとの最終 `day`。基準日との差が `STALE_DAYS` 以上のもの | 窓の外の端末が混ざらないこと |
+| 未導入者の一覧 | 直近 `POLICY_DAYS` 日の `cost_daily` に居て、同期間の `policy_state` に居ない `user_email` | `policy_state` が空の利用者だけが並ぶこと |
+| イベントが途絶えた端末 | `POLICY_DAYS` の窓内で **`policy_state`** の `user_email` × `host` ごとの最終 `day`。基準日との差が `STALE_DAYS` 以上のもの | 窓の外の端末が混ざらないこと。**無効化スイッチを入れた端末が並ばないこと** |
 | `plugin_version` の分布 | 最新 1 行の `plugin_version` を数える | 端末数の合計が最新 1 行の行数に一致すること |
 
 `base.html` は、4 画面共通の骨格（見出し・4 画面へのリンク・表のスタイル・割合を表す CSS バー）だけを持つ。外部 CSS・JS・CDN を参照しない。
@@ -198,20 +208,22 @@ python -m pytest -q tests/test_fixtures.py
 | u3 | h3 | 60 | 4000 |
 | u3 | h3b | 80 | 4200 |
 | u5 | h5 | 80 | 5000 |
+| u7 | h7 | 60 | 900 |
+| u10 | h10 | 60 | 5100 |
 
 | 入力 | 期待値 |
 | --- | --- |
-| 項目 `K` の最新 1 行の行数 | 5 |
+| 項目 `K` の最新 1 行の行数 | 7 |
 | 同じ fixture に重複行を注入したあとの行数と内容 | 注入前と完全に一致 |
-| `GROUP BY user_email, host, prev_value` で実装した場合に起きること | u1 / u3・h3 / u5 がそれぞれ 2 行になり行数が 8 になる。**この差がテストで落ちること** |
-| u7（`day = 19990` の p12 だけを持つ端末）が一覧に現れるか | **現れない。**窓（`day >= 19999`）より前にしか行が無い |
-| `day` の絞り込みを外した場合に起きること | u7 が加わり行数が 6 になる。**この差がテストで落ちること** |
+| `GROUP BY user_email, host, prev_value` で実装した場合に起きること | u1 / u3・h3 / u5 がそれぞれ 2 行になり行数が 10 になる。**この差がテストで落ちること** |
+| u11（`day = 19970` の p17 だけを持つ端末）が一覧に現れるか | **現れない。**窓（`day >= 19976`）より前にしか行が無い |
+| `day` の絞り込みを外した場合に起きること | u11 が加わり行数が 8 になる。**この差がテストで落ちること** |
 
-準拠率・一覧（基準日 20005、`RECENT_DAYS = 7` → `day >= 19999`）
+準拠率・一覧（基準日 20005、`POLICY_DAYS = 30` → `day >= 19976`）
 
 | 画面の数字 | 期待値 |
 | --- | --- |
-| 分母（直近 7 日に `cost_daily` に居る利用者数） | 5（u1 u2 u3 u4 u5） |
+| 分母（直近 30 日に `cost_daily` に居る利用者数） | 5（u1 u2 u3 u4 u5） |
 | 項目 `K` の準拠者数 | 1（u1 のみ。**u3 は `h3b` が未準拠のため入らない**） |
 | 項目 `K` の準拠率 | 20.0% |
 | 項目 `A` の準拠者数 | 1（u1） |
@@ -222,9 +234,10 @@ python -m pytest -q tests/test_fixtures.py
 | 未準拠者の一覧（項目 `A`） | 2 行。u2 / h2 / false / 20000、u3 / h3b / （値なし） / 20003 |
 | 未準拠者の一覧（項目 `F`） | **0 行。**空の一覧がエラーにならず、表が空として描かれること |
 | 利用者単位に畳まずに端末の `user_email` を数えた場合に起きること（項目 `K`） | u3 の `h3` が一致するため準拠者が 2・率が 40.0% になる。**この差がテストで落ちること** |
-| 未導入者の一覧 | 1 行。u4（u7 は `cost_daily` に居ないため現れない） |
-| イベントが途絶えた端末（`STALE_DAYS = 14`） | 1 行。u10 / h10 / 最終 19988（基準日との差 17）。**u9（差 9）は 14 日未満のため並ばない** |
-| `plugin_version` の分布 | 1.4.0: 3、1.3.0: 2 |
+| 未導入者の一覧 | 1 行。u4（u7 u10 u11 は `cost_daily` に居ないため現れない） |
+| イベントが途絶えた端末（`policy_state`、`STALE_DAYS = 14`） | 1 行。u7 / h7 / 最終 19990（基準日との差 15） |
+| 途絶えを `events` で判定した場合に起きること | u7 が外れ、代わりに u10 / h10（最終 19988、差 17）が並ぶ。**無効化スイッチを入れた端末であり、設定の適用は届いている。この差がテストで落ちること** |
+| `plugin_version` の分布 | 1.4.0: 5、1.3.0: 2 |
 
 重複耐性（**上のすべての数字について、重複行を注入して再実行する**）
 
@@ -266,16 +279,17 @@ python -m pytest -q tests/test_queries_policy.py tests/test_views_policy.py
 
 **やること:**
 
-`queries_events.py` に次の 2 つを返す関数を置く。いずれも直近 `RECENT_DAYS` 日と、その 1 つ前の `RECENT_DAYS` 日を 2 本並べて返す。
+`queries_events.py` に次の 3 つを返す関数を置く。いずれも直近 `RECENT_DAYS` 日と、その 1 つ前の `RECENT_DAYS` 日を 2 本並べて返す。
 
 | 画面の要素 | どのテーブルの何を、どの軸で |
 | --- | --- |
 | スキル別 | `events` の `skill_name` が非 NULL の行を `skill_name` で束ね、呼出回数と利用者数を数える。呼出回数は `COUNT(DISTINCT event_id)`、利用者数は `COUNT(DISTINCT user_email)` |
 | コマンド別 | `events` の `command_name` が非 NULL の行を `command_name` × `command_source` で束ねる。値の分類辞書を持たず、生値のまま並べる |
+| サブエージェント利用の割合 | 直近 `RECENT_DAYS` 日のイベント全体に対する、`agent_id` が非 NULL のイベントの割合。**分子・分母とも `COUNT(DISTINCT event_id)`** |
 
-`assets.html` は、スキル別とコマンド別を直近／前の 2 列で並べた表 1 枚ずつで描く。
+`assets.html` は、スキル別とコマンド別を直近／前の 2 列で並べた表 1 枚ずつと、割合の 1 行で描く。
 
-**サブエージェント利用の割合は出さない。** 親子を紐付ける情報が hook の入力に無く、ツール呼出の件数はサブエージェント分を含む（設計書 §11.1）。`agent_id` は実サンプルに 1 件も現れておらず、届くかどうかも未検証である（§11.3）。この列を分子にした割合は、実態ではなく列の欠落を描く。
+**`agent_id` はサブエージェント内のツール呼出にのみ付く**ため、有無がそのまま親子の分離になる（設計書 §7.3）。親子を紐付ける辞書も、ツール呼出の分解も持たない。
 
 **根拠:** 設計書 §7.3 / §5.4
 
@@ -302,12 +316,20 @@ python -m pytest -q tests/test_queries_policy.py tests/test_views_policy.py
 
 `command_name` / `command_source` を持つのは `UserPromptExpansion` の e4（u1 / project）と e7（u2 / user）の 2 行だけである。
 
+サブエージェント利用の割合（直近 7 日）
+
+| 入力 | 期待値 |
+| --- | --- |
+| 分母（直近 7 日の全イベント） | 13 |
+| 分子（`agent_id` が非 NULL） | 2（e9 e10） |
+| 割合 | 15.4%（小数第 1 位まで） |
+
 重複耐性
 
 | 入力 | 期待値 |
 | --- | --- |
-| `events` の全行を複製して再実行 | 上の 2 つの表のすべての値が変化しない。特に pdf の呼出が 3 のままであること |
-| `COUNT(*)` で実装した場合に起きること | pdf の呼出が 6 になる。**この差がテストで落ちること** |
+| `events` の全行を複製して再実行 | 上の 3 つの表のすべての値が変化しない。特に pdf の呼出が 3 のまま、割合が 15.4% のままであること |
+| `COUNT(*)` で実装した場合に起きること | pdf の呼出が 6、分母が 26 になる。**この差がテストで落ちること** |
 
 画面の行数一致
 
@@ -315,7 +337,6 @@ python -m pytest -q tests/test_queries_policy.py tests/test_views_policy.py
 | --- | --- |
 | `/assets` のスキル表の行数 | 2 |
 | `/assets` のコマンド表の行数 | 2 |
-| `/assets` に `agent_id` に由来する要素が無いこと | 画面の本文に `agent_id` もサブエージェントの割合も現れない |
 
 **完了の判定:**
 
@@ -325,7 +346,7 @@ python -m pytest -q tests/test_queries_events.py tests/test_views_assets.py
 
 期待出力: 末尾に `passed` のみ。
 
-目視確認: タスク 2 と同じ起動手順で `http://127.0.0.1:5000/assets` を開く。見るもの: pdf と xlsx が直近／前の 2 列で並ぶこと、`review` が `project` と `user` の 2 行に分かれていること。
+目視確認: タスク 2 と同じ起動手順で `http://127.0.0.1:5000/assets` を開く。見るもの: pdf と xlsx が直近／前の 2 列で並ぶこと、`review` が `project` と `user` の 2 行に分かれていること、割合が 1 行で出ていること。
 
 **コミット:** `feat: /assets の集計と画面を追加`
 
@@ -349,11 +370,11 @@ python -m pytest -q tests/test_queries_events.py tests/test_views_assets.py
 | 健全性（SQL 1 本目） | 直近 `RECENT_DAYS` 日と前 `RECENT_DAYS` 日それぞれの、イベント件数（`COUNT(DISTINCT event_id)`）・送信端末数（`COUNT(DISTINCT user_email)`）・列ごとの NULL 率。**NULL 率の分子は `event_id` の異なり数で数える** |
 | 健全性（SQL 2 本目） | 突合率（直近 `RECENT_DAYS` 日に `events` を送った `user_email` のうち、同期間の `cost_daily` に居る割合）と、`plugin_version` の分布（タスク 2 の最新 1 行を再利用する） |
 
-**すべての集計を `day` で絞る。** 全期間を走査する集計を画面に置かない。
+**この画面の集計はすべて `day` で絞る。** `events` に対して全期間を走査する集計を画面に置かない（設計書 §5.1）。
 
 突合率は**人数で測る**（§2 の前提）。設計書 §9.2 の「分子も分母も `DISTINCT event_id` を通す」は件数と NULL 率のクエリに掛かる規約であり、突合率には掛からない。
 
-**`effort_level` と `permission_mode` の NULL 率は、非対話実行の比率でも動く**（設計書 §9.2）。この 2 列が跳ねたときは、キーの改名より先に実行形態の変化を疑う。画面はこの 2 列を他の列と同じ形で出し、分岐や注釈を持たない。
+**`effort_level` の NULL 率は、モデル依存で動く。** thinking に対応しないモデルでは届かないため、跳ねたらキーの改名より先にモデル構成の変化を疑う。内部のデータにモデルは無いため、確認は AI Gateway CSV の `model` 列で行う。**`permission_mode` は実行形態で値が動く**（非対話実行では対話時と違う値になる）。いずれも設計書 §9.2 の読み方であり、画面はこの 2 列を他の列と同じ形で出し、分岐や注釈を持たない。
 
 `overview.html` は、健全性の 1 行を画面の隅に置き、その下に推移の表と分布の表を並べる。
 
@@ -403,7 +424,7 @@ python -m pytest -q tests/test_queries_events.py tests/test_views_assets.py
 | `context_tokens` の NULL 率 | 84.6% | 100.0% |
 | `command_source` の NULL 率 | 84.6% | 100.0% |
 | 突合率 | 75.0%（直近 7 日に `events` を送った 4 人のうち、u1 u2 u3 が `cost_daily` に居て u8 が居ない） | — |
-| `plugin_version` の分布 | 1.4.0: 3、1.3.0: 2 | — |
+| `plugin_version` の分布 | 1.4.0: 5、1.3.0: 2 | — |
 
 重複耐性
 
@@ -446,7 +467,7 @@ python -m pytest -q tests/test_queries_events.py tests/test_health.py tests/test
 
 | 画面の要素 | どのテーブルの何を、どの軸で |
 | --- | --- |
-| 準拠開始日 | `policy_state` の、`key_name` がポリシー項目で `prev_value` がポリシー値に一致する行の `MIN(day)` を `user_email` で束ねる |
+| 準拠開始日 | `policy_state` の、`key_name` が基準の施策項目（`env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`）で `prev_value` がポリシー値に一致する行の `MIN(day)` を `user_email` で束ねる。**ここだけは `day` で絞らない**。性質上すべての行を見る必要があり、`(key_name, prev_value, user_email)` のインデックスで完結する（設計書 §5.1 / §5.2） |
 | 日次コスト | `cost_daily` の、対象 provider の行を `user_email` × `day` で束ね、`cost` と `input_tokens` を合計する |
 | イベントスタディ | 上の 2 つを Python で突き合わせ、相対日 `-EVENT_STUDY_SPAN`〜`+EVENT_STUDY_SPAN` に畳む。各相対日の「1 人あたり日次コスト」「1 人あたり日次入力トークン」と、**分母の人数**を同じ行に出す |
 | コンテキスト分布 | `events` の `hook_event` が `PreCompact` の行と `Stop` の行それぞれについて、`context_tokens` を `CONTEXT_BIN` 刻みのビンに落とし、`COUNT(DISTINCT event_id)` で数える。**利用者の準拠開始日より前／以後で 2 本に分ける** |
@@ -616,8 +637,8 @@ python -m pytest -q tests/test_fixtures.py tests/test_queries_*.py \
 - **4 画面すべての集計について、重複行を注入しても数字が 1 つも変わらない。**率が 100% を超える経路が無いことをテストで固定している。
 - `/effect` の集計の規約 3 つが、それぞれ独立したテストケースで落とせる状態にある。
 - `/policy` の「最後に観測した値」が、1 端末が 2 行以上を持つデータで正しい行を返し、`day` で絞った窓より前にしか行が無い端末を一覧から外す。
+- **途絶え端末の判定が `policy_state` に対して行われている。** 無効化スイッチを入れた端末（利用ログだけが途絶えた端末）が一覧に並ばない。
 - **`/policy` の準拠率が利用者単位に畳まれている。** 2 台持ちで片方だけ準拠している利用者が分子に入らず、一覧には未準拠の端末が行として出る。
-- `/assets` に `agent_id` を分子にした割合が無い。
 - SQL が `queries_events.py` / `queries_policy.py` / `ingest.py` / `csv_import.py` / `db.py` の 5 ファイルにのみ存在し、フレームワークの import が `app.py` にのみ存在することを `grep` で確認済みである（設計書 §4.1）。
 - サーバの全ファイルとテンプレートが 200 行以内である。
 - タスク 6 の 5 の pytest コマンドが通る。

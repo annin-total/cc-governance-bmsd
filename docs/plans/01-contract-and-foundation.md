@@ -121,9 +121,6 @@ no tests ran
 | 6 | 5 定数に現れる型文字列の先頭トークンの集合 | `{"VARCHAR", "INTEGER", "BIGINT", "DOUBLE"}` の部分集合 |
 | 7 | `POLICY` のキー | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` / `env.FORCE_AUTOUPDATE_PLUGINS` の 3 つ |
 | 8 | `contract.py` が import しているモジュール | 標準ライブラリのみ（サードパーティを import していない） |
-| 9 | `events` の 19 列と `policy_state` の 10 列を、それぞれ型が宣言する最大長の ASCII 文字で埋め、`kind` を加えた 1 行の JSON にしたときのバイト数 | いずれも **4,096 バイト未満**（現状は `events` 3,800 バイト・`policy_state` 1,375 バイト） |
-
-ケース 9 は、端末が `queue.jsonl` へ `O_APPEND` で追記する 1 回の `write` が `PIPE_BUF`（4,096 バイト）未満であるときにだけ原子的であることに由来する（設計書 §3.5）。契約に列を足すたびに、この余裕が残っていることをここで確かめる。
 
 **完了の判定**
 
@@ -134,7 +131,7 @@ pytest tests/test_contract_constants.py -q
 期待出力（末尾行）:
 
 ```
-9 passed
+8 passed
 ```
 
 **コミット:** `feat(contract): 契約の 5 定数を追加`

@@ -42,8 +42,8 @@ README §5 の共通制約に加えて、本計画だけに効く前提を置く
 | 受信トークン | `governance/config.json` に平文で入り、配布物に含まれる（設計書 §4.4）。**機密防御ではなく誤送信の防止のために置く**（§11.2）。リポジトリに入れてよい |
 | 案内の経路 | マーケットプレイスの登録とプラグインの導入は利用者が自分で行う。サーバから端末へ配る経路は持たない（§2.3） |
 | `POLICY` の項目 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` / `env.FORCE_AUTOUPDATE_PLUGINS` の 3 つ（設計書 §3.6）。本計画はこの中身を決めず、**キーが削除されていないこと**だけを検査する |
-| 利用者の画面に出るもの | お知らせ 1 件は **2,000 文字未満**、`hooks.json` の各コマンドは **1 行 100 文字未満**（設計書 §3.7 / §3.3）。どちらも利用者の画面に直接出るため、リリース時の検査に含める |
-| 自動更新 | **社外のマーケットプレイスは自動更新が既定で無効である**（設計書 §8.5）。有効化は `POLICY` の `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` によって SessionStart のたびに強制適用される（計画 [3] の担当）。**マーケットプレイスの登録をやり直すとこの設定は外れうるため、一度きりの設定ではない。** ユーザー設定の層でこの設定が効くかは**未検証**であり、効かなければ有効化は利用者の操作に依存する |
+| 利用者の画面に出るもの | お知らせ 1 件は目安として**日本語 600 字程度**まで、`hooks.json` の各コマンドは **1 行 100 文字未満**（設計書 §3.7 / §3.3）。どちらも利用者の画面に直接出るが、**リリース時の検査には含めない。** 文面は運用の判断であり、`hooks.json` は滅多に変わらない |
+| 自動更新 | **社外のマーケットプレイスは自動更新が既定で無効である**（設計書 §8.5）。有効化は `POLICY` の `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` によって SessionStart のたびに強制適用される（計画 [3] の担当）。**マーケットプレイスの登録をやり直すとこの設定は外れうるため、一度きりの設定ではない。** **`settings.json` が権威であることは実機で確認済み**であり、プラグインの書き込みでこの設定は維持できる（設計書 §3.6）。未検証なのは、有効にした結果として**実際に更新が降りてくるか**である（§11.3） |
 | 到達不能時の挙動 | **マーケットプレイスの `source` に到達できなくなっても、プラグインは止まらない**（設計書 §8.5）。取得に失敗した場合は端末にある複製がそのまま使われ、最後に同期した状態で動き続ける。止まるのは更新だけである |
 | 群の記録 | 記録するのは**案内した日付だけ**であり、誰がどの群かを個人単位で持たない。個人を特定する情報を開発リポジトリに置かない |
 | `claude plugin` CLI | 非対話で実行できる。`marketplace add|list|update|remove`、`install|update|uninstall`、`list [--json]`、`enable|disable` を使う |
@@ -173,12 +173,8 @@ rm ../cc-marketplace-governance-bmsd/plugins/governance/zzz.tmp
 - 検査 3「開発リポジトリと一致」— 除外パターンを除いて `governance/` と `plugins/governance/` が完全に一致することを確かめる。**差し込み漏れと差し込み過剰をここで同時に捕まえる**
 - 検査 4「名前の一致」— `plugin.json` の `name` が `governance` であり、`marketplace.json` の収録プラグイン名と一致することを確かめる
 - 検査 5「送信先が埋まっている」— `config.json` の送信先 URL と受信トークンが、どちらも空でない値であることを確かめる。**値の正しさはここでは見ない**（タスク 10 のリリース手順で突き合わせる）
-- 検査 6「お知らせの長さ」— `notices.json` の各要素の `title` と `body` を合わせた文字数が **2,000 文字未満**であることを確かめる。超えると Claude Code は出力をファイルに退避し、利用者が目にするのは途中で切れた文面と、開く気の起きないパスだけになる（設計書 §3.7）
-- 検査 7「hook のコマンド長」— `hooks.json` の各コマンドが **100 文字未満**の 1 行であり、パイプ・`;`・`&&`・リダイレクトを含まないことを確かめる。**hook の実行は、登録したコマンド文字列とともに利用者の画面に表示されうる**（設計書 §3.3）。長いワンライナーは、ツールを実行するたびに全文が画面に流れる
 
-検査 6 と 7 は、どちらも**利用者の画面に直接出るもの**の検査である。壊れても動作は止まらないため、テストでは捕まらない。リリースの手前で止める以外に気づく機会が無い。
-
-**根拠:** 設計書 §8.1（配布経路には配るものだけを置く）、§8.2（構造）、§4.4（トークンは `config.json` に平文で置き配布物に含める）、§8.3（リリース時に検査するもの）、§3.3 / §3.7
+**根拠:** 設計書 §8.1（配布経路には配るものだけを置く）、§8.2（構造）、§4.4（トークンは `config.json` に平文で置き配布物に含める）、§8.3（リリース時に検査するもの）
 
 **テスト:** なし。下記の判定がそのまま検査である。
 
@@ -198,12 +194,10 @@ scripts/release.sh --check-only ../cc-marketplace-governance-bmsd; echo $?
 [OK] 開発リポジトリと一致
 [OK] 名前の一致
 [OK] 送信先が埋まっている
-[OK] お知らせの長さ
-[OK] hook のコマンド長
 0
 ```
 
-落ちることも確かめる。3 通りを試し、確認したら必ず元に戻す。
+落ちることも確かめる。2 通りを試し、確認したら必ず元に戻す。
 
 ```
 mkdir -p ../cc-marketplace-governance-bmsd/plugins/governance/hooks/__pycache__
@@ -232,22 +226,9 @@ mv /tmp/config.json.bak ../cc-marketplace-governance-bmsd/plugins/governance/con
 1
 ```
 
-```
-python3 -c "import json,pathlib;p=pathlib.Path('governance/notices.json');d=json.loads(p.read_text());d.append({'id':'x','title':'t','body':'あ'*2000});p.write_text(json.dumps(d,ensure_ascii=False))"
-scripts/release.sh ../cc-marketplace-governance-bmsd >/dev/null
-scripts/release.sh --check-only ../cc-marketplace-governance-bmsd; echo $?
-```
+確認が終わったら差し込みと検査をもう 1 回通し、配布リポジトリの作業ツリーが clean であることを確かめる。
 
-期待出力（末尾 2 行）:
-
-```
-[NG] お知らせが長すぎる: x が 2001 文字（上限は 2000 文字未満）
-1
-```
-
-確認が終わったら `governance/notices.json` を元に戻し、差し込みと検査をもう 1 回通して配布リポジトリの作業ツリーを clean に戻す。
-
-**コミット:** `feat: 配布物の混入・差し込み漏れ・利用者に見えるものの長さを検査する`
+**コミット:** `feat: 配布物の混入と差し込み漏れを検査する`
 
 ---
 
@@ -260,7 +241,7 @@ scripts/release.sh --check-only ../cc-marketplace-governance-bmsd; echo $?
 
 **やること**
 
-- 検査 8「version」を足す
+- 検査 6「version」を足す
 - 配布リポジトリの `HEAD` に `plugins/governance` が無ければ（初回リリース）、この検査を飛ばして `[SKIP]` を出す
 - `HEAD` の `plugins/governance/.claude-plugin/plugin.json` と、差し込み後の作業ツリーのそれから `version` を取り出す
 - `plugins/governance/` に 1 ファイルでも変更があるのに `version` が同じなら `[NG]` で落とす
@@ -317,7 +298,7 @@ scripts/release.sh --check-only ../cc-marketplace-governance-bmsd; echo $?
 
 **やること**
 
-- 検査 9「POLICY のキー」を足す
+- 検査 7「POLICY のキー」を足す
 - 配布リポジトリの `HEAD` に `plugins/governance/hooks/contract.py` が無ければ飛ばして `[SKIP]` を出す
 - `HEAD` の `contract.py` を一時ディレクトリに取り出し、差し込み後のものと合わせて 2 つ読み込み、それぞれの `POLICY` のキー集合を取る。`contract.py` は純粋な定数と関数だけを持つ（設計書 §6）ため、読み込みに副作用が無い
 - 前回あって今回無いキーが 1 つでもあれば `[NG]` で落とし、メッセージに正しい手順を出す — 「`POLICY` に正しい値を書き、`version` を上げて配り直す。施策をやめる場合は Claude Code の既定値を書く」
@@ -378,7 +359,7 @@ scripts/release.sh --check-only ../cc-marketplace-governance-bmsd; echo $?
 2. **`version` を上げる** — `governance/.claude-plugin/plugin.json` の 1 か所。ここ以外に `version` を書く場所は無い
 3. **差し込んで検査する** — `scripts/release.sh` を実行する。差し込みに続けて検査が走る。**1 つでも `[NG]` が出たらリリースを中止する。** 検査だけを飛ばす手段は用意しない。配布リポジトリ側を手で編集しない
 4. **確認項目** — チェックリストとして並べる
-   - `POLICY` からキーを削除していない（検査 9 が見るが、意図としても確認する）
+   - `POLICY` からキーを削除していない（検査 7 が見るが、意図としても確認する）
    - `config.json` の送信先 URL が、デプロイ済みのサーバの URL と一致している
    - `config.json` の受信トークンが、サーバの Secret ファイルの `INGEST_TOKEN` と一致している。**一致していなければ全端末の送信が 401 で跳ね返り続ける**（設計書 §4.4）。端末は spool を保持するのでイベントは失われないが、誰も気づかないまま溜まる
    - 受信トークンが平文でリポジトリに入ることは設計上の前提である。**機密防御ではなく誤送信の防止のために置く**（設計書 §11.2）。到達制御はネットワーク境界が担う
@@ -623,7 +604,7 @@ SELECT DISTINCT plugin_version FROM policy_state;
 - [ ] `../cc-marketplace-governance-bmsd` が git リポジトリとして初期化され、`marketplace.json` に収録プラグインが 1 件ある
 - [ ] 配布リポジトリが親の `.gitignore` で除外され、開発リポジトリに入れ子でコミットされていない
 - [ ] 差し込みがスクリプト 1 本で行われ、手作業の手順が残っていない
-- [ ] 検査が、混入・差し込み漏れ・必須ファイル・名前の一致・送信先・お知らせの長さ・hook のコマンド長・`version`・`POLICY` のキー削除の 9 つを見る
+- [ ] 検査が、混入・差し込み漏れ・必須ファイル・名前の一致・送信先・`version`・`POLICY` のキー削除の 7 つを見る
 - [ ] `version` 据え置きのまま中身が変わったリリースが、検査で落ちることを実際に確認した
 - [ ] `POLICY` からキーを削除したリリースが、検査で落ちることを実際に確認した
 - [ ] `docs/release.md` だけを見て、変更 1 件のリリースを最初から最後まで通せる

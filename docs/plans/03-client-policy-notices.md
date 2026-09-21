@@ -41,7 +41,7 @@
 | `env` が hook に渡ること | `settings.json` の `env` に書いた環境変数は、hook プロセスを含む子プロセスに渡る。実機確認（タスク 12）はこれを利用する |
 | 設定ファイルのパスの解決 | 環境変数 `CLAUDE_CONFIG_DIR` があればそのディレクトリ、無ければ `~/.claude` の下の `settings.json`。Claude Code 自身が設定ディレクトリを同じ規則で解決するため、差し替えても本体と対象がずれない。**`CLAUDE_CONFIG_DIR` が実際に効くかはタスク 12 で確認する。効かなければ実機確認を `HOME` 差し替えに切り替える**（コード側の規則は変えない） |
 | 状態ディレクトリ（`seen.json`）のパス | [2] の `_identity` / `_queue` が使う解決規則にそのまま従う（`${CLAUDE_PLUGIN_DATA}`、無ければ `~/.claude/cc-governance/`）。この計画で別の規則を作らない |
-| お知らせの見え方 | 表示には **`SessionStart:<source> says: ` の接頭辞**が付く（`source` は `startup` / `resume` / `clear` / `compact`）。複数行では接頭辞が付くのは 1 行目だけである。**お知らせ 1 件は 2,000 文字未満**に収める（設計書 §3.7） |
+| お知らせの見え方 | 表示には **`SessionStart:<source> says: ` の接頭辞**が付く（`source` は `startup` / `resume` / `clear` / `compact`）。複数行では接頭辞が付くのは 1 行目だけである。**お知らせ 1 件は目安として日本語 600 字程度**までに収める（設計書 §3.7。義務ではなく、検査も設けない） |
 | `value` / `prev_value` の文字列表現 | 契約の `coerce(value, "VARCHAR(255)")` に従う（設計書 §3.2 の型変換の表）。文字列はそのまま、真偽値は `true` / `false`（小文字）、数値は十進表記、キーが無い場合は `None` |
 | 適用の対象範囲 | `POLICY` に列挙されたキーだけ。撤回（`POLICY` から消えたキーの削除）は行わない（設計書 §8.3） |
 | 上書き前の値の保存 | しない（設計書 §11.2）。`prev_value` として policy イベントに載せるところまでが保存の全部である |
@@ -290,7 +290,7 @@ $ python -m pytest tests/client/test_settings.py -q -k result
 **依存:** タスク 6、[2]（`_queue` / `_identity`）
 **やること:** `_settings` の返す結果 1 件につき policy イベントを 1 行、[2] のキューに積む。イベントが持つのは `event_id` / `ts` / `day` / `user_email` / `host` / `key_name` / `value` / `prev_value` / `apply_result` / `plugin_version`。
 
-`plugin_version` は `plugin.json` の `version` を読んで得る（[2] の `_identity` が同じ値を解決していればそれを使い、この計画で読み取りを二重に持たない）。
+`plugin_version` は **`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `version`** を読んで得る（設計書 §3.8）。解決は `_identity.py` に置き、この計画で読み取りを二重に持たない。
 
 **根拠:** 設計書 §3.6（policy イベントが持つもの）、§5.2
 
@@ -361,7 +361,8 @@ $ python -m pytest tests/client/test_session_start.py -q -k notices
 - 未読のお知らせを、hook の JSON 出力の **`systemMessage`** として返す。モデルに渡る経路（素の標準出力・`additionalContext`）には**一切載せない**
 - **既読に加えるのは出力が成功した後**。`seen.json` の更新は、標準出力への書き出しと `flush` が例外なく終わってから行う
 - 表示には **`SessionStart:<source> says: ` の接頭辞**が付く（`source` は `startup` / `resume` / `clear` / `compact`）。利用者はこの接頭辞込みで文面を読むため、**文面の先頭に「【お知らせ】」のような目印を重ねない**。複数行の場合、接頭辞が付くのは 1 行目だけである
-- **お知らせ 1 件の文面は 2,000 文字未満**に収める。これを超えると Claude Code は出力をファイルに退避し、先頭のプレビューとファイルパスだけを表示する。`notices.json` の各要素がこの上限を満たすことは、リリース時の検査で見る（計画 [7]）
+- **未読が複数あるときは、空行 1 つで区切って 1 つの `systemMessage` にまとめる。** 件ごとに `systemMessage` を出し分けず、接頭辞が付くのは全体の 1 行目だけである（設計書 §3.7）
+- **お知らせ 1 件の文面は、目安として日本語 600 字程度**までに収める。長い文面は Claude Code がファイルへ退避し、先頭のプレビューとパスだけが表示される（退避が始まるのは日本語で約 680 字、ASCII で約 2,000 字）。**これは目安であり、検査は設けない**（設計書 §3.7）
 
 **根拠:** 設計書 §3.7。素の標準出力はモデルが読む文脈として扱われるため、そのまま出すとお知らせの宛先が人ではなくモデルになる。業務指示を含む文面が全セッションでモデルへの指示として注入されると、**コストを下げる施策の効果測定に、モデルの応答傾向の変化が交絡する**。
 
@@ -379,12 +380,13 @@ $ python -m pytest tests/client/test_session_start.py -q -k notices
 | 9-8 | 未読 2 件。標準出力への書き出しを例外にする | **実行後の `seen.json` が実行前と同じ**（更新されていない）。終了コード 0 |
 | 9-9 | 9-8 を実行した後、もう一度正常に実行する | `n-001`, `n-002` が改めて出力される（表示されないまま消費されない） |
 | 9-10 | 未読 1 件・既読 1 件 | 実行後の `seen.json` が 2 件を含む（既存の既読が消えない） |
+| 9-11 | 未読 2 件 | `systemMessage` が **1 つの文字列**であり、2 件が**空行 1 つ**で区切られている。件ごとの接頭辞や目印を含まない |
 
 **完了の判定:**
 
 ```
 $ python -m pytest tests/client/test_session_start.py -q -k output
-10 passed
+11 passed
 ```
 
 **コミット:** `feat: お知らせを systemMessage で返し、出力成功後に既読にする`
@@ -521,7 +523,7 @@ env.FORCE_AUTOUPDATE_PLUGINS '1' already_ok
 
 1 回の起動につき 3 行（`POLICY` の項目数）が積まれる。`…autoUpdate` が 2 回とも `skipped_missing` であることは、この隔離環境にマーケットプレイスの登録が無いことの反映である。
 
-5. **`systemMessage` が接頭辞つきで画面に出ることを確認する。** `notices.json` に短い文面と 1,999 文字の文面を 1 件ずつ置いて対話モードで起動し、次を見る — `SessionStart:startup says: ` の接頭辞が付くこと、1,999 文字の文面が切り詰められずファイルへの退避も起きないこと、接頭辞が付くのが 1 行目だけであること（設計書 §3.7）
+5. **`systemMessage` が接頭辞つきで画面に出ることを確認する。** `notices.json` に短い文面と日本語 600 字の文面を 1 件ずつ置いて対話モードで起動し、次を見る — `SessionStart:startup says: ` の接頭辞が付くこと、600 字の文面がファイルへ退避されずそのまま出ること、**2 件が空行 1 つで区切られた 1 つのメッセージとして出ること**、接頭辞が付くのが 1 行目だけであること（設計書 §3.7）
 
 6. 既に別の値を持つ端末の挙動を確認する。隔離ディレクトリの `settings.json` の `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` を手で `"95"` に書き換えてから走らせ、`prev_value` が `"95"`・`apply_result` が `applied` になり、**同じファイル内の他のキーが失われていない**ことを確かめる
 
@@ -561,7 +563,7 @@ $ python -c "import json;print(len(json.load(open('governance/hooks/hooks.json')
 | 14 | `_settings.py` と `session_start.py` が 200 行以内 | タスク 5 / タスク 11 の `wc -l` |
 | 15 | 実機で隔離環境の設定ファイルだけが書き換わり、本人のものは不変 | タスク 12 手順 3 |
 | 16 | 2 回目の起動で `prev_value` が `"60"` になる | タスク 12 手順 4 |
-| 17 | `systemMessage` が `SessionStart:<source> says: ` の接頭辞つきで表示され、1,999 文字の文面が切り詰められない | タスク 12 手順 5 |
+| 17 | `systemMessage` が `SessionStart:<source> says: ` の接頭辞つきで表示され、日本語 600 字の文面が退避されない。未読 2 件が空行 1 つ区切りの 1 つのメッセージになる | タスク 12 手順 5 |
 | 18 | 隔離環境に `extraKnownMarketplaces` が作られず、`…autoUpdate` が `skipped_missing` として記録される | タスク 12 手順 2 / 手順 4 |
 
 完了したら `feat/client-policy-notices` を `main` にマージする。
