@@ -127,6 +127,18 @@ def _check_contract_columns(cur) -> None:
         raise RuntimeError(f"契約に存在するが実テーブルに無い列がある: {detail}")
 
 
+def analyze(conn) -> None:
+    """統計情報を更新する。方言分岐はここに閉じ、呼ぶ側に方言の知識を出さない。"""
+    cur = conn.cursor()
+    if _dialect() == "sqlite":
+        cur.execute("PRAGMA analysis_limit=400")
+        cur.execute("ANALYZE")
+    else:
+        for table in _TABLES:
+            cur.execute(f"ANALYZE TABLE {table}")
+    conn.commit()
+
+
 def init() -> None:
     """契約から DDL を組み立てて実行し、契約と実テーブルの列を突き合わせる。"""
     conn = connect()
