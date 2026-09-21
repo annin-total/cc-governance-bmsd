@@ -700,3 +700,19 @@ def test_bom_prefixed_utf8_csv_is_read(sqlite_db_dsn):
         assert _count_and_sum(conn) == (1, 9.0)
     finally:
         conn.close()
+
+
+# --- レビュー対応: M-3 --------------------------------------------------------
+
+
+def test_slash_format_file_reaches_day_via_import_file(sqlite_db_dsn):
+    """M-3: スラッシュ書式（slash.csv）が import_file を通って cost_daily の day まで届く。"""
+    db.init()
+    conn = db.connect()
+    try:
+        result = csv_import.import_file(str(FIXTURES / "slash.csv"), conn)
+        assert result == {"file": "slash.csv", "rows": 2, "dropped": 0}
+        assert _count_and_sum(conn) == (2, 15.0)
+        assert _sum_for_day(conn, 20666) == 15.0  # 2026/8/1 -> 20666
+    finally:
+        conn.close()
