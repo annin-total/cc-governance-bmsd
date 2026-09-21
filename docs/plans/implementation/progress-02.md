@@ -143,3 +143,63 @@ u = json.loads(line).get("message", {}).get("usage") or {}
 
   外れたときの損 — `_context.py` が将来 `message` から数値以外を取り出すように変わっても
   `grep` が気づかない。①②が実際の出力を見ているため、そちらで捕まる。
+
+### タスク 3〜5 のレビュー結果
+
+**Spec ❌。Critical 1 件、Important 2 件。**
+
+#### Critical C-1: 非 str の `transcript_path` で例外が漏れ、標準出力が閉じられる
+
+`_context.py` の `_read_tail` が `open(path, "rb")` を `except OSError` だけで囲っている。**制御側の実測:**
+
+```
+transcript_path が float → TypeError: expected str, bytes or os.PathLike object, not float
+transcript_path が True  → RuntimeWarning: bool is used as a file descriptor
+                           Exception ignored on flushing sys.stdout: OSError: [Errno 9] Bad file descriptor
+                           終了コード 120
+```
+
+`True` は **fd 1 として開かれ、`with` を抜けるときにプロセスの標準出力が閉じられる。**
+インタプリタ終了時の stdout フラッシュで**終了コードが 120** になり、入口の `try/except` では防げない。
+
+共通制約「**hook の終了コードは常に `exit 0`。標準エラーにも出さない**」に正面から違反する。
+`transcript_path` は上流の Claude Code が与える値であり、設計書 §9.1 が想定する「入力形式が変わる」経路そのもの。
+
+#### Important C-2: テストが利用者の実 `HOME` に書き込んでいた
+
+`test_collect_extract.py` と `test_collect_no_leak.py` が `CLAUDE_PLUGIN_DATA` を隔離しないまま
+`collect.extract_event` を呼ぶため、`_identity` のキャッシュ書き込みが実ホームに届いていた。
+
+**制御側が実測した中身:**
+
+```
+~/.claude/cc-governance/identity.json
+{"user_email": "130845842+annin-total@users.noreply.github.com"}   ← 利用者の実メールアドレス
+```
+
+`~/.claude` は git リポジトリだが、このパスは `.gitignore` 済みでコミットはされない。**制御側が削除済み。**
+premises「テストの隔離: `CLAUDE_PLUGIN_DATA` を一時ディレクトリに向ける」と、
+ハンドオフ「利用者本人の `~/.claude/` を書き換えない」に反する。
+
+#### Important C-3: 報告の検証主張が実際の出力と食い違っていた
+
+報告が「`grep` は 0 件」と書いていたが実際は 1 件ヒットする（裁定 R-28 の行）。コードは適合だが、
+完了条件の証拠として受け取る以上、逐語の出力に直させる。
+
+### 裁定
+
+- **R-29: `EXTRA_COLUMNS` の 7 列も契約の `coerce` を通す。**
+  理由 — 現状は通していないため、`context_tokens` が `usage` の float をそのまま返し、`NaN` / `Infinity` が
+  `json.dumps` で**非標準 JSON** として出力されうる。`hook_event`（`VARCHAR(64)`）等も桁で切り詰められない。
+  設計書 §3.2 は「桁に収める責務は契約だけが持ち、受信側で再解釈しない」「`hook_event` に想定より長い値が
+  1 つ来ただけで、そのリクエストのイベントがすべて失われる」と明記している。
+  **計画書は `coerce` を求めていないが、設計書が求めている。**
+  外れたときの損 — 正常な値に対しては何も変わらない（`day` / `ts` は int、文字列列は短い）。
+
+### 先送りした Minor（最後にまとめて判断する）
+
+| # | 指摘 |
+| --- | --- |
+| M-7 | `test_collect_extract.py` の #10 に `assert row["permission_mode"] is None or True` という常に真の行がある |
+| M-8 | `test_context.py` の #21 が `assert result is None or isinstance(result, int)` で実質何も固定していない |
+| M-9 | `test_collect_extract.py` が 349 行で「1 ファイル 200 行以内を目安」を超える（brief が 30 ケースを表で指定しているため妥当な結果ではある） |
