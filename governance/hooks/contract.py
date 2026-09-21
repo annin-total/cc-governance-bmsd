@@ -1,0 +1,65 @@
+"""端末プラグインとサーバが共有する契約の正本。標準ライブラリのみで動く。"""
+
+HOOK_FIELDS = (
+    # (列名, キーパス, 型) の 3 つ組。行末の註記は届く hook であって要素ではない
+    ("session_id", ("session_id",), "VARCHAR(255)"),  # 全 hook
+    ("prompt_id", ("prompt_id",), "VARCHAR(255)"),  # 広範
+    ("tool_name", ("tool_name",), "VARCHAR(255)"),  # PostToolUse / PostToolUseFailure
+    ("source", ("source",), "VARCHAR(255)"),  # SessionStart
+    ("compact_trigger", ("trigger",), "VARCHAR(255)"),  # PreCompact
+    ("command_name", ("command_name",), "VARCHAR(255)"),  # UserPromptExpansion
+    ("command_source", ("command_source",), "VARCHAR(255)"),  # UserPromptExpansion
+    ("skill_name", ("tool_input", "skill"), "VARCHAR(255)"),  # PostToolUse
+    ("effort_level", ("effort", "level"), "VARCHAR(255)"),  # PostToolUse / Stop / PostToolUseFailure
+    ("permission_mode", ("permission_mode",), "VARCHAR(255)"),  # 複数 hook
+    ("agent_id", ("agent_id",), "VARCHAR(255)"),  # サブエージェントのツール呼出
+    ("is_interrupt", ("is_interrupt",), "INTEGER"),  # PostToolUseFailure
+)
+
+EXTRA_COLUMNS = (
+    # 端末側で組み立てる列。(列名, 型) の 2 つ組
+    ("event_id", "VARCHAR(36)"),
+    ("ts", "INTEGER"),
+    ("day", "INTEGER"),
+    ("user_email", "VARCHAR(255)"),
+    ("host", "VARCHAR(255)"),
+    ("hook_event", "VARCHAR(64)"),
+    ("context_tokens", "INTEGER"),
+)
+
+POLICY_COLUMNS = (
+    # policy_state の列。(列名, 型) の 2 つ組
+    ("event_id", "VARCHAR(36)"),
+    ("ts", "INTEGER"),
+    ("day", "INTEGER"),
+    ("user_email", "VARCHAR(255)"),
+    ("host", "VARCHAR(255)"),
+    ("key_name", "VARCHAR(128)"),
+    ("value", "VARCHAR(255)"),
+    ("prev_value", "VARCHAR(255)"),
+    ("apply_result", "VARCHAR(32)"),
+    ("plugin_version", "VARCHAR(32)"),
+)
+
+POLICY = {
+    # settings.json 内のドット区切りパス -> 適用する値
+    "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60",
+    "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate": True,
+}
+
+CSV_COLUMNS = (
+    # (CSV ヘッダ名, DB 列名, 型) の 3 つ組。source_file はヘッダを持たないため None
+    ("Date", "day", "INTEGER"),
+    ("User Email", "user_email", "VARCHAR(255)"),
+    ("Provider", "provider", "VARCHAR(255)"),
+    ("Model", "model", "VARCHAR(255)"),
+    ("Currency", "currency", "VARCHAR(255)"),
+    ("Cost", "cost", "DOUBLE"),
+    ("Input Tokens", "input_tokens", "BIGINT"),
+    ("Output Tokens", "output_tokens", "BIGINT"),
+    ("Cache Read Tokens", "cache_read_tokens", "BIGINT"),
+    ("Cache Write Tokens", "cache_write_tokens", "BIGINT"),
+    ("Cached Input Tokens", "cached_input_tokens", "BIGINT"),
+    ("Uncached Input Tokens", "uncached_input_tokens", "BIGINT"),
+    (None, "source_file", "VARCHAR(255)"),
+)
