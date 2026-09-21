@@ -12,8 +12,10 @@ EXPECTED_KEYS = (
 
 
 @pytest.fixture(autouse=True)
-def _fixed_identity(monkeypatch):
-    """event_id / ts を固定し、実行順に依らない検証を可能にする。"""
+def _fixed_identity(monkeypatch, tmp_path):
+    """event_id / ts を固定し、実 HOME を書き換えないように状態ディレクトリを隔離する。"""
+    monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "plugin-data"))
+    monkeypatch.setenv("CC_GOVERNANCE_USER_EMAIL", "test@example.com")
     counter = iter(range(1, 10_000))
     monkeypatch.setattr(
         collect._identity, "new_event_id", lambda: f"event-{next(counter)}"

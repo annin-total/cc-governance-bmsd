@@ -3,9 +3,18 @@
 import json
 
 import collect
+import pytest
 from contract import HOOK_FIELDS, dig
 
 SENTINEL_PREFIX = "SENTINEL-"
+
+
+@pytest.fixture(autouse=True)
+def _isolate_state_dir(monkeypatch, tmp_path):
+    """実 HOME を書き換えないように状態ディレクトリを隔離し、user_email を固定する。"""
+    monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "plugin-data"))
+    monkeypatch.setenv("CC_GOVERNANCE_USER_EMAIL", "test@example.com")
+
 
 _ALL_HOOK_EVENTS = (
     "PostToolUse",
