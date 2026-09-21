@@ -5,6 +5,7 @@ import os
 from datetime import date
 from typing import Optional
 
+import db
 from shared import CSV_COLUMNS, coerce
 
 _EPOCH = date(1970, 1, 1)
@@ -85,3 +86,34 @@ def parse_file(path: str) -> tuple:
         else:
             parsed.append(extracted)
     return parsed, dropped
+
+
+def _import_rows(conn, rows: list) -> None:
+    """行が含む `day` の集合を DELETE してから全行を INSERT する。1 トランザクションで行う。
+
+    冪等キーは `day` であり、`source_file` は削除の条件に使わない。
+    """
+    if not rows:
+        return
+    days = sorted({row["day"] for row in rows})
+    cur = conn.cursor()
+    try:
+        placeholders = ", ".join("?" for _ in days)
+        cur.execute(db.q(f"DELETE FROM cost_daily WHERE day IN ({placeholders})"), days)
+        columns_sql = ", ".join(_DB_COLUMNS)
+        values_sql = ", ".join("?" for _ in _DB_COLUMNS)
+        cur.executemany(
+            db.q(f"INSERT INTO cost_daily ({columns_sql}) VALUES ({values_sql})"),
+            [tuple(row[name] for name in _DB_COLUMNS) for row in rows],
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+
+def import_file(path: str, conn) -> dict:
+    """1 ファイルを取り込み、`{"file", "rows", "dropped"}` を返す。"""
+    rows, dropped = parse_file(path)
+    _import_rows(conn, rows)
+    return {"file": os.path.basename(path), "rows": len(rows), "dropped": dropped}
