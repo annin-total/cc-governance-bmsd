@@ -5,7 +5,6 @@
 どの経路でも例外を外に出さず、終了コードは常に 0 とする。
 """
 
-import _queue
 import json
 import os
 import subprocess
@@ -15,15 +14,17 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Optional
 
+import _spool
+
 _CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
 
 _DEFAULT_CONFIG = {
     "ingest_url": "",
     "ingest_token": "",
-    "flush_interval_sec": _queue.DEFAULT_FLUSH_INTERVAL_SEC,
+    "flush_interval_sec": _spool.DEFAULT_FLUSH_INTERVAL_SEC,
     "timeout_sec": 60,
-    "spool_max_bytes": _queue.DEFAULT_SPOOL_MAX_BYTES,
-    "spool_max_days": _queue.DEFAULT_SPOOL_MAX_DAYS,
+    "spool_max_bytes": _spool.DEFAULT_SPOOL_MAX_BYTES,
+    "spool_max_days": _spool.DEFAULT_SPOOL_MAX_DAYS,
 }
 
 
@@ -41,7 +42,7 @@ def _load_config() -> Optional[dict[str, Any]]:
 
 def _spool_files_sorted() -> list[Path]:
     """spool 内の `.jsonl` ファイルを、ファイル名（epoch 昇順）でソートして返す。"""
-    spool_dir = _queue._spool_dir()
+    spool_dir = _spool._spool_dir()
     if not spool_dir.is_dir():
         return []
     return sorted(spool_dir.glob("*.jsonl"))
@@ -87,8 +88,8 @@ def run() -> None:
         config = _load_config()
         if config is None or not config["ingest_url"]:
             return
-        _queue.rotate()
-        _queue.prune(config["spool_max_bytes"], config["spool_max_days"])
+        _spool.rotate()
+        _spool.prune(config["spool_max_bytes"], config["spool_max_days"])
         for path in _spool_files_sorted():
             _post_file(path, config)
     except Exception:  # noqa: BLE001, S110 (送信プロセスは例外を外に出さない)

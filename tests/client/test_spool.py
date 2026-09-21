@@ -3,12 +3,12 @@
 `CLAUDE_PLUGIN_DATA` を一時ディレクトリに向けてテストを隔離する。
 """
 
-import _queue
 import json
 import os
 import re
 import time
 
+import _spool
 import pytest
 
 
@@ -29,8 +29,8 @@ def _read_lines(path):
 
 def test_append_once_from_empty():
     """#1: 空の状態で追記を 1 回 -> queue.jsonl が 1 行。JSON として読め、末尾が改行。"""
-    _queue.append({"a": 1})
-    path = _queue._queue_path()
+    _spool.append({"a": 1})
+    path = _spool._queue_path()
     lines = _read_lines(path)
     assert len(lines) == 1
     assert lines[0].endswith("\n")
@@ -39,10 +39,10 @@ def test_append_once_from_empty():
 
 def test_append_three_times_preserves_order():
     """#2: 追記を 3 回 -> 3 行。順序は追記順。"""
-    _queue.append({"n": 1})
-    _queue.append({"n": 2})
-    _queue.append({"n": 3})
-    lines = _read_lines(_queue._queue_path())
+    _spool.append({"n": 1})
+    _spool.append({"n": 2})
+    _spool.append({"n": 3})
+    lines = _read_lines(_spool._queue_path())
     assert [json.loads(line)["n"] for line in lines] == [1, 2, 3]
 
 
@@ -69,15 +69,15 @@ def test_append_calls_write_once(monkeypatch):
     def fake_open(path, mode="r", encoding=None):
         return _CountingFile(real_open(path, mode, encoding=encoding))
 
-    monkeypatch.setattr(_queue, "open", fake_open, raising=False)
-    _queue.append({"a": 1})
+    monkeypatch.setattr(_spool, "open", fake_open, raising=False)
+    _spool.append({"a": 1})
     assert len(calls) == 1
 
 
 def test_append_value_with_newline_stays_one_line():
     """#4: 値に改行を含む行を追記 -> 1 行に収まる（行数が 1）。"""
-    _queue.append({"text": "line1\nline2"})
-    lines = _read_lines(_queue._queue_path())
+    _spool.append({"text": "line1\nline2"})
+    lines = _read_lines(_spool._queue_path())
     assert len(lines) == 1
     assert json.loads(lines[0])["text"] == "line1\nline2"
 
@@ -85,16 +85,16 @@ def test_append_value_with_newline_stays_one_line():
 def test_append_non_ascii_round_trips():
     """#5: 値に非 ASCII を含む行を追記 -> 読み戻した値が元と一致。"""
     original = "日本語のテスト値-秘密ではない"
-    _queue.append({"text": original})
-    lines = _read_lines(_queue._queue_path())
+    _spool.append({"text": original})
+    lines = _read_lines(_spool._queue_path())
     assert json.loads(lines[0])["text"] == original
 
 
 def test_append_creates_missing_parent_dir(tmp_path):
     """#6: 親ディレクトリが無い状態で追記 -> ディレクトリを作って成功する。"""
-    path = _queue._queue_path()
+    path = _spool._queue_path()
     assert not path.parent.exists()
-    _queue.append({"a": 1})
+    _spool.append({"a": 1})
     assert path.exists()
 
 
@@ -105,13 +105,13 @@ def test_rotate_moves_three_lines():
     """#7: 3 行入った状態で退避 -> queue.jsonl が消え、spool/ に 1 ファイル。行数 3、内容一致。"""
     rows = [{"n": 1}, {"n": 2}, {"n": 3}]
     for row in rows:
-        _queue.append(row)
-    queue_path = _queue._queue_path()
+        _spool.append(row)
+    queue_path = _spool._queue_path()
 
-    _queue.rotate()
+    _spool.rotate()
 
     assert not queue_path.exists()
-    spool_files = list(_queue._spool_dir().iterdir())
+    spool_files = list(_spool._spool_dir().iterdir())
     assert len(spool_files) == 1
     lines = _read_lines(spool_files[0])
     assert len(lines) == 3
@@ -120,9 +120,9 @@ def test_rotate_moves_three_lines():
 
 def test_rotate_filename_pattern():
     """#8: 退避後のファイル名が `<10桁以上の数字>-<32桁の16進>.jsonl` に一致する。"""
-    _queue.append({"a": 1})
-    _queue.rotate()
-    spool_files = list(_queue._spool_dir().iterdir())
+    _spool.append({"a": 1})
+    _spool.rotate()
+    spool_files = list(_spool._spool_dir().iterdir())
     assert len(spool_files) == 1
     assert re.fullmatch(r"\d{10,}-[0-9a-f]{32}\.jsonl", spool_files[0].name)
 
@@ -130,16 +130,16 @@ def test_rotate_filename_pattern():
 def test_rotate_twice_with_fixed_time_keeps_two_files(monkeypatch):
     """#9: 時刻を固定したまま退避を 2 回（間に queue.jsonl を作り直す） -> spool/ に 2 ファイル。
     合計行数が保存される。"""
-    monkeypatch.setattr(_queue.time, "time", lambda: 1_700_000_000)
+    monkeypatch.setattr(_spool.time, "time", lambda: 1_700_000_000)
 
-    _queue.append({"n": 1})
-    _queue.append({"n": 2})
-    _queue.rotate()
+    _spool.append({"n": 1})
+    _spool.append({"n": 2})
+    _spool.rotate()
 
-    _queue.append({"n": 3})
-    _queue.rotate()
+    _spool.append({"n": 3})
+    _spool.rotate()
 
-    spool_files = list(_queue._spool_dir().iterdir())
+    spool_files = list(_spool._spool_dir().iterdir())
     assert len(spool_files) == 2
     total_lines = sum(len(_read_lines(p)) for p in spool_files)
     assert total_lines == 3
@@ -147,29 +147,29 @@ def test_rotate_twice_with_fixed_time_keeps_two_files(monkeypatch):
 
 def test_rotate_missing_queue_file_is_noop():
     """#10: queue.jsonl が無い状態で退避 -> 例外なし。spool/ にファイルを作らない。"""
-    assert not _queue._queue_path().exists()
-    _queue.rotate()
-    assert not _queue._spool_dir().exists() or list(_queue._spool_dir().iterdir()) == []
+    assert not _spool._queue_path().exists()
+    _spool.rotate()
+    assert not _spool._spool_dir().exists() or list(_spool._spool_dir().iterdir()) == []
 
 
 def test_rotate_empty_queue_file_is_noop():
     """#11: queue.jsonl が 0 バイトの状態で退避 -> 例外なし。spool/ にファイルを作らない。"""
-    path = _queue._queue_path()
+    path = _spool._queue_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.touch()
     assert path.stat().st_size == 0
 
-    _queue.rotate()
+    _spool.rotate()
 
     assert path.exists()
-    assert not _queue._spool_dir().exists() or list(_queue._spool_dir().iterdir()) == []
+    assert not _spool._spool_dir().exists() or list(_spool._spool_dir().iterdir()) == []
 
 
 # --- 送信条件 ---
 
 
 def _touch_sent_at_seconds_ago(seconds_ago):
-    path = _queue._sent_at_path()
+    path = _spool._sent_at_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.touch()
     mtime = time.time() - seconds_ago
@@ -178,35 +178,35 @@ def _touch_sent_at_seconds_ago(seconds_ago):
 
 def test_should_send_false_within_threshold():
     """#12: sent_at が 9 分 59 秒前 -> 偽。"""
-    _queue.append({"a": 1})
+    _spool.append({"a": 1})
     _touch_sent_at_seconds_ago(9 * 60 + 59)
-    assert _queue.should_send() is False
+    assert _spool.should_send() is False
 
 
 def test_should_send_true_past_threshold():
     """#13: sent_at が 10 分 1 秒前 -> 真。"""
-    _queue.append({"a": 1})
+    _spool.append({"a": 1})
     _touch_sent_at_seconds_ago(10 * 60 + 1)
-    assert _queue.should_send() is True
+    assert _spool.should_send() is True
 
 
 def test_should_send_true_when_sent_at_missing():
     """#14: sent_at が無い -> 真。"""
-    _queue.append({"a": 1})
-    assert not _queue._sent_at_path().exists()
-    assert _queue.should_send() is True
+    _spool.append({"a": 1})
+    assert not _spool._sent_at_path().exists()
+    assert _spool.should_send() is True
 
 
 def test_should_send_false_when_queue_missing():
     """#15: queue.jsonl が無い -> 偽（送るものが無い）。"""
-    assert not _queue._queue_path().exists()
-    assert _queue.should_send() is False
+    assert not _spool._queue_path().exists()
+    assert _spool.should_send() is False
 
 
 def test_mark_sent_updates_mtime_to_now():
     """#16: sent_at の更新を呼ぶ -> ファイルが作られ、mtime が現在時刻に近い。"""
-    _queue.mark_sent()
-    path = _queue._sent_at_path()
+    _spool.mark_sent()
+    path = _spool._sent_at_path()
     assert path.exists()
     assert abs(time.time() - path.stat().st_mtime) < 5
 
@@ -224,7 +224,7 @@ def _make_spool_file(spool_dir, name, size_bytes, mtime):
 
 def test_prune_under_limits_deletes_nothing():
     """#17: spool 合計 4.9MB、いずれも 1 日前 -> 1 件も削除しない。"""
-    spool_dir = _queue._spool_dir()
+    spool_dir = _spool._spool_dir()
     now = time.time()
     one_day_ago = now - 86400
     total = int(4.9 * 1024 * 1024)
@@ -234,7 +234,7 @@ def test_prune_under_limits_deletes_nothing():
             spool_dir, f"{1000 + i}-{'a' * 32}.jsonl", per_file, one_day_ago
         )
 
-    _queue.prune()
+    _spool.prune()
 
     assert len(list(spool_dir.iterdir())) == 5
 
@@ -242,7 +242,7 @@ def test_prune_under_limits_deletes_nothing():
 def test_prune_over_size_deletes_oldest_first():
     """#18: 1MB x 6 件（mtime が 1 分ずつ古い） -> 合計 5MB 以下になるまで古い順に削除。
     残るのは新しい 5 件。"""
-    spool_dir = _queue._spool_dir()
+    spool_dir = _spool._spool_dir()
     now = time.time()
     one_mb = 1024 * 1024
     names = []
@@ -252,7 +252,7 @@ def test_prune_over_size_deletes_oldest_first():
         names.append((name, mtime))
         _make_spool_file(spool_dir, name, one_mb, mtime)
 
-    _queue.prune()
+    _spool.prune()
 
     remaining = {p.name for p in spool_dir.iterdir()}
     oldest_name = names[5][0]  # i=5 -> now - 300 -> 最も古い
@@ -264,41 +264,41 @@ def test_prune_over_size_deletes_oldest_first():
 
 def test_prune_deletes_file_older_than_max_days():
     """#19: mtime が 7 日 1 秒前の 1 件、合計 1KB -> 削除する。"""
-    spool_dir = _queue._spool_dir()
+    spool_dir = _spool._spool_dir()
     mtime = time.time() - (7 * 86400 + 1)
     _make_spool_file(spool_dir, f"{3000}-{'c' * 32}.jsonl", 1024, mtime)
 
-    _queue.prune()
+    _spool.prune()
 
     assert list(spool_dir.iterdir()) == []
 
 
 def test_prune_keeps_file_within_max_days():
     """#20: mtime が 6 日前の 1 件 -> 残す。"""
-    spool_dir = _queue._spool_dir()
+    spool_dir = _spool._spool_dir()
     mtime = time.time() - 6 * 86400
     path = _make_spool_file(spool_dir, f"{4000}-{'d' * 32}.jsonl", 1024, mtime)
 
-    _queue.prune()
+    _spool.prune()
 
     assert path.exists()
 
 
 def test_prune_missing_spool_dir_is_noop():
     """#21: spool/ が無い -> 例外なし。"""
-    assert not _queue._spool_dir().exists()
-    _queue.prune()
+    assert not _spool._spool_dir().exists()
+    _spool.prune()
 
 
 def test_prune_ignores_non_jsonl_files():
     """#22: spool/ に .jsonl 以外のファイルがある -> 対象にしない。例外なし。"""
-    spool_dir = _queue._spool_dir()
+    spool_dir = _spool._spool_dir()
     spool_dir.mkdir(parents=True, exist_ok=True)
     other = spool_dir / "note.txt"
     other.write_bytes(b"x" * (10 * 1024 * 1024))
     old_mtime = time.time() - 30 * 86400
     os.utime(other, (old_mtime, old_mtime))
 
-    _queue.prune()
+    _spool.prune()
 
     assert other.exists()

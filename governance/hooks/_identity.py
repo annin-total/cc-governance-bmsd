@@ -1,6 +1,6 @@
 """識別子（user_email / host / event_id）の解決とキャッシュ。標準ライブラリのみで動く。
 
-状態ディレクトリの解決規則は `_queue.py` の 1 か所に置く。ここではそれを呼ぶだけにする。
+状態ディレクトリの解決規則は `_spool.py` の 1 か所に置く。ここではそれを呼ぶだけにする。
 """
 
 import json
@@ -8,9 +8,10 @@ import os
 import platform
 import subprocess
 import uuid
-from _queue import _state_dir
 from pathlib import Path
 from typing import Optional
+
+from _spool import _state_dir
 
 _ENV_USER_EMAIL = "CC_GOVERNANCE_USER_EMAIL"
 

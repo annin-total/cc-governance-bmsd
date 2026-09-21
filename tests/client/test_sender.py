@@ -4,7 +4,6 @@
 `_sender._CONFIG_PATH` を一時ファイルに向けて `config.json` の実体から切り離す。
 """
 
-import _queue
 import http.server
 import json
 import os
@@ -14,6 +13,7 @@ import time
 from typing import ClassVar
 
 import _sender
+import _spool
 import pytest
 
 
@@ -126,7 +126,7 @@ def _write_config(monkeypatch, tmp_path, **overrides):
 
 def _seed_spool_file(name, rows, mtime=None):
     """spool/ に、渡した行から作った `.jsonl` ファイルを 1 つ置く。"""
-    spool_dir = _queue._spool_dir()
+    spool_dir = _spool._spool_dir()
     spool_dir.mkdir(parents=True, exist_ok=True)
     path = spool_dir / name
     text = "".join(json.dumps(row) + "\n" for row in rows)
@@ -138,7 +138,7 @@ def _seed_spool_file(name, rows, mtime=None):
 
 def _seed_spool_bytes(name, size_bytes, mtime):
     """指定サイズの spool ファイルを置く（破棄の検査用）。"""
-    spool_dir = _queue._spool_dir()
+    spool_dir = _spool._spool_dir()
     spool_dir.mkdir(parents=True, exist_ok=True)
     path = spool_dir / name
     path.write_bytes(b"x" * size_bytes)
@@ -286,9 +286,9 @@ def test_queue_is_rotated_before_posting(server, monkeypatch, tmp_path):
     """#13: 実行前に queue.jsonl が 2 行ある -> 退避されてから POST される。POST 後に queue.jsonl が無い。"""
     srv = server(status_codes=[200])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    _queue.append({"n": 1})
-    _queue.append({"n": 2})
-    queue_path = _queue._queue_path()
+    _spool.append({"n": 1})
+    _spool.append({"n": 2})
+    queue_path = _spool._queue_path()
 
     _sender.run()
 
