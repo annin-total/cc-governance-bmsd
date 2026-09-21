@@ -107,6 +107,16 @@ def test_wrong_token_rejected(ingest_client):
     assert _count("events") == 0
 
 
+def test_non_ascii_token_rejected_with_401(ingest_client):
+    """# K-1: 非 ASCII を含むヘッダは 401 で拒否する（500 になってはならない）。"""
+    body = "\n".join([_event_line("e1"), _event_line("e2")])
+    response = ingest_client.post(
+        "/ingest", data=body, headers={"X-Ingest-Token": "tok\xa0"}
+    )
+    assert response.status_code == 401
+    assert _count("events") == 0
+
+
 def test_server_token_unset_rejected(ingest_client):
     """# 7: サーバの `INGEST_TOKEN` が未設定 + 正しそうなトークン + 正常な 2 行 -> 401。"""
     os.environ.pop("INGEST_TOKEN", None)
