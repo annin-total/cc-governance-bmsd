@@ -4,7 +4,7 @@ import os
 import sqlite3
 from urllib.parse import urlparse
 
-from shared import ddl
+from shared import CSV_COLUMNS, EXTRA_COLUMNS, HOOK_FIELDS, POLICY_COLUMNS, ddl
 
 _SQLITE_PATH_PREFIX = "sqlite:///"
 
@@ -93,13 +93,48 @@ def _create_missing_indexes(cur) -> None:
         cur.execute(f"CREATE INDEX {name} ON {table} ({columns_sql})")
 
 
+def _existing_columns(cur, table: str) -> set:
+    """実テーブルの列名の集合を取る（方言分岐はここ）。"""
+    if _dialect() == "sqlite":
+        cur.execute(f"PRAGMA table_info({table})")
+        return {row[1] for row in cur.fetchall()}
+    cur.execute(f"SHOW COLUMNS FROM {table}")
+    return {row[0] for row in cur.fetchall()}
+
+
+def _required_columns() -> dict:
+    """契約が要求する列名の集合を、テーブル名ごとにまとめる。"""
+    return {
+        "events": {name for name, _ in EXTRA_COLUMNS}
+        | {name for name, _, _ in HOOK_FIELDS},
+        "policy_state": {name for name, _ in POLICY_COLUMNS},
+        "cost_daily": {db_name for _, db_name, _ in CSV_COLUMNS},
+    }
+
+
+def _check_contract_columns(cur) -> None:
+    """契約が要求する列がすべて実テーブルにあるか確かめる。無ければ全件まとめて例外にする。"""
+    missing_by_table = {}
+    for table, required in _required_columns().items():
+        missing = required - _existing_columns(cur, table)
+        if missing:
+            missing_by_table[table] = sorted(missing)
+    if missing_by_table:
+        detail = "; ".join(
+            f"{table}: {', '.join(columns)}"
+            for table, columns in missing_by_table.items()
+        )
+        raise RuntimeError(f"契約に存在するが実テーブルに無い列がある: {detail}")
+
+
 def init() -> None:
-    """契約から DDL を組み立てて実行し、不足しているインデックスを作る。"""
+    """契約から DDL を組み立てて実行し、契約と実テーブルの列を突き合わせる。"""
     conn = connect()
     try:
         cur = conn.cursor()
         for statement in ddl():
             cur.execute(statement)
+        _check_contract_columns(cur)
         _create_missing_indexes(cur)
         conn.commit()
     finally:
