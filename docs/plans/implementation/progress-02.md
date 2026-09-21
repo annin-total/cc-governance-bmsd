@@ -428,3 +428,16 @@ queue.jsonl : 8 行。kind / event_id / ts / day / user_email / host / hook_even
 | M-18 | `collect.py` の `hook_event` の型注釈が `str` だが `None` を渡す経路がある。`Optional[str]` が正しい（R-42 の修正に同梱する） |
 | M-19 | `mark_sent()` の `mkdir` が冗長（`should_send()` が真＝親ディレクトリは存在する） |
 | M-20 | テストファイルが 200 行の目安を超える（248 / 285 行）。fixture が 2 ファイルで重複している |
+
+### 監督役による R-42 / R-43 の実測確認（2026-09-22）
+
+| 確認項目 | 方法 | 結果 |
+| --- | --- | --- |
+| R-42 SIGINT を無視する | hook 起動 45ms 後に SIGINT を送る × 10 回 | **10/10 が rc=0・stderr 空**。修正前は rc=-2 で 792 バイトの traceback |
+| R-42 `_signal` の可搬性 | python 3.9.6 / 3.13.2 / 3.14.7 で `_signal` を import | 3 つとも `sys.builtin_module_names` に含まれる。`SIG_IGN == 1` |
+| R-42 `_signal` を選ぶ理由 | `python -X importtime` | `_signal` 66µs に対し `signal` 4,615µs。40ms 台の hook では無視できない差 |
+| R-43 送信経路の遅延 import | `PostToolUse` で `sys.modules` を検査 | `_sender` / `urllib` / `ssl` のいずれも import されない。実行時間 0.08 秒 → **0.04〜0.05 秒** |
+| R-43 `Stop` は従来どおり | 同上 | `_sender` を import する（32ms）。送信条件の判定に要るため意図どおり |
+
+`_signal` は私有モジュールだが、CPython に常に組み込まれる builtin であり、
+`signal` モジュール自体がこれを enum でラップしているだけである。3 つの版で実在を確認した。

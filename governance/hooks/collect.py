@@ -5,6 +5,14 @@
 送信条件を判定して送信プロセスを起動する。例外は外に出さず、常に exit 0 とする。
 """
 
+import _signal
+
+# R-42: `except BaseException` は `main()` の実行中しか守らない。SIGINT がこの下の
+# import 文の最中に届くと、まだ try 節の外であるためトレースバックが標準エラーに漏れる
+# （実測で確認済み）。`_signal` は enum ラッパーを介さない素の C 拡張であり、
+# import より前に SIGINT を無視することで、この窓を最小化する。
+_signal.signal(_signal.SIGINT, _signal.SIG_IGN)
+
 import json
 import os
 import sys
@@ -13,7 +21,6 @@ from typing import Any, Optional
 
 import _context
 import _identity
-import _sender
 import _spool
 from contract import EXTRA_COLUMNS, HOOK_FIELDS, coerce, dig, to_day
 
@@ -22,7 +29,7 @@ _SEND_CHECK_HOOK_EVENTS = ("SessionStart", "Stop")
 _DISABLE_ENV = "CC_GOVERNANCE_DISABLE"
 
 
-def extract_event(raw_input: Any, hook_event: str) -> dict[str, Any]:
+def extract_event(raw_input: Any, hook_event: Optional[str]) -> dict[str, Any]:
     """hook 入力から送信する1行分の dict を組み立てる。
 
     `raw_input` が dict でない場合も例外にせず、HOOK_FIELDS 由来の列をすべて None にする。
@@ -51,7 +58,7 @@ def extract_event(raw_input: Any, hook_event: str) -> dict[str, Any]:
     return row
 
 
-def _resolve_context_tokens(obj: dict, hook_event: str):
+def _resolve_context_tokens(obj: dict, hook_event: Optional[str]):
     """`PreCompact` / `Stop` のときだけ transcript から context_tokens を算出する。"""
     if hook_event not in _CONTEXT_TOKEN_HOOK_EVENTS:
         return None
@@ -86,11 +93,15 @@ def main() -> None:
 
     if hook_event in _SEND_CHECK_HOOK_EVENTS and _spool.should_send():
         _spool.mark_sent()
+        import _sender
+
         _sender.launch()
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さず常に exit 0)
+    except BaseException:  # noqa: BLE001, S110 (hook は例外を外に出さず常に exit 0。SIGINT による
+        # KeyboardInterrupt も含めて画面を汚さない。インタプリタ起動中の SIGINT はこの try の
+        # 外側で発生するため防げないが、その窓では標準エラーへの出力自体がまだ無い)
         pass
