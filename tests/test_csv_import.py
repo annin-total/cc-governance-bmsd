@@ -600,3 +600,25 @@ def test_csv_import_has_no_flask_import():
     """8-2: `csv_import.py` に flask の import が無い（この計画の成果物を名指しで守る）。"""
     hits = _framework_import_lines(_SERVER_DIR / "csv_import.py")
     assert hits == []
+
+
+def test_scan_skips_file_with_missing_required_column(sqlite_db_dsn, tmp_path):
+    """必須列を欠くファイルが混在しても、他のファイルの取込を止めない。"""
+    _copy_fixture(tmp_path, "daily_a.csv")
+    header = "Workspace ID,User Name"
+    (tmp_path / "unrelated.csv").write_bytes(
+        (header + "\r\nworkspace-01,someone\r\n").encode("utf-8")
+    )
+
+    db.init()
+    conn = db.connect()
+    try:
+        results = csv_import.import_all(str(tmp_path), conn)
+
+        assert len(results) == 2
+        by_file = {r["file"]: r for r in results}
+        assert by_file["daily_a.csv"]["rows"] == 3
+        assert "error" in by_file["unrelated.csv"]
+        assert _count_and_sum(conn) == (3, 6.0)
+    finally:
+        conn.close()

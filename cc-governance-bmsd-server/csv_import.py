@@ -127,11 +127,20 @@ def _list_csv_files(csv_dir: str) -> list:
     return sorted(glob.glob(os.path.join(csv_dir, "*.csv")))
 
 
+def _import_file_or_error(path: str, conn) -> dict:
+    """1 ファイルを取り込む。必須列が無い等で失敗したら、そのファイルだけを失敗として報告する。"""
+    try:
+        return import_file(path, conn)
+    except ValueError as exc:
+        return {"file": os.path.basename(path), "error": str(exc)}
+
+
 def import_all(csv_dir: str, conn) -> list:
     """`csv_dir` 配下の全 `*.csv` を毎回取り直し、最後に `db.analyze()` を 1 回だけ呼ぶ。
 
     未取込判定は持たない。ファイルが 1 つも無くても analyze は呼ぶ。
+    1 ファイルの解釈失敗は他のファイルの取込を止めない。
     """
-    results = [import_file(path, conn) for path in _list_csv_files(csv_dir)]
+    results = [_import_file_or_error(path, conn) for path in _list_csv_files(csv_dir)]
     db.analyze(conn)
     return results
