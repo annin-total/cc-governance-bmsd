@@ -73,3 +73,61 @@ def dig(obj: Any, path: Tuple[str, ...]) -> Optional[Any]:
     for key in path:
         cur = cur.get(key) if isinstance(cur, dict) else None
     return cur
+
+
+def _varchar_length(type_str: str) -> int:
+    """`VARCHAR(n)` から宣言長 n を取り出す。"""
+    start = type_str.index("(") + 1
+    end = type_str.index(")")
+    return int(type_str[start:end])
+
+
+def _coerce_varchar(value: Any, type_str: str) -> str:
+    """VARCHAR へ変換する。真偽値は小文字にし、宣言長で切り詰める。"""
+    if isinstance(value, bool):
+        text = "true" if value else "false"
+    else:
+        text = str(value)
+    return text[: _varchar_length(type_str)]
+
+
+def _coerce_int_like(value: Any) -> Optional[int]:
+    """INTEGER / BIGINT へ変換する。真偽値・整数・整数文字列のみ int に寄せる。"""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _coerce_double(value: Any) -> Optional[float]:
+    """DOUBLE へ変換する。数値・数値文字列のみ float に寄せる。"""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+def coerce(value: Any, type_str: str) -> Any:
+    """列の型に合わせて値を変換する。None はそのまま通す。"""
+    if value is None:
+        return None
+    token = type_str.split("(")[0]
+    if token == "VARCHAR":
+        return _coerce_varchar(value, type_str)
+    if token in ("INTEGER", "BIGINT"):
+        return _coerce_int_like(value)
+    if token == "DOUBLE":
+        return _coerce_double(value)
+    return None
