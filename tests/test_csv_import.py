@@ -4,6 +4,7 @@
 """
 
 import os
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -566,3 +567,36 @@ def test_form_action_follows_base_path(sqlite_db_dsn):
         else:
             os.environ["BASE_PATH"] = original_base_path
         importlib.reload(app_module)
+
+
+# --- タスク 8: フレームワークの import が app.py だけに現れることの検査 -------
+
+_FRAMEWORK_IMPORT_RE = re.compile(
+    r"^\s*(import|from)\s+(flask|werkzeug|jinja2|waitress)\b", re.IGNORECASE
+)
+
+_SERVER_DIR = Path(__file__).parent.parent / "cc-governance-bmsd-server"
+
+
+def _framework_import_lines(path: Path) -> list:
+    """1 ファイルの中から、フレームワーク名の import 行を探す。"""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return [line for line in lines if _FRAMEWORK_IMPORT_RE.match(line)]
+
+
+def test_framework_import_appears_only_in_app_py():
+    """8-1: `app.py` を除く `*.py` にフレームワーク名の import が現れない。"""
+    offenders = {}
+    for path in _SERVER_DIR.glob("*.py"):
+        if path.name == "app.py":
+            continue
+        hits = _framework_import_lines(path)
+        if hits:
+            offenders[path.name] = hits
+    assert offenders == {}
+
+
+def test_csv_import_has_no_flask_import():
+    """8-2: `csv_import.py` に flask の import が無い（この計画の成果物を名指しで守る）。"""
+    hits = _framework_import_lines(_SERVER_DIR / "csv_import.py")
+    assert hits == []
