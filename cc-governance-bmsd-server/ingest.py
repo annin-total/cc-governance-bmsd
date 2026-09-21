@@ -3,6 +3,7 @@
 import json
 from typing import Optional
 
+import db
 from shared import EXTRA_COLUMNS, HOOK_FIELDS, POLICY_COLUMNS, coerce, to_day
 
 _KINDS = ("event", "policy")
@@ -66,3 +67,35 @@ def parse_lines(raw: bytes) -> tuple:
         else:
             rows.append(parsed)
     return rows, dropped
+
+
+def _insert(cur, table: str, columns: tuple, values: list) -> None:
+    """1 テーブル分を `executemany` で INSERT する。行が無ければ何もしない。"""
+    if not values:
+        return
+    names = ", ".join(name for name, _ in columns)
+    placeholders = ", ".join("?" for _ in columns)
+    sql = db.q(f"INSERT INTO {table} ({names}) VALUES ({placeholders})")
+    cur.executemany(sql, values)
+
+
+def ingest(raw: bytes, conn) -> dict:
+    """NDJSON を検査・kind で振り分け、1 トランザクションで保存する。
+
+    書き込みが失敗したら rollback し、例外をそのまま送出する。
+    """
+    rows, dropped = parse_lines(raw)
+    by_kind: dict = {"event": [], "policy": []}
+    for kind, values in rows:
+        by_kind[kind].append(values)
+
+    cur = conn.cursor()
+    try:
+        for kind, (table, columns) in _TABLE_COLUMNS.items():
+            _insert(cur, table, columns, by_kind[kind])
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+    return {"stored": len(rows), "dropped": dropped}
