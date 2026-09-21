@@ -86,27 +86,41 @@ def _varchar_length(type_str: str) -> int:
     return int(type_str[start:end])
 
 
-def _coerce_varchar(value: Any, type_str: str) -> str:
-    """VARCHAR へ変換する。真偽値は小文字にし、宣言長で切り詰める。"""
+def _coerce_varchar(value: Any, type_str: str) -> Optional[str]:
+    """VARCHAR へ変換する。スカラでない値（dict・list 等）は None にする。
+
+    符号化できない文字（孤立サロゲート等）は置換してから、宣言長で切り詰める。
+    """
     if isinstance(value, bool):
         text = "true" if value else "false"
-    else:
+    elif isinstance(value, (str, int, float)):
         text = str(value)
+    else:
+        return None
+    text = text.encode("utf-8", "replace").decode("utf-8")
     return text[: _varchar_length(type_str)]
 
 
+_INT64_MIN = -(2**63)
+_INT64_MAX = 2**63 - 1
+
+
 def _coerce_int_like(value: Any) -> Optional[int]:
-    """INTEGER / BIGINT へ変換する。真偽値・整数・整数文字列のみ int に寄せる。"""
+    """INTEGER / BIGINT へ変換する。真偽値・整数・整数文字列のみ int に寄せ、符号付き 64bit の範囲に収める。"""
     if isinstance(value, bool):
         return int(value)
     if isinstance(value, int):
-        return value
-    if isinstance(value, str):
+        result = value
+    elif isinstance(value, str):
         try:
-            return int(value)
+            result = int(value)
         except ValueError:
             return None
-    return None
+    else:
+        return None
+    if result < _INT64_MIN or result > _INT64_MAX:
+        return None
+    return result
 
 
 def _coerce_double(value: Any) -> Optional[float]:

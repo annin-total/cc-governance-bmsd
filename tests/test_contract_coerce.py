@@ -96,3 +96,45 @@ def test_varchar_exact_length_not_truncated():
 def test_varchar_truncate_by_character_count():
     value = "あ" * 40
     assert contract.coerce(value, "VARCHAR(32)") == "あ" * 32
+
+
+def test_integer_over_signed_64bit_max_is_none():
+    assert contract.coerce(2**63, "INTEGER") is None
+
+
+def test_integer_under_signed_64bit_min_is_none():
+    assert contract.coerce(-(2**63) - 1, "INTEGER") is None
+
+
+def test_integer_at_signed_64bit_max_passes():
+    assert contract.coerce(2**63 - 1, "INTEGER") == 2**63 - 1
+
+
+def test_integer_at_signed_64bit_min_passes():
+    assert contract.coerce(-(2**63), "INTEGER") == -(2**63)
+
+
+def test_integer_40_digit_string_is_none():
+    assert contract.coerce("1" * 40, "INTEGER") is None
+
+
+def test_varchar_lone_surrogate_is_replaced():
+    result = contract.coerce("\ud800", "VARCHAR(255)")
+    assert "\ud800" not in result
+    result.encode("utf-8")  # 例外にならないこと（符号化できることの確認）
+
+
+def test_varchar_lone_surrogate_is_replaced_then_truncated():
+    value = "a" * 30 + "\ud800" + "b" * 10
+    result = contract.coerce(value, "VARCHAR(32)")
+    assert len(result) == 32
+    assert "\ud800" not in result
+    result.encode("utf-8")
+
+
+def test_varchar_dict_is_none():
+    assert contract.coerce({"skill": {"prompt": "secret"}}, "VARCHAR(255)") is None
+
+
+def test_varchar_list_is_none():
+    assert contract.coerce([1, 2, 3], "VARCHAR(255)") is None
