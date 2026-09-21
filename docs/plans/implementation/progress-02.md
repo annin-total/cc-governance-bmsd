@@ -203,3 +203,67 @@ premises「テストの隔離: `CLAUDE_PLUGIN_DATA` を一時ディレクトリ�
 | M-7 | `test_collect_extract.py` の #10 に `assert row["permission_mode"] is None or True` という常に真の行がある |
 | M-8 | `test_context.py` の #21 が `assert result is None or isinstance(result, int)` で実質何も固定していない |
 | M-9 | `test_collect_extract.py` が 349 行で「1 ファイル 200 行以内を目安」を超える（brief が 30 ケースを表で指定しているため妥当な結果ではある） |
+
+## タスク 3〜5 の修正の再レビュー
+
+**C-1 / C-2 / C-3 / R-29 はすべて ADDRESSED。** レビュアは目視ではなく、`print` を含む子プロセスを 10 種類の
+`transcript_path` で実行し（fd 1 が閉じていれば必ず失敗する形）、**全件が終了コード 0・標準エラー空・戻り値 `None`** で
+あることを確認した。修正前のコードを取り出して `rc=120` も再現している。
+`HOME` を空の一時ディレクトリに差し替えて全件走らせ、**書き込みが 1 つも無い**ことも確認済み。
+
+`pathlib.Path` を渡すと `None` が返る（弾かれる）。`_context.context_tokens` の型註記は `Optional[str]` で、
+実運用では JSON 由来の値しか渡らないため brief の想定どおり。**将来 `_queue.py` から `Path` で呼ぶと静かに欠測する**点は申し送り。
+
+### 再レビューが見つけた新しい問題（制御側が実測で確認）
+
+**L-1（流出の経路。この設計の中核の約束に関わる）**
+
+`contract.py` の `_coerce_varchar` が `str(value)` で dict をそのまま文字列化するため、
+**上流が契約のキーパス先の型を変えると、自由文が 255 文字まで収集される。**
+
+```
+tool_input={"skill":{"prompt":"SENTINEL-秘密の本文がここに入る-abcdef"}}
+  → skill_name = "{'prompt': 'SENTINEL-秘密の本文がここに入る-abcdef'}"
+effort={"level":{"note":"SENTINEL-2-機密"}}
+  → effort_level = "{'note': 'SENTINEL-2-機密'}"
+```
+
+設計書 §9.1 が想定する「**入力形式が変わる**」経路そのものである。
+タスク 4 の回帰テストも fixture 照合も、fixture の `skill` が文字列であるためこの形を張っていない。
+
+**L-2（契約に列を足すと hook が落ちる）**
+
+`collect.py` が `EXTRA_COLUMNS` の列名を `raw_extra[name]` の添字で引いている。
+
+```
+collect.EXTRA_COLUMNS += (("plugin_version","VARCHAR(32)"),)
+  → KeyError: 'plugin_version'
+```
+
+**計画 [3] は実際に `plugin_version` を足す。** 契約は複数の計画が共有する正本であり、現実に増える側の定数である。
+
+### 裁定
+
+- **R-32: `_coerce_varchar` はスカラ以外（dict / list）を `None` にする。**
+  理由 — 「収集は最小限にする。契約が名指ししたものだけを読む。本文には触れない」はこの設計の中核の約束であり、
+  上流の型変更で破れてはならない。`str(dict)` は「名指ししたキーパスの値」ではなく「その中身全部」を載せる。
+  外れたときの損 — 上流が値を dict にした列が `None` になり欠測する。**自由文を載せるよりはるかに良い。**
+- **R-33: `collect.py` は `raw_extra.get(name)` で引く。** 契約に列が増えても `None` で埋まる形にする。
+  外れたときの損 — なし。
+
+### 契約の変更をどのブランチで行うか
+
+`contract.py` は計画 [1] の成果物だが、`feat/server-ingest` で既に 2 つの修正が入っている
+（R-30 の 64bit 範囲検査、R-31 の符号化できない文字の置換）。**同じ関数を 2 つのブランチで編集すると衝突する。**
+
+- **R-34: 契約の修正はすべて `feat/server-ingest` に集約し、そこから `feat/client-collection` へ cherry-pick で伝播させる。**
+  理由 — 契約は正本 1 か所であり、枝分かれした状態を長く保たない。
+  外れたときの損 — cherry-pick の分だけ履歴が重複する。突き合わせ時に解消する。
+
+### 先送りした Minor（追加）
+
+| # | 指摘 |
+| --- | --- |
+| M-10 | R-29 の振る舞い（`NaN` / `Infinity` / float が `None` になる）を固定するテストが無い |
+| M-11 | C-1 の parametrize が `list` / `dict` を含んでいない（実測ではどちらも安全） |
+| M-12 | サロゲートを含む文字列が `coerce` を素通りして行に載る。`json.dumps(ensure_ascii=False)` で書き出すと例外になる。**`_queue.py`（タスク 6）の書き出し方で判断が要る** |
