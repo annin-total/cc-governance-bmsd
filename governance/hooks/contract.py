@@ -95,18 +95,26 @@ def _coerce_varchar(value: Any, type_str: str) -> str:
     return text[: _varchar_length(type_str)]
 
 
+_INT64_MIN = -(2**63)
+_INT64_MAX = 2**63 - 1
+
+
 def _coerce_int_like(value: Any) -> Optional[int]:
-    """INTEGER / BIGINT へ変換する。真偽値・整数・整数文字列のみ int に寄せる。"""
+    """INTEGER / BIGINT へ変換する。真偽値・整数・整数文字列のみ int に寄せ、符号付き 64bit の範囲に収める。"""
     if isinstance(value, bool):
         return int(value)
     if isinstance(value, int):
-        return value
-    if isinstance(value, str):
+        result = value
+    elif isinstance(value, str):
         try:
-            return int(value)
+            result = int(value)
         except ValueError:
             return None
-    return None
+    else:
+        return None
+    if result < _INT64_MIN or result > _INT64_MAX:
+        return None
+    return result
 
 
 def _coerce_double(value: Any) -> Optional[float]:

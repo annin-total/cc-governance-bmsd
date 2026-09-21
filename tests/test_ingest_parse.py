@@ -190,3 +190,31 @@ def test_ts_dict_is_dropped_but_sibling_row_is_stored():
     assert dropped == 1
     assert len(rows) == 1
     assert rows[0][0] == "event"
+
+
+def test_ts_40_digit_number_is_dropped_but_sibling_row_is_stored():
+    """# 22: ts が 40 桁の整数の行は破棄し、同じリクエスト内の正常行は保存される。"""
+    good = b'{"kind":"event","event_id":"e22a","ts":1758400000}'
+    poison = b'{"kind":"event","event_id":"e22b","ts":' + b"1" * 40 + b"}"
+    rows, dropped = parse_lines(good + b"\n" + poison)
+    assert dropped == 1
+    assert len(rows) == 1
+    assert rows[0][0] == "event"
+
+
+def test_context_tokens_40_digit_number_does_not_crash_sibling_row():
+    """# 23: context_tokens が 40 桁の整数でも例外にならず、同じリクエスト内の正常行は保存される。
+
+    context_tokens は event_id / ts と異なり必須列ではないため、桁あふれの列だけが
+    None に落ち、行自体は破棄されない（ts が別途正常であるため）。
+    """
+    good = b'{"kind":"event","event_id":"e23a","ts":1758400000}'
+    huge_context_tokens = (
+        b'{"kind":"event","event_id":"e23b","ts":1758400000,"context_tokens":'
+        + b"1" * 40
+        + b"}"
+    )
+    rows, dropped = parse_lines(good + b"\n" + huge_context_tokens)
+    assert dropped == 0
+    assert len(rows) == 2
+    assert _events_value(rows[1][1], "context_tokens") is None
