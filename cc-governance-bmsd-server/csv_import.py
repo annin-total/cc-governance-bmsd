@@ -63,8 +63,8 @@ def _extract_row(row: list, index_by_header: dict, source_file: str) -> Optional
 
 
 def _read_csv_rows(path: str) -> list:
-    """CRLF・UTF-8 の CSV を行のリストとして読む。"""
-    with open(path, "r", encoding="utf-8", newline="") as f:
+    """CRLF・UTF-8（BOM 付きも可）の CSV を行のリストとして読む。"""
+    with open(path, "r", encoding="utf-8-sig", newline="") as f:
         return list(csv.reader(f))
 
 

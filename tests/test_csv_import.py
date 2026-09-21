@@ -685,3 +685,18 @@ def test_scan_continues_when_one_file_is_unreadable(sqlite_db_dsn, tmp_path):
         assert _count_and_sum(conn) == (3, 6.0)
     finally:
         conn.close()
+
+
+# --- レビュー対応: R-39 -------------------------------------------------------
+
+
+def test_bom_prefixed_utf8_csv_is_read(sqlite_db_dsn):
+    """R-39: BOM 付き UTF-8 の CSV でもヘッダが正しく解決され、取り込める。"""
+    db.init()
+    conn = db.connect()
+    try:
+        result = csv_import.import_file(str(FIXTURES / "bom.csv"), conn)
+        assert result == {"file": "bom.csv", "rows": 1, "dropped": 0}
+        assert _count_and_sum(conn) == (1, 9.0)
+    finally:
+        conn.close()
