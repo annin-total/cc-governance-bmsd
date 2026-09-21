@@ -658,3 +658,30 @@ def test_overview_shows_error_for_failed_file(sqlite_db_dsn, tmp_path):
         else:
             os.environ["CSV_DIR"] = original_csv_dir
         importlib.reload(app_module)
+
+
+# --- レビュー対応: I-2 --------------------------------------------------------
+
+
+def test_scan_continues_when_one_file_is_unreadable(sqlite_db_dsn, tmp_path):
+    """I-2: 読めないファイル（OSError）が 1 本混在しても、走査全体が落ちず他ファイルは取り込まれる。"""
+    _copy_fixture(tmp_path, "daily_a.csv", "a_good.csv")
+    bad_path = tmp_path / "z_bad.csv"
+    bad_path.write_bytes(b"Date,Cost\r\n2026-07-01,1.0\r\n")
+    os.chmod(bad_path, 0o000)
+
+    db.init()
+    conn = db.connect()
+    try:
+        try:
+            results = csv_import.import_all(str(tmp_path), conn)
+        finally:
+            os.chmod(bad_path, 0o644)  # tmp_path の後始末を妨げないよう必ず戻す
+
+        assert len(results) == 2
+        by_file = {r["file"]: r for r in results}
+        assert by_file["a_good.csv"]["rows"] == 3
+        assert "error" in by_file["z_bad.csv"]
+        assert _count_and_sum(conn) == (3, 6.0)
+    finally:
+        conn.close()

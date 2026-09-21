@@ -128,10 +128,14 @@ def _list_csv_files(csv_dir: str) -> list:
 
 
 def _import_file_or_error(path: str, conn) -> dict:
-    """1 ファイルを取り込む。必須列が無い等で失敗したら、そのファイルだけを失敗として報告する。"""
+    """1 ファイルを取り込む。必須列が無い・読めない等で失敗したら、そのファイルだけを失敗として報告する。
+
+    `ValueError`（必須列の欠落）・`OSError`（権限等で読めない）・`csv.Error`（CSV として壊れている）
+    のいずれでも、他のファイルの取込は止めない（R-37）。
+    """
     try:
         return import_file(path, conn)
-    except ValueError as exc:
+    except (ValueError, OSError, csv.Error) as exc:
         return {"file": os.path.basename(path), "error": str(exc)}
 
 
