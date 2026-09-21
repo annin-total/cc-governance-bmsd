@@ -86,12 +86,18 @@ def _varchar_length(type_str: str) -> int:
     return int(type_str[start:end])
 
 
-def _coerce_varchar(value: Any, type_str: str) -> str:
-    """VARCHAR へ変換する。真偽値は小文字にし、宣言長で切り詰める。"""
+def _coerce_varchar(value: Any, type_str: str) -> Optional[str]:
+    """VARCHAR へ変換する。スカラでない値（dict・list 等）は None にする。
+
+    符号化できない文字（孤立サロゲート等）は置換してから、宣言長で切り詰める。
+    """
     if isinstance(value, bool):
         text = "true" if value else "false"
-    else:
+    elif isinstance(value, (str, int, float)):
         text = str(value)
+    else:
+        return None
+    text = text.encode("utf-8", "replace").decode("utf-8")
     return text[: _varchar_length(type_str)]
 
 

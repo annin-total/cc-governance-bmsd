@@ -116,3 +116,25 @@ def test_integer_at_signed_64bit_min_passes():
 
 def test_integer_40_digit_string_is_none():
     assert contract.coerce("1" * 40, "INTEGER") is None
+
+
+def test_varchar_lone_surrogate_is_replaced():
+    result = contract.coerce("\ud800", "VARCHAR(255)")
+    assert "\ud800" not in result
+    result.encode("utf-8")  # 例外にならないこと（符号化できることの確認）
+
+
+def test_varchar_lone_surrogate_is_replaced_then_truncated():
+    value = "a" * 30 + "\ud800" + "b" * 10
+    result = contract.coerce(value, "VARCHAR(32)")
+    assert len(result) == 32
+    assert "\ud800" not in result
+    result.encode("utf-8")
+
+
+def test_varchar_dict_is_none():
+    assert contract.coerce({"skill": {"prompt": "secret"}}, "VARCHAR(255)") is None
+
+
+def test_varchar_list_is_none():
+    assert contract.coerce([1, 2, 3], "VARCHAR(255)") is None

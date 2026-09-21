@@ -218,3 +218,17 @@ def test_context_tokens_40_digit_number_does_not_crash_sibling_row():
     assert dropped == 0
     assert len(rows) == 2
     assert _events_value(rows[1][1], "context_tokens") is None
+
+
+def test_lone_surrogate_in_field_does_not_crash_and_row_is_stored():
+    """# 24: 孤立サロゲートを含む行も例外にならず保存され、同じリクエスト内の正常行も保存される。"""
+    good = b'{"kind":"event","event_id":"e24a","ts":1758400000}'
+    poison = (
+        '{"kind":"event","event_id":"e24b","ts":1758400000,"tool_name":"\ud800"}'
+    ).encode("utf-8", "surrogatepass")
+    rows, dropped = parse_lines(good + b"\n" + poison)
+    assert dropped == 0
+    assert len(rows) == 2
+    tool_name = _events_value(rows[1][1], "tool_name")
+    assert "\ud800" not in tool_name
+    tool_name.encode("utf-8")
