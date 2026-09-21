@@ -4,6 +4,7 @@
 """
 
 from pathlib import Path
+from typing import Optional
 
 import csv_import
 import db
@@ -280,5 +281,153 @@ def test_idempotent_unknown_column_replaces_existing_rows(sqlite_db_dsn):
 
         csv_import.import_file(str(FIXTURES / "daily_a.csv"), conn)
         assert _count_and_sum(conn) == (3, 6.0)
+    finally:
+        conn.close()
+
+
+# --- タスク 5: ディレクトリの走査 --------------------------------------------
+
+
+def _copy_fixture(tmp_path, src_name: str, dest_name: Optional[str] = None) -> None:
+    """fixture を `tmp_path` 配下へ、指定があれば別名でコピーする。"""
+    dest_name = dest_name or src_name
+    (tmp_path / dest_name).write_bytes((FIXTURES / src_name).read_bytes())
+
+
+def _write_daily_a_doubled(tmp_path) -> None:
+    """daily_a.csv のコストを 2 倍にした訂正版を、同じファイル名で書く。"""
+    row1 = (
+        "2026-07-01,workspace-01,aws-bedrock,CLAUDE_SONNET_4_6,user-0001,"
+        "user0001@example.com,user0001,2.0,USD,100,200,0,0,0,100"
+    )
+    row2 = (
+        "2026-07-01,workspace-01,aws-bedrock,CLAUDE_SONNET_4_6,user-0002,"
+        "user0002@example.com,user0002,4.0,USD,100,200,0,0,0,100"
+    )
+    row3 = (
+        "2026-07-01,workspace-01,aws-bedrock,CLAUDE_SONNET_4_6,user-0003,"
+        "user0003@example.com,user0003,6.0,USD,100,200,0,0,0,100"
+    )
+    rows = f"{row1}\r\n{row2}\r\n{row3}"
+    (tmp_path / "daily_a.csv").write_bytes(
+        (_HEADER + "\r\n" + rows + "\r\n").encode("utf-8")
+    )
+
+
+def test_scan_processes_all_files_in_directory(sqlite_db_dsn, tmp_path):
+    """5-1: daily_a / daily_b を置いて 1 回押すと、2 本とも処理され COUNT=5・SUM=15.0・2 件返る。"""
+    db.init()
+    conn = db.connect()
+    try:
+        _copy_fixture(tmp_path, "daily_a.csv")
+        _copy_fixture(tmp_path, "daily_b.csv")
+
+        results = csv_import.import_all(str(tmp_path), conn)
+
+        assert len(results) == 2
+        assert _count_and_sum(conn) == (5, 15.0)
+    finally:
+        conn.close()
+
+
+def test_scan_repeated_call_same_result(sqlite_db_dsn, tmp_path):
+    """5-2: 5-1 の直後に同じ状態でもう 1 度押しても結果が変わらない。"""
+    db.init()
+    conn = db.connect()
+    try:
+        _copy_fixture(tmp_path, "daily_a.csv")
+        _copy_fixture(tmp_path, "daily_b.csv")
+
+        csv_import.import_all(str(tmp_path), conn)
+        results = csv_import.import_all(str(tmp_path), conn)
+
+        assert len(results) == 2
+        assert _count_and_sum(conn) == (5, 15.0)
+    finally:
+        conn.close()
+
+
+def test_scan_three_files_order_independent_forward(sqlite_db_dsn, tmp_path):
+    """5-3: daily_a / daily_b / weekly の 3 本を置いて押すと COUNT=6・SUM=21.0・3 件、day=20635 は 6.0。"""
+    db.init()
+    conn = db.connect()
+    try:
+        _copy_fixture(tmp_path, "daily_a.csv")
+        _copy_fixture(tmp_path, "daily_b.csv")
+        _copy_fixture(tmp_path, "weekly.csv")
+
+        results = csv_import.import_all(str(tmp_path), conn)
+
+        assert len(results) == 3
+        assert _count_and_sum(conn) == (6, 21.0)
+        assert _sum_for_day(conn, _DAY_20635) == 6.0
+    finally:
+        conn.close()
+
+
+def test_scan_three_files_order_independent_reversed(sqlite_db_dsn, tmp_path):
+    """5-4: 同じ 3 本を作成順を入れ替えて置いても、結果は 5-3 と変わらない。"""
+    db.init()
+    conn = db.connect()
+    try:
+        _copy_fixture(tmp_path, "weekly.csv")
+        _copy_fixture(tmp_path, "daily_b.csv")
+        _copy_fixture(tmp_path, "daily_a.csv")
+
+        results = csv_import.import_all(str(tmp_path), conn)
+
+        assert len(results) == 3
+        assert _count_and_sum(conn) == (6, 21.0)
+        assert _sum_for_day(conn, _DAY_20635) == 6.0
+    finally:
+        conn.close()
+
+
+def test_scan_replacement_file_doubles_cost(sqlite_db_dsn, tmp_path):
+    """5-5: daily_a をコスト 2 倍の訂正版に差し替えて押すと、その日の SUM(cost) だけが 2 倍になる。"""
+    db.init()
+    conn = db.connect()
+    try:
+        _write_daily_a_doubled(tmp_path)
+        _copy_fixture(tmp_path, "daily_b.csv")
+
+        results = csv_import.import_all(str(tmp_path), conn)
+
+        assert len(results) == 2
+        assert _count_and_sum(conn) == (5, 21.0)
+        assert _sum_for_day(conn, _DAY_20635) == 12.0
+    finally:
+        conn.close()
+
+
+def test_scan_ignores_non_csv_files(sqlite_db_dsn, tmp_path):
+    """5-6: `.txt` や拡張子なしのファイルが混在しても `.csv` だけが処理される。"""
+    db.init()
+    conn = db.connect()
+    try:
+        _copy_fixture(tmp_path, "daily_a.csv")
+        (tmp_path / "note.txt").write_text("not a csv")
+        (tmp_path / "noext").write_text("not a csv")
+
+        results = csv_import.import_all(str(tmp_path), conn)
+
+        assert len(results) == 1
+        assert results[0]["file"] == "daily_a.csv"
+        assert _count_and_sum(conn) == (3, 6.0)
+    finally:
+        conn.close()
+
+
+def test_scan_missing_directory_returns_empty(sqlite_db_dsn, tmp_path):
+    """5-7: ディレクトリが存在しなければ 0 件を返し、例外を投げない。"""
+    db.init()
+    conn = db.connect()
+    try:
+        missing_dir = str(tmp_path / "does-not-exist")
+
+        results = csv_import.import_all(missing_dir, conn)
+
+        assert results == []
+        assert _count_and_sum(conn) == (0, None)
     finally:
         conn.close()

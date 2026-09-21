@@ -1,6 +1,7 @@
 """AI Gateway CSV を day 単位で冪等に取り込む。フレームワークを import しない。"""
 
 import csv
+import glob
 import os
 from datetime import date
 from typing import Optional
@@ -117,3 +118,15 @@ def import_file(path: str, conn) -> dict:
     rows, dropped = parse_file(path)
     _import_rows(conn, rows)
     return {"file": os.path.basename(path), "rows": len(rows), "dropped": dropped}
+
+
+def _list_csv_files(csv_dir: str) -> list:
+    """`csv_dir` 配下の `*.csv` をファイル名の昇順で返す。存在しなければ空リスト。"""
+    if not os.path.isdir(csv_dir):
+        return []
+    return sorted(glob.glob(os.path.join(csv_dir, "*.csv")))
+
+
+def import_all(csv_dir: str, conn) -> list:
+    """`csv_dir` 配下の全 `*.csv` を毎回取り直す。未取込判定は持たない。"""
+    return [import_file(path, conn) for path in _list_csv_files(csv_dir)]
