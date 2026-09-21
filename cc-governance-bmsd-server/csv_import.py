@@ -30,9 +30,15 @@ def _resolve_header_index(header_row: list) -> dict:
 
 
 def _parse_day(raw: str) -> Optional[int]:
-    """`YYYY-MM-DD` を epoch 日へ変換する。解釈できなければ None。"""
+    """`YYYY-MM-DD` と `YYYY/M/D`（ゼロ埋めなし可）を epoch 日へ変換する。解釈できなければ None。"""
+    for sep in ("-", "/"):
+        parts = raw.split(sep)
+        if len(parts) == 3:
+            break
+    else:
+        return None
     try:
-        year_str, month_str, day_str = raw.split("-")
+        year_str, month_str, day_str = parts
         parsed = date(int(year_str), int(month_str), int(day_str))
     except (ValueError, TypeError, AttributeError):
         return None
