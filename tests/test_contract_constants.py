@@ -80,7 +80,9 @@ def test_csv_columns_db_name_order():
 
 def test_csv_columns_none_header_is_source_file_only():
     """CSV_COLUMNS のうちヘッダ名が None の要素は source_file の 1 つだけである。"""
-    none_header = [db_name for header, db_name, _ in contract.CSV_COLUMNS if header is None]
+    none_header = [
+        db_name for header, db_name, _ in contract.CSV_COLUMNS if header is None
+    ]
     assert none_header == ["source_file"]
 
 
@@ -108,7 +110,9 @@ def test_policy_keys():
 
 def test_contract_imports_only_standard_library():
     """contract.py がサードパーティを import していない。"""
-    stdlib_names = set(sys.stdlib_module_names) if hasattr(sys, "stdlib_module_names") else None
+    stdlib_names = (
+        set(sys.stdlib_module_names) if hasattr(sys, "stdlib_module_names") else None
+    )
     contract_path = pathlib.Path(contract.__file__)
     tree = ast.parse(contract_path.read_text(encoding="utf-8"))
     imported = set()
@@ -116,9 +120,8 @@ def test_contract_imports_only_standard_library():
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imported.add(alias.name.split(".")[0])
-        elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                imported.add(node.module.split(".")[0])
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported.add(node.module.split(".")[0])
     if stdlib_names is not None:
         assert imported <= stdlib_names
     else:

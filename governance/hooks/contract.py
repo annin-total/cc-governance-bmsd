@@ -1,6 +1,6 @@
 """端末プラグインとサーバが共有する契約の正本。標準ライブラリのみで動く。"""
 
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 HOOK_FIELDS = (
     # (列名, キーパス, 型) の 3 つ組。行末の註記は届く hook であって要素ではない
@@ -12,7 +12,11 @@ HOOK_FIELDS = (
     ("command_name", ("command_name",), "VARCHAR(255)"),  # UserPromptExpansion
     ("command_source", ("command_source",), "VARCHAR(255)"),  # UserPromptExpansion
     ("skill_name", ("tool_input", "skill"), "VARCHAR(255)"),  # PostToolUse
-    ("effort_level", ("effort", "level"), "VARCHAR(255)"),  # PostToolUse / Stop / PostToolUseFailure
+    (
+        "effort_level",
+        ("effort", "level"),
+        "VARCHAR(255)",
+    ),  # PostToolUse / Stop / PostToolUseFailure
     ("permission_mode", ("permission_mode",), "VARCHAR(255)"),  # 複数 hook
     ("agent_id", ("agent_id",), "VARCHAR(255)"),  # サブエージェントのツール呼出
     ("is_interrupt", ("is_interrupt",), "INTEGER"),  # PostToolUseFailure
@@ -67,7 +71,7 @@ CSV_COLUMNS = (
 )
 
 
-def dig(obj: Any, path: Tuple[str, ...]) -> Optional[Any]:
+def dig(obj: Any, path: tuple) -> Optional[Any]:  # noqa: FA100 -- py3.9 の typing.Optional を明示的に使う
     """キーパスを先頭から順にたどり、たどれなければ None を返す。"""
     cur = obj
     for key in path:
@@ -91,7 +95,7 @@ def _coerce_varchar(value: Any, type_str: str) -> str:
     return text[: _varchar_length(type_str)]
 
 
-def _coerce_int_like(value: Any) -> Optional[int]:
+def _coerce_int_like(value: Any) -> Optional[int]:  # noqa: FA100 -- py3.9 の typing.Optional を明示的に使う
     """INTEGER / BIGINT へ変換する。真偽値・整数・整数文字列のみ int に寄せる。"""
     if isinstance(value, bool):
         return int(value)
@@ -105,7 +109,7 @@ def _coerce_int_like(value: Any) -> Optional[int]:
     return None
 
 
-def _coerce_double(value: Any) -> Optional[float]:
+def _coerce_double(value: Any) -> Optional[float]:  # noqa: FA100 -- py3.9 の typing.Optional を明示的に使う
     """DOUBLE へ変換する。数値・数値文字列のみ float に寄せる。"""
     if isinstance(value, bool):
         return None
@@ -142,23 +146,26 @@ def to_day(ts: int) -> int:
     return (ts + _JST_OFFSET_SECONDS) // _SECONDS_PER_DAY
 
 
-def _create_table_sql(table_name: str, columns: Tuple[Tuple[str, str], ...]) -> str:
+def _create_table_sql(table_name: str, columns: tuple) -> str:
     """列の並びから CREATE TABLE IF NOT EXISTS 文を組み立てる。"""
-    columns_sql = ", ".join("{0} {1}".format(name, type_str) for name, type_str in columns)
-    return "CREATE TABLE IF NOT EXISTS {0} ({1})".format(table_name, columns_sql)
+    columns_sql = ", ".join(f"{name} {type_str}" for name, type_str in columns)
+    return f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_sql})"
 
 
-def ddl() -> Tuple[str, str, str]:
+def ddl() -> tuple:
     """events / policy_state / cost_daily の CREATE TABLE 文を組み立てる。"""
     hook_names = {name for name, _, _ in HOOK_FIELDS}
     extra_names = {name for name, _ in EXTRA_COLUMNS}
     duplicated = hook_names & extra_names
     if duplicated:
         raise ValueError(
-            "HOOK_FIELDS と EXTRA_COLUMNS で列名が重複している: " + ", ".join(sorted(duplicated))
+            "HOOK_FIELDS と EXTRA_COLUMNS で列名が重複している: "
+            + ", ".join(sorted(duplicated))
         )
 
-    events_columns = tuple(EXTRA_COLUMNS) + tuple((name, type_str) for name, _, type_str in HOOK_FIELDS)
+    events_columns = tuple(EXTRA_COLUMNS) + tuple(
+        (name, type_str) for name, _, type_str in HOOK_FIELDS
+    )
     policy_columns = POLICY_COLUMNS
     cost_columns = tuple((db_name, type_str) for _, db_name, type_str in CSV_COLUMNS)
 

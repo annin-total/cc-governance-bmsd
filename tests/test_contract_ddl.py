@@ -2,9 +2,8 @@
 
 import sqlite3
 
-import pytest
-
 import contract
+import pytest
 
 
 def test_ddl_returns_three_statements_for_three_tables():
@@ -119,7 +118,7 @@ def test_ddl_raises_on_duplicate_column_name(monkeypatch):
         "EXTRA_COLUMNS",
         contract.EXTRA_COLUMNS + (("tool_name", "VARCHAR(255)"),),
     )
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(ValueError) as exc_info:
         contract.ddl()
     assert "tool_name" in str(exc_info.value)
 
@@ -132,8 +131,10 @@ def test_ddl_creates_no_table_before_raising(monkeypatch):
         contract.EXTRA_COLUMNS + (("tool_name", "VARCHAR(255)"),),
     )
     conn = sqlite3.connect(":memory:")
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         for statement in contract.ddl():
             conn.execute(statement)
-    tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    tables = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'"
+    ).fetchall()
     assert tables == []
