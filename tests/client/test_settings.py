@@ -93,3 +93,66 @@ def test_read_2_8_env_empty(tmp_path):
     rows = _rows_by_key(_settings.apply_settings(path, POLICY))
     assert rows[PCT_KEY][2] is None
     assert rows[AUTOUPDATE_KEY][2] is None
+
+
+# ---- タスク 3: 差分がなければ書かない ----
+
+_BASELINE_ALREADY_OK = {
+    "env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"},
+    "extraKnownMarketplaces": {"cc-marketplace-governance-bmsd": {"autoUpdate": True}},
+}
+
+
+def test_already_ok_3_1_both_match(tmp_path):
+    path = _write_settings(tmp_path, _BASELINE_ALREADY_OK)
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][3] == "already_ok"
+    assert rows[AUTOUPDATE_KEY][3] == "already_ok"
+
+
+def test_already_ok_3_2_mtime_bit_exact(tmp_path):
+    path = _write_settings(tmp_path, _BASELINE_ALREADY_OK)
+    os.utime(path, ns=(123_000_000_000, 456_000_000_000))
+    before = path.stat().st_mtime_ns
+    _settings.apply_settings(path, POLICY)
+    assert path.stat().st_mtime_ns == before
+
+
+def test_already_ok_3_3_bytes_unchanged(tmp_path):
+    path = _write_settings(tmp_path, _BASELINE_ALREADY_OK)
+    before = path.read_bytes()
+    _settings.apply_settings(path, POLICY)
+    assert path.read_bytes() == before
+
+
+def test_already_ok_3_4_no_tmp_file_left(tmp_path):
+    path = _write_settings(tmp_path, _BASELINE_ALREADY_OK)
+    _settings.apply_settings(path, POLICY)
+    assert len(list(tmp_path.iterdir())) == 1
+
+
+def test_already_ok_3_5_partial_diff_writes_only_that_key(tmp_path):
+    content = {
+        "env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"},
+        "extraKnownMarketplaces": {"cc-marketplace-governance-bmsd": {"autoUpdate": False}},
+    }
+    path = _write_settings(tmp_path, content)
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][3] == "already_ok"
+    assert rows[AUTOUPDATE_KEY][3] == "applied"
+
+
+def test_already_ok_3_6_numeric_pct_is_applied(tmp_path):
+    path = _write_settings(tmp_path, {"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": 60}})
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][3] == "applied"
+
+
+def test_already_ok_3_7_no_writable_diff_leaves_mtime(tmp_path):
+    path = _write_settings(tmp_path, {"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"}})
+    os.utime(path, ns=(123_000_000_000, 456_000_000_000))
+    before = path.stat().st_mtime_ns
+    rows = _rows_by_key(_settings.apply_settings(path, POLICY))
+    assert rows[PCT_KEY][3] == "already_ok"
+    assert rows[AUTOUPDATE_KEY][3] == "skipped_missing"
+    assert path.stat().st_mtime_ns == before
