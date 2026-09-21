@@ -2,6 +2,16 @@
 
 import db
 
+_EXPECTED_INDEX_NAMES = [
+    "ix_cost_daily_day_user_email",
+    "ix_events_day_hook_event_context_tokens",
+    "ix_events_day_user_email_event_id",
+    "ix_events_skill_name_day_user_email_event_id",
+    "ix_events_tool_name_day_user_email_event_id",
+    "ix_policy_state_key_name_prev_value_user_email",
+    "ix_policy_state_user_email_ts",
+]
+
 _EXPECTED_INDEXES = {
     ("events", ("day", "user_email", "event_id")),
     ("events", ("skill_name", "day", "user_email", "event_id")),
@@ -34,6 +44,16 @@ def _indexes_with_columns(conn) -> set:
     return result
 
 
+def _index_names(conn) -> list:
+    """3 テーブルの実インデックス名を、重複を潰さず list で集めて整列する。"""
+    cur = conn.cursor()
+    names = []
+    for table in ("events", "policy_state", "cost_daily"):
+        cur.execute(f"PRAGMA index_list({table})")
+        names.extend(row[1] for row in cur.fetchall())
+    return sorted(names)
+
+
 def test_init_creates_three_tables(sqlite_db_dsn):
     """1 回の init() で events / policy_state / cost_daily の 3 テーブルができる。"""
     db.init()
@@ -49,8 +69,8 @@ def test_init_creates_seven_indexes_with_expected_columns(sqlite_db_dsn):
     db.init()
     conn = db.connect()
     try:
-        indexes = _indexes_with_columns(conn)
-        assert indexes == _EXPECTED_INDEXES
+        assert _indexes_with_columns(conn) == _EXPECTED_INDEXES
+        assert _index_names(conn) == _EXPECTED_INDEX_NAMES
     finally:
         conn.close()
 
@@ -68,6 +88,7 @@ def test_init_twice_keeps_seven_indexes(sqlite_db_dsn):
     conn = db.connect()
     try:
         assert _indexes_with_columns(conn) == _EXPECTED_INDEXES
+        assert _index_names(conn) == _EXPECTED_INDEX_NAMES
     finally:
         conn.close()
 
@@ -90,6 +111,7 @@ def test_init_recreates_dropped_index(sqlite_db_dsn):
     conn = db.connect()
     try:
         assert _indexes_with_columns(conn) == _EXPECTED_INDEXES
+        assert _index_names(conn) == _EXPECTED_INDEX_NAMES
     finally:
         conn.close()
 
