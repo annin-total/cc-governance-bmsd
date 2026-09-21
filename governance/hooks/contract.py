@@ -71,7 +71,7 @@ CSV_COLUMNS = (
 )
 
 
-def dig(obj: Any, path: tuple) -> Optional[Any]:  # noqa: FA100 -- py3.9 の typing.Optional を明示的に使う
+def dig(obj: Any, path: tuple) -> Optional[Any]:
     """キーパスを先頭から順にたどり、たどれなければ None を返す。"""
     cur = obj
     for key in path:
@@ -95,7 +95,7 @@ def _coerce_varchar(value: Any, type_str: str) -> str:
     return text[: _varchar_length(type_str)]
 
 
-def _coerce_int_like(value: Any) -> Optional[int]:  # noqa: FA100 -- py3.9 の typing.Optional を明示的に使う
+def _coerce_int_like(value: Any) -> Optional[int]:
     """INTEGER / BIGINT へ変換する。真偽値・整数・整数文字列のみ int に寄せる。"""
     if isinstance(value, bool):
         return int(value)
@@ -109,7 +109,7 @@ def _coerce_int_like(value: Any) -> Optional[int]:  # noqa: FA100 -- py3.9 の t
     return None
 
 
-def _coerce_double(value: Any) -> Optional[float]:  # noqa: FA100 -- py3.9 の typing.Optional を明示的に使う
+def _coerce_double(value: Any) -> Optional[float]:
     """DOUBLE へ変換する。数値・数値文字列のみ float に寄せる。"""
     if isinstance(value, bool):
         return None

@@ -1,2 +1,5 @@
 target-version = "py39"
 extend-exclude = ["docs/"]
+
+[lint]
+ignore = ["FA100"]
