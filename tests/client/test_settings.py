@@ -6,8 +6,6 @@
 import json
 import os
 
-import pytest
-
 import _settings
 from contract import POLICY
 
@@ -56,7 +54,9 @@ def test_read_2_4_both_already_policy_values(tmp_path):
         tmp_path,
         {
             "env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"},
-            "extraKnownMarketplaces": {"cc-marketplace-governance-bmsd": {"autoUpdate": True}},
+            "extraKnownMarketplaces": {
+                "cc-marketplace-governance-bmsd": {"autoUpdate": True}
+            },
         },
     )
     rows = _rows_by_key(_settings.apply_settings(path, POLICY))
@@ -67,7 +67,11 @@ def test_read_2_4_both_already_policy_values(tmp_path):
 def test_read_2_5_false_is_not_missing(tmp_path):
     path = _write_settings(
         tmp_path,
-        {"extraKnownMarketplaces": {"cc-marketplace-governance-bmsd": {"autoUpdate": False}}},
+        {
+            "extraKnownMarketplaces": {
+                "cc-marketplace-governance-bmsd": {"autoUpdate": False}
+            }
+        },
     )
     rows = _rows_by_key(_settings.apply_settings(path, POLICY))
     assert rows[PCT_KEY][2] is None
@@ -134,7 +138,9 @@ def test_already_ok_3_4_no_tmp_file_left(tmp_path):
 def test_already_ok_3_5_partial_diff_writes_only_that_key(tmp_path):
     content = {
         "env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"},
-        "extraKnownMarketplaces": {"cc-marketplace-governance-bmsd": {"autoUpdate": False}},
+        "extraKnownMarketplaces": {
+            "cc-marketplace-governance-bmsd": {"autoUpdate": False}
+        },
     }
     path = _write_settings(tmp_path, content)
     rows = _rows_by_key(_settings.apply_settings(path, POLICY))
@@ -336,7 +342,9 @@ def test_apply_4_14_entry_missing_not_created(tmp_path):
 def test_apply_4_15_leaf_missing_is_not_entry_missing(tmp_path):
     content = dict(_BASELINE_APPLY)
     content["extraKnownMarketplaces"] = {
-        "cc-marketplace-governance-bmsd": {"source": {"source": "github", "repo": "x/y"}}
+        "cc-marketplace-governance-bmsd": {
+            "source": {"source": "github", "repo": "x/y"}
+        }
     }
     path = _write_settings(tmp_path, content)
     rows = _rows_by_key(_settings.apply_settings(path, POLICY))
@@ -352,7 +360,9 @@ def test_apply_4_15_leaf_missing_is_not_entry_missing(tmp_path):
 _CONFLICT_INPUT = {
     "model": "opus",
     "extraKnownMarketplaces": {
-        "cc-marketplace-governance-bmsd": {"source": {"source": "github", "repo": "x/y"}}
+        "cc-marketplace-governance-bmsd": {
+            "source": {"source": "github", "repo": "x/y"}
+        }
     },
 }
 
@@ -452,3 +462,132 @@ def test_parse_failed_5_10_unreadable_file(tmp_path):
     finally:
         os.chmod(path, 0o600)
     assert rows[PCT_KEY][3] == "parse_failed"
+
+
+# ---- タスク 6: apply_result の 6 通りが揃うことの確認 ----
+
+
+def _result_6_1(tmp_path):
+    path = _write_settings(tmp_path, {})
+    return _rows_by_key(_settings.apply_settings(path, POLICY))
+
+
+def _result_6_2(tmp_path):
+    path = _write_settings(tmp_path, {"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80"}})
+    return _rows_by_key(_settings.apply_settings(path, POLICY))
+
+
+def _result_6_3(tmp_path):
+    path = _write_settings(tmp_path, _BASELINE_ALREADY_OK)
+    return _rows_by_key(_settings.apply_settings(path, POLICY))
+
+
+def _result_6_4(tmp_path, monkeypatch):
+    path = _write_settings(tmp_path, _CONFLICT_INPUT)
+    _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
+    return _rows_by_key(_settings.apply_settings(path, POLICY))
+
+
+def _result_6_5(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text('{"model":"opus"', encoding="utf-8")
+    return _rows_by_key(_settings.apply_settings(path, POLICY))
+
+
+def _result_6_6(tmp_path, monkeypatch):
+    path = _write_settings(tmp_path, {})
+
+    def _raise(*args, **kwargs):
+        raise OSError("boom")
+
+    monkeypatch.setattr(_settings.os, "replace", _raise)
+    return _rows_by_key(_settings.apply_settings(path, POLICY))
+
+
+def _result_6_7(tmp_path):
+    path = _write_settings(tmp_path, {})
+    return _rows_by_key(_settings.apply_settings(path, POLICY))
+
+
+def test_result_6_1_applied(tmp_path):
+    rows = _result_6_1(tmp_path)
+    assert rows[PCT_KEY][2] is None
+    assert rows[PCT_KEY][3] == "applied"
+
+
+def test_result_6_2_applied_with_prev(tmp_path):
+    rows = _result_6_2(tmp_path)
+    assert rows[PCT_KEY][2] == "80"
+    assert rows[PCT_KEY][3] == "applied"
+
+
+def test_result_6_3_already_ok(tmp_path):
+    rows = _result_6_3(tmp_path)
+    assert rows[PCT_KEY][2] == "60"
+    assert rows[PCT_KEY][3] == "already_ok"
+
+
+def test_result_6_4_skipped_conflict(tmp_path, monkeypatch):
+    rows = _result_6_4(tmp_path, monkeypatch)
+    assert rows[PCT_KEY][2] is None
+    assert rows[PCT_KEY][3] == "skipped_conflict"
+
+
+def test_result_6_5_parse_failed(tmp_path):
+    rows = _result_6_5(tmp_path)
+    assert rows[PCT_KEY][2] is None
+    assert rows[PCT_KEY][3] == "parse_failed"
+
+
+def test_result_6_6_write_failed(tmp_path, monkeypatch):
+    rows = _result_6_6(tmp_path, monkeypatch)
+    assert rows[PCT_KEY][2] is None
+    assert rows[PCT_KEY][3] == "write_failed"
+
+
+def test_result_6_7_skipped_missing(tmp_path):
+    rows = _result_6_7(tmp_path)
+    assert rows[AUTOUPDATE_KEY][3] == "skipped_missing"
+    assert rows[PCT_KEY][3] == "applied"
+
+
+def test_result_6_8_all_six_apply_results_observed(tmp_path, monkeypatch):
+    all_rows = []
+    dirs = [tmp_path / str(i) for i in range(7)]
+    for d in dirs:
+        d.mkdir()
+    all_rows += list(_result_6_1(dirs[0]).values())
+    all_rows += list(_result_6_2(dirs[1]).values())
+    all_rows += list(_result_6_3(dirs[2]).values())
+    all_rows += list(_result_6_4(dirs[3], monkeypatch).values())
+    all_rows += list(_result_6_5(dirs[4]).values())
+    all_rows += list(_result_6_6(dirs[5], monkeypatch).values())
+    all_rows += list(_result_6_7(dirs[6]).values())
+
+    observed = {row[3] for row in all_rows}
+    assert observed == {
+        "already_ok",
+        "applied",
+        "skipped_conflict",
+        "skipped_missing",
+        "parse_failed",
+        "write_failed",
+    }
+
+
+def test_result_6_9_value_is_always_policy_value(tmp_path, monkeypatch):
+    dirs = [tmp_path / str(i) for i in range(7)]
+    for d in dirs:
+        d.mkdir()
+    results = [
+        _result_6_1(dirs[0]),
+        _result_6_2(dirs[1]),
+        _result_6_3(dirs[2]),
+        _result_6_4(dirs[3], monkeypatch),
+        _result_6_5(dirs[4]),
+        _result_6_6(dirs[5], monkeypatch),
+        _result_6_7(dirs[6]),
+    ]
+    for rows in results:
+        assert rows[PCT_KEY][1] == "60"
+        assert rows[AUTOUPDATE_KEY][1] == "true"

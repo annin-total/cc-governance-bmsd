@@ -9,13 +9,13 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 from contract import coerce, dig
 
 _VARCHAR_TYPE = "VARCHAR(255)"
 
-Row = Tuple[str, Optional[str], Optional[str], str]
+Row = tuple[str, Optional[str], Optional[str], str]
 
 
 def _load(path: Path):
@@ -48,7 +48,7 @@ def _equal_strict(a: Any, b: Any) -> bool:
     return type(a) is type(b) and a == b
 
 
-def _container_ok(data: dict, container_segments: List[str]) -> bool:
+def _container_ok(data: dict, container_segments: list[str]) -> bool:
     """コンテナ段を書き込めるか判定する（作成はしない）。`env` の 1 段だけ、無くても可とする。"""
     cur: Any = data
     for i, seg in enumerate(container_segments):
@@ -58,13 +58,11 @@ def _container_ok(data: dict, container_segments: List[str]) -> bool:
                 return False
             cur = nxt
             continue
-        if i == 0 and seg == "env" and len(container_segments) == 1:
-            return True
-        return False
+        return i == 0 and seg == "env" and len(container_segments) == 1
     return True
 
 
-def _get_or_create_container(data: dict, container_segments: List[str]) -> dict:
+def _get_or_create_container(data: dict, container_segments: list[str]) -> dict:
     """コンテナ段をたどる。`_container_ok` で許可された経路のみ渡される前提で、無ければ作る。"""
     cur = data
     for seg in container_segments:
@@ -116,7 +114,7 @@ def _write(config_path: Path, data: dict, pending: list, expected_mtime_ns) -> s
         return "write_failed"
 
 
-def apply_settings(config_path, policy: dict) -> List[Row]:
+def apply_settings(config_path, policy: dict) -> list[Row]:
     """POLICY のキーごとに現在値を調べ、差分があれば settings.json に強制適用する。
 
     例外は呼び出し元に漏らさない。書けたかどうかに関わらず value は常にポリシー値。
