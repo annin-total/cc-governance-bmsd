@@ -8,6 +8,7 @@ import time
 import csv_import
 import db
 import ingest
+import queries_events
 import queries_policy
 import shared
 from flask import Flask, Response, render_template, request
@@ -96,6 +97,27 @@ def policy_view() -> str:
         not_introduced=not_introduced,
         stale=stale,
         plugin_versions=plugin_versions,
+    )
+
+
+@app.route("/assets")
+def assets_view() -> str:
+    """`/assets` 画面。基準日の算出・接続の取得・集計呼び出し・描画・接続の解放だけを行う。"""
+    today = _today()
+    conn = db.connect()
+    try:
+        skills = queries_events.skill_usage(conn, today)
+        commands = queries_events.command_usage(conn, today)
+        numerator, denominator, rate = queries_events.subagent_ratio(conn, today)[0]
+    finally:
+        conn.close()
+    return render_template(
+        "assets.html",
+        skills=skills,
+        commands=commands,
+        subagent_numerator=numerator,
+        subagent_denominator=denominator,
+        subagent_rate=rate,
     )
 
 
