@@ -3,10 +3,15 @@
 import json
 import os
 import stat
+import subprocess
+import sys
 import time
+from pathlib import Path
 
 import pytest
 from _context import context_tokens
+
+_HOOKS_DIR = Path(__file__).resolve().parents[2] / "governance" / "hooks"
 
 
 def _write_jsonl(path, lines):
@@ -245,3 +250,38 @@ def test_only_zero_usage_returns_none(tmp_path):
         ],
     )
     assert context_tokens(str(path)) is None
+
+
+def _run_context_tokens_in_subprocess(path_literal: str) -> subprocess.CompletedProcess:
+    """別プロセスで context_tokens(path) を呼ぶ。
+
+    `bool` の `path`（例: True）は `open()` に渡ると fd 1（標準出力）として
+    解釈され、`with` を抜けるときに実プロセスの標準出力を閉じてしまう。
+    この検査自体がテストランナーの標準出力を壊さないよう、サブプロセスに隔離する。
+    """
+    code = (
+        f"import sys; sys.path.insert(0, {str(_HOOKS_DIR)!r});"
+        "from _context import context_tokens;"
+        f"r = context_tokens({path_literal});"
+        "print(r);"  # fd 1 が閉じられていれば、この print 自体が失敗の引き金になる
+        "sys.exit(0 if (r is None or isinstance(r, int)) else 1)"
+    )
+    return subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        timeout=10,
+        text=True,
+        check=False,
+    )
+
+
+@pytest.mark.parametrize("path_literal", ["1.5", "True", "999999", "None", "''"])
+def test_non_str_transcript_path_does_not_raise_or_corrupt_stdout(path_literal):
+    """C-1: float / bool / int / None / 空文字の transcript_path でも例外を漏らさず、
+    終了コードは常に 0（`None` か数値を返す）。`True` は fd として解釈されると
+    標準出力を閉じ、終了コードが 120 になる経路を検査する。
+    """
+    proc = _run_context_tokens_in_subprocess(path_literal)
+    assert proc.returncode == 0, (
+        f"path={path_literal}: exit={proc.returncode} stderr={proc.stderr!r}"
+    )

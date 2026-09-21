@@ -25,8 +25,12 @@ def context_tokens(path: Optional[str], tail: int = _TAIL_BYTES) -> Optional[int
 
 
 def _read_tail(path: Optional[str], tail: int) -> Optional[bytes]:
-    """ファイル末尾 `tail` バイトを読む。読めない場合は None を返す。"""
-    if not path:
+    """ファイル末尾 `tail` バイトを読む。読めない場合は None を返す。
+
+    `path` が `str` でなければ即座に None を返す。`bool` / `int` を素通しすると
+    `open()` がファイル記述子として解釈し、`True`（== 1）は標準出力を閉じてしまう。
+    """
+    if not isinstance(path, str) or not path:
         return None
     try:
         with open(path, "rb") as f:
