@@ -122,6 +122,7 @@ hook の起動コマンドを解決可能なインタプリタの絶対パスに
 | --- | --- | --- |
 | 1 開発依存とテスト実行の土台 | 完了（レビュー clean） | `0cd13a2..c54cf78` |
 | 2〜6 契約の 5 定数・`dig`・`coerce`・`to_day`・`ddl` | 完了（Spec ✅ / Approved。Critical・Important なし） | `4b17e34..b5fc251` |
+| 7〜11 `shared.py` と `db.py` | 完了（Spec ✅。Important 1 件を修正 1 巡で解消） | `265575f..0436872` |
 
 - **R-11: `ruff.toml` で `FA100` を無効にする（`[lint] ignore = ["FA100"]`）。**
   理由 — ruff 0.16.8 の既定ルールセットは、`typing.Optional` に対して FA100（`from __future__ import annotations` を足せ）を出す。
@@ -145,3 +146,30 @@ hook の起動コマンドを解決可能なインタプリタの絶対パスに
 | 4 | `ddl()` 内の `policy_columns = POLICY_COLUMNS` は素通しの再代入（1 行削減できる） | 最終レビューで判断 |
 | 5 | 内部ヘルパが 5 つ。`_varchar_length` は `_coerce_varchar` に畳める | 最終レビューで判断 |
 | 6 | `dig` の戻り型 `Optional[Any]` は `Any` と等価で情報を持たない | 最終レビューで判断 |
+
+- **R-13: `_sqlite_path()` に DSN の書式検証を足し、それを検証するテストも足す。この計画のテスト総数は 83 → 84 になる。**
+  理由 — レビュアが実測で、`DB_DSN=sqlite://weird.db`（スラッシュ 2 本）を与えると `_dialect()` は `sqlite` を返し、
+  `_sqlite_path()` が先頭 10 文字を機械的に剥がして `'eird.db'` を返すことを確認した。サーバは正常に起動し、
+  全データがカレントディレクトリ直下の別ファイルへ入る。計画書の「83 passed」は「指定したケースが全部揃っている」ことの
+  表明であって上限ではない。検証されない guard は死んだ関門と同じであり、足す以上は検証する。
+  外れたときの損 — 計画書に書かれた件数と実際が 1 件ずれる。この台帳がその差分の説明になる。
+
+### 先送りした Minor 指摘（タスク 7〜11。最終レビューで要否を判断する）
+
+| # | 指摘 | 備考 |
+| --- | --- | --- |
+| 1 | インデックス名の規約（R-6）をどのテストも検証していない。`_index_name()` が別の命名に変わってもテストは通る | `assert` 1 本で埋まる |
+| 2 | `connect()` に戻り値の型注釈が無い。`cur` / `conn` を取る内部関数も同様 | PyMySQL 未インストール・py39 という事情はある |
+| 3 | `init()` に例外時の `rollback()` が無い | SQLite では DDL が暗黙コミットのため実害は確認できず。MySQL 側は未検証 |
+| 4 | `analyze()` の `conn.commit()` は計画に無い追加。`ANALYZE` は両方言とも暗黙コミットを伴う | この 1 行のためにテストの偽接続が `commit()` を持たされている |
+| 5 | テーブル名が `_TABLES` / `_INDEXES` / `_required_columns()` の 3 か所に重複し、関門の網羅性が契約から導かれていない | 契約側に構造化されたテーブル定義が無いため、きれいに導く手が今は無い |
+| 6 | タスク 10 のテスト 2 件が RED を経ていない（突き合わせ処理が無くても通る） | 実装者が報告で自ら明記している |
+| 7 | `test_shared_import.py` が子プロセスの `env` を全面置換している | macOS / Linux + venv の前提なら問題ない |
+
+### 実機でしか確かめられない残件（計画 [8] へ持ち越し）
+
+| 事項 | 内容 |
+| --- | --- |
+| PyMySQL の戻り値の列位置 | `SHOW INDEX` → `row[2]`（Key_name）、`SHOW COLUMNS` → `row[0]`（Field）は既定 `Cursor`（タプル返し）前提。実 MySQL で未確認 |
+| InnoDB のインデックスキー長 | utf8mb4 換算で最長 `ix_policy_state_key_name_prev_value_user_email` ≈ 2552 bytes。MySQL 8.0 既定の DYNAMIC 行フォーマット（上限 3072）には収まるが、COMPACT / REDUNDANT（767）では `CREATE INDEX` が失敗する |
+| `PRAGMA analysis_limit` の可用性 | SQLite 3.32 以降。未対応版では黙って無視される。設計書の前提は 3.25 以降のため 3.25〜3.31 の穴が残る |
