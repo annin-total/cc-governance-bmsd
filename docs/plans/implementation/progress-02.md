@@ -330,3 +330,34 @@ builtin は sys.path[0] より優先される（実証済み）
 
 **`mark_sent()` を呼ぶ経路がまだ無い。** `_sender.run()` は `rotate` → `prune` → POST しか行わない。
 **タスク 8 の結線で hook 側が `mark_sent()` を呼ばないと `should_send()` が常に真になり、毎 hook で `launch()` が走る。**
+
+## タスク 8〜9 と改名の結果
+
+**254 passed**（`tests/client/` は 161）。
+
+### 制御側の独立検証
+
+**改名の効果:**
+
+```
+sys.modules['_queue'] = 標準ライブラリの共有拡張のまま
+queue.SimpleQueue     = <class '_queue.SimpleQueue'>   ← C 実装に戻った
+governance/hooks/ : _spool.py があり _queue.py は無い
+```
+
+**実物の `collect.py` を子プロセスで叩いた結果（8 種類の壊れた入力）:**
+
+```
+rc=0 / 出力 0 バイト : 正常な JSON / {} / 非 JSON / 配列 /
+                       transcript_path が true / 同 1.5 / session_id が dict・effort が配列 / 空入力
+CC_GOVERNANCE_DISABLE=1 : rc=0、queue.jsonl に行が増えない
+queue.jsonl : 8 行。kind / event_id / ts / day / user_email / host / hook_event / context_tokens が入っている
+```
+
+**「hook の終了コードは常に `exit 0`。標準エラーにも出さない」が、実物のプロセスで成立している。**
+
+### 計画書のテスト件数について
+
+計画書が書く件数（タスク 9 の「154 passed」など）は**計画書時点の静的見積り**であり、
+レビュー対応による積み増し（R-23 / R-29 / R-32 / R-38 など）で実測とずれている。
+**「既存を 1 件も壊さない」を実測で満たしていることをもって代える。**
