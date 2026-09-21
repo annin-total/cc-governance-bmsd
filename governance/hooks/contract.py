@@ -1,5 +1,7 @@
 """端末プラグインとサーバが共有する契約の正本。標準ライブラリのみで動く。"""
 
+from typing import Any, Optional, Tuple
+
 HOOK_FIELDS = (
     # (列名, キーパス, 型) の 3 つ組。行末の註記は届く hook であって要素ではない
     ("session_id", ("session_id",), "VARCHAR(255)"),  # 全 hook
@@ -63,3 +65,11 @@ CSV_COLUMNS = (
     ("Uncached Input Tokens", "uncached_input_tokens", "BIGINT"),
     (None, "source_file", "VARCHAR(255)"),
 )
+
+
+def dig(obj: Any, path: Tuple[str, ...]) -> Optional[Any]:
+    """キーパスを先頭から順にたどり、たどれなければ None を返す。"""
+    cur = obj
+    for key in path:
+        cur = cur.get(key) if isinstance(cur, dict) else None
+    return cur
