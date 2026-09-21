@@ -11,7 +11,11 @@
 <h2>取込結果</h2>
 <ul>
   {% for r in import_results %}
+  {% if r.error %}
+  <li>{{ r.file }}: 失敗（{{ r.error }}）</li>
+  {% else %}
   <li>{{ r.file }}: {{ r.rows }} 行（破棄 {{ r.dropped }} 件）</li>
+  {% endif %}
   {% endfor %}
 </ul>
 {% endif %}

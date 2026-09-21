@@ -622,3 +622,39 @@ def test_scan_skips_file_with_missing_required_column(sqlite_db_dsn, tmp_path):
         assert _count_and_sum(conn) == (3, 6.0)
     finally:
         conn.close()
+
+
+# --- レビュー対応: I-1 --------------------------------------------------------
+
+
+def test_overview_shows_error_for_failed_file(sqlite_db_dsn, tmp_path):
+    """I-1: 失敗したファイルの `error` が画面（テンプレート）に表示される。"""
+    import importlib
+
+    _copy_fixture(tmp_path, "daily_a.csv", "a_good.csv")
+    (tmp_path / "z_unrelated.csv").write_bytes(
+        b"Workspace ID,User Name\r\nworkspace-01,someone\r\n"
+    )
+
+    import app as app_module
+
+    original_csv_dir = os.environ.get("CSV_DIR")
+    os.environ["CSV_DIR"] = str(tmp_path)
+    try:
+        importlib.reload(app_module)
+        client = app_module.app.test_client()
+        response = client.post("/import")
+        body = response.get_data(as_text=True)
+        assert "a_good.csv" in body
+        assert "z_unrelated.csv" in body
+        # 失敗したファイルの行に「必須列が欠けている」という error 文言が出ていること
+        unrelated_line = next(
+            line for line in body.splitlines() if "z_unrelated.csv" in line
+        )
+        assert "必須列が欠けている" in unrelated_line
+    finally:
+        if original_csv_dir is None:
+            os.environ.pop("CSV_DIR", None)
+        else:
+            os.environ["CSV_DIR"] = original_csv_dir
+        importlib.reload(app_module)
