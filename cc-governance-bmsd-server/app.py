@@ -25,7 +25,7 @@ def ingest_endpoint() -> Response:
     token = os.environ.get("INGEST_TOKEN") or ""
     header_token = request.headers.get("X-Ingest-Token") or ""
     if not token or not hmac.compare_digest(
-        header_token.encode("utf-8", "surrogateescape"),
+        header_token.encode("latin-1", "replace"),
         token.encode("utf-8", "surrogateescape"),
     ):
         return Response(status=401)

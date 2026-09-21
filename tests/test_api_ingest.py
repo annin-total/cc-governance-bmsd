@@ -117,6 +117,43 @@ def test_non_ascii_token_rejected_with_401(ingest_client):
     assert _count("events") == 0
 
 
+def test_non_ascii_token_matching_value_is_accepted(sqlite_db_dsn):
+    """# K-1: 非 ASCII の `INGEST_TOKEN` に、同じ値を正しく WSGI 符号化したヘッダを送ると 200。
+
+    Flask の `test_client()` は `headers={...}` の文字列をそのまま渡してしまい、
+    実サーバが行う「ヘッダは on-the-wire では UTF-8 バイト列、WSGI はそれを latin-1 で
+    str に復号する」という符号化を経由しない。この欠陥は `environ_overrides` で
+    WSGI 環境を直接組み立てないと再現できない。
+    """
+    import importlib
+
+    token_value = "トークン"
+    wire_bytes = token_value.encode("utf-8")
+    wsgi_header_str = wire_bytes.decode("latin-1")  # WSGI サーバが実際に作る str
+
+    original_token = os.environ.get("INGEST_TOKEN")
+    os.environ["INGEST_TOKEN"] = token_value
+    try:
+        import app as app_module
+
+        importlib.reload(app_module)
+        client = app_module.app.test_client()
+
+        body = "\n".join([_event_line("e1"), _event_line("e2")])
+        response = client.post(
+            "/ingest",
+            data=body,
+            environ_overrides={"HTTP_X_INGEST_TOKEN": wsgi_header_str},
+        )
+        assert response.status_code == 200
+        assert response.get_json() == {"stored": 2, "dropped": 0}
+    finally:
+        if original_token is None:
+            os.environ.pop("INGEST_TOKEN", None)
+        else:
+            os.environ["INGEST_TOKEN"] = original_token
+
+
 def test_server_token_unset_rejected(ingest_client):
     """# 7: サーバの `INGEST_TOKEN` が未設定 + 正しそうなトークン + 正常な 2 行 -> 401。"""
     os.environ.pop("INGEST_TOKEN", None)
