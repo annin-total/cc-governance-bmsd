@@ -8,6 +8,7 @@
 import json
 import platform
 import subprocess
+from pathlib import Path
 
 import _identity
 import pytest
@@ -157,3 +158,42 @@ def test_event_id_are_distinct_uuid4_strings():
     ids = [_identity.new_event_id() for _ in range(1000)]
     assert len(ids) == len(set(ids))
     assert all(len(i) == 36 for i in ids)
+
+
+def test_fallback_path_honors_home_override_not_real_home(monkeypatch, tmp_path):
+    """#13 (I-1): CLAUDE_PLUGIN_DATA を外し HOME を差し替えると、
+    差し替えた HOME 配下に identity.json が書かれ、本物のホームには書かれない。"""
+    real_home_path = Path.home() / ".claude" / "cc-governance" / "identity.json"
+    real_home_existed_before = real_home_path.exists()
+
+    monkeypatch.delenv("CLAUDE_PLUGIN_DATA", raising=False)
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.setattr(
+        _identity.subprocess, "run", _fake_run(returncode=0, stdout="Bar@Example.com\n")
+    )
+
+    _identity.get_user_email()
+
+    expected_path = fake_home / ".claude" / "cc-governance" / "identity.json"
+    assert expected_path.exists()
+    assert json.loads(expected_path.read_text())["user_email"] == "bar@example.com"
+
+    # 本物のホームは、このテストの前後で状態が変わっていないこと（新規作成もされない）
+    assert real_home_path.exists() == real_home_existed_before
+
+
+def test_null_cache_skips_subprocess(monkeypatch):
+    """#14 (M-3): 解決できなかった結果（null）もキャッシュされ、
+    2 回目以降は subprocess を起動しない。"""
+    monkeypatch.setattr(_identity.subprocess, "run", _fake_run(returncode=0, stdout=""))
+    first = _identity.get_user_email()
+    assert first is None
+
+    failing_run = _FailingGitRun()
+    monkeypatch.setattr(_identity.subprocess, "run", failing_run)
+    second = _identity.get_user_email()
+
+    assert second is None
+    assert failing_run.called is False

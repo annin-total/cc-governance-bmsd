@@ -14,15 +14,19 @@ from typing import Optional
 
 _ENV_USER_EMAIL = "CC_GOVERNANCE_USER_EMAIL"
 _STATE_DIR_ENV = "CLAUDE_PLUGIN_DATA"
-_FALLBACK_STATE_DIR = Path.home() / ".claude" / "cc-governance"
+_FALLBACK_STATE_DIR_SUFFIX = (".claude", "cc-governance")
 
 
 def _state_dir() -> Path:
-    """端末の状態の置き場所を解決する。`CLAUDE_PLUGIN_DATA` が無ければ代替経路を使う。"""
+    """端末の状態の置き場所を解決する。`CLAUDE_PLUGIN_DATA` が無ければ代替経路を使う。
+
+    `Path.home()` は呼び出しのたびに評価する。import 時に評価して定数化すると、
+    テストや隔離環境での `HOME` の差し替えが効かなくなる。
+    """
     plugin_data = os.environ.get(_STATE_DIR_ENV)
     if plugin_data:
         return Path(plugin_data)
-    return _FALLBACK_STATE_DIR
+    return Path.home().joinpath(*_FALLBACK_STATE_DIR_SUFFIX)
 
 
 def _identity_path() -> Path:
@@ -44,11 +48,18 @@ def _load_cache() -> Optional[dict]:
 
 
 def _save_cache(user_email: Optional[str]) -> None:
-    """`user_email` の解決結果を `identity.json` に書き込む。親ディレクトリが無ければ作る。"""
+    """`user_email` の解決結果を `identity.json` に書き込む。親ディレクトリが無ければ作る。
+
+    書き込みに失敗しても解決処理自体は妨げない（hook は利用者の作業を妨げない）ため、
+    `OSError` は無視する。
+    """
     path = _identity_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump({"user_email": user_email}, f)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"user_email": user_email}, f)
+    except OSError:
+        pass
 
 
 def _resolve_via_git() -> Optional[str]:
