@@ -20,9 +20,9 @@ _TABLE_COLUMNS = {
 }
 
 
-def _row_values(obj: dict, columns: tuple) -> tuple:
-    """列定義に沿って値を取り出し coerce する。`day` は `to_day(ts)` で上書きする。"""
-    day = to_day(obj.get("ts"))
+def _row_values(obj: dict, columns: tuple, ts: int) -> tuple:
+    """列定義に沿って値を取り出し coerce する。`day` は検査済みの `ts` から計算する。"""
+    day = to_day(ts)
     values = []
     for name, type_ in columns:
         if name == "day":
@@ -45,10 +45,11 @@ def parse_line(line: bytes) -> Optional[tuple]:
         return None
     if not obj.get("event_id"):
         return None
-    if obj.get("ts") is None:
+    ts = coerce(obj.get("ts"), "INTEGER")
+    if ts is None:
         return None
     _, columns = _TABLE_COLUMNS[kind]
-    return kind, _row_values(obj, columns)
+    return kind, _row_values(obj, columns, ts)
 
 
 def _split_lines(raw: bytes) -> list:

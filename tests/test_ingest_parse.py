@@ -160,3 +160,33 @@ def test_policy_row_is_accepted_with_policy_columns():
     assert _policy_value(values, "prev_value") is None
     assert _policy_value(values, "apply_result") == "applied"
     assert _policy_value(values, "day") == 20352
+
+
+def test_ts_non_numeric_string_is_dropped_but_sibling_row_is_stored():
+    """# 19: ts が数値化できない文字列の行は破棄し、同じリクエスト内の正常行は保存される。"""
+    good = b'{"kind":"event","event_id":"e19a","ts":1758400000}'
+    poison = b'{"kind":"event","event_id":"e19b","ts":"abc"}'
+    rows, dropped = parse_lines(good + b"\n" + poison)
+    assert dropped == 1
+    assert len(rows) == 1
+    assert rows[0][0] == "event"
+
+
+def test_ts_array_is_dropped_but_sibling_row_is_stored():
+    """# 20: ts が配列の行は破棄し、同じリクエスト内の正常行は保存される。"""
+    good = b'{"kind":"event","event_id":"e20a","ts":1758400000}'
+    poison = b'{"kind":"event","event_id":"e20b","ts":[1]}'
+    rows, dropped = parse_lines(good + b"\n" + poison)
+    assert dropped == 1
+    assert len(rows) == 1
+    assert rows[0][0] == "event"
+
+
+def test_ts_dict_is_dropped_but_sibling_row_is_stored():
+    """# 21: ts が辞書の行は破棄し、同じリクエスト内の正常行は保存される。"""
+    good = b'{"kind":"event","event_id":"e21a","ts":1758400000}'
+    poison = b'{"kind":"event","event_id":"e21b","ts":{"a":1}}'
+    rows, dropped = parse_lines(good + b"\n" + poison)
+    assert dropped == 1
+    assert len(rows) == 1
+    assert rows[0][0] == "event"
