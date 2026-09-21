@@ -35,8 +35,12 @@ def _dialect() -> str:
 
 
 def _sqlite_path() -> str:
-    """`sqlite:///<パス>` から絶対・相対いずれかのパスを取り出す。"""
+    """`sqlite:///<パス>` から絶対・相対いずれかのパスを取り出す。prefix が無ければ例外にする。"""
     dsn = os.environ["DB_DSN"]
+    if not dsn.startswith(_SQLITE_PATH_PREFIX):
+        raise RuntimeError(
+            f"sqlite の DSN は {_SQLITE_PATH_PREFIX} で始まる必要がある: {dsn}"
+        )
     return dsn[len(_SQLITE_PATH_PREFIX) :]
 
 

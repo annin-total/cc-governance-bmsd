@@ -31,6 +31,13 @@ def test_connect_raises_for_unknown_scheme(monkeypatch):
         db.connect()
 
 
+def test_connect_raises_for_malformed_sqlite_dsn(monkeypatch):
+    """`sqlite://weird.db`（スラッシュ 2 本）のような prefix 不足の DSN は connect() が例外にする。"""
+    monkeypatch.setenv("DB_DSN", "sqlite://weird.db")
+    with pytest.raises(RuntimeError):
+        db.connect()
+
+
 def test_connect_sqlite_select_1(sqlite_db_dsn):
     """一時 SQLite への connect() で SELECT 1 が 1 を返す。"""
     conn = db.connect()
