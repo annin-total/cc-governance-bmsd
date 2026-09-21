@@ -128,5 +128,10 @@ def _list_csv_files(csv_dir: str) -> list:
 
 
 def import_all(csv_dir: str, conn) -> list:
-    """`csv_dir` 配下の全 `*.csv` を毎回取り直す。未取込判定は持たない。"""
-    return [import_file(path, conn) for path in _list_csv_files(csv_dir)]
+    """`csv_dir` 配下の全 `*.csv` を毎回取り直し、最後に `db.analyze()` を 1 回だけ呼ぶ。
+
+    未取込判定は持たない。ファイルが 1 つも無くても analyze は呼ぶ。
+    """
+    results = [import_file(path, conn) for path in _list_csv_files(csv_dir)]
+    db.analyze(conn)
+    return results

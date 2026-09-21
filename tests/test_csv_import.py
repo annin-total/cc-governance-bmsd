@@ -431,3 +431,62 @@ def test_scan_missing_directory_returns_empty(sqlite_db_dsn, tmp_path):
         assert _count_and_sum(conn) == (0, None)
     finally:
         conn.close()
+
+
+# --- タスク 6: 取込の最後に統計情報を更新する --------------------------------
+
+
+def _has_cost_daily_stats(conn) -> bool:
+    """`sqlite_stat1` に `cost_daily` の行があるかを返す。テーブル自体が無ければ False。"""
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='sqlite_stat1'"
+    )
+    if cur.fetchone()[0] == 0:
+        return False
+    cur.execute("SELECT COUNT(*) FROM sqlite_stat1 WHERE tbl='cost_daily'")
+    return cur.fetchone()[0] > 0
+
+
+def test_analyze_called_after_import(sqlite_db_dsn, tmp_path):
+    """6-1: 取込の前には統計情報が無く、後には在る。"""
+    db.init()
+    conn = db.connect()
+    try:
+        _copy_fixture(tmp_path, "daily_a.csv")
+        assert _has_cost_daily_stats(conn) is False
+
+        csv_import.import_all(str(tmp_path), conn)
+
+        assert _has_cost_daily_stats(conn) is True
+    finally:
+        conn.close()
+
+
+def test_analyze_called_on_reimport_no_change(sqlite_db_dsn, tmp_path):
+    """6-2: 直後にもう 1 度取り込んでも例外にならず、COUNT(*)・SUM(cost) が変わらない。"""
+    db.init()
+    conn = db.connect()
+    try:
+        _copy_fixture(tmp_path, "daily_a.csv")
+        csv_import.import_all(str(tmp_path), conn)
+        csv_import.import_all(str(tmp_path), conn)
+
+        assert _count_and_sum(conn) == (3, 6.0)
+    finally:
+        conn.close()
+
+
+def test_analyze_called_with_empty_directory(sqlite_db_dsn, tmp_path, monkeypatch):
+    """6-3: `.csv` が 1 本も無くても例外にならず、0 件を返し db.analyze() は呼ばれる。"""
+    db.init()
+    conn = db.connect()
+    calls = []
+    monkeypatch.setattr(csv_import.db, "analyze", lambda c: calls.append(c))
+    try:
+        results = csv_import.import_all(str(tmp_path), conn)
+
+        assert results == []
+        assert calls == [conn]
+    finally:
+        conn.close()
