@@ -131,3 +131,12 @@ def coerce(value: Any, type_str: str) -> Any:
     if token == "DOUBLE":
         return _coerce_double(value)
     return None
+
+
+_JST_OFFSET_SECONDS = 9 * 3600
+_SECONDS_PER_DAY = 86400
+
+
+def to_day(ts: int) -> int:
+    """epoch 秒を JST 基準の epoch 日へ変換する。現在時刻は読まない。"""
+    return (ts + _JST_OFFSET_SECONDS) // _SECONDS_PER_DAY
