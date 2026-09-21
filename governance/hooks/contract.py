@@ -140,3 +140,30 @@ _SECONDS_PER_DAY = 86400
 def to_day(ts: int) -> int:
     """epoch 秒を JST 基準の epoch 日へ変換する。現在時刻は読まない。"""
     return (ts + _JST_OFFSET_SECONDS) // _SECONDS_PER_DAY
+
+
+def _create_table_sql(table_name: str, columns: Tuple[Tuple[str, str], ...]) -> str:
+    """列の並びから CREATE TABLE IF NOT EXISTS 文を組み立てる。"""
+    columns_sql = ", ".join("{0} {1}".format(name, type_str) for name, type_str in columns)
+    return "CREATE TABLE IF NOT EXISTS {0} ({1})".format(table_name, columns_sql)
+
+
+def ddl() -> Tuple[str, str, str]:
+    """events / policy_state / cost_daily の CREATE TABLE 文を組み立てる。"""
+    hook_names = {name for name, _, _ in HOOK_FIELDS}
+    extra_names = {name for name, _ in EXTRA_COLUMNS}
+    duplicated = hook_names & extra_names
+    if duplicated:
+        raise ValueError(
+            "HOOK_FIELDS と EXTRA_COLUMNS で列名が重複している: " + ", ".join(sorted(duplicated))
+        )
+
+    events_columns = tuple(EXTRA_COLUMNS) + tuple((name, type_str) for name, _, type_str in HOOK_FIELDS)
+    policy_columns = POLICY_COLUMNS
+    cost_columns = tuple((db_name, type_str) for _, db_name, type_str in CSV_COLUMNS)
+
+    return (
+        _create_table_sql("events", events_columns),
+        _create_table_sql("policy_state", policy_columns),
+        _create_table_sql("cost_daily", cost_columns),
+    )
