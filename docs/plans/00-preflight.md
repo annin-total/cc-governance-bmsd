@@ -22,6 +22,9 @@
 | `is_interrupt` の入り方 | JSON の**真偽値**（文字列でも 0/1 でもない） | 同上 |
 | CSV の `Date` の書式 | **`YYYY-MM-DD` と `YYYY/M/D` の 2 書式が混在する** | AI Gateway の実ファイル 2 本を走査 |
 | CSV の `Provider` の値 | `aws-bedrock`（Claude 系）と `openai` の 2 値 | 同上 |
+| `autoUpdate` をどこに書けば維持できるか | **`~/.claude/settings.json` が権威。** セッション開始時に `known_marketplaces.json` へ上書き同期される。プラグインが `settings.json` に書けば維持できる | 隔離環境で両者に異なる値を仕込んで起動し、内部の一覧が `settings.json` に揃うことを両方向で確認 |
+| 社外マーケットプレイスの自動更新の既定 | **無効。** git リモートを `source` にして導入した直後、`autoUpdate` キーがどちらのファイルにも存在しない | 同上 |
+| 手動更新の手順 | **2 段階。** `claude plugin marketplace update` はカタログだけを更新し、導入済みプラグインの版は上がらない。本体は `claude plugin update` | 同上 |
 
 ---
 
