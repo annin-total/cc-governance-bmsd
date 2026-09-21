@@ -10,7 +10,7 @@
 | 計画 | ブランチ | PR | 状態 |
 | --- | --- | --- | --- |
 | [0] 実装前に確かめること | なし | — | 完了（判定は下記） |
-| [1] 契約と基盤 | `feat/contract-and-foundation` | — | 着手 |
+| [1] 契約と基盤 | `feat/contract-and-foundation` | 作成済み | **完了**（84 passed。最終レビュー clean） |
 | [2] 端末:収集 | — | — | 未着手 |
 | [3] 端末:適用・お知らせ | — | — | 未着手 |
 | [4] サーバ:受信 | — | — | 未着手 |
@@ -123,6 +123,7 @@ hook の起動コマンドを解決可能なインタプリタの絶対パスに
 | 1 開発依存とテスト実行の土台 | 完了（レビュー clean） | `0cd13a2..c54cf78` |
 | 2〜6 契約の 5 定数・`dig`・`coerce`・`to_day`・`ddl` | 完了（Spec ✅ / Approved。Critical・Important なし） | `4b17e34..b5fc251` |
 | 7〜11 `shared.py` と `db.py` | 完了（Spec ✅。Important 1 件を修正 1 巡で解消） | `265575f..0436872` |
+| 最終レビューの指摘 I-1 の修正 | 完了（変異検証で有効性を確認） | `c0b5171` |
 
 - **R-11: `ruff.toml` で `FA100` を無効にする（`[lint] ignore = ["FA100"]`）。**
   理由 — ruff 0.16.8 の既定ルールセットは、`typing.Optional` に対して FA100（`from __future__ import annotations` を足せ）を出す。
@@ -195,3 +196,22 @@ Critical なし。Important 1 件。先送りしていた Minor 13 件の triage
 | CSV ヘッダ名（`"Cached Input Tokens"` 等）を実ファイルと突き合わせるテストが無い。この計画は DB 列名の並びしか検査していない | 計画 [6]。実 CSV の 1 行目と `CSV_COLUMNS` のヘッダ名の突き合わせをタスクに入れる |
 | 完了条件「列名が `db.py` にも直接書かれていない」と、前提「インデックスの定義は `db.py` の定数として持つ」が字義上衝突する。実害は無い（契約から列が消えれば `_check_contract_columns` が先に落ちる） | 記録のみ |
 | `coerce` の型トークンが 4 種以外なら `None` を返す。例外にしなかったのは、契約が端末にそのまま配布され、hook が例外を出す経路を作ると「1 列が NULL」より悪い「イベント全件の欠落」になりうるため。防御は `test_contract_constants.py` の型トークン検査が担う | 記録のみ |
+
+### 計画 [1] の完了条件の照合
+
+| 完了条件 | 結果 |
+| --- | --- |
+| `contract.py` が 5 定数・4 関数だけを公開し 200 行以内 | 176 行 |
+| `contract.py` が標準ライブラリ以外を import していない | `typing` のみ |
+| `shared.py` が `__file__` 起点で解決し 9 つの名前を再輸出 | 22 行。別プロセス・cwd 3 通りで検証 |
+| `db.py` が 4 つを外に出し 200 行以内 | 157 行。内部関数は `_` 接頭辞 |
+| `db.py` がフレームワークを import していない | `grep` で 0 件 |
+| 3 テーブルの列名が `db.py` にも `shared.py` にも直接書かれていない | インデックス定義の列名のみ。前提が明示的に許可した箇所 |
+| 契約に列を足すと `init()` が例外で止まることが 3 テーブルとも検証されている | `tests/test_db_columns.py` |
+| インデックス 7 本、2 回目の `init()` で重複しない | R-14 で名前リストの突き合わせに強化。変異検証で有効性を確認 |
+| `analyze()` が両方言で完了し、SQLite で `PRAGMA analysis_limit` が `ANALYZE` より先 | 発行文の順序を検査 |
+| `requirements-dev.txt` が 2 行・`==` 固定。`requirements.txt` は未作成 | 合格 |
+| `tests/` が `governance/` にも `cc-governance-bmsd-server/` にも無い | 合格 |
+| 契約の正本が 1 つだけ（`grep`） | 出力なし |
+| テストが通る | **84 passed**（計画書は 83。R-13 で 1 件追加） |
+| `main` へのマージ | **行わない。** 利用者の指示により PR を作って止める |
