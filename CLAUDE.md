@@ -6,7 +6,7 @@ Claude Code の端末プラグイン（`governance/`）と集計サーバ（`cc-
 
 ## Commands
 
-リポジトリのルートで実行する。
+リポジトリのルートで実行
 
 ```bash
 pytest -q                       # テスト（-k やファイル指定で絞り込み可）
@@ -19,6 +19,10 @@ cd cc-governance-bmsd-server && \
   DB_DSN=sqlite:///../local/governance.db INGEST_TOKEN=dev CSV_DIR=../local/csv \
   waitress-serve --listen=127.0.0.1:5000 app:app
 ```
+
+## Subagents
+
+- 実装タスクは Sonnet、レビュータスクは Opus、その他は Sonnet に割り当てる（監督役は Opus）
 
 ## Coding
 
