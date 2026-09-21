@@ -14,6 +14,7 @@ from test_fixtures import (
     TODAY,
     assert_invariant_under_duplication,
     duplicate_all,
+    insert_policy_state,
     known_db,  # noqa: F401
 )
 
@@ -65,6 +66,58 @@ def test_latest_values_without_day_filter_would_include_u11(known_db):
     rows = cur.fetchall()
     assert len(rows) == 8
     assert ("u11", "h11") in rows
+
+
+def test_latest_values_picks_max_ts_not_max_day(known_db):
+    """`day` の順序と `ts` の順序が食い違う 3 行では、`ts` が最大の行を現在値とする。
+
+    既知データを壊さないよう、新しい端末 ux/hx に 3 行だけ追加する。
+    `day` の降順では ts=1000・day=20003（prev_value=80）が選ばれてしまうが、
+    正しい実装（`ts` の降順）は ts=5000・day=20000（prev_value=60）を返す。
+    """
+    insert_policy_state(
+        known_db,
+        event_id="tie1",
+        ts=5000,
+        day=20000,
+        user_email="ux",
+        host="hx",
+        key_name=K,
+        value="60",
+        prev_value="60",
+        apply_result="already_ok",
+        plugin_version="1.4.0",
+    )
+    insert_policy_state(
+        known_db,
+        event_id="tie2",
+        ts=3000,
+        day=20001,
+        user_email="ux",
+        host="hx",
+        key_name=K,
+        value="60",
+        prev_value="70",
+        apply_result="already_ok",
+        plugin_version="1.4.0",
+    )
+    insert_policy_state(
+        known_db,
+        event_id="tie3",
+        ts=1000,
+        day=20003,
+        user_email="ux",
+        host="hx",
+        key_name=K,
+        value="60",
+        prev_value="80",
+        apply_result="already_ok",
+        plugin_version="1.4.0",
+    )
+    rows = queries_policy.latest_values(known_db, TODAY, K)
+    by_terminal = {(r[0], r[1]): r for r in rows}
+    assert by_terminal[("ux", "hx")][2] == "60"
+    assert by_terminal[("ux", "hx")][4] == 5000
 
 
 def test_compliance_rate_k(known_db):

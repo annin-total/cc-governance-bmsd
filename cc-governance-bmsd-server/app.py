@@ -84,6 +84,9 @@ def policy_view() -> str:
                     ),
                 }
             )
+        latest_values = queries_policy.latest_values(
+            conn, today, queries_policy.REFERENCE_KEY
+        )
         not_introduced = queries_policy.not_introduced(conn, today)
         stale = queries_policy.stale_terminals(conn, today)
         plugin_versions = queries_policy.plugin_version_distribution(
@@ -94,6 +97,8 @@ def policy_view() -> str:
     return render_template(
         "policy.html",
         items=items,
+        reference_key=queries_policy.REFERENCE_KEY,
+        latest_values=latest_values,
         not_introduced=not_introduced,
         stale=stale,
         plugin_versions=plugin_versions,

@@ -7,6 +7,7 @@ import re
 from typing import Optional
 
 import pytest
+import queries_policy
 from test_fixtures import (
     TODAY,
     known_db,  # noqa: F401
@@ -82,3 +83,13 @@ def test_compliance_rate_table_shows_both_items(policy_client):
     assert len(rows) == 2
     assert "20.0%" in html
     assert "80.0%" in html
+
+
+def test_latest_values_row_count_matches_query(policy_client, known_db):
+    """「最後に観測した値」の表の行数が、クエリの戻り行数（7）と一致する。"""
+    html = policy_client.get("/policy").get_data(as_text=True)
+    rows = _rows_in_table(html, "latest-values")
+    expected = queries_policy.latest_values(
+        known_db, TODAY, queries_policy.REFERENCE_KEY
+    )
+    assert len(rows) == len(expected) == 7

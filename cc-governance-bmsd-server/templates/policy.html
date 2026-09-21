@@ -3,6 +3,19 @@
 {% block heading %}policy 適用状況{% endblock %}
 {% block content %}
 
+<h2>最後に観測した値（{{ reference_key }}）</h2>
+<table data-testid="latest-values">
+  <tr><th>user_email</th><th>host</th><th>最後に観測した値</th><th>最終観測日</th></tr>
+  {% for user_email, host, prev_value, day, ts in latest_values %}
+  <tr>
+    <td>{{ user_email }}</td>
+    <td>{{ host }}</td>
+    <td>{{ prev_value }}</td>
+    <td>{{ day }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
 <h2>準拠率（施策項目別）</h2>
 <table data-testid="compliance-rate">
   <tr><th>施策項目</th><th>準拠</th><th>対象</th><th>率</th><th></th></tr>
