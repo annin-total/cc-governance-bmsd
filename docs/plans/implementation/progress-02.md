@@ -92,3 +92,54 @@
 - 状態ディレクトリの解決（`_state_dir()`）は今 `_identity.py` にある。**タスク 6 で `_queue.py` へ移す**（premises の定め）。
   移すときに `Path.home()` の遅延評価を壊さないこと
 - 無害化スクリプトは `local/scripts/sanitize_fixtures.py`（git 管理外）に残してある
+
+## タスク 3〜5 の結果
+
+| タスク | 状態 | コミット |
+| --- | --- | --- |
+| 3 hook 入力からの列の抽出（`collect.py`） | 完了 | `a627c36` |
+| 4 自由文が出力に現れないことの回帰テスト | 完了 | `0f027a4` |
+| 5 `context_tokens` の取得（`_context.py`） | 完了 | `9b5a977` |
+
+テストは `tests/client/` で 79 件、リポジトリ全体で 163 件。
+
+### 制御側の外形検証
+
+fixture 112 件を `collect.extract_event` に流し、原本の自由文と突き合わせた。
+
+```
+照合した自由文: 274 / 流出: 0
+出力のキー集合は全 112 件で同一か: True
+キー集合が契約と過不足なく一致: True    （kind + EXTRA_COLUMNS 7 列 + HOOK_FIELDS 12 列）
+出力に SENTINEL が現れたファイル: 0
+```
+
+### 完了条件 6 と設計書 §3.4 の衝突
+
+計画 [2] の完了条件 6 は
+`grep -n 'tool_response\|"prompt"\|"message"' governance/hooks/*.py` が **0 件**であることを求めるが、
+実際には 1 件ヒットする。
+
+```
+governance/hooks/_context.py:49:    message = obj.get("message")
+```
+
+**設計書 §3.4 の参照実装に、この行が literal で載っている。**
+
+```python
+u = json.loads(line).get("message", {}).get("usage") or {}
+```
+
+- **R-28: 設計書 §3.4 を優先し、完了条件 6 の `grep` は `collect.py` に限定する。**
+  理由 — この検査が守りたいのは「**hook 入力の自由文に触れない**」ことである。
+  `_context.py` が読むのは hook 入力ではなく **transcript ファイル**であり、
+  取り出すのは `message.usage` の 3 値の**合計という数値だけ**である。
+  文字列が戻り値に乗る経路が存在しない。
+  完了条件の `grep` は、この 2 つを区別できない粗い道具である。設計書が仕様の正本であり、計画書はその議論にすぎない。
+
+  **流出しないことの担保は `grep` ではなく次の 2 つに置く。**
+  ① タスク 4 の 12 ケース（出力に自由文が現れないことを直接検査する）
+  ② 制御側の外形検証（自由文 274 値との照合で流出 0）
+
+  外れたときの損 — `_context.py` が将来 `message` から数値以外を取り出すように変わっても
+  `grep` が気づかない。①②が実際の出力を見ているため、そちらで捕まる。
