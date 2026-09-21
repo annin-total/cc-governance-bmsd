@@ -1,0 +1,247 @@
+"""_context.py の context_tokens（transcript 末尾からの usage 合計取得）のテスト。"""
+
+import json
+import os
+import stat
+import time
+
+import pytest
+from _context import context_tokens
+
+
+def _write_jsonl(path, lines):
+    """1 行ずつ文字列/バイト列を書き込む。"""
+    with open(path, "wb") as f:
+        for line in lines:
+            if isinstance(line, str):
+                line = line.encode("utf-8")
+            f.write(line + b"\n")
+
+
+def _usage_line(**usage):
+    """message.usage を持つ 1 行分の JSON 文字列を作る。"""
+    return json.dumps({"message": {"usage": usage}})
+
+
+def test_sums_three_usage_fields(tmp_path):
+    """#1: input_tokens 100 / cache_creation 20 / cache_read 3 → 123。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(
+        path,
+        [
+            _usage_line(
+                input_tokens=100,
+                cache_creation_input_tokens=20,
+                cache_read_input_tokens=3,
+            )
+        ],
+    )
+    assert context_tokens(str(path)) == 123
+
+
+def test_picks_line_nearest_to_tail(tmp_path):
+    """#2: usage 行が 2 つ。末尾に近い方（合計 5）を採る。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(
+        path,
+        [
+            _usage_line(input_tokens=999),
+            _usage_line(input_tokens=5),
+        ],
+    )
+    assert context_tokens(str(path)) == 5
+
+
+def test_missing_fields_default_to_zero(tmp_path):
+    """#3: usage に input_tokens 100 のみ → 100。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(path, [_usage_line(input_tokens=100)])
+    assert context_tokens(str(path)) == 100
+
+
+def test_empty_usage_falls_back_to_none(tmp_path):
+    """#4: usage が {} → 後続を探し、見つからなければ None。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(path, [json.dumps({"message": {"usage": {}}})])
+    assert context_tokens(str(path)) is None
+
+
+def test_null_usage_falls_back_to_earlier_line(tmp_path):
+    """#5: message はあるが usage が null → 更に前の行を探す。無ければ None。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(path, [json.dumps({"message": {"usage": None}})])
+    assert context_tokens(str(path)) is None
+
+
+def test_no_message_lines_return_none(tmp_path):
+    """#6: message を持たない行だけ 100 行 → None。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(path, [json.dumps({"other": i}) for i in range(100)])
+    assert context_tokens(str(path)) is None
+
+
+def test_missing_path_returns_none(tmp_path):
+    """#7: 存在しないパス → None。"""
+    assert context_tokens(str(tmp_path / "no-such-file.jsonl")) is None
+
+
+def test_none_path_returns_none():
+    """#8: パスが None → None。"""
+    assert context_tokens(None) is None
+
+
+def test_empty_path_returns_none():
+    """#9: パスが空文字 → None。"""
+    assert context_tokens("") is None
+
+
+def test_zero_byte_file_returns_none(tmp_path):
+    """#10: 0 バイトのファイル → None。"""
+    path = tmp_path / "empty.jsonl"
+    path.write_bytes(b"")
+    assert context_tokens(str(path)) is None
+
+
+def test_directory_path_returns_none(tmp_path):
+    """#11: ディレクトリのパス → None。"""
+    assert context_tokens(str(tmp_path)) is None
+
+
+def test_unreadable_file_returns_none(tmp_path):
+    """#12: 読み取り権限を外したファイル → None。"""
+    path = tmp_path / "secret.jsonl"
+    _write_jsonl(path, [_usage_line(input_tokens=1)])
+    os.chmod(path, 0)
+    try:
+        if os.access(path, os.R_OK):
+            pytest.skip("root 権限などで読み取り制限が効かない環境")
+        assert context_tokens(str(path)) is None
+    finally:
+        os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
+
+
+def test_usage_outside_tail_window_returns_none(tmp_path):
+    """#13: 末尾 256KB の外にだけ usage がある → None。"""
+    path = tmp_path / "t.jsonl"
+    filler = "x" * 1000
+    lines = [_usage_line(input_tokens=42)]
+    lines += [json.dumps({"filler": filler}) for _ in range(300)]
+    _write_jsonl(path, lines)
+    assert context_tokens(str(path)) is None
+
+
+def test_broken_json_lines_after_usage_are_skipped(tmp_path):
+    """#14: usage 行の後ろに壊れた JSON 行が 3 行混ざる → usage の合計値。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(
+        path,
+        [
+            _usage_line(input_tokens=10),
+            "{not valid json",
+            "]]] broken [[[",
+            "{",
+        ],
+    )
+    assert context_tokens(str(path)) == 10
+
+
+def test_truncated_first_line_at_tail_boundary_is_skipped(tmp_path):
+    """#15: 256KB 境界で先頭行が途中から切れる → 切れた行を飛ばし、後ろの usage の値。"""
+    path = tmp_path / "t.jsonl"
+    tail = 4096
+    good = _usage_line(input_tokens=7).encode("utf-8")
+    padding_needed = tail - len(good) - 1
+    # 先頭行を「途中で切れる」ように、tail の外側から始まる長い1行を作る
+    long_line = b"{" + b"a" * (padding_needed + 500)
+    with open(path, "wb") as f:
+        f.write(long_line + b"\n")
+        f.write(good + b"\n")
+    assert context_tokens(str(path), tail=tail) == 7
+
+
+def test_blank_lines_are_skipped(tmp_path):
+    """#16: 行全体が空（改行のみ）が多数混ざる → usage の合計値。"""
+    path = tmp_path / "t.jsonl"
+    lines = [""] * 20 + [_usage_line(input_tokens=8)] + [""] * 20
+    _write_jsonl(path, lines)
+    assert context_tokens(str(path)) == 8
+
+
+def test_usage_value_as_string_returns_none(tmp_path):
+    """#17: usage の値が文字列（"100"）→ None（例外を投げない）。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(path, [json.dumps({"message": {"usage": {"input_tokens": "100"}}})])
+    assert context_tokens(str(path)) is None
+
+
+def test_usage_as_list_returns_none(tmp_path):
+    """#18: usage が list → None（例外を投げない）。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(path, [json.dumps({"message": {"usage": [1, 2, 3]}})])
+    assert context_tokens(str(path)) is None
+
+
+def test_non_json_text_returns_none(tmp_path):
+    """#19: JSON でないテキスト 1MB → None。"""
+    path = tmp_path / "t.txt"
+    path.write_text("not json at all. " * 60000, encoding="utf-8")
+    assert context_tokens(str(path)) is None
+
+
+def test_large_file_is_fast(tmp_path):
+    """#20: 16MB のファイル。末尾に usage（合計 7）→ 7。実行時間は 1 秒未満。"""
+    path = tmp_path / "big.jsonl"
+    filler_line = json.dumps({"filler": "x" * 998})
+    with open(path, "wb") as f:
+        line_bytes = filler_line.encode("utf-8") + b"\n"
+        target = 16 * 1024 * 1024
+        written = 0
+        while written < target:
+            f.write(line_bytes)
+            written += len(line_bytes)
+        f.write(_usage_line(input_tokens=7).encode("utf-8") + b"\n")
+
+    start = time.monotonic()
+    result = context_tokens(str(path))
+    elapsed = time.monotonic() - start
+    assert result == 7
+    assert elapsed < 1.0
+
+
+def test_invalid_utf8_bytes_do_not_raise(tmp_path):
+    """#21: UTF-8 として不正なバイト列を含む行 → 例外なし。戻り値は None か数値。"""
+    path = tmp_path / "t.jsonl"
+    with open(path, "wb") as f:
+        f.write(b"\xff\xfe not valid utf-8 \x80\x81\n")
+        f.write(_usage_line(input_tokens=9).encode("utf-8") + b"\n")
+    result = context_tokens(str(path))
+    assert result is None or isinstance(result, int)
+
+
+def test_all_zero_usage_falls_back_to_earlier_nonzero(tmp_path):
+    """#22: 末尾が全値 0 の usage、その前に合計 5 の usage → 5（0 の行を採らず遡る）。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(
+        path,
+        [
+            _usage_line(input_tokens=5),
+            _usage_line(
+                input_tokens=0, cache_creation_input_tokens=0, cache_read_input_tokens=0
+            ),
+        ],
+    )
+    assert context_tokens(str(path)) == 5
+
+
+def test_only_zero_usage_returns_none(tmp_path):
+    """#23: 3 値すべてが 0 の usage 行しか無い → None（0 を真値として返さない）。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(
+        path,
+        [
+            _usage_line(
+                input_tokens=0, cache_creation_input_tokens=0, cache_read_input_tokens=0
+            )
+        ],
+    )
+    assert context_tokens(str(path)) is None
