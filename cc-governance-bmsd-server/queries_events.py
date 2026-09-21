@@ -1,4 +1,4 @@
-"""`/assets` 画面の集計クエリ。フレームワークを import しない。
+"""`/assets` `/` 画面の集計クエリ。フレームワークを import しない。
 
 現在時刻は読まない。基準日 `today`（epoch 日）は呼び出し側（`app.py`）が渡す。
 件数・利用者数は必ず `COUNT(DISTINCT event_id)` / `COUNT(DISTINCT user_email)` を通す
@@ -8,6 +8,9 @@
 import db
 
 RECENT_DAYS = 7
+
+_HEALTH_NULL_COLUMNS = ("tool_name", "skill_name", "context_tokens", "command_source")
+_DISTRIBUTION_COLUMNS = ("permission_mode", "effort_level", "source")
 
 
 def _recent_window(today: int) -> tuple:
@@ -21,98 +24,59 @@ def _previous_window(today: int) -> tuple:
     return recent_start - RECENT_DAYS, recent_start - 1
 
 
-def skill_usage(conn, today: int) -> list:
-    """`skill_name` 別の直近／前 7 日の呼出回数・利用者数を返す。
-
-    戻り値は `(skill_name, recent_calls, recent_users, prev_calls, prev_users)` の
-    タプルのリスト。直近の呼出回数の降順で並ぶ。
+def _usage_with_trend(
+    conn, today: int, filter_column: str, group_columns: tuple
+) -> list:
+    """`filter_column` が非 NULL の行を `group_columns` で束ね、直近／前 7 日の呼出回数・
+    利用者数を返す。戻り値は `group_columns` の各値の後に
+    `(recent_calls, recent_users, prev_calls, prev_users)` が続く。
     """
     recent_start, recent_end = _recent_window(today)
     prev_start, prev_end = _previous_window(today)
+    cols = ", ".join(group_columns)
+    select_cols = ", ".join(f"n.{c}" for c in group_columns)
+    join_r = " AND ".join(f"n.{c} = r.{c}" for c in group_columns)
+    join_p = " AND ".join(f"n.{c} = p.{c}" for c in group_columns)
+    sql = (
+        f"WITH names AS ("
+        f"  SELECT DISTINCT {cols} FROM events"
+        f"  WHERE {filter_column} IS NOT NULL AND day BETWEEN ? AND ?"
+        f"), recent AS ("
+        f"  SELECT {cols}, COUNT(DISTINCT event_id) AS calls,"
+        f"         COUNT(DISTINCT user_email) AS users"
+        f"    FROM events WHERE {filter_column} IS NOT NULL AND day BETWEEN ? AND ?"
+        f"   GROUP BY {cols}"
+        f"), prev AS ("
+        f"  SELECT {cols}, COUNT(DISTINCT event_id) AS calls,"
+        f"         COUNT(DISTINCT user_email) AS users"
+        f"    FROM events WHERE {filter_column} IS NOT NULL AND day BETWEEN ? AND ?"
+        f"   GROUP BY {cols}"
+        f")"
+        f"SELECT {select_cols}, COALESCE(r.calls, 0), COALESCE(r.users, 0),"
+        f"       COALESCE(p.calls, 0), COALESCE(p.users, 0)"
+        f"  FROM names n"
+        f"  LEFT JOIN recent r ON {join_r}"
+        f"  LEFT JOIN prev p ON {join_p}"
+        f" ORDER BY COALESCE(r.calls, 0) DESC, {select_cols}"
+    )
     cur = conn.cursor()
     cur.execute(
-        db.q(
-            """
-            WITH names AS (
-              SELECT DISTINCT skill_name FROM events
-               WHERE skill_name IS NOT NULL AND day BETWEEN ? AND ?
-            ),
-            recent AS (
-              SELECT skill_name,
-                     COUNT(DISTINCT event_id) AS calls,
-                     COUNT(DISTINCT user_email) AS users
-                FROM events
-               WHERE skill_name IS NOT NULL AND day BETWEEN ? AND ?
-               GROUP BY skill_name
-            ),
-            prev AS (
-              SELECT skill_name,
-                     COUNT(DISTINCT event_id) AS calls,
-                     COUNT(DISTINCT user_email) AS users
-                FROM events
-               WHERE skill_name IS NOT NULL AND day BETWEEN ? AND ?
-               GROUP BY skill_name
-            )
-            SELECT n.skill_name,
-                   COALESCE(r.calls, 0), COALESCE(r.users, 0),
-                   COALESCE(p.calls, 0), COALESCE(p.users, 0)
-              FROM names n
-              LEFT JOIN recent r ON n.skill_name = r.skill_name
-              LEFT JOIN prev p ON n.skill_name = p.skill_name
-             ORDER BY COALESCE(r.calls, 0) DESC, n.skill_name
-            """
-        ),
+        db.q(sql),
         (prev_start, recent_end, recent_start, recent_end, prev_start, prev_end),
     )
     return cur.fetchall()
+
+
+def skill_usage(conn, today: int) -> list:
+    """`skill_name` 別の直近／前 7 日の呼出回数・利用者数。直近の呼出回数の降順。"""
+    return _usage_with_trend(conn, today, "skill_name", ("skill_name",))
 
 
 def command_usage(conn, today: int) -> list:
-    """`command_name` x `command_source` 別の直近／前 7 日の呼出回数・利用者数を返す。
-
-    戻り値は `(command_name, command_source, recent_calls, recent_users, prev_calls, prev_users)`。
-    値の分類辞書を持たず、生値のまま並べる。
-    """
-    recent_start, recent_end = _recent_window(today)
-    prev_start, prev_end = _previous_window(today)
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            """
-            WITH names AS (
-              SELECT DISTINCT command_name, command_source FROM events
-               WHERE command_name IS NOT NULL AND day BETWEEN ? AND ?
-            ),
-            recent AS (
-              SELECT command_name, command_source,
-                     COUNT(DISTINCT event_id) AS calls,
-                     COUNT(DISTINCT user_email) AS users
-                FROM events
-               WHERE command_name IS NOT NULL AND day BETWEEN ? AND ?
-               GROUP BY command_name, command_source
-            ),
-            prev AS (
-              SELECT command_name, command_source,
-                     COUNT(DISTINCT event_id) AS calls,
-                     COUNT(DISTINCT user_email) AS users
-                FROM events
-               WHERE command_name IS NOT NULL AND day BETWEEN ? AND ?
-               GROUP BY command_name, command_source
-            )
-            SELECT n.command_name, n.command_source,
-                   COALESCE(r.calls, 0), COALESCE(r.users, 0),
-                   COALESCE(p.calls, 0), COALESCE(p.users, 0)
-              FROM names n
-              LEFT JOIN recent r
-                ON n.command_name = r.command_name AND n.command_source = r.command_source
-              LEFT JOIN prev p
-                ON n.command_name = p.command_name AND n.command_source = p.command_source
-             ORDER BY COALESCE(r.calls, 0) DESC, n.command_name, n.command_source
-            """
-        ),
-        (prev_start, recent_end, recent_start, recent_end, prev_start, prev_end),
+    """`command_name` x `command_source` 別の直近／前 7 日の呼出回数・利用者数。生値のまま。"""
+    return _usage_with_trend(
+        conn, today, "command_name", ("command_name", "command_source")
     )
-    return cur.fetchall()
 
 
 def subagent_ratio(conn, today: int) -> list:
@@ -124,15 +88,111 @@ def subagent_ratio(conn, today: int) -> list:
     cur = conn.cursor()
     cur.execute(
         db.q(
-            """
-            SELECT
-              COUNT(DISTINCT event_id),
-              COUNT(DISTINCT CASE WHEN agent_id IS NOT NULL THEN event_id END)
-            FROM events
-            WHERE day BETWEEN ? AND ?
-            """
+            "SELECT COUNT(DISTINCT event_id),"
+            " COUNT(DISTINCT CASE WHEN agent_id IS NOT NULL THEN event_id END)"
+            " FROM events WHERE day BETWEEN ? AND ?"
         ),
         (recent_start, recent_end),
+    )
+    denominator, numerator = cur.fetchone()
+    rate = round(numerator / denominator * 100, 1) if denominator else 0.0
+    return [(numerator, denominator, rate)]
+
+
+def daily_cost(conn) -> list:
+    """`cost_daily` を `day` x `provider` で束ね、`cost` を合計する。
+
+    `cost_daily` は集計済みの小さいテーブルであり `day` で絞らない（events に対する規約とは別）。
+    """
+    cur = conn.cursor()
+    cur.execute(
+        db.q(
+            "SELECT day, provider, SUM(cost) FROM cost_daily"
+            " GROUP BY day, provider ORDER BY day, provider"
+        )
+    )
+    return cur.fetchall()
+
+
+def user_session_trend(conn, today: int) -> list:
+    """`day` 別の利用者数・セッション数を、直近／前 7 日の窓で返す（`day` の昇順）。"""
+    window_start, _ = _previous_window(today)
+    _, window_end = _recent_window(today)
+    cur = conn.cursor()
+    cur.execute(
+        db.q(
+            "SELECT day, COUNT(DISTINCT user_email), COUNT(DISTINCT session_id)"
+            " FROM events WHERE day BETWEEN ? AND ? GROUP BY day ORDER BY day"
+        ),
+        (window_start, window_end),
+    )
+    return cur.fetchall()
+
+
+def distribution(conn, today: int, column: str) -> list:
+    """`column`（`permission_mode` / `effort_level` / `source`）別の直近 7 日の件数。生値のまま。"""
+    if column not in _DISTRIBUTION_COLUMNS:
+        raise ValueError(f"未対応の列: {column}")
+    recent_start, recent_end = _recent_window(today)
+    cur = conn.cursor()
+    cur.execute(
+        db.q(
+            f"SELECT {column}, COUNT(DISTINCT event_id) FROM events"
+            f" WHERE {column} IS NOT NULL AND day BETWEEN ? AND ?"
+            f" GROUP BY {column} ORDER BY COUNT(DISTINCT event_id) DESC, {column}"
+        ),
+        (recent_start, recent_end),
+    )
+    return cur.fetchall()
+
+
+def _health_window_stats(conn, start: int, end: int) -> dict:
+    """1 つの窓のイベント件数・送信端末数・4 列の NULL 率を返す。NULL 率の分子は `event_id` の異なり数。"""
+    null_case_sql = ", ".join(
+        f"COUNT(DISTINCT CASE WHEN {col} IS NULL THEN event_id END)"
+        for col in _HEALTH_NULL_COLUMNS
+    )
+    cur = conn.cursor()
+    cur.execute(
+        db.q(
+            f"SELECT COUNT(DISTINCT event_id), COUNT(DISTINCT user_email), {null_case_sql}"
+            f" FROM events WHERE day BETWEEN ? AND ?"
+        ),
+        (start, end),
+    )
+    events, terminals, *null_counts = cur.fetchone()
+    null_rates = {
+        col: round(count / events * 100, 1) if events else 0.0
+        for col, count in zip(_HEALTH_NULL_COLUMNS, null_counts)
+    }
+    return {"events": events, "terminals": terminals, "null_rates": null_rates}
+
+
+def health_counts(conn, today: int) -> dict:
+    """健全性の 1 行の左半分。直近／前 7 日のイベント件数・送信端末数・NULL 率を返す。"""
+    recent_start, recent_end = _recent_window(today)
+    prev_start, prev_end = _previous_window(today)
+    return {
+        "recent": _health_window_stats(conn, recent_start, recent_end),
+        "prev": _health_window_stats(conn, prev_start, prev_end),
+    }
+
+
+def reconciliation_rate(conn, today: int) -> list:
+    """直近 7 日に `events` を送った利用者のうち、同期間の `cost_daily` にも居る割合。人数で測る。"""
+    recent_start, recent_end = _recent_window(today)
+    cur = conn.cursor()
+    cur.execute(
+        db.q(
+            "SELECT"
+            " (SELECT COUNT(DISTINCT user_email) FROM events WHERE day BETWEEN ? AND ?),"
+            " (SELECT COUNT(DISTINCT e.user_email) FROM events e"
+            "   WHERE e.day BETWEEN ? AND ?"
+            "     AND e.user_email IN ("
+            "       SELECT DISTINCT user_email FROM cost_daily WHERE day BETWEEN ? AND ?"
+            "     ))"
+        ),
+        (recent_start, recent_end, recent_start, recent_end, recent_start, recent_end),
     )
     denominator, numerator = cur.fetchone()
     rate = round(numerator / denominator * 100, 1) if denominator else 0.0

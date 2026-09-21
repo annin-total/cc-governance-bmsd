@@ -5,10 +5,12 @@
 
 # ruff: noqa: F811
 
+import pytest
 import queries_events
 from test_fixtures import (
     TODAY,
     assert_invariant_under_duplication,
+    duplicate_cost_daily,
     duplicate_events,
     known_db,  # noqa: F401
 )
@@ -95,3 +97,69 @@ def test_subagent_ratio_count_star_would_differ(known_db):
     assert cur.fetchone()[0] == 26
     [(_, denominator, _)] = queries_events.subagent_ratio(known_db, TODAY)
     assert denominator == 13
+
+
+def test_daily_cost_by_provider(known_db):
+    """`cost_daily` を day x provider で束ねる。6 行、aws-bedrock と openai が別行。"""
+    rows = queries_events.daily_cost(known_db)
+    assert rows == [
+        (20000, "aws-bedrock", 1.0),
+        (20001, "aws-bedrock", 2.0),
+        (20002, "aws-bedrock", 3.0),
+        (20003, "aws-bedrock", 4.0),
+        (20004, "aws-bedrock", 5.0),
+        (20004, "openai", 0.5),
+    ]
+
+
+def test_daily_cost_doubles_after_duplicate_injection(known_db):
+    """`cost_daily` は `event_id` を持たないため、重複注入で合計が 2 倍になる（重複排除の対象外）。"""
+    duplicate_cost_daily(known_db)
+    rows = {(r[0], r[1]): r[2] for r in queries_events.daily_cost(known_db)}
+    assert rows[(20000, "aws-bedrock")] == 2.0
+    assert rows[(20004, "openai")] == 1.0
+
+
+def test_user_session_trend(known_db):
+    """`day` 別の利用者数・セッション数が既知データの表と一致する。"""
+    rows = {
+        r[0]: (r[1], r[2]) for r in queries_events.user_session_trend(known_db, TODAY)
+    }
+    assert rows[19995] == (1, 1)
+    assert rows[19996] == (2, 2)
+    assert rows[20000] == (1, 1)
+    assert rows[20001] == (1, 1)
+    assert rows[20002] == (2, 2)
+    assert rows[20003] == (1, 1)
+    assert rows[20004] == (2, 2)
+    assert 19988 not in rows  # 窓（day >= 19992）より前
+
+
+def test_user_session_trend_unchanged_after_duplicate_injection(known_db):
+    """重複行を注入しても利用者数・セッション数は変わらない。"""
+
+    def compute():
+        return sorted(queries_events.user_session_trend(known_db, TODAY))
+
+    assert_invariant_under_duplication(known_db, compute)
+
+
+def test_distribution_permission_mode(known_db):
+    """直近 7 日の `permission_mode` 分布は default 11・plan 1・acceptEdits 1。"""
+    rows = dict(queries_events.distribution(known_db, TODAY, "permission_mode"))
+    assert rows == {"default": 11, "plan": 1, "acceptEdits": 1}
+
+
+def test_distribution_rejects_unknown_column(known_db):
+    """許可されていない列名は例外にする（SQL 文字列組み立ての安全弁）。"""
+    with pytest.raises(ValueError):
+        queries_events.distribution(known_db, TODAY, "user_email")
+
+
+def test_distribution_unchanged_after_duplicate_injection(known_db):
+    """重複行を注入しても分布は変わらない。"""
+
+    def compute():
+        return sorted(queries_events.distribution(known_db, TODAY, "permission_mode"))
+
+    assert_invariant_under_duplication(known_db, compute)
