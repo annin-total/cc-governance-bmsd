@@ -8,13 +8,9 @@
 *.local.*
 local/
 secrets/
-*/secrets/
 .secrets/
-*/.secrets/
 credentials/
-*/credentials/
 .credentials/
-*/.credentials/
 
 # --- Python ---
 __pycache__/
@@ -49,4 +45,6 @@ Thumbs.db
 # --- IDE ---
 .vscode/
 .idea/
+
+# --- その他 ---
 .superpowers/
