@@ -2,9 +2,8 @@
 
 import os
 
-from flask import Flask
-
 import db
+from flask import Flask
 
 db.init()
 
