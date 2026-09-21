@@ -4,7 +4,21 @@ import os
 import sqlite3
 from urllib.parse import urlparse
 
+from shared import ddl
+
 _SQLITE_PATH_PREFIX = "sqlite:///"
+
+_TABLES = ("events", "policy_state", "cost_daily")
+
+_INDEXES = (
+    ("events", ("day", "user_email", "event_id")),
+    ("events", ("skill_name", "day", "user_email", "event_id")),
+    ("events", ("tool_name", "day", "user_email", "event_id")),
+    ("events", ("day", "hook_event", "context_tokens")),
+    ("policy_state", ("key_name", "prev_value", "user_email")),
+    ("policy_state", ("user_email", "ts")),
+    ("cost_daily", ("day", "user_email")),
+)
 
 
 def _dialect() -> str:
@@ -52,3 +66,41 @@ def q(sql: str) -> str:
     if _dialect() == "mysql":
         return sql.replace("?", "%s")
     return sql
+
+
+def _index_name(table: str, columns: tuple) -> str:
+    """`ix_<テーブル名>_<列を _ で連結>` の形でインデックス名を組み立てる。"""
+    return "ix_" + table + "_" + "_".join(columns)
+
+
+def _existing_index_names(cur, table: str) -> set:
+    """実テーブルに既にあるインデックス名の集合を取る（方言分岐はここ）。"""
+    if _dialect() == "sqlite":
+        cur.execute(f"PRAGMA index_list({table})")
+        return {row[1] for row in cur.fetchall()}
+    cur.execute(f"SHOW INDEX FROM {table}")
+    return {row[2] for row in cur.fetchall()}
+
+
+def _create_missing_indexes(cur) -> None:
+    """無いインデックスだけを作る。`CREATE INDEX IF NOT EXISTS` は使わない。"""
+    existing_by_table = {table: _existing_index_names(cur, table) for table in _TABLES}
+    for table, columns in _INDEXES:
+        name = _index_name(table, columns)
+        if name in existing_by_table[table]:
+            continue
+        columns_sql = ", ".join(columns)
+        cur.execute(f"CREATE INDEX {name} ON {table} ({columns_sql})")
+
+
+def init() -> None:
+    """契約から DDL を組み立てて実行し、不足しているインデックスを作る。"""
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        for statement in ddl():
+            cur.execute(statement)
+        _create_missing_indexes(cur)
+        conn.commit()
+    finally:
+        conn.close()
