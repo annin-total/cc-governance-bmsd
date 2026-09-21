@@ -3,10 +3,13 @@
 import hmac
 import json
 import os
+import time
 
 import csv_import
 import db
 import ingest
+import queries_policy
+import shared
 from flask import Flask, Response, render_template, request
 
 db.init()
@@ -49,6 +52,50 @@ def ingest_endpoint() -> Response:
         conn.close()
     return Response(
         response=json.dumps(result), status=200, mimetype="application/json"
+    )
+
+
+def _today() -> int:
+    """基準日（epoch 日）を現在時刻から算出する。`queries_*.py` は現在時刻を読まない。"""
+    return shared.to_day(int(time.time()))
+
+
+@app.route("/policy")
+def policy_view() -> str:
+    """`/policy` 画面。基準日の算出・接続の取得・集計呼び出し・描画・接続の解放だけを行う。"""
+    today = _today()
+    conn = db.connect()
+    try:
+        items = []
+        for key_name, policy_value in shared.POLICY.items():
+            expected_value = shared.coerce(policy_value, "VARCHAR(255)")
+            numerator, denominator, rate = queries_policy.compliance_rate(
+                conn, today, key_name, expected_value
+            )[0]
+            items.append(
+                {
+                    "key_name": key_name,
+                    "numerator": numerator,
+                    "denominator": denominator,
+                    "rate": rate,
+                    "non_compliant": queries_policy.non_compliant(
+                        conn, today, key_name, expected_value
+                    ),
+                }
+            )
+        not_introduced = queries_policy.not_introduced(conn, today)
+        stale = queries_policy.stale_terminals(conn, today)
+        plugin_versions = queries_policy.plugin_version_distribution(
+            conn, today, queries_policy.REFERENCE_KEY
+        )
+    finally:
+        conn.close()
+    return render_template(
+        "policy.html",
+        items=items,
+        not_introduced=not_introduced,
+        stale=stale,
+        plugin_versions=plugin_versions,
     )
 
 
