@@ -29,7 +29,7 @@ README §5 の共通制約に加えて、本計画だけに効く前提を置く
 
 | 項目 | 前提 |
 | --- | --- |
-| 計画 [1] の完了 | `governance/hooks/contract.py`（5 定数 `HOOK_FIELDS` / `EXTRA_COLUMNS` / `POLICY` / `POLICY_COLUMNS` / `CSV_COLUMNS` と 4 関数 `dig` / `coerce` / `to_day` / `ddl`）、`cc-governance-bmsd-server/db.py`（`connect()` / `q(sql)` / `init()`）、`cc-governance-bmsd-server/shared.py` が `main` にある |
+| 計画 [1] の完了 | `governance/hooks/contract.py`（5 定数 `HOOK_FIELDS` / `EXTRA_COLUMNS` / `POLICY` / `POLICY_COLUMNS` / `CSV_COLUMNS` と 4 関数 `dig` / `coerce` / `to_day` / `ddl`）、`cc-governance-bmsd-server/db.py`（`connect()` / `q(sql)` / `init()` / `analyze()`）、`cc-governance-bmsd-server/shared.py` が `main` にある |
 | `events` の列順 | `EXTRA_COLUMNS` + `HOOK_FIELDS` から導く。INSERT 文の列順は `ddl()` が生成する DDL の列順と同一でなければならない |
 | `policy_state` の列定義 | 契約の `POLICY_COLUMNS` から取る。本計画で列名を書き下さない |
 | `day` の再計算 | 契約の `to_day(ts)` を呼ぶ。`ingest.py` の中に式を書かない |
@@ -159,10 +159,11 @@ pytest tests/test_ingest_store.py -q
 - DB 接続はエンドポイント関数の中で `db.connect()` で取得し、関数の中で閉じる
 - `ingest.py` が返す dict を JSON にして 200 で返す
 - `ingest.py` が例外を送出した場合は 5xx を返す
-- `BASE_PATH` を `SCRIPT_NAME` として与える WSGI ラッパを 1 個だけ置く
+- `BASE_PATH` を `SCRIPT_NAME` として与える WSGI ラッパを 1 個だけ置く。ラッパは **`PATH_INFO` が `BASE_PATH` で始まっていればそれを剥がし、始まっていなければ何もしない**（設計書 §4.3）。前段がサブパスを剥がす場合と剥がさない場合のどちらでも同じコードが通るため、前段の挙動で分岐しない
+- **末尾スラッシュだけが違う URL を作らない。** ルートの定義を統一し、片方から片方へのリダイレクトが起きる経路を作らない
 - ブループリント・アプリケーションファクトリ・`before_request` / `after_request` ・Flask 拡張を使わない
 
-**根拠:** 設計書 §4.2（受け取るもの・返すものの表）、§4.3「過剰にしないための制約」3〜5、§4.4「認証」、README §5（サブパス）
+**根拠:** 設計書 §4.2（受け取るもの・返すものの表）、§4.3「過剰にしないための制約」3〜5・「サブパスの扱い」、§4.4「認証」、README §5（サブパス）
 
 **テスト:** なし。タスク 4 とタスク 6 が HTTP 越しに担保する。
 
@@ -177,6 +178,19 @@ DB_DSN=sqlite:///$(mktemp -d)/t.db INGEST_TOKEN=tok \
 
 ```
 ["/", "/ingest", "/static/<path:filename>"]
+```
+
+サブパスのラッパが、前段の挙動のどちらでも通ることを確かめる。`BASE_PATH=/gov` を与え、**サブパスを含む要求と含まない要求の両方**で `/` を叩く。
+
+```
+BASE_PATH=/gov DB_DSN=sqlite:///$(mktemp -d)/t.db INGEST_TOKEN=tok \
+  python -c "import sys; sys.path.insert(0,'cc-governance-bmsd-server'); import app; c=app.app.test_client(); print(c.get('/gov/').status_code, c.get('/').status_code)"
+```
+
+期待出力（**どちらも 200**。前段が剥がしても剥がさなくても同じコードが通る）:
+
+```
+200 200
 ```
 
 **コミット:** `feat(server): /ingest のルーティング層とトークン検査を追加`

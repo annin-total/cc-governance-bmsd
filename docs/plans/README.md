@@ -46,12 +46,12 @@
 | 計画 | 依存する計画 | 依存の中身 |
 | --- | --- | --- |
 | [0] | なし | — |
-| [1] | [0] | 未検証事項の結果で `POLICY` の中身が決まる |
+| [1] | [0] | 着手の前提として [0] を済ませる。端末の Python の可用性は [2] [3] の hook の起動形態に効く |
 | [2] | [1] | `HOOK_FIELDS` / `dig` / `coerce` を使う |
 | [3] | [1] | `POLICY` を使う。`_queue` を [2] と共有する |
 | [4] | [1] | `HOOK_FIELDS` から検査と INSERT 列を導く。`db.connect` / `db.q` を使う |
 | [5] | [1] [4] | 保存済みのデータを読む。画面の検証に [4] の往復が要る |
-| [6] | [1] | `CSV_COLUMNS` と `cost_daily` の DDL を使う |
+| [6] | [1] | `CSV_COLUMNS` と `cost_daily` の DDL を使う。取込の最後に `db.analyze()` を呼ぶ |
 | [7] | [2] [3] | 配るプラグインの実体が要る |
 | [8-A] | [1] | 起動と待受だけを確かめる。空の DB でよい。**待受の対象として最小の `app.py` を [8-A] が置き、[4] がそれを育てる**。`requirements.txt` も [8-A] が作る |
 | [8-B] | [4] [5] [6] [7] | 画面と受信が揃った状態を配置する |
@@ -125,20 +125,22 @@ hook 入力の実サンプルを fixture に使うときは、**自由文の値�
 | 値 | 決め | 関係する計画 |
 | --- | --- | --- |
 | 契約が持つもの | 5 定数（`HOOK_FIELDS` / `EXTRA_COLUMNS` / `POLICY` / `POLICY_COLUMNS` / `CSV_COLUMNS`）と 4 関数（`dig` / `coerce` / `to_day` / `ddl`） | [1] [2] [3] [4] [5] [6] |
+| `db.py` が外に出すもの | `connect()` / `q(sql)` / `init()` / `analyze()` の 4 つ。**方言の分岐はこの 1 ファイルに閉じる** | [1] [4] [5] [6] |
 | 受信トークンのヘッダ名 | `X-Ingest-Token` | [2] [4] |
 | `/ingest` の応答ボディ | `{"stored": n, "dropped": n}` | [4] |
 | 効果測定の対象 `provider` | `aws-bedrock`（他社は `openai` として別行に出る） | [5] [6] |
 | `apply_result` の値域 | `already_ok` / `applied` / `skipped_conflict` / `skipped_missing` / `parse_failed` / `write_failed` | [3] [5] |
 | `policy_state` の値の文字列表現 | 契約の `coerce(value, "VARCHAR(255)")`。**真偽値は小文字の `true` / `false`** | [1] [3] [5] |
+| `VARCHAR` の桁 | 契約の `coerce` が**宣言長で切り詰める**。桁に収める責務は契約だけが持ち、受信側で再解釈しない | [1] [2] [3] [4] [6] |
 | 直近を見る窓 | 健全性・配布物の比較は **7 日**、`/policy` の窓（準拠率の分母・最後に観測した値・未導入者の判定・途絶えの走査範囲）は **30 日**、途絶えと見なす閾値は **14 日** | [5] |
 | コンテキスト分布のビン幅 | 20,000 トークン | [5] |
-| `POLICY` の項目 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` / `env.FORCE_AUTOUPDATE_PLUGINS` の 3 つ | [1] [3] [5] [7] |
+| `POLICY` の項目 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` の 2 つ | [1] [3] [5] [7] |
 | 入れ子のエントリの新規作成 | `env` セクションは無ければ作る。**それ以外の入れ子は作らない。** エントリが無ければ書かずに `skipped_missing` を記録する | [3] [5] |
 | 端末の状態の置き場所 | `${CLAUDE_PLUGIN_DATA}` 配下。この変数が渡らない経路では `~/.claude/cc-governance/` を使う。`identity.json` / `seen.json` / `queue.jsonl` / `spool/` / `sent_at` をここに置く | [2] [3] [7] |
 | 送信の起動条件 | **前回送信から 10 分以上経過している**（`sent_at` の mtime で判定）。行数による条件を持たない | [2] |
-| hook のコマンド文字列 | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/collect.py" <hook名>` の形の 1 行。パイプ・`;`・`&&`・リダイレクトを含めない。**1 行 100 文字未満** | [2] [7] |
+| hook のコマンド文字列 | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/collect.py" <hook名>` の形の 1 行。**`${...}` は二重引用符で囲む。** パイプ・`;`・`&&`・リダイレクトを含めない。**1 行 100 文字未満** | [2] [7] |
 | お知らせ 1 件の長さの目安 | 日本語で **600 字程度**まで。義務ではなく目安であり、検査は設けない | [3] [7] |
-| CSV 取込の起動 | ボタンは 1 つ。押すたびに全ファイルを取り直す。未取込判定を持たない | [5] [6] |
+| CSV 取込の起動 | ボタンは 1 つ。押すたびに全ファイルを取り直す。未取込判定を持たない。**週 1 回程度の手動クリックを正式な運用とし、取込の最後に `ANALYZE` を実行する** | [5] [6] |
 | 本番の依存 | 直接依存 3 つ、推移的依存を含めて 9 パッケージ。`markupsafe` だけがコンパイル済み拡張を含む | [8] |
 
 ## 6. 作業の場所

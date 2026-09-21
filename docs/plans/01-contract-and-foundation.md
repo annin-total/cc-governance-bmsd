@@ -13,7 +13,7 @@
 | --- | --- | --- |
 | `governance/hooks/contract.py` | **契約の正本。** 5 定数と 4 関数だけを持つ。import するものは標準ライブラリのみ | 110 |
 | `cc-governance-bmsd-server/shared.py` | サーバ側から契約を import するためのシム。`__file__` 起点で `sys.path` を解決する | 5 |
-| `cc-governance-bmsd-server/db.py` | `connect()` / `q(sql)` / `init()`。接続生成・プレースホルダ変換・DDL 適用・インデックスの存在確認・実テーブルとの突き合わせ | 90 |
+| `cc-governance-bmsd-server/db.py` | `connect()` / `q(sql)` / `init()` / `analyze()`。接続生成・プレースホルダ変換・DDL 適用・インデックスの存在確認・実テーブルとの突き合わせ・統計情報の更新 | 90 |
 | `requirements-dev.txt` | 開発依存。pytest と ruff の 2 行のみ | 2 |
 | `tests/conftest.py` | `sys.path` の設定と、一時 SQLite の fixture | — |
 | `tests/test_contract_constants.py` | タスク 2 の検証 | — |
@@ -25,8 +25,9 @@
 | `tests/test_db_connect.py` | タスク 8 の検証 | — |
 | `tests/test_db_init.py` | タスク 9 の検証 | — |
 | `tests/test_db_columns.py` | タスク 10 の検証 | — |
+| `tests/test_db_analyze.py` | タスク 11 の検証 | — |
 
-本計画で作る Python ファイルは 3 つだけである。`app.py`・`ingest.py`・`queries_*.py`・`csv_import.py`・`templates/`・`governance/*.json`・端末側の hook スクリプトには一切触れない。
+本計画で作る Python ファイルは 3 つに限る。`app.py`・`ingest.py`・`queries_*.py`・`csv_import.py`・`templates/`・`governance/*.json`・端末側の hook スクリプトには一切触れない。
 
 ---
 
@@ -42,7 +43,7 @@
 | 契約の差し替え（テスト） | 契約の定数は import 時に束縛される。列を足す・重複させる検証では、`contract` と、それを再輸出している `shared` / `db` の**同名の名前をすべて差し替える**。差し替えはテストの中に閉じ、本番コードに差し替え用の入口を作らない |
 | 契約が公開するもの | 定数 `HOOK_FIELDS` / `EXTRA_COLUMNS` / `POLICY` / `POLICY_COLUMNS` / `CSV_COLUMNS`、関数 `dig(obj, path)` / `coerce(value, type)` / `to_day(ts)` / `ddl()`。`shared.py` はこの 9 つをすべて再輸出する |
 | 列型の語彙 | `VARCHAR(n)` / `INTEGER` / `BIGINT` / `DOUBLE` の 4 種。`coerce()` は型文字列の先頭トークンで判定する |
-| `POLICY` の中身 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` = `"60"`、`extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` = `True`、`env.FORCE_AUTOUPDATE_PLUGINS` = `"1"` の 3 項目。`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` は Claude Code の公式ドキュメントに記載された環境変数で、コンテキストの何 % で自動圧縮を始めるかを 1〜100 の整数で与える。低い値ほど早く圧縮し、既定より高い値は無視される |
+| `POLICY` の中身 | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` = `"60"`、`extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` = `True` の 2 項目。`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` は Claude Code の公式ドキュメントに記載された環境変数で、コンテキストの何 % で自動圧縮を始めるかを 1〜100 の整数で与える。低い値ほど早く圧縮し、既定より高い値は無視される |
 | `POLICY` の値の文字列表現 | 契約の `coerce` の規則（設計書 §3.2 の型変換の表）を正本とする。端末が `policy_state.value` に書く表現も、画面が準拠判定に使う表現も、これと同一のものを使う |
 | `CSV_COLUMNS` の形 | 要素は `(CSV ヘッダ名, DB 列名, 型)` の 3 つ組。`source_file` は CSV に対応するヘッダを持たないため、ヘッダ名を `None` として同じ列に並べる。これにより `cost_daily` の DDL も INSERT 列も `CSV_COLUMNS` 1 つから導ける |
 | インデックスの定義 | `db.py` の定数として持つ。**契約には置かない。** 端末側はインデックスを知る必要がないため |
@@ -103,7 +104,7 @@ no tests ran
 - `HOOK_FIELDS` に、設計書 §3.2 の 12 項目を `(列名, キーパス, 型)` の 3 つ組で置く
 - `EXTRA_COLUMNS` に、端末側で組み立てる 7 列を `(列名, 型)` で置く
 - `POLICY_COLUMNS` に、`policy_state` の 10 列を `(列名, 型)` で、設計書 §5.2 の表の順に置く
-- `POLICY` に 3 項目を置く。キーは `settings.json` 内の `.` 区切りパス
+- `POLICY` に 2 項目を置く。キーは `settings.json` 内の `.` 区切りパス
 - `CSV_COLUMNS` に、AI Gateway CSV の 12 ヘッダと `source_file` を `(CSV ヘッダ名, DB 列名, 型)` で置く。`source_file` のヘッダ名は `None`
 - 定数以外は何も置かない（関数は以降のタスクで足す）
 
@@ -119,7 +120,7 @@ no tests ran
 | 4 | `CSV_COLUMNS` の DB 列名の並び | `day, user_email, provider, model, currency, cost, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cached_input_tokens, uncached_input_tokens, source_file`（13 列） |
 | 5 | `CSV_COLUMNS` のうちヘッダ名が `None` の要素 | `source_file` の 1 つだけ |
 | 6 | 5 定数に現れる型文字列の先頭トークンの集合 | `{"VARCHAR", "INTEGER", "BIGINT", "DOUBLE"}` の部分集合 |
-| 7 | `POLICY` のキー | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` / `env.FORCE_AUTOUPDATE_PLUGINS` の 3 つ |
+| 7 | `POLICY` のキー | `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` / `extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate` の 2 つ |
 | 8 | `contract.py` が import しているモジュール | 標準ライブラリのみ（サードパーティを import していない） |
 
 **完了の判定**
@@ -195,11 +196,12 @@ pytest tests/test_contract_dig.py -q
 - 型文字列の先頭トークン（`VARCHAR` / `INTEGER` / `BIGINT` / `DOUBLE`）で分岐する
 - `None` はどの型でも `None` のまま返す
 - `VARCHAR` は `str()` に通す。**ただし真偽値は小文字の `true` / `false` にする**
+- `VARCHAR` はそのうえで**型に書かれた宣言長 `n` で切り詰める**。長さは文字数で数える。桁に収める責務は契約だけが持ち、受信側で再解釈しない
 - `INTEGER` / `BIGINT` は、真偽値・整数・整数文字列を `int` に寄せる。それ以外は `None` にする
 - `DOUBLE` は、数値・数値文字列を `float` に寄せる。それ以外は `None` にする
 - 値の語彙は検査しない。許可リストを持たない
 
-**根拠:** 設計書 §3.2「値の型変換も契約の 1 関数に閉じる」と同節の型変換の表、§5.5「真偽値 INTEGER 0 / 1」
+**根拠:** 設計書 §3.2「値の型変換も契約の 1 関数に閉じる」と同節の型変換の表・「桁で切り詰めるのは、MySQL が桁超過を拒否するためである」、§5.5「桁の扱いだけは両者で異なる」
 
 **テスト**
 
@@ -225,8 +227,11 @@ pytest tests/test_contract_dig.py -q
 | 18 | `0` | `DOUBLE` | `0.0` |
 | 19 | `"不明"` | `DOUBLE` | `None` |
 | 20 | `None` | `DOUBLE` | `None` |
+| 21 | 40 文字の ASCII 文字列 | `VARCHAR(32)` | 先頭 32 文字（切り詰められる） |
+| 22 | 32 文字ちょうどの文字列 | `VARCHAR(32)` | 入力と同一（切り詰めない） |
+| 23 | 40 文字の日本語文字列 | `VARCHAR(32)` | 先頭 32 **文字**（バイト数ではなく文字数で数える） |
 
-ケース 5 は実サンプルの `is_interrupt` がそのまま入る形である（3 件すべてが JSON の真偽値 `false`）。ケース 16・17 は実 CSV の `Cost` 列に現れる 2 つの書式である。
+ケース 5 は実サンプルの `is_interrupt` がそのまま入る形である（3 件すべてが JSON の真偽値 `false`）。ケース 16・17 は実 CSV の `Cost` 列に現れる 2 つの書式である。ケース 21〜23 は、MySQL が桁超過を拒否して**そのリクエストのイベントをすべて失う**経路（設計書 §3.2）を塞ぐ検査である。SQLite は桁を強制しないため、この検査が無いと事故は本番でしか表に出ない。
 
 **完了の判定**
 
@@ -237,7 +242,7 @@ pytest tests/test_contract_coerce.py -q
 期待出力（末尾行）:
 
 ```
-20 passed
+23 passed
 ```
 
 **コミット:** `feat(contract): coerce による列型への変換を追加`
@@ -383,7 +388,7 @@ pytest tests/test_shared_import.py -q
 - SQL 文字列はこのファイルの外では常に `?` で書かれる前提に立つ
 - フレームワークを import しない
 
-**根拠:** 設計書 §4.3「`db.py` が持つ抽象は次の 3 つだけ」、§5.5「プレースホルダ」
+**根拠:** 設計書 §4.3「`db.py` が持つ抽象」、§5.5「プレースホルダ」
 
 **テスト**
 
@@ -514,16 +519,60 @@ pytest tests/test_db_columns.py -q
 
 ---
 
+### タスク 11: `analyze()` — 統計情報の更新
+
+**ファイル:** 変更 `cc-governance-bmsd-server/db.py` / テスト `tests/test_db_analyze.py`
+**依存:** タスク 9
+
+**やること**
+
+- 接続を受け取り、**統計情報を更新して返る**関数を置く
+- SQLite では `PRAGMA analysis_limit`（400 程度）を与えてから `ANALYZE` を実行する。全索引の走査を避けるため
+- MySQL では 3 テーブルに対して `ANALYZE TABLE` を実行する。既定で標本抽出である
+- 方言の分岐は、タスク 9・10 が持つ分岐と同じ場所にまとめる。**呼ぶ側に方言の知識を出さない**
+- テーブルが空でも、何度呼んでも例外にしない
+
+**画面の被覆インデックスは、統計情報が無いと選ばれない**（設計書 §5.1）。`skill_name` / `tool_name` を先頭に持つ 2 本は `WHERE` に先頭列の条件が現れず、統計情報が無ければインデックスを 1 本も置かない場合より遅くなる。呼ぶのは CSV 取込（計画 [6]）だけだが、方言で分かれる処理であるため置き場所は `db.py` である。
+
+**根拠:** 設計書 §4.3（`db.py` が持つ抽象。`analyze()` の置き場所）、§4.5「統計情報の更新」、§5.1（統計情報が無いと被覆インデックスは逆効果になる）
+
+**テスト**
+
+| # | 前の状態 | 操作 | 期待値 |
+| --- | --- | --- | --- |
+| 1 | `init()` 済みの SQLite に `cost_daily` の行を数行入れた状態 | `analyze()` | 例外が出ない。`sqlite_stat1` に `cost_daily` の行がある |
+| 2 | `init()` 済み、3 テーブルとも空 | `analyze()` | 例外が出ない |
+| 3 | ケース 1 の直後 | `analyze()` をもう 1 回 | 例外が出ない（何度呼んでもよい） |
+| 4 | SQLite。発行された文を記録する接続を渡す | `analyze()` | `PRAGMA analysis_limit` が `ANALYZE` より先に発行される |
+| 5 | `DB_DSN` が `mysql://...`。発行された文を記録する接続を渡す（**実接続を張らない**） | `analyze()` | `ANALYZE TABLE` が発行され、`events` / `policy_state` / `cost_daily` の 3 つが対象に並ぶ |
+
+**完了の判定**
+
+```
+pytest tests/test_db_analyze.py -q
+```
+
+期待出力（末尾行）:
+
+```
+5 passed
+```
+
+**コミット:** `feat(server): 統計情報を更新する analyze を追加`
+
+---
+
 ## 4. この計画の完了条件
 
 - [ ] `governance/hooks/contract.py` が存在し、定数 5 つ・関数 4 つだけを公開している。200 行以内である
 - [ ] `contract.py` が標準ライブラリ以外を import していない
 - [ ] `cc-governance-bmsd-server/shared.py` が `__file__` 起点でパスを解決し、契約の 9 つの名前を再輸出している
-- [ ] `cc-governance-bmsd-server/db.py` が `connect()` / `q(sql)` / `init()` の 3 つだけを外に出し、200 行以内である
+- [ ] `cc-governance-bmsd-server/db.py` が `connect()` / `q(sql)` / `init()` / `analyze()` の 4 つを外に出し、それ以外を公開せず、200 行以内である
 - [ ] `db.py` がフレームワークを import していない
 - [ ] `events` / `policy_state` / `cost_daily` の列名が `db.py` にも `shared.py` にも直接書かれていない（すべて契約から導いている）
 - [ ] 契約に列を 1 つ足すと `init()` が例外で止まることが、3 テーブルそれぞれについて検証されている
 - [ ] インデックス 7 本が作られ、2 回目の `init()` で重複しないことが検証されている
+- [ ] `analyze()` が両方の方言で例外なく完了し、SQLite では `PRAGMA analysis_limit` が `ANALYZE` より先に発行されることが検証されている
 - [ ] `requirements-dev.txt` が pytest と ruff の 2 行だけで、どちらも `==` で固定されている。`requirements.txt` はまだ存在しない
 - [ ] `tests/` が `governance/` の下にも `cc-governance-bmsd-server/` の下にも無い
 - [ ] 下記が通る（`tests/` には後続の計画のテストも溜まるため、本計画が足したファイルに絞って実行する）
@@ -535,7 +584,7 @@ pytest -q tests/test_contract_*.py tests/test_shared_import.py tests/test_db_*.p
 期待出力（末尾行）:
 
 ```
-76 passed
+83 passed
 ```
 
 - [ ] 下記が何も出力しない（契約の正本が 1 つだけであること）
@@ -558,7 +607,7 @@ grep -rln "HOOK_FIELDS = " --include=*.py . | grep -v "^./governance/hooks/contr
 | `/ingest` の受信・検査・`executemany`・応答コード | [4] |
 | 集計 SQL と画面 | [5] |
 | CSV の走査・`Date` の書式解釈・`day` 単位の冪等化 | [6] |
-| **MySQL への実接続**。DDL の適用、インデックスの存在確認、列の突き合わせが MySQL で動くこと | [8] |
+| **MySQL への実接続**。DDL の適用、インデックスの存在確認、列の突き合わせ、`analyze()` が MySQL で動くこと | [8] |
 | 接続先 MySQL の `sql_require_primary_key` が主キーなしテーブルを拒否しないこと | [8] |
 | `waitress` での待受、`BASE_PATH` のサブパス適用、`requirements.txt` の本番依存 3 つの固定 | [8] |
 | SQL の文字列リテラルの中に `?` が現れた場合の `q()` の挙動 | 確かめない。集計 SQL に `?` を含む文字列リテラルを書かない前提に立つ |

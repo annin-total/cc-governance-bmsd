@@ -1,7 +1,8 @@
 # CLAUDE.md - cc-governance-bmsd
 
 Claude Code の端末プラグイン（`governance/`）と集計サーバ（`cc-governance-bmsd-server/`）。
-両者は契約の正本 `governance/hooks/contract.py` を共有する。設計判断の根拠は `docs/design.md`。
+両者は契約の正本 `governance/hooks/contract.py` を共有する。設計判断の根拠は `docs/design.md`、
+採らなかった選択肢と実測値は `docs/knowledge/`。
 
 ## Commands
 
@@ -33,7 +34,7 @@ cd cc-governance-bmsd-server && \
 - 型注釈を付ける。例外を握り潰さない（hook は除く）
 - docstring を 1 行程度で簡潔に書く（自明なら省略してよい）
 - 値のハードコードは避けて定数に分離する。ただし過剰にはしない
-- 内部関数・メソッドは識別子を付与して区別する
+- 内部関数・内部メソッドは識別子を付与して区別する
 
 ## Design
 

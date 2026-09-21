@@ -304,12 +304,13 @@ pytest tests/client/test_collect_no_leak.py -q
 
 - transcript のパスを受け取り、**末尾 256KB だけ**をバイト列として読む。全文をパースしない
 - 行を逆順に走査し、最初に見つかった `message.usage` の `input_tokens` / `cache_creation_input_tokens` / `cache_read_input_tokens` を足して返す。欠けている項は 0 として扱う
+- **3 値の合計が 0 の `usage` は採らず、さらに前の行へ遡る。** API エラーの応答は `usage` を持つが全値が 0 であり、これを採ると欠測ではなく 0 が真値として分布に混じる
 - `usage` が見つからない・読めない・パスが `None` の場合は `None` を返す
 - 合算できない値（数値でない値）が混ざっていた場合も `None` を返す
 - **どの入力でも例外を外に出さない。** 戻り値は `None` か数値のいずれか
 - 率に変換しない。絶対値のまま返す
 
-**根拠:** 設計書 §3.4、§9.1（`usage` 構造が変われば静かに欠測する）
+**根拠:** 設計書 §3.4（末尾 256KB・逆順走査・合計が 0 の `usage` を採らない）、§9.1（`usage` 構造が変われば静かに欠測する）
 
 **テスト**
 
@@ -338,6 +339,10 @@ pytest tests/client/test_collect_no_leak.py -q
 | 19 | JSON でないテキスト 1MB | `None` |
 | 20 | 16MB のファイル。末尾に `usage`（合計 7） | `7`。かつ実行時間が 1 秒未満 |
 | 21 | UTF-8 として不正なバイト列を含む行 | 例外なし。戻り値は `None` か数値 |
+| 22 | 末尾に 3 値すべてが 0 の `usage` 行、その前に合計 5 の `usage` 行 | `5`（合計 0 の行を採らず遡る） |
+| 23 | 3 値すべてが 0 の `usage` 行しか無い | `None`（0 を真値として返さない） |
+
+ケース 22・23 は API エラーの応答が混じる経路である。0 を採ると、欠測であるべき値がコンテキスト分布の左端に山を作る。
 
 **完了の判定**
 
@@ -348,7 +353,7 @@ pytest tests/client/test_context.py -q
 期待出力（末尾行）:
 
 ```
-21 passed
+23 passed
 ```
 
 **コミット:** `feat(client): transcript 末尾から context_tokens を取る処理を追加`
@@ -609,7 +614,7 @@ pytest -q tests/client/
 期待出力（末尾行）:
 
 ```
-153 passed
+154 passed
 ```
 
 **コミット:** `test(client): 壊れた入力でも exit 0 することを検証`
@@ -641,6 +646,7 @@ pytest -q tests/client/
 
 **コマンド文字列は設計事項である。** hook の実行は、登録したコマンド文字列とともに利用者の画面に表示されうる。hook 自身が何も出力しなくても、この表示は止められない（設計書 §3.3）。次を守る。
 
+- **`${...}` は必ず二重引用符で囲む。** 展開するのは Claude Code ではなくシェルであり、単引用符ではリテラルのまま渡る
 - パイプ・`;`・`&&`・リダイレクトを含めない。**条件分岐も後処理も Python 側に置く**
 - 無効化スイッチの判定も Python 側で行う。コマンド文字列を条件付きにしない
 - **1 行 100 文字未満**に収める。最長の `UserPromptExpansion` で 68 文字であり、余裕がある。作った時点で `jq` で確かめる（下の完了の判定）。リリース時の検査には含めない
@@ -690,6 +696,18 @@ jq -r '.hooks[][].hooks[].command | "\(length)\t\(.)"' governance/hooks/hooks.js
 
 ```
 jq -r '.hooks[][].hooks[].command' governance/hooks/hooks.json | grep -c '[|;&>]'
+```
+
+期待出力:
+
+```
+0
+```
+
+`${...}` が二重引用符で囲まれていることを確かめる。
+
+```
+jq -r '.hooks[][].hooks[].command' governance/hooks/hooks.json | grep -cv '"\${CLAUDE_PLUGIN_ROOT}/hooks/collect\.py"'
 ```
 
 期待出力:
@@ -843,7 +861,7 @@ ls -aR "$HOME/.claude/plugins/data" "$HOME/.claude/cc-governance" 2>&1 | shasum 
 | # | 条件 | 確かめ方 |
 | --- | --- | --- |
 | 1 | `governance/hooks/` に `collect.py` / `_context.py` / `_queue.py` / `_sender.py` / `_identity.py` / `hooks.json` があり、`governance/config.json` がある | `ls` |
-| 2 | 本計画のテストが通る | `pytest -q tests/client/` が `153 passed` |
+| 2 | 本計画のテストが通る | `pytest -q tests/client/` が `154 passed` |
 | 3 | どの Python ファイルも 200 行以内 | `wc -l governance/hooks/*.py` |
 | 4 | 端末側が標準ライブラリしか使っていない | `grep -n '^import\|^from' governance/hooks/*.py` の結果に第三者パッケージが無い |
 | 5 | 契約の複製が無い | `grep -rn 'HOOK_FIELDS = \|EXTRA_COLUMNS = ' governance/` が `contract.py` の 2 行だけを返す |
