@@ -1,7 +1,6 @@
 """識別子（user_email / host / event_id）の解決とキャッシュ。標準ライブラリのみで動く。
 
-状態ディレクトリの解決規則は本来 `_queue.py` の 1 か所に置く（後続タスクで移す）。
-`_queue.py` がまだ無いため、現時点ではこのファイルに置く。
+状態ディレクトリの解決規則は `_queue.py` の 1 か所に置く。ここではそれを呼ぶだけにする。
 """
 
 import json
@@ -9,24 +8,11 @@ import os
 import platform
 import subprocess
 import uuid
+from _queue import _state_dir
 from pathlib import Path
 from typing import Optional
 
 _ENV_USER_EMAIL = "CC_GOVERNANCE_USER_EMAIL"
-_STATE_DIR_ENV = "CLAUDE_PLUGIN_DATA"
-_FALLBACK_STATE_DIR_SUFFIX = (".claude", "cc-governance")
-
-
-def _state_dir() -> Path:
-    """端末の状態の置き場所を解決する。`CLAUDE_PLUGIN_DATA` が無ければ代替経路を使う。
-
-    `Path.home()` は呼び出しのたびに評価する。import 時に評価して定数化すると、
-    テストや隔離環境での `HOME` の差し替えが効かなくなる。
-    """
-    plugin_data = os.environ.get(_STATE_DIR_ENV)
-    if plugin_data:
-        return Path(plugin_data)
-    return Path.home().joinpath(*_FALLBACK_STATE_DIR_SUFFIX)
 
 
 def _identity_path() -> Path:
