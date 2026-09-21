@@ -132,3 +132,31 @@ sqlite_stat1 : 存在する                        ← analyze が走ってい�
 | M-1 | `cost_daily` の列名リテラルが 5 か所残っている（`day` / `source_file`） | **そのままにする。** 設計書 §4.5 自身が冪等キーを `day`、§5.3 が由来列を `source_file` と名指ししている。契約への追随はレビュアの差し替え検証で実証済み |
 | M-4 | `import_all` の返り値の `rows` / `dropped` を突き合わせるテストが弱い | I-1 の修正で一部埋まる |
 | M-5 | `CSV_DIR` 未設定が静かに「0 件成功」になる | 運用上は `start.sh` / `Dockerfile` で必ず入る |
+
+## 計画 [6] の完了
+
+**188 passed**（既存 141 + 47）。`csv_import.py` は 150 行。再レビューで I-1 / I-2 / R-39 / M-3 がすべて ADDRESSED。
+
+### 制御側の最終確認（4 種類の異常を同時に置いた `CSV_DIR`）
+
+```
+HTTP 200
+<li>a_good.csv: 1 行（破棄 0 件）</li>
+<li>b_bom_slash.csv: 1 行（破棄 0 件）</li>          ← BOM + スラッシュ書式が両方救われた
+<li>z_noperm.csv: 失敗（[Errno 13] Permission denied: ...）</li>
+<li>z_unrelated.csv: 失敗（必須列が欠けている: ...）</li>
+保存: [(20635, 'aws-bedrock', 1.0), (20639, 'openai', 2.0)]
+analyze: 1
+```
+
+### 実装者の判断が制御側の提案より良かった点
+
+I-2 の修正で、私は `except Exception` への拡大を提案した。実装者は **`(ValueError, OSError, csv.Error)` に限定**した。
+この形なら、実装のバグ（`AttributeError` / `TypeError` / `KeyError`）は握り込まれずに 500 になり、
+**「ファイル起因の想定される失敗」と「実装のバグ」が区別されたまま残る。**
+
+### 先送りした Minor（追加）
+
+| # | 指摘 |
+| --- | --- |
+| M-7 | `OSError` / `csv.Error` の文言に**ファイルの絶対パスが含まれ、そのまま画面に出る**（本番では `/mnt/data/csv/...`）。画面は Ingress 認証の内側であり機密そのものではないが、`os.path.basename` に絞る余地がある。**I-2 の対応によって、この文字列が画面まで届くようになった**（挙動自体は以前から同じ） |
