@@ -4,9 +4,10 @@ import hmac
 import json
 import os
 
+import csv_import
 import db
 import ingest
-from flask import Flask, Response, request
+from flask import Flask, Response, render_template, request
 
 db.init()
 
@@ -15,8 +16,19 @@ app = Flask(__name__)
 
 @app.route("/")
 def index() -> str:
-    """疎通確認用の応答。"""
-    return "ok"
+    """概況画面。取込ボタンを含む。"""
+    return render_template("overview.html")
+
+
+@app.route("/import", methods=["POST"])
+def import_endpoint() -> str:
+    """CSV_DIR の全ファイルを取り込み、結果を概況画面に表示する。"""
+    conn = db.connect()
+    try:
+        results = csv_import.import_all(os.environ.get("CSV_DIR", ""), conn)
+    finally:
+        conn.close()
+    return render_template("overview.html", import_results=results)
 
 
 @app.route("/ingest", methods=["POST"])

@@ -3,6 +3,7 @@
 このファイルはタスク 1〜8 を通じて育てる。
 """
 
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -490,3 +491,78 @@ def test_analyze_called_with_empty_directory(sqlite_db_dsn, tmp_path, monkeypatc
         assert calls == [conn]
     finally:
         conn.close()
+
+
+# --- タスク 7: POST /import と画面のボタン -----------------------------------
+
+
+@pytest.fixture
+def import_client(sqlite_db_dsn, tmp_path):
+    """`CSV_DIR` を fixture 2 本を置いた一時ディレクトリに向け、`app` を読み込んだテストクライアントを返す。"""
+    import importlib
+
+    _copy_fixture(tmp_path, "daily_a.csv")
+    _copy_fixture(tmp_path, "daily_b.csv")
+
+    import app as app_module
+
+    original_csv_dir = os.environ.get("CSV_DIR")
+    os.environ["CSV_DIR"] = str(tmp_path)
+    try:
+        importlib.reload(app_module)
+        yield app_module.app.test_client()
+    finally:
+        if original_csv_dir is None:
+            os.environ.pop("CSV_DIR", None)
+        else:
+            os.environ["CSV_DIR"] = original_csv_dir
+
+
+def test_post_import_processes_csv_dir_and_reports_files(import_client):
+    """7-1: `POST /import` で CSV_DIR の全ファイルが処理され、応答にファイル名と行数が含まれる。"""
+    response = import_client.post("/import")
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "daily_a.csv" in body
+    assert "daily_b.csv" in body
+
+
+def test_post_import_twice_gives_same_result(import_client):
+    """7-2: 2 回続けて送っても同じファイル名・行数が返り、SUM(cost) が変わらない。"""
+    first = import_client.post("/import").get_data(as_text=True)
+    second = import_client.post("/import").get_data(as_text=True)
+    assert first == second
+
+    conn = db.connect()
+    try:
+        assert _count_and_sum(conn) == (5, 15.0)
+    finally:
+        conn.close()
+
+
+def test_get_import_is_method_not_allowed(import_client):
+    """7-3: `GET /import` は 405。"""
+    response = import_client.get("/import")
+    assert response.status_code == 405
+
+
+def test_form_action_follows_base_path(sqlite_db_dsn):
+    """7-4: `BASE_PATH` を与えた状態で `/` を描画すると、フォームの action が BASE_PATH を含む。"""
+    import importlib
+
+    import app as app_module
+
+    original_base_path = os.environ.get("BASE_PATH")
+    os.environ["BASE_PATH"] = "/gov/cc"
+    try:
+        importlib.reload(app_module)
+        client = app_module.app.test_client()
+        response = client.get("/gov/cc")
+        body = response.get_data(as_text=True)
+        assert "/gov/cc/import" in body
+    finally:
+        if original_base_path is None:
+            os.environ.pop("BASE_PATH", None)
+        else:
+            os.environ["BASE_PATH"] = original_base_path
+        importlib.reload(app_module)
