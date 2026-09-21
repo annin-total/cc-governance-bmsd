@@ -53,3 +53,35 @@
 ---
 
 ## タスクの記録
+
+- **R-21: `requirements.txt` は 11 パッケージで確定する。設計書 §4.3 と計画書が言う「9 パッケージ」は誤りである。**
+
+  **実測（制御側が独立に再現）:**
+
+  ```
+  uv pip compile --python-version 3.9  → Resolved 11 packages
+      blinker click flask importlib-metadata itsdangerous jinja2 markupsafe pymysql waitress werkzeug zipp
+  uv pip compile --python-version 3.10 → Resolved 9 packages（click は 8.5.0 になる）
+
+  pip download --python-version 3.9（実インタプリタは 3.13）→ 9 件
+      blinker-1.9.0 / click-8.1.8 / flask-3.1.3 / itsdangerous-2.2.0 / jinja2-3.1.6 /
+      markupsafe-3.0.3-cp39-...manylinux2014_x86_64 / pymysql-1.2.3 / waitress-3.0.2 / werkzeug-3.1.8
+  ```
+
+  **この 9 件は、設計書 §4.3 が期待リストとして挙げるものと版まで完全に一致する。**
+  つまり設計書の数字はこの `pip download` の方法で作られており、`pip` が環境マーカー
+  `python_version < '3.10'` を `--python-version` ではなく**実行中のインタプリタ**で評価するため、
+  flask が 3.9 でのみ要求する `importlib-metadata`（と、その依存の `zipp`）を静かに落としている。
+
+  **なぜ 11 が正しいか** — 設計書 §4.3 が固定を求める目的は「同じコードのまま、再起動しただけで
+  別のバージョンが走る」状態を防ぐことである。9 件で出すと、基盤の 3.9 上で `pip install -r requirements.txt` が
+  `importlib-metadata` を固定されていない版で引き込み、その目的が崩れる。11 件にするほうが設計書の意図に忠実である。
+
+  **検査の読み替え** — 「9 パッケージ」を次の 3 つに置き換える。
+  ① `requirements.txt` が 11 行（コメントを除く）で全行が `==` ②
+  `grep -c ';'` が 0 ③ 11 件すべてに 3.9 / manylinux2014 のホイールが実在する。
+
+  外れたときの損 — 3.10 以降へ上げたときに `importlib-metadata` / `zipp` の 2 行が不要になる。
+  冒頭のコメントにその旨を書いて、消せるものだと分かるようにする。
+
+  **設計書は変更しない**（利用者の指示）。この差異の記録はここに残す。
