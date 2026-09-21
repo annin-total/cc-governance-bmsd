@@ -1,0 +1,16 @@
+{
+  "session_id": "7f678d60-4adb-4d26-94a9-ab07e6368ee5",
+  "transcript_path": "/home/u/.claude/projects/-home-u-Documents-program-Development-cc-governance/7f678d60-4adb-4d26-94a9-ab07e6368ee5.jsonl",
+  "cwd": "/home/u/Documents/program/Development/cc-governance",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-Documents-program-Development-cc-governance/7f678d60-4adb-4d26-94a9-ab07e6368ee5/scratchpad",
+  "prompt_id": "61cfacd5-830f-400d-bd9e-e966ad342295",
+  "permission_mode": "auto",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "Stop",
+  "stop_hook_active": false,
+  "last_assistant_message": "SENTINEL-152",
+  "background_tasks": [],
+  "session_crons": []
+}

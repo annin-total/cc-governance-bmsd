@@ -1,0 +1,9 @@
+{
+  "session_id": "fc98dd37-64f8-481e-b2b3-3f4d10fe2ee4",
+  "transcript_path": "/home/u/.claude/projects/-home-u-Documents-program-Development-cc-governance/fc98dd37-64f8-481e-b2b3-3f4d10fe2ee4.jsonl",
+  "cwd": "/home/u/Documents/program/Development/cc-governance",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-Documents-program-Development-cc-governance/fc98dd37-64f8-481e-b2b3-3f4d10fe2ee4/scratchpad",
+  "hook_event_name": "SessionStart",
+  "source": "startup",
+  "model": "claude-sonnet-5"
+}

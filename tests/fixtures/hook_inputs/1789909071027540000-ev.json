@@ -1,0 +1,14 @@
+{
+  "session_id": "3403e444-5f86-401b-abde-04ce4b7befd6",
+  "transcript_path": "/home/u/.claude/projects/-home-u-Documents-program-Development-cc-governance/3403e444-5f86-401b-abde-04ce4b7befd6.jsonl",
+  "cwd": "/home/u/Documents/program/Development/cc-governance",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-Documents-program-Development-cc-governance/3403e444-5f86-401b-abde-04ce4b7befd6/scratchpad",
+  "prompt_id": "b528ecf1-eb60-4f31-8b73-e1b9c88bbb0f",
+  "hook_event_name": "SessionStart",
+  "source": "resume",
+  "model": "claude-opus-5[1m]",
+  "seconds_since_last_response": 403,
+  "context_tokens": 136816,
+  "prompt_cache_likely_expired": false,
+  "estimated_cache_write_usd": 1.3682
+}

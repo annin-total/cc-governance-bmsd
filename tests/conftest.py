@@ -1,8 +1,10 @@
 """pytest の共通設定。サーバと端末プラグインのモジュールを import 可能にする。"""
 
+import json
 import os
 import sys
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -10,6 +12,23 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "cc-governance-bmsd-server"))
 sys.path.insert(0, str(ROOT / "governance" / "hooks"))
+
+HOOK_INPUTS_DIR = ROOT / "tests" / "fixtures" / "hook_inputs"
+
+
+def iter_hook_inputs(hook_event_name: str) -> Iterator[dict]:
+    """`hook_event_name` に一致する fixture を、ファイル名の昇順で 1 件ずつ返す。"""
+    for path in sorted(HOOK_INPUTS_DIR.glob("*.json")):
+        with open(path, encoding="utf-8") as f:
+            obj = json.load(f)
+        if obj.get("hook_event_name") == hook_event_name:
+            yield obj
+
+
+@pytest.fixture
+def hook_inputs():
+    """hook 種別を渡すと、その種別の fixture を 1 件ずつ返すイテレータを作る関数。"""
+    return iter_hook_inputs
 
 
 @pytest.fixture

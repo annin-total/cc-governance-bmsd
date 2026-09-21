@@ -1,0 +1,26 @@
+{
+  "session_id": "3403e444-5f86-401b-abde-04ce4b7befd6",
+  "transcript_path": "/home/u/.claude/projects/-home-u-cc-verify-session/3403e444-5f86-401b-abde-04ce4b7befd6.jsonl",
+  "cwd": "/home/u/cc-verify-session",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-cc-verify-session/3403e444-5f86-401b-abde-04ce4b7befd6/scratchpad",
+  "prompt_id": "7e2aff7e-57d5-4d17-8749-b0576cd174df",
+  "permission_mode": "auto",
+  "effort": {
+    "level": "high"
+  },
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "SENTINEL-18",
+    "description": "SENTINEL-19"
+  },
+  "tool_response": {
+    "stdout": "SENTINEL-16",
+    "stderr": "SENTINEL-17",
+    "interrupted": false,
+    "isImage": false,
+    "noOutputExpected": false
+  },
+  "tool_use_id": "toolu_01APCmAqbFy3oHNbHqrCFwQz",
+  "duration_ms": 230
+}

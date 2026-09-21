@@ -1,0 +1,29 @@
+{
+  "session_id": "3403e444-5f86-401b-abde-04ce4b7befd6",
+  "transcript_path": "/home/u/.claude/projects/-home-u-cc-verify-session/3403e444-5f86-401b-abde-04ce4b7befd6.jsonl",
+  "cwd": "/home/u/cc-verify-session",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-cc-verify-session/3403e444-5f86-401b-abde-04ce4b7befd6/scratchpad",
+  "prompt_id": "d0ae91c0-6055-48d7-8078-09e03b9b294e",
+  "permission_mode": "auto",
+  "effort": {
+    "level": "high"
+  },
+  "hook_event_name": "PostToolUse",
+  "tool_name": "mcp__context7__query-docs",
+  "tool_input": {
+    "libraryId": "/kubernetes/website",
+    "query": "SENTINEL-35"
+  },
+  "tool_response": [
+    {
+      "type": "SENTINEL-33",
+      "text": "SENTINEL-34"
+    }
+  ],
+  "tool_use_id": "toolu_01TGwACaiChGUk7Jfwgog5Du",
+  "duration_ms": 2409,
+  "mcp_server": {
+    "name": "context7",
+    "source": "user"
+  }
+}

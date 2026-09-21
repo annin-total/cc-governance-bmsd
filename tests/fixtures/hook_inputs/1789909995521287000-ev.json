@@ -1,0 +1,21 @@
+{
+  "session_id": "e81a3b5d-0790-4020-bcb3-38be7acc090d",
+  "transcript_path": "/home/u/.claude/projects/-home-u-Documents-program-Development-cc-governance-cc-merged-cc-marketplace-company-plugins-governance/e81a3b5d-0790-4020-bcb3-38be7acc090d.jsonl",
+  "cwd": "/home/u/Documents/program/Development/cc-governance/cc-merged/cc-marketplace-company/plugins/governance",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-Documents-program-Development-cc-governance-cc-merged-cc-marketplace-company-plugins-governance/e81a3b5d-0790-4020-bcb3-38be7acc090d/scratchpad",
+  "prompt_id": "9c53a844-ad63-43e1-8aa8-c46e4d619759",
+  "permission_mode": "auto",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "PostToolUseFailure",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "SENTINEL-267",
+    "description": "SENTINEL-268"
+  },
+  "tool_use_id": "toolu_01KB3M6ZDprKcJQt86R4vsj3",
+  "error": "SENTINEL-266",
+  "is_interrupt": false,
+  "duration_ms": 90
+}
