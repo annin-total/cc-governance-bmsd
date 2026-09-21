@@ -1,5 +1,6 @@
 """ルーティング層。Web フレームワークを import するのはこのファイルだけ。"""
 
+import hmac
 import json
 import os
 
@@ -22,7 +23,8 @@ def index() -> str:
 def ingest_endpoint() -> Response:
     """NDJSON をトークン検査のうえ `ingest.py` に渡し、保存件数・破棄件数を返す。"""
     token = os.environ.get("INGEST_TOKEN") or ""
-    if not token or request.headers.get("X-Ingest-Token") != token:
+    header_token = request.headers.get("X-Ingest-Token") or ""
+    if not token or not hmac.compare_digest(header_token, token):
         return Response(status=401)
 
     conn = db.connect()
