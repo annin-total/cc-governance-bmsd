@@ -9,4 +9,5 @@
 | [deploy.md](deploy.md) | 実行基盤への到達が要る作業 |
 | [distribution.md](distribution.md) | 社内リポジトリへの到達が要る配布の作業 |
 | [unverified.md](unverified.md) | 未検証のまま残っていること |
+| [known-issues.md](known-issues.md) | 端末プラグインの既知の不具合（原因特定済み・未修正） |
 | [restructure.md](restructure.md) | 3 リポジトリへの再編 |

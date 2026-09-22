@@ -69,8 +69,13 @@ Claude Code に同梱される実行環境を使う形にする。
 ### 配布経路に関する一式
 
 **すべて未検証。** 手順は [distribution.md](distribution.md) にある。
-自動更新が端末へ降りるまでの時間は隔離環境で 1 度だけ観測しており（15 分 23 秒）、
-**この間隔が固定かどうかは未検証である。**
+自動更新が端末へ降りるまでの時間は、隔離環境（git source + 自前 HTTP サーバ）で 1 度は
+15 分 23 秒と観測している一方、別の隔離環境（同条件）では**約 26 分・セッション 3 回（うち
+18 分の連続アイドル）待っても自動フェッチも自動更新も一度も発生しなかった。**手動で
+`claude plugin marketplace update` / `claude plugin update` を打てば即座に反映される。
+**間隔が固定かどうか、および今回不発だった原因（実際の間隔がより長い／別条件、あるいは擬似
+環境が発火条件を満たしていない、のいずれか）は未検証である。**社内リポジトリを使う実運用の
+配布経路（distribution.md §1）で確かめる必要がある。
 
 ## 3. 実データが溜まってから測ること
 
@@ -107,6 +112,7 @@ Claude Code に同梱される実行環境を使う形にする。
 
 | 事項 | 確かめること |
 | --- | --- |
-| `effort.level` | `claude -p`（非対話・haiku）では現れないことは確認済み（`../knowledge/claude-code-behavior.md`）。**対話セッション・拡張思考あり・Opus/Sonnet モデルでも現れないかは未検証** |
-| `PostToolUse` / `PostToolUseFailure` / `PreCompact` / `UserPromptExpansion` の実 stdin | 今回の検証プロンプトが発火条件を踏まなかったため未採取。ツール呼出・ツール失敗・圧縮・スラッシュコマンドを伴うプロンプトで再採取する |
+| `effort.level` | `claude -p` では、haiku / sonnet / `--effort low,high,xhigh` フラグ / 思考を促すプロンプトのいずれでも現れないことを確認済み（`../knowledge/claude-code-behavior.md`）。**対話モードでの挙動は、自動操作が初回オンボーディングを突破できず未検証のまま** |
+| `PostToolUse` / `PostToolUseFailure` / `PreCompact` / `UserPromptExpansion` の実 stdin | ツール呼出・ツール失敗・圧縮・スラッシュコマンドを伴うプロンプトで再採取済み。列の充足は確認したが、契約に無い追加キー（`agent_type` / `duration_ms` / `tool_use_id` / `error` など）が複数見つかっている（`../verification/LOCAL-E2E.md` B2） |
 | git source マーケットプレイスでの `CLAUDE_PLUGIN_ROOT` の解決先 | `directory` source（ローカルパス）ではソースツリーを直接指すことを確認済み（`../knowledge/claude-code-behavior.md`）。**git source（配布経路の実運用形態）での挙動は未検証** |
+| detach した送信プロセスが自動起動後に確実に走るか | 手動で `_sender.py` を叩くと即座に送信が完了することは確認済みだが、`claude -p` 終了後に queue が残留する（送信が起きない）現象を独立した 2 回の検証で観測している。**条件が未特定。**再現条件（連続実行間隔・並列度など）を変えて隔離環境で切り分ければ確認できる |

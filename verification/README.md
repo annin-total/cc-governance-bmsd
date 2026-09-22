@@ -38,19 +38,23 @@ settings.json の hooks から呼び出し、Claude Code の実挙動を採取�
 #### capture_hook_stdin.py の使い方
 
 隔離 `CLAUDE_CONFIG_DIR` 配下の `settings.json` の `hooks` に、確かめたい hook イベントごとに
-1 エントリを足す。`CAPTURE_DIR` は `command` の引数ではなく `env` ブロックで渡す必要がある
-（コマンド文字列の展開はシェルが行うため、ここに直接埋め込むと空白を含むパスで壊れる）。
+1 エントリを足す。
+
+**`CAPTURE_DIR` は `env` ブロックでは渡せない。** hook エントリに `"env": {...}` を付けると、
+**そのエントリ自体が無音で無効化される**（Claude Code 2.1.280 で確認）。`CAPTURE_DIR` は
+`command` 文字列の中にインラインで書く。**ただし空白を含むパスは壊れる**（コマンド文字列の
+展開はシェルが行うため）。空白を含まない `CAPTURE_DIR`（例: この隔離ルート配下）を使う。
 
 ```json
 {
   "hooks": {
     "PreCompact": [
       {
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"/path/to/verification/hook-behavior/capture_hook_stdin.py\" PreCompact",
-            "env": { "CAPTURE_DIR": "/path/to/captured" }
+            "command": "CAPTURE_DIR=\"/path/without/space/captured\" python3 \"/path/to/verification/hook-behavior/capture_hook_stdin.py\" PreCompact"
           }
         ]
       }
@@ -61,6 +65,23 @@ settings.json の hooks から呼び出し、Claude Code の実挙動を採取�
 
 保存先は `<CAPTURE_DIR>/<hook名>-<epoch_ms>-<pid>.json`。`CAPTURE_DIR` を渡し忘れると
 カレントディレクトリに書かれる。
+
+**`PostToolUse` / `PostToolUseFailure` を採取するときは `"matcher": "*"` が必須。** 無いと
+無音で発火しない（プラグイン本体の `hooks.json` には最初から付いている）。
+
+**1 つの matcher ブロックの `hooks` 配列に複数コマンドを並べても、2 番目以降は実行されない。**
+複数の hook イベント／コマンドを同時に採取したいときは、イベントごとに個別の
+`{"matcher": "*", "hooks": [...]}` ブロックに分ける。
+
+**hook を仕込む方法は 2 通りあり、観測が割れている。**
+1. `settings.json` の `hooks` に直接エントリを足す（上記の例）
+2. マーケットプレイスのコピー（`extraKnownMarketplaces` の `source: "directory"` が指す先）の
+   `hooks/hooks.json` を書き換える
+
+`settings.json` 直下の hooks が `claude -p`（非対話）で発火するかは検証グループ間で観測が
+割れた。**片方が発火しないときは、もう片方の経路を試す。**マーケットプレイス側の
+`hooks.json` を変更した場合は、**プラグインの cache を消さないと反映されない**
+（`claude plugin uninstall` → cache 削除 → `claude plugin install` のフルサイクルが要る）。
 
 #### scriptname_subpath_app.py の使い方
 
@@ -131,6 +152,21 @@ curl http://127.0.0.1:5099/          # サブパス無し
   帰結**）
 - 擬似マーケットプレイスへバージョンを上げて反映させたいときは、bare から clone した作業コピー側で
   コミットして `git push` してから、隔離 HOME 側で自動更新を待つ
+
+**`claude plugin marketplace add` は bare リポジトリを直接指せない。** http(s) の git URL が
+要る。同梱の `githttpd.py`（`python3 githttpd.py <bare リポジトリの親ディレクトリ> <ポート>`）
+を先に起動し、`http://127.0.0.1:<ポート>/<name>-bare.git` を登録先に使う。
+
+**`run.sh` / `hold.sh` は無人実行では初回起動の対話ダイアログ 3 段で止まる**
+（テーマ選択・フォルダ信頼・API キー確認）。突破するには隔離 HOME の `.claude.json` に
+`hasCompletedOnboarding` / `theme` / `projects.<cwd の realpath>.hasTrustDialogAccepted` を
+事前投入する。**API キー確認の段だけは、ファイルの事前投入では突破できない。**pty 上でキー入力
+そのものを送る必要がある（`hold.py` が pty 起動を担う）。
+
+**`.claude.json` にプロジェクトパスを事前投入するときは `realpath` を使う。** macOS では
+`/tmp/...` が `/private/tmp/...` のシンボリックリンクであり、Claude Code は解決後の
+`/private/tmp/...` をキーとして記録する。`/tmp/...` のまま書くと一致せず、信頼ダイアログが
+再度出る。
 
 ### performance/ — 性能測定の再現
 

@@ -253,6 +253,90 @@ A6・A8 でデータを入れた状態で 4 画面を見る。**準拠率と突�
 
 ## フェーズ B（API キーが要る）
 
+### B0. 契約列を埋めるためのプロンプト設計
+
+`claude -p` の非対話実行だけで、契約列のほぼ全てに実データを入れられる。列ごとに、
+どういうプロンプト・起動方法を与えれば埋まるかを示す。
+
+| 列 | 埋め方 |
+| --- | --- |
+| `tool_name` | Read・Bash・Glob・Grep・Write など、ツールを使わせるプロンプトを与える。MCP 経由も対象（下記 MCP 節） |
+| `skill_name` | 検証用の自作スキルを 1 つ用意し、それを呼ばせるプロンプトを与える |
+| `agent_id` | `Task` でサブエージェントを起動させるプロンプトを与える。**値が付くのはサブエージェント自身のツール呼出だけ**であり、親側の `Task` 呼出そのものには付かない |
+| `command_name` / `command_source` | 下記「`command_source` の 3 種」参照 |
+| `source` | 下記「`source` の 4 種」参照 |
+| `compact_trigger` | 下記「`compact_trigger` の両経路」参照 |
+| `prompt_id` / `permission_mode` | `UserPromptSubmit` 以降の hook では自然に埋まる。**`SessionStart` の stdin には無い** |
+| `is_interrupt` | `false` は `PostToolUseFailure` の通常経路で埋まる。`true` は対話でユーザーが中断した場合と推測されるが**非対話では踏めない（未検証）** |
+| `effort_level` | 下記「`effort_level` は非対話では付かない」参照 |
+
+実データに対する秘匿値検査は、Bash に実際に `echo 'SENTINEL-<乱数>'` を実行させ、
+`tool_input.command` に本物のコマンド文字列が入った状態で行う（詳細は A7 の 6 対象に同じ）。
+これにより、合成フィクスチャではなく実際に流れた `tool_input` に対して許可リストが効いている
+ことを確認できる。
+
+#### `source` の 4 種
+
+`SessionStart` の `source` は次の起動方法にそれぞれ対応する。
+
+| `source` | 出し方 |
+| --- | --- |
+| `startup` | 通常の起動（`claude -p "..."` / `claude`） |
+| `resume` | `claude --resume <session_id>`、または `claude -c` |
+| `clear` | 対話セッション内で `/clear` |
+| `compact` | 圧縮の発生時（次項参照） |
+
+#### `compact_trigger` の両経路
+
+| `compact_trigger` | 出し方 |
+| --- | --- |
+| `manual` | 対話セッション内で `/compact` |
+| `auto` | `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` を低い値（例: 数 %）に下げて起動し、少量のやりとりだけで
+自動圧縮の閾値を超えさせる |
+
+#### `command_source` の 3 種
+
+`UserPromptExpansion` の `command_source` はスラッシュコマンドの定義元で決まる。
+
+| `command_source` | 出し方 |
+| --- | --- |
+| `userSettings` | `~/.claude/commands/`（隔離環境では `$CLAUDE_CONFIG_DIR/commands/`）にコマンドを置き、それを呼ぶ |
+| `projectSettings` | プロジェクト直下の `.claude/commands/` にコマンドを置き、それを呼ぶ |
+| `plugin` | プラグインが `commands/` で配るスラッシュコマンドを呼ぶ |
+
+#### `effort_level` は非対話では付かない
+
+`claude -p` では、モデル（haiku / sonnet）・`--effort low,high,xhigh` フラグ・「よく考えて」
+のような思考を促すプロンプトのいずれを試しても、**stdin に `effort` キー自体が一度も現れない。**
+対話モードでの挙動は、自動操作が初回オンボーディングの対話ダイアログを突破できず未確認である
+（3 回試行で打ち切り）。**契約の誤りとは断定できない**（`../docs/remaining/unverified.md` §6）。
+
+#### MCP の設定方法
+
+```bash
+CLAUDE_CONFIG_DIR="$CC_VERIFY_ROOT/config" claude mcp add --transport http deepwiki https://mcp.deepwiki.com/mcp
+```
+
+`.claude.json`（`$CLAUDE_CONFIG_DIR/.claude.json`）の `projects["<cwd>"].mcpServers` に書かれる
+（`.mcp.json` ではなく、cwd 単位である）。**非対話 `-p` で MCP を使わせるには、`settings.json` に
+`"enableAllProjectMcpServers": true` が要る。**`deepwiki`（`https://mcp.deepwiki.com/mcp`）は
+無認証で動作確認できた。MCP 経由のツール呼出は `tool_name` が `mcp__<server>__<tool>` の形で
+入る。
+
+#### `systemMessage` の観測方法
+
+`systemMessage`（お知らせの出力）は `claude -p` の出力形式によって見え方が変わる。
+
+| 出力形式 | 見えるか |
+| --- | --- |
+| `claude -p`（プレーン） | 出ない |
+| `--output-format json` | 含まれない |
+| `--output-format stream-json --verbose` | **出る**（`type:"system", subtype:"hook_response"` の `output` / `stdout`） |
+
+**`-p` で `stream-json` を使うには `--verbose` が必須**（無いとエラーになる）。日本語 200 字・
+ASCII 10000 字の文面を通しても、Claude Code 側の追加切り詰めは確認できなかった。**実際の
+画面での見え方と退避境界（フェーズ C の対象）は、この方法だけでは確認できず対話が要る。**
+
 ### B1. Claude Code が実際に hook を呼ぶ
 
 隔離環境で `claude -p` を短いプロンプトで数回実行する。モデルは haiku。
@@ -277,7 +361,15 @@ A6・A8 でデータを入れた状態で 4 画面を見る。**準拠率と突�
 
 未発火に終わった hook（`PostToolUse` / `PostToolUseFailure` / `PreCompact` /
 `UserPromptExpansion`）は、プロンプトが発火条件を踏まなかっただけであり契約の欠陥ではない。
-ツール呼出・ツール失敗・圧縮・スラッシュコマンドを伴うプロンプトで再採取する。
+ツール呼出・ツール失敗・圧縮・スラッシュコマンドを伴うプロンプトで再採取する（B0 参照）。
+
+B0 の手順で再採取した結果、契約が名指ししないキーが複数の hook で観測されている。
+**契約に無いキー**: `agent_type`（サブエージェントの種別）/ `duration_ms`（ツール実行時間）/
+`tool_use_id` / `error`（`PostToolUseFailure` は `tool_response` の代わりに `error` を持つ）/
+`expansion_type`（`slash_command`）/ `command_args` / `custom_instructions` /
+`seconds_since_last_response` / `prompt_cache_likely_expired` / `estimated_cache_write_usd` /
+`model`（`source=compact` のとき）。`PreCompact` には `permission_mode` が無い。
+いずれも契約が名指ししていないため収集されない（意図設計。バグではない）。
 
 ### B3. detach した送信が完走する
 
@@ -291,7 +383,11 @@ A6・A8 でデータを入れた状態で 4 画面を見る。**準拠率と突�
 
 ## フェーズ C（対話が要る）
 
-**このフェーズは対話セッションでの目視確認が必須であり、本手順書の作成時点では未実施である。**
+**対話が必要な範囲は当初の想定より狭い。**契約列の充足・`systemMessage` の内容そのもの・
+秘匿値検査・detach 送信は、フェーズ B（非対話）だけで確認できる（B0〜B3）。対話セッションが
+必須なのは、**画面としての見え方**（お知らせの表示形式・退避後のプレビューの実用性）と、
+**初回オンボーディングの対話ダイアログを経る経路の挙動**（`effort_level` の対話モードでの
+有無を含む）の 2 点に絞られる。
 
 ### C1. お知らせの見え方
 
@@ -328,6 +424,26 @@ A6・A8 でデータを入れた状態で 4 画面を見る。**準拠率と突�
 `../docs/knowledge/claude-code-behavior.md` にある）。
 
 ---
+
+## 検証を難しくする Claude Code の挙動
+
+実装の不具合ではなく、**Claude Code 自身の挙動が検証をやり直しにくくする**ケースがある。
+遭遇したら疑ってよい。
+
+- **`extraKnownMarketplaces` の `source` が `"directory"` のとき、マーケットプレイスの
+  cache（`plugins/cache/...`）ではなく `settings.json` に書いたディレクトリパスそのものが
+  `CLAUDE_PLUGIN_ROOT` になる。**cache 側を書き換えても hook の挙動に反映されない。設定を
+  変えて検証したいときは、**マーケットプレイスごと検証ルートにコピー**してから
+  `settings.json` の path をそのコピー先に向ける（開発リポジトリ本体を直接指さない）
+- **プラグインの `hooks.json` の変更は cache を消さないと反映されない**（`directory` source
+  でも）。`claude plugin uninstall` → cache 削除 → `claude plugin install` のフルサイクルが要る
+- **マーケットプレイスの remove → add で `plugins/data/` が空になる。**`queue.jsonl` 等の
+  既存状態が失われるため、設定をやり直すときは状態の消失を織り込む
+- **`claude plugin marketplace add` は bare リポジトリを直接指せない。**http(s) の git URL が
+  要り、`verification/autoupdate/githttpd.py` のような HTTP サーバを自前で立てる必要がある
+- **無人実行は初回起動の対話ダイアログ 3 段（テーマ選択・フォルダ信頼・API キー確認）で
+  止まる。**`.claude.json` への事前投入である程度突破できるが、**API キー確認の段だけは
+  pty へのキー送信が必須**であり、ファイルの事前投入では突破できない
 
 ## 片付け
 
