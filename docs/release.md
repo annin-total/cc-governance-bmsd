@@ -5,7 +5,7 @@
 ## 概要
 
 - 差し込みは手で行う。開発リポジトリでプラグインを検証 → `governance/` を配布リポジトリへ手でコピー → 配布リポジトリでマーケットプレイスを検証 → PR → マージ、の順で進める
-- 2 本の検証スクリプト（`scripts/validate-plugin.sh` と配布リポジトリの `scripts/validate.sh`）は、いずれも Claude Code のプラグイン／マーケットプレイスとしての**形式**だけを見る。ファイルを作成・削除・変更することはない
+- 2 本の検証スクリプト（`scripts/validate_plugin.py` と配布リポジトリの `scripts/validate.py`）は、いずれも Claude Code のプラグイン／マーケットプレイスとしての**形式**だけを見る。ファイルを作成・削除・変更することはない。標準ライブラリだけで動き、`python3` / `python` のどちらでも、macOS / Windows のどちらでも実行できる
 - 配布リポジトリ側（`plugins/governance/` 配下）は手で編集しない。変更は必ず開発リポジトリの `governance/` に対して行う
 - `scripts/release.sh` は差し込みと検査を自動化する別のツールである。自動化して差し込みたい場合はそちらを使う。本書が示すのは手動での差し込み手順である
 
@@ -29,7 +29,7 @@
 差し込む前に、開発リポジトリ側で `governance/` を検証する。
 
 ```
-scripts/validate-plugin.sh
+python scripts/validate_plugin.py
 ```
 
 `[NG]` が 1 つでも出たら、差し込む前に `governance/` を直す。このスクリプトが見るのはプラグインとしての形式（`plugin.json` の必須項目、JSON・Python の構文、`hooks.json` が参照するファイルの実在、開発用ファイルの混入なし、git に無視されているファイルが無いこと）だけである。`config.json` の値や `POLICY` の中身は見ないので、「6. 確認項目」で別途手で確認する。
@@ -40,11 +40,11 @@ scripts/validate-plugin.sh
 
 ## 5. マーケットプレイスを検証する（配布リポジトリ）
 
-コピーしたら、配布リポジトリ側で `scripts/validate.sh` を実行する。
+コピーしたら、配布リポジトリ側で `scripts/validate.py` を実行する。
 
 ```
 cd ../cc-marketplace-governance-bmsd
-scripts/validate.sh
+python scripts/validate.py
 ```
 
 `[NG]` が 1 つでも出たら、コミットする前に開発リポジトリの `governance/` を直し、もう一度「3. プラグインを検証する」からやり直す。このスクリプトも形式だけを見る（`marketplace.json` の整合性、収録プラグインの `plugin.json` の名前一致、JSON の構文、開発用ファイルの混入なし、git に無視されているファイルが無いこと）。
