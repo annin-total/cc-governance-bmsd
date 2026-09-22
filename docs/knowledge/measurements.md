@@ -75,6 +75,14 @@ SQLite は統計情報なしに skip-scan の可否を判断できない。
 8.0 系の挙動は**未確認**（`sql_require_primary_key` と `CREATE INDEX IF NOT EXISTS` は同じと見られるが**推測**）。
 クエリ性能も未測定で、InnoDB の skip-scan の可否も `ANALYZE TABLE` の要否も SQLite とは別問題である。
 
+## hook の実行
+
+| 測ったもの | 値 | 測定条件 |
+| --- | --- | --- |
+| 標準ライブラリだけの Python スクリプトを hook として起動し、終了するまで | 187〜201 ms | macOS。ファイルが OS のキャッシュに載った状態 |
+
+インタプリタの起動が所要の大半を占める。
+
 ## transcript の実データ
 
 測定条件: 端末 1 台・利用者 1 人・約 28 時間・transcript 67 本（うち 46 本は 60 秒未満の短命セッション）。

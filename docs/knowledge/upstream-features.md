@@ -86,3 +86,7 @@ hook は 1 発火につき Python プロセスを 1 つ起動する。
 | 最高 | `PreToolUse` / `PostToolUse` / `PostToolUseFailure` | ツール呼出ごと（1 ターンに数回〜数十回） |
 | 中 | `UserPromptSubmit` / `UserPromptExpansion` / `Stop` / `StopFailure` / `SubagentStart` / `SubagentStop` | ターン・サブエージェントごと |
 | 低 | `SessionStart` / `SessionEnd` / `PreCompact` | セッション・事象ごと（1 日に数回） |
+
+`PermissionDenied` と `PermissionRequest` も存在する。
+**発火条件は未確認**（非対話モードでは再現できず、対話セッションでの確認が要る）。
+届くキーも未確認である。
