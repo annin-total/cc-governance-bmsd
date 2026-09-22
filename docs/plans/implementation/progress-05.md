@@ -111,3 +111,18 @@ u1（1 台・準拠）、u2（2 台持ちで片方が未準拠）、u3（`cost_d
 | M-3 | `test_views_assets.py` の `assert "project" in html` が表の中身を特定していない |
 | M-4 | `ROW_NUMBER() OVER (... ORDER BY ts DESC)` が同一 `ts` でのタイブレーク未定義。`ORDER BY ts DESC, event_id DESC` で決定的になる |
 | M-5 | タスク 2 の RED 証跡のうちビュー側だけ逐語でない |
+
+## レビュー指摘の修正（最終レビュー対応）
+
+**Important 3 件を修正、Minor 1 件（`plugin_version_distribution` の `ORDER BY ts DESC` 未固定）を追加テストで固定した。265 passed（既存 261 + 4）。**
+
+- **Imp-1**: `queries_policy.event_study` / `queries_events.daily_cost` の `SUM(cost)` / `SUM(input_tokens)` に `COALESCE(..., 0)` を適用。`cost_daily.cost` が NULL（AI Gateway CSV の Cost 欄が空）の行がある状態で `/effect` が 500 になっていた。回帰テスト 2 本を追加し、実サーバ（`waitress-serve`）でも `/effect` が 200 を返すことを確認した。
+- **Imp-2**: `queries_events._usage_with_trend` を CTE + LEFT JOIN 3 本から条件付き集約 1 本に置き換えた。`command_source` が NULL の `command_usage` 行が `NULL = NULL` の結合失敗で「0 回・0 人」になっていた（`skill_usage` は結合列と絞り込み列が同一のため無傷）。回帰テストを追加し、実装を元に戻すと落ちることを確認した。副産物として `queries_events.py` が 4 行縮んだ。
+- **Imp-3**: `tests/test_fixtures.py` の `_COST_ROWS` に窓外（day=19970）の利用者 `u20` を追加し、準拠率の分母の 30 日窓が広がる変異が生存しないことを固定した（`test_daily_cost_by_provider` / `test_daily_cost_table_row_count` の期待値をこの 1 行分だけ更新）。
+- **Minor-1**: `plugin_version_distribution` に `ts` の降順で最新 1 行を選ぶことを検証するテストを追加した（実装は変更なし。既に正しかったが網が無かった）。
+- **Minor-5**: `queries_policy.py` の 130 字超の docstring 9 箇所を意味を変えずに複数行へ折り返した。ファイルは 198 → 216 行になった（**行数は正しさ・可読性より優先しない**という本タスクの方針に従い、分割はしていない）。
+
+**未対応として残したもの（範囲外）**:
+- `context_distribution` が準拠者 1 人につき 1 クエリを発行する件（設計書は「2 本」と書いている）。設計との突き合わせが要るため今回は対応しない。
+- Minor-2（準拠前後の境界 `day < start_day` 未固定）、Minor-3（`not_introduced` の 30 日絞り未固定）、Minor-4（`STALE_DAYS` の境界未固定）は、いずれも fixture へ境界データを追加すれば塞がるが、今回のスコープでは未対応。
+- Minor-4 台帳の M-4（同一 `ts` のタイブレーク未定義）も未対応のまま。
