@@ -10,6 +10,7 @@ if __name__ == "__main__":
 
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any, Optional
@@ -103,12 +104,62 @@ def _select_unread(notices: list, seen: set) -> list:
     return [n for n in notices if n["id"] not in seen]
 
 
+def _write_seen(seen_ids: set) -> None:
+    """既読 ID の集合を `seen.json` に書く。失敗しても例外を外に出さない。"""
+    path = _seen_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(sorted(seen_ids), f)
+    except OSError:
+        pass
+
+
+def _format_message(unread: list) -> str:
+    """未読のお知らせを、空行 1 つで区切った 1 つの文字列にまとめる。件ごとの接頭辞は付けない。"""
+    parts = []
+    for notice in unread:
+        title = notice.get("title")
+        body = notice.get("body", "")
+        parts.append(f"{title}\n{body}" if isinstance(title, str) and title else body)
+    return "\n\n".join(parts)
+
+
+def _emit_output(output: dict) -> bool:
+    """hook の JSON 出力を標準出力へ 1 個だけ書く。書き出しと flush が例外なく終われば真。"""
+    try:
+        sys.stdout.write(json.dumps(output, ensure_ascii=False))
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+        return True
+    except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
+        return False
+
+
+def _notices_step() -> None:
+    """未読のお知らせを systemMessage として出力する。出力成功後にだけ既読に加える。"""
+    seen = _read_seen()
+    unread = _select_unread(_read_notices(), seen)
+
+    output: dict[str, Any] = {}
+    if unread:
+        output["systemMessage"] = _format_message(unread)
+
+    if _emit_output(output) and unread:
+        _write_seen(seen | {n["id"] for n in unread})
+
+
 def main() -> None:
-    """設定の適用結果を policy イベントとしてキューに積む。"""
+    """設定の適用結果を policy イベントとしてキューに積み、未読のお知らせを出力する。"""
     plugin_version = _identity.get_plugin_version()
 
     try:
         _apply_settings_step(plugin_version)
+    except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
+        pass
+
+    try:
+        _notices_step()
     except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
         pass
 
