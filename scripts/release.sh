@@ -181,4 +181,42 @@ else
   fi
 fi
 
+# 検査 7: POLICY からのキー削除
+CONTRACT_REL="${PLUGIN_REL}/hooks/contract.py"
+if ! git -C "$DIST_REPO" cat-file -e "HEAD:${CONTRACT_REL}" 2>/dev/null; then
+  echo "[SKIP] POLICY のキー（初回リリース）"
+else
+  CONTRACT_HEAD_TMP="$(mktemp).py"
+  git -C "$DIST_REPO" show "HEAD:${CONTRACT_REL}" > "$CONTRACT_HEAD_TMP"
+  REMOVED_KEYS=$(PYTHONDONTWRITEBYTECODE=1 python3 - "$CONTRACT_HEAD_TMP" "${PLUGIN_DST}/hooks/contract.py" <<'PY'
+import importlib.util
+import sys
+
+sys.dont_write_bytecode = True
+
+
+def load_policy(path):
+    spec = importlib.util.spec_from_file_location("contract_tmp", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return set(module.POLICY.keys())
+
+
+old_path, new_path = sys.argv[1], sys.argv[2]
+removed = load_policy(old_path) - load_policy(new_path)
+for key in sorted(removed):
+    print(key)
+PY
+)
+  rm -f "$CONTRACT_HEAD_TMP"
+  if [[ -n "$REMOVED_KEYS" ]]; then
+    while IFS= read -r key; do
+      echo "[NG] POLICY からキーが削除されている: ${key}"
+    done <<< "$REMOVED_KEYS"
+    echo "[NG] 削除は誤った値を全端末に固定する操作である。正しい値を書いて version を上げること"
+    exit 1
+  fi
+  echo "[OK] POLICY のキーは削除されていない"
+fi
+
 exit 0
