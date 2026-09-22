@@ -60,10 +60,10 @@ def test_health_line_shows_reconciliation_and_plugin_versions(overview_client):
 
 
 def test_daily_cost_table_row_count(overview_client):
-    """コスト推移の表の行数が 6（aws-bedrock 5 行 + openai 1 行）。"""
+    """コスト推移の表の行数が 7（aws-bedrock 6 行 + openai 1 行）。"""
     html = overview_client.get("/").get_data(as_text=True)
     rows = _rows_in_table(html, "daily-cost")
-    assert len(rows) == 6
+    assert len(rows) == 7
     assert "aws-bedrock" in html
     assert "openai" in html
 

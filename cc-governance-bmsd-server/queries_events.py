@@ -107,7 +107,7 @@ def daily_cost(conn) -> list:
     cur = conn.cursor()
     cur.execute(
         db.q(
-            "SELECT day, provider, SUM(cost) FROM cost_daily"
+            "SELECT day, provider, COALESCE(SUM(cost), 0) FROM cost_daily"
             " GROUP BY day, provider ORDER BY day, provider"
         )
     )

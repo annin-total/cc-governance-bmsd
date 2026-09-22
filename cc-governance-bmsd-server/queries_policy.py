@@ -132,15 +132,18 @@ def compliance_start_dates(conn, key_name: str, expected_value: str) -> dict:
 
 
 def event_study(conn, key_name: str, expected_value: str, provider: str) -> list:
-    """相対日ごとの分母人数・1人あたり日次コスト・入力トークン。規約1(0埋め・在籍単位の分母)/規約2(相対日0を除く)を適用する。在籍は`cost_daily`全体のday範囲で判定する。"""
+    """相対日ごとの分母人数・1人あたり日次コスト・入力トークン。
+    規約1(0埋め・在籍単位の分母)/規約2(相対日0を除く)を適用する。
+    在籍は`cost_daily`全体のday範囲で判定する。
+    """
     start_dates = compliance_start_dates(conn, key_name, expected_value)
     if not start_dates:
         return []
     cur = conn.cursor()
     cur.execute(
         db.q(
-            "SELECT user_email, day, SUM(cost), SUM(input_tokens) FROM cost_daily"
-            " WHERE provider = ? GROUP BY user_email, day"
+            "SELECT user_email, day, COALESCE(SUM(cost), 0), COALESCE(SUM(input_tokens), 0)"
+            " FROM cost_daily WHERE provider = ? GROUP BY user_email, day"
         ),
         (provider,),
     )

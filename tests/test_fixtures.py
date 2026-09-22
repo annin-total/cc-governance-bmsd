@@ -479,6 +479,9 @@ _POLICY_ROWS = (
 )
 
 # (day, user_email, provider, cost, input_tokens)
+# u20 は POLICY_DAYS の窓（day >= 19976）より前にしかコストが無い離脱者。
+# 準拠率の分母（`_distinct_users_with_cost`）が `day` で絞られていることを、
+# この行の存在下でも分母 5 のままであることで確かめる（窓を広げる変異の検出）。
 _COST_ROWS = (
     (20000, "u1", "aws-bedrock", 1.0, 1000),
     (20001, "u2", "aws-bedrock", 2.0, 2000),
@@ -486,6 +489,7 @@ _COST_ROWS = (
     (20003, "u4", "aws-bedrock", 4.0, 4000),
     (20004, "u5", "aws-bedrock", 5.0, 5000),
     (20004, "u1", "openai", 0.5, 100),
+    (19970, "u20", "aws-bedrock", 1.0, 1000),
 )
 
 

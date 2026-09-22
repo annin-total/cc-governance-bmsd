@@ -12,6 +12,8 @@ from test_fixtures import (
     assert_invariant_under_duplication,
     duplicate_cost_daily,
     duplicate_events,
+    insert_cost_daily,
+    insert_event,
     known_db,  # noqa: F401
 )
 
@@ -118,6 +120,20 @@ def test_daily_cost_doubles_after_duplicate_injection(known_db):
     rows = {(r[0], r[1]): r[2] for r in queries_events.daily_cost(known_db)}
     assert rows[(20000, "aws-bedrock")] == 2.0
     assert rows[(20004, "openai")] == 1.0
+
+
+def test_daily_cost_survives_null_cost_row(known_db):
+    """`cost` が NULL の行だけの (day, provider) は 0 として表れ、例外にならない（Imp-1）。"""
+    insert_cost_daily(
+        known_db,
+        day=20006,
+        user_email="u6",
+        provider="openai",
+        cost=None,
+        input_tokens=None,
+    )
+    rows = {(r[0], r[1]): r[2] for r in queries_events.daily_cost(known_db)}
+    assert rows[(20006, "openai")] == 0.0
 
 
 def test_user_session_trend(known_db):

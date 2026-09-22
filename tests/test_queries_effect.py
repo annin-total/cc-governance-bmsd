@@ -10,6 +10,7 @@ import queries_policy
 from test_fixtures import (
     duplicate_events,
     duplicate_policy_state,
+    insert_cost_daily,
     insert_event,
     insert_policy_state,
 )
@@ -130,6 +131,25 @@ def test_event_study_filters_by_provider(effect_db):
     assert unfiltered_u1_day11 == 100.0  # 1.0 (aws-bedrock) + 99.0 (openai)
     naive_rate = round((unfiltered_u1_day11 + 2.0) / 2, 2)
     assert naive_rate != 1.5
+
+
+def test_event_study_survives_null_cost_row(effect_db):
+    """AI Gateway CSV の Cost 欄が空だった行（`cost IS NULL`）が `cost_daily` に混じっても
+    `event_study` は例外にならず、その相対日は 0 として数える（Imp-1）。
+    """
+    insert_cost_daily(
+        effect_db,
+        day=20013,
+        user_email="u1",
+        provider="aws-bedrock",
+        cost=None,
+        input_tokens=None,
+    )
+    rows = {
+        r[0]: r[1:]
+        for r in queries_policy.event_study(effect_db, K, "60", "aws-bedrock")
+    }
+    assert rows[3] == (1, 0.0, 0)
 
 
 def test_event_study_unchanged_after_duplicate_injection(effect_db):
