@@ -1,6 +1,8 @@
 """SessionStart hook のエントリ。設定の適用 -> お知らせの表示 -> イベントの収集の順に実行する。
 
-3 つはそれぞれ個別に例外から守り、1 つの失敗が残りを巻き添えにしない。
+3 つはそれぞれ個別に例外から守り、1 つの失敗が残りを巻き添えにしない。無効化スイッチ
+（`CC_GOVERNANCE_DISABLE`）が止めるのは、お知らせの表示と利用ログの収集だけである。
+設定の適用・その policy イベントの記録・送信条件の判定はスイッチの外側で行う。
 """
 
 if __name__ == "__main__":
@@ -23,6 +25,7 @@ from _spool import _state_dir
 from collect import _read_stdin_json, extract_event
 from contract import POLICY, POLICY_COLUMNS, coerce, to_day
 
+_DISABLE_ENV = "CC_GOVERNANCE_DISABLE"
 _CONFIG_DIR_ENV = "CLAUDE_CONFIG_DIR"
 _SETTINGS_FILENAME = "settings.json"
 _SEEN_FILENAME = "seen.json"
@@ -138,11 +141,14 @@ def _emit_output(output: dict) -> bool:
         return False
 
 
-def _notices_step() -> tuple:
+def _notices_step(disabled: bool) -> tuple:
     """未読のお知らせから出力用の dict を組み立てる。戻り値は (output, unread, seen)。
 
     出力も既読の書き込みもここでは行わない。呼び出し元が必ず 1 回だけ出力できるようにするため。
     """
+    if disabled:
+        return {}, [], set()
+
     seen = _read_seen()
     unread = _select_unread(_read_notices(), seen)
 
@@ -152,9 +158,10 @@ def _notices_step() -> tuple:
     return output, unread, seen
 
 
-def _collect_step(raw_input: Any, hook_event: Optional[str]) -> None:
-    """SessionStart の利用ログを収集し、送信条件が真なら送信プロセスを起動する。"""
-    _spool.append(extract_event(raw_input, hook_event))
+def _collect_step(raw_input: Any, hook_event: Optional[str], disabled: bool) -> None:
+    """SessionStart の利用ログを収集する。送信条件の判定は無効化スイッチの外側で行う。"""
+    if not disabled:
+        _spool.append(extract_event(raw_input, hook_event))
 
     if _spool.should_send():
         _spool.mark_sent()
@@ -164,12 +171,10 @@ def _collect_step(raw_input: Any, hook_event: Optional[str]) -> None:
 
 
 def main() -> None:
-    """設定の適用 -> お知らせの表示 -> イベントの収集の順に実行する。
-
-    3 つはそれぞれ個別に例外から守り、1 つの失敗が残りを巻き添えにしない。
-    """
+    """設定の適用 -> お知らせの表示 -> イベントの収集の順に実行する。"""
     hook_event: Optional[str] = sys.argv[1] if len(sys.argv) > 1 else None
     raw_input = _read_stdin_json()
+    disabled = bool(os.environ.get(_DISABLE_ENV))
     plugin_version = _identity.get_plugin_version()
 
     try:
@@ -178,7 +183,7 @@ def main() -> None:
         pass
 
     try:
-        output, unread, seen = _notices_step()
+        output, unread, seen = _notices_step(disabled)
     except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
         output, unread, seen = {}, [], set()
 
@@ -190,7 +195,7 @@ def main() -> None:
             pass
 
     try:
-        _collect_step(raw_input, hook_event)
+        _collect_step(raw_input, hook_event, disabled)
     except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
         pass
 

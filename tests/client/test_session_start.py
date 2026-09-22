@@ -1,5 +1,7 @@
-"""`session_start.py` を検証する。すべて `tmp_path` と `CLAUDE_PLUGIN_DATA` / `CLAUDE_CONFIG_DIR`
-で隔離する。利用者本人の `~/.claude/` には一切触れない。`claude` コマンドは実行しない。
+"""`session_start.py` の出力経路・実行順序・無効化スイッチを検証する。
+
+すべて `tmp_path` と `CLAUDE_PLUGIN_DATA` / `CLAUDE_CONFIG_DIR` で隔離する。
+利用者本人の `~/.claude/` には一切触れない。`claude` コマンドは実行しない。
 """
 
 import json
@@ -14,6 +16,16 @@ from contract import POLICY
 PCT_KEY = "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 AUTOUPDATE_KEY = "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate"
 MARKER = "ZZMARKER-NOTICE-BODY"
+
+
+class _RaisingStdout:
+    """`write` が必ず例外を投げる標準出力の代わり。書き出し失敗を再現するために使う。"""
+
+    def write(self, *_args, **_kwargs):
+        raise OSError("boom")
+
+    def flush(self):
+        pass
 
 
 def _raiser(*_args, **_kwargs):
@@ -66,6 +78,16 @@ def _write_settings(tmp_path, content) -> Path:
     return path
 
 
+def _seen_file(tmp_path) -> Path:
+    return tmp_path / "state" / "seen.json"
+
+
+def _write_seen(tmp_path, ids) -> None:
+    path = _seen_file(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ids), encoding="utf-8")
+
+
 def _queue_rows(tmp_path) -> list:
     path = tmp_path / "state" / "queue.jsonl"
     if not path.exists():
@@ -79,16 +101,6 @@ def _policy_rows(tmp_path) -> list:
 
 def _event_rows(tmp_path) -> list:
     return [row for row in _queue_rows(tmp_path) if row.get("kind") == "event"]
-
-
-def _seen_file(tmp_path) -> Path:
-    return tmp_path / "state" / "seen.json"
-
-
-def _write_seen(tmp_path, ids) -> None:
-    path = _seen_file(tmp_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(ids), encoding="utf-8")
 
 
 def _unread_ids() -> set:
@@ -251,16 +263,6 @@ def test_notices_8_10_seen_sequence_does_not_matter(notices_file, tmp_path):
 
 
 # ---- タスク 9: お知らせの出力経路と既読を立てる順序 ----
-
-
-class _RaisingStdout:
-    """`write` が必ず例外を投げる標準出力の代わり。書き出し失敗を再現するために使う。"""
-
-    def write(self, *_args, **_kwargs):
-        raise OSError("boom")
-
-    def flush(self):
-        pass
 
 
 def test_output_9_1_stdout_is_single_json(notices_file, capsys):
@@ -470,3 +472,109 @@ def test_order_10_6_call_order_is_settings_notice_collect(notices_file, monkeypa
     capsys.readouterr()
 
     assert calls == ["settings", "notices", "collect"]
+
+
+# ---- タスク 11: 無効化スイッチ ----
+
+
+def test_disable_11_1_unset_runs_everything(notices_file, tmp_path, capsys):
+    """#11-1: CC_GOVERNANCE_DISABLE 未設定 -> 適用・お知らせ・収集のすべてが起きる。"""
+    _write_settings(tmp_path, {})
+    session_start.main()
+    out = json.loads(capsys.readouterr().out)
+
+    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
+    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
+    assert "systemMessage" in out
+    seen = json.loads(_seen_file(tmp_path).read_text(encoding="utf-8"))
+    assert len(seen) == 2
+    assert len(_event_rows(tmp_path)) == 1
+
+
+def test_disable_11_2_value_1_skips_notice_and_collect(notices_file, tmp_path, monkeypatch, capsys):
+    """#11-2: "1" -> 適用は起きるが、systemMessage は出ず seen.json も作られず、収集も起きない。"""
+    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
+    _write_settings(tmp_path, {})
+
+    session_start.main()
+    out = json.loads(capsys.readouterr().out)
+
+    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
+    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
+    assert "systemMessage" not in out
+    assert not _seen_file(tmp_path).exists()
+    assert _event_rows(tmp_path) == []
+
+
+def test_disable_11_3_value_0_still_counts_as_set(notices_file, tmp_path, monkeypatch, capsys):
+    """#11-3: "0" も空でない値として、お知らせと収集を止める。"""
+    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "0")
+    _write_settings(tmp_path, {})
+
+    session_start.main()
+    out = json.loads(capsys.readouterr().out)
+
+    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
+    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
+    assert "systemMessage" not in out
+    assert _event_rows(tmp_path) == []
+
+
+def test_disable_11_4_value_false_still_counts_as_set(notices_file, tmp_path, monkeypatch, capsys):
+    """#11-4: "false" も空でない値として、お知らせと収集を止める。"""
+    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "false")
+    _write_settings(tmp_path, {})
+
+    session_start.main()
+    out = json.loads(capsys.readouterr().out)
+
+    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
+    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
+    assert "systemMessage" not in out
+    assert _event_rows(tmp_path) == []
+
+
+def test_disable_11_5_empty_value_runs_everything(notices_file, tmp_path, monkeypatch, capsys):
+    """#11-5: "" は空文字列であり、11-1 と同じ（止まらない）。"""
+    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "")
+    _write_settings(tmp_path, {})
+
+    session_start.main()
+    out = json.loads(capsys.readouterr().out)
+
+    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
+    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
+    assert "systemMessage" in out
+    assert len(_event_rows(tmp_path)) == 1
+
+
+def test_disable_11_6_value_1_still_records_policy_rows(tmp_path, monkeypatch):
+    """#11-6: "1" でも policy イベントはキューに積まれる（適用の記録は止まらない）。"""
+    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
+    _write_settings(tmp_path, {})
+
+    session_start.main()
+
+    assert len(_policy_rows(tmp_path)) == len(POLICY)
+
+
+def test_disable_11_7_value_1_stdout_is_still_valid_json(tmp_path, monkeypatch, capsys):
+    """#11-7: "1" でも標準出力は JSON としてパースできる。終了コード0。"""
+    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
+    _write_settings(tmp_path, {})
+
+    session_start.main()
+    captured = capsys.readouterr()
+
+    json.loads(captured.out)
+    assert captured.err == ""
+
+
+def test_disable_11_8_value_1_still_launches_sender_once(tmp_path, monkeypatch, _spy_launch):
+    """#11-8: "1" でも送信条件が真なら送信プロセスが1回起動する（送信は止まらない）。"""
+    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
+    _write_settings(tmp_path, {})
+
+    session_start.main()
+
+    assert len(_spy_launch) == 1
