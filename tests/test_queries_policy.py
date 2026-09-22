@@ -232,6 +232,45 @@ def test_plugin_version_distribution(known_db):
     assert rows == {"1.4.0": 5, "1.3.0": 2}
 
 
+def test_plugin_version_distribution_picks_max_ts_not_max_day(known_db):
+    """版分布も `ts` の降順で最新 1 行を選ぶ（Minor-1）。`day` の降順にすると別の版が数えられる。"""
+    insert_policy_state(
+        known_db,
+        event_id="tie4",
+        ts=5000,
+        day=20000,
+        user_email="uy",
+        host="hy",
+        key_name=queries_policy.REFERENCE_KEY,
+        value="60",
+        prev_value="60",
+        apply_result="already_ok",
+        plugin_version="1.4.0",
+    )
+    insert_policy_state(
+        known_db,
+        event_id="tie5",
+        ts=1000,
+        day=20003,
+        user_email="uy",
+        host="hy",
+        key_name=queries_policy.REFERENCE_KEY,
+        value="60",
+        prev_value="80",
+        apply_result="already_ok",
+        plugin_version="1.3.0",
+    )
+    rows = dict(
+        queries_policy.plugin_version_distribution(
+            known_db, TODAY, queries_policy.REFERENCE_KEY
+        )
+    )
+    # ts=5000（day=20000, 1.4.0）が最新のため、uy は 1.4.0 側に数えられる。
+    # day の降順で選ぶと ts=1000（day=20003, 1.3.0）が選ばれ、1.3.0 側が 1 増えてしまう。
+    assert rows["1.4.0"] == 6
+    assert rows["1.3.0"] == 2
+
+
 def test_plugin_version_distribution_unchanged_after_duplicate_injection(known_db):
     """重複行を注入しても版分布は変わらない。"""
 

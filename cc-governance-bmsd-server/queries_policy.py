@@ -11,7 +11,8 @@ STALE_DAYS = 14
 EVENT_STUDY_SPAN = 14
 CONTEXT_BIN = 20000
 
-# 効果測定の基準にする施策項目・対象 provider。plugin_version の分布も REFERENCE_KEY を対象に数える。
+# 効果測定の基準にする施策項目・対象 provider。
+# plugin_version の分布も REFERENCE_KEY を対象に数える。
 REFERENCE_KEY = "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 EFFECT_PROVIDER = "aws-bedrock"
 
@@ -30,7 +31,9 @@ def _window_start(today: int) -> int:
 
 
 def latest_values(conn, today: int, key_name: str) -> list:
-    """`POLICY_DAYS` 日の窓で端末ごとの最新 1 行 `(user_email, host, prev_value, day, ts)` を返す。窓より前にしか行が無い端末は含まれない。"""
+    """`POLICY_DAYS` 日の窓で端末ごとの最新 1 行 `(user_email, host, prev_value, day, ts)` を返す。
+    窓より前にしか行が無い端末は含まれない。
+    """
     cur = conn.cursor()
     cur.execute(db.q(_LATEST_VALUES_SQL), (key_name, _window_start(today)))
     return cur.fetchall()
@@ -47,7 +50,9 @@ def _distinct_users_with_cost(conn, today: int) -> set:
 
 
 def compliance_rate(conn, today: int, key_name: str, expected_value: str) -> list:
-    """施策項目 1 つの準拠率を `[(numerator, denominator, rate)]` で返す。1 台でも未準拠なら利用者は未準拠（§7.2）。"""
+    """施策項目 1 つの準拠率を `[(numerator, denominator, rate)]` で返す。
+    1 台でも未準拠なら利用者は未準拠（§7.2）。
+    """
     rows = latest_values(conn, today, key_name)
     compliant_by_user: dict = {}
     for user_email, _host, prev_value, _day, _ts in rows:
@@ -62,7 +67,9 @@ def compliance_rate(conn, today: int, key_name: str, expected_value: str) -> lis
 
 
 def non_compliant(conn, today: int, key_name: str, expected_value: str) -> list:
-    """最新 1 行のうち `prev_value` がポリシー値と一致しない `(user_email, host, prev_value, day)` を返す。"""
+    """最新 1 行のうち `prev_value` がポリシー値と一致しない
+    `(user_email, host, prev_value, day)` を返す。
+    """
     rows = latest_values(conn, today, key_name)
     return [
         (user_email, host, prev_value, day)
@@ -72,7 +79,9 @@ def non_compliant(conn, today: int, key_name: str, expected_value: str) -> list:
 
 
 def not_introduced(conn, today: int) -> list:
-    """直近 `POLICY_DAYS` 日に `cost_daily` に居て、同期間の `policy_state` に 1 行も無い `user_email` の一覧。"""
+    """直近 `POLICY_DAYS` 日に `cost_daily` に居て、同期間の `policy_state` に
+    1 行も無い `user_email` の一覧。
+    """
     cur = conn.cursor()
     cur.execute(
         db.q(
@@ -89,7 +98,9 @@ def not_introduced(conn, today: int) -> list:
 
 
 def stale_terminals(conn, today: int) -> list:
-    """`policy_state`（`events` では判定しない）で、`POLICY_DAYS` の窓内の最終 `day` が `STALE_DAYS` 以上前の端末。"""
+    """`policy_state`（`events` では判定しない）で、`POLICY_DAYS` の窓内の最終 `day` が
+    `STALE_DAYS` 以上前の端末。
+    """
     cur = conn.cursor()
     cur.execute(
         db.q(
@@ -119,7 +130,9 @@ def plugin_version_distribution(conn, today: int, key_name: str) -> list:
 
 
 def compliance_start_dates(conn, key_name: str, expected_value: str) -> dict:
-    """`prev_value` がポリシー値に一致する行の `MIN(day)` を `user_email` で束ねる。全期間を見る（`(key_name, prev_value, user_email)` の index で完結。§5.1/§5.2）。"""
+    """`prev_value` がポリシー値に一致する行の `MIN(day)` を `user_email` で束ねる。
+    全期間を見る（`(key_name, prev_value, user_email)` の index で完結。§5.1/§5.2）。
+    """
     cur = conn.cursor()
     cur.execute(
         db.q(
@@ -175,7 +188,9 @@ def event_study(conn, key_name: str, expected_value: str, provider: str) -> list
 
 
 def context_distribution(conn, hook_event: str, start_dates: dict) -> dict:
-    """`context_tokens` を `CONTEXT_BIN` 刻みで、準拠開始日の前後 2 本に分けて数える（`COUNT(DISTINCT event_id)`）。規約3: 行が無い側のキーは返さない（度数0のビンにしない）。"""
+    """`context_tokens` を `CONTEXT_BIN` 刻みで、準拠開始日の前後 2 本に分けて数える
+    （`COUNT(DISTINCT event_id)`）。規約3: 行が無い側のキーは返さない（度数0のビンにしない）。
+    """
     before: dict = {}
     after: dict = {}
     cur = conn.cursor()
