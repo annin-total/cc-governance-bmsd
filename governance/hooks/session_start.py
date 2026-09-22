@@ -1,4 +1,6 @@
-"""SessionStart hook のエントリ。設定の適用結果を policy イベントとしてキューに積む。"""
+"""SessionStart hook のエントリ。設定の適用結果を policy イベントとしてキューに積み、
+未読のお知らせ（`notices.json`）を選別する。
+"""
 
 if __name__ == "__main__":
     # collect.py と同じ理由（R-42）で、スクリプト起動時だけ SIGINT を無視する。
@@ -6,6 +8,7 @@ if __name__ == "__main__":
 
     _signal.signal(_signal.SIGINT, _signal.SIG_IGN)
 
+import json
 import os
 import time
 from pathlib import Path
@@ -14,10 +17,14 @@ from typing import Any, Optional
 import _identity
 import _spool
 from _settings import apply_settings
+from _spool import _state_dir
 from contract import POLICY, POLICY_COLUMNS, coerce, to_day
 
 _CONFIG_DIR_ENV = "CLAUDE_CONFIG_DIR"
 _SETTINGS_FILENAME = "settings.json"
+_SEEN_FILENAME = "seen.json"
+
+_NOTICES_PATH = Path(__file__).resolve().parent.parent / "notices.json"
 
 
 def _settings_path() -> Path:
@@ -60,6 +67,40 @@ def _apply_settings_step(plugin_version: Optional[str]) -> None:
     ts = int(time.time())
     for key_name, value, prev_value, apply_result in rows:
         _spool.append(_policy_row(key_name, value, prev_value, apply_result, ts, plugin_version))
+
+
+def _seen_path() -> Path:
+    """既読 ID 集合 `seen.json` のパスを返す。状態ディレクトリの規則は `_spool` に従う。"""
+    return _state_dir() / _SEEN_FILENAME
+
+
+def _read_notices() -> list:
+    """`notices.json` を読む。無い・壊れている・配列でない場合は空リストとする。"""
+    try:
+        with open(_NOTICES_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [n for n in data if isinstance(n, dict) and isinstance(n.get("id"), str)]
+
+
+def _read_seen() -> set:
+    """既読 ID の集合を読む。無い・壊れている・配列でない場合は空集合とする。"""
+    try:
+        with open(_seen_path(), encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return set()
+    if not isinstance(data, list):
+        return set()
+    return {item for item in data if isinstance(item, str)}
+
+
+def _select_unread(notices: list, seen: set) -> list:
+    """未読（`seen` に無い id）のお知らせだけを、`notices` の順序を保って返す。"""
+    return [n for n in notices if n["id"] not in seen]
 
 
 def main() -> None:

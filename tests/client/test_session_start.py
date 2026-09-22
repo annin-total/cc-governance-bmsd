@@ -12,6 +12,7 @@ from contract import POLICY
 
 PCT_KEY = "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 AUTOUPDATE_KEY = "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate"
+MARKER = "ZZMARKER-NOTICE-BODY"
 
 
 def _raiser(*_args, **_kwargs):
@@ -26,6 +27,19 @@ def _isolate(monkeypatch, tmp_path):
     monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "config"))
     monkeypatch.delenv("CC_GOVERNANCE_DISABLE", raising=False)
     return tmp_path
+
+
+@pytest.fixture
+def notices_file(tmp_path, monkeypatch):
+    """fixture の notices.json（n-001 / n-002、n-001 に一意なマーカー）を用意する。"""
+    path = tmp_path / "notices.json"
+    data = [
+        {"id": "n-001", "title": "件名1", "body": f"本文1 {MARKER}"},
+        {"id": "n-002", "title": "件名2", "body": "本文2"},
+    ]
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(session_start, "_NOTICES_PATH", path)
+    return path
 
 
 def _settings_file(tmp_path) -> Path:
@@ -48,6 +62,23 @@ def _queue_rows(tmp_path) -> list:
 
 def _policy_rows(tmp_path) -> list:
     return [row for row in _queue_rows(tmp_path) if row.get("kind") == "policy"]
+
+
+def _seen_file(tmp_path) -> Path:
+    return tmp_path / "state" / "seen.json"
+
+
+def _write_seen(tmp_path, ids) -> None:
+    path = _seen_file(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ids), encoding="utf-8")
+
+
+def _unread_ids() -> set:
+    unread = session_start._select_unread(
+        session_start._read_notices(), session_start._read_seen()
+    )
+    return {n["id"] for n in unread}
 
 
 # ---- タスク 7: policy イベントの投入 ----
@@ -130,3 +161,73 @@ def test_policy_event_7_8_missing_marketplace_entry_is_skipped_missing(tmp_path)
     session_start.main()
     rows = {row["key_name"]: row["apply_result"] for row in _policy_rows(tmp_path)}
     assert rows[AUTOUPDATE_KEY] == "skipped_missing"
+
+
+# ---- タスク 8: notices.json と未読の選別 ----
+
+
+def test_notices_8_1_no_seen_file_both_unread(notices_file):
+    """#8-1: seen.json が存在しない -> 未読は n-001, n-002。"""
+    assert _unread_ids() == {"n-001", "n-002"}
+
+
+def test_notices_8_2_partial_seen(notices_file, tmp_path):
+    """#8-2: seen.json = ["n-001"] -> 未読は n-002 のみ。"""
+    _write_seen(tmp_path, ["n-001"])
+    assert _unread_ids() == {"n-002"}
+
+
+def test_notices_8_3_all_seen(notices_file, tmp_path):
+    """#8-3: seen.json = ["n-001","n-002"] -> 未読なし。"""
+    _write_seen(tmp_path, ["n-001", "n-002"])
+    assert _unread_ids() == set()
+
+
+def test_notices_8_4_unknown_id_in_seen_is_ignored(notices_file, tmp_path):
+    """#8-4: seen.json に存在しない id を含む -> 未読は n-002。例外にならない。"""
+    _write_seen(tmp_path, ["n-001", "n-999"])
+    assert _unread_ids() == {"n-002"}
+
+
+def test_notices_8_5_seen_as_dict_is_treated_as_empty(notices_file, tmp_path):
+    """#8-5: seen.json が dict -> 空集合として扱い、未読は n-001, n-002。"""
+    path = _seen_file(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"seen": ["n-001"]}), encoding="utf-8")
+    assert _unread_ids() == {"n-001", "n-002"}
+
+
+def test_notices_8_6_broken_json_is_treated_as_empty(notices_file, tmp_path):
+    """#8-6: seen.json が壊れた JSON -> 空集合として扱う。"""
+    path = _seen_file(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text('["n-001"', encoding="utf-8")
+    assert _unread_ids() == {"n-001", "n-002"}
+
+
+def test_notices_8_7_empty_file_is_treated_as_empty(notices_file, tmp_path):
+    """#8-7: seen.json が空ファイル -> 空集合として扱う。"""
+    path = _seen_file(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("", encoding="utf-8")
+    assert _unread_ids() == {"n-001", "n-002"}
+
+
+def test_notices_8_8_empty_notices_array_no_unread(tmp_path, monkeypatch):
+    """#8-8: notices.json が空配列 -> 未読なし。例外にならない。"""
+    path = tmp_path / "notices.json"
+    path.write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(session_start, "_NOTICES_PATH", path)
+    assert _unread_ids() == set()
+
+
+def test_notices_8_9_missing_notices_file_no_unread(tmp_path, monkeypatch):
+    """#8-9: notices.json が存在しない -> 未読なし。例外にならない。"""
+    monkeypatch.setattr(session_start, "_NOTICES_PATH", tmp_path / "no-such-notices.json")
+    assert _unread_ids() == set()
+
+
+def test_notices_8_10_seen_sequence_does_not_matter(notices_file, tmp_path):
+    """#8-10: seen.json = ["n-002","n-001"]（順序が逆） -> 未読なし。"""
+    _write_seen(tmp_path, ["n-002", "n-001"])
+    assert _unread_ids() == set()
