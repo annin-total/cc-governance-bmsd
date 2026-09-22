@@ -5,12 +5,12 @@ import json
 import os
 import time
 
+import contract
 import csv_import
 import db
 import ingest
 import queries_events
 import queries_policy
-import shared
 from flask import Flask, Response, render_template, request
 
 db.init()
@@ -88,7 +88,7 @@ def ingest_endpoint() -> Response:
 
 def _today() -> int:
     """基準日（epoch 日）を現在時刻から算出する。`queries_*.py` は現在時刻を読まない。"""
-    return shared.to_day(int(time.time()))
+    return contract.to_day(int(time.time()))
 
 
 @app.route("/policy")
@@ -99,8 +99,8 @@ def policy_view() -> str:
     conn = db.connect()
     try:
         items = []
-        for key_name, policy_value in shared.POLICY.items():
-            expected_value = shared.coerce(policy_value, "VARCHAR(255)")
+        for key_name, policy_value in contract.POLICY.items():
+            expected_value = contract.coerce(policy_value, "VARCHAR(255)")
             numerator, denominator, rate = queries_policy.compliance_rate(
                 conn, today, key_name, expected_value
             )[0]
@@ -136,7 +136,7 @@ def policy_view() -> str:
 def effect_view() -> str:
     """`/effect` 画面。相対日は準拠開始日基準のため基準日は使わない。"""
     rk = queries_policy.REFERENCE_KEY
-    expected_value = shared.coerce(shared.POLICY[rk], "VARCHAR(255)")
+    expected_value = contract.coerce(contract.POLICY[rk], "VARCHAR(255)")
     conn = db.connect()
     try:
         study = queries_policy.event_study(

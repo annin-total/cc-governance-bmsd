@@ -4,7 +4,7 @@ import os
 import sqlite3
 from urllib.parse import urlparse
 
-from shared import CSV_COLUMNS, EXTRA_COLUMNS, HOOK_FIELDS, POLICY_COLUMNS, ddl
+from contract import CSV_COLUMNS, EXTRA_COLUMNS, HOOK_FIELDS, POLICY_COLUMNS, ddl
 
 _SQLITE_PATH_PREFIX = "sqlite:///"
 

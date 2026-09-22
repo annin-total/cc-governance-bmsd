@@ -7,7 +7,7 @@ from datetime import date
 from typing import Optional
 
 import db
-from shared import CSV_COLUMNS, coerce
+from contract import CSV_COLUMNS, coerce
 
 _EPOCH = date(1970, 1, 1)
 

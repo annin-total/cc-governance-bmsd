@@ -11,7 +11,7 @@ from typing import Optional
 import csv_import
 import db
 import pytest
-from shared import CSV_COLUMNS
+from contract import CSV_COLUMNS
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 

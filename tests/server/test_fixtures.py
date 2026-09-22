@@ -6,9 +6,9 @@
 基準日は 20005（epoch 日）。窓の長さ・キー名は `queries_*.py` の定数と揃える。
 """
 
+import contract
 import db
 import pytest
-import shared
 
 TODAY = 20005
 
@@ -494,19 +494,19 @@ _COST_ROWS = (
 
 def _events_columns() -> tuple:
     """`events` の列名を契約の定義順（EXTRA_COLUMNS + HOOK_FIELDS）で返す。"""
-    return tuple(name for name, _ in shared.EXTRA_COLUMNS) + tuple(
-        name for name, _, _ in shared.HOOK_FIELDS
+    return tuple(name for name, _ in contract.EXTRA_COLUMNS) + tuple(
+        name for name, _, _ in contract.HOOK_FIELDS
     )
 
 
 def _policy_columns() -> tuple:
     """`policy_state` の列名を契約の定義順で返す。"""
-    return tuple(name for name, _ in shared.POLICY_COLUMNS)
+    return tuple(name for name, _ in contract.POLICY_COLUMNS)
 
 
 def _cost_columns() -> tuple:
     """`cost_daily` の列名を契約の定義順で返す。"""
-    return tuple(db_name for _, db_name, _ in shared.CSV_COLUMNS)
+    return tuple(db_name for _, db_name, _ in contract.CSV_COLUMNS)
 
 
 def _insert(conn, table: str, columns: tuple, rows) -> None:
