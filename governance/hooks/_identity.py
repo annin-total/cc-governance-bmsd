@@ -15,6 +15,9 @@ from _spool import _state_dir
 
 _ENV_USER_EMAIL = "CC_GOVERNANCE_USER_EMAIL"
 
+# hooks.json の hook 全体の timeout が 5 秒であるため、git 単体はそれより短くする。
+_GIT_TIMEOUT_SEC = 3
+
 
 def _identity_path() -> Path:
     """`identity.json` のパスを返す。"""
@@ -56,10 +59,12 @@ def _resolve_via_git() -> Optional[str]:
             ["git", "config", "--global", "user.email"],
             capture_output=True,
             text=True,
-            timeout=5,
+            timeout=_GIT_TIMEOUT_SEC,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError):
+    # `text=True` の strict デコードは git が非 UTF-8 を返すと UnicodeDecodeError を投げる。
+    # これは ValueError 派生であり、捕まえ損ねると収集そのものが恒久的に無言で止まる。
+    except (OSError, ValueError, subprocess.SubprocessError):
         return None
     if proc.returncode != 0:
         return None

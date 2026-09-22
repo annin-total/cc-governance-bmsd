@@ -441,3 +441,26 @@ queue.jsonl : 8 行。kind / event_id / ts / day / user_email / host / hook_even
 
 `_signal` は私有モジュールだが、CPython に常に組み込まれる builtin であり、
 `signal` モジュール自体がこれを enum でラップしているだけである。3 つの版で実在を確認した。
+
+### 最終レビューの指摘と対応（2026-09-22）
+
+ブランチ全体のレビューで Important 2 件・Minor 6 件。うち 4 件を採り、いずれも監督役が独立に実測で再現してから直した。
+
+| 記号 | 内容 | 実測した故障 | 対応 |
+| --- | --- | --- | --- |
+| I-A | `_identity._resolve_via_git()` が `UnicodeDecodeError` を捕まえない | git が非 UTF-8 の user.email を返すと、**rc=0・stderr 0 バイト・キュー 0 行・状態ディレクトリすら作られない**。`_save_cache()` に届かないのでキャッシュも残らず、以後すべての hook が同じ経路で落ち続ける。サーバからは「使っていない利用者」と区別できない | `except` に `ValueError` を足す（`UnicodeDecodeError` は `ValueError` 派生） |
+| I-B | **裁定 R-33 が裁定だけされて実装されていなかった** | `EXTRA_COLUMNS` に 1 列足すと `KeyError` が `except BaseException` に飲まれ、**rc=0 のままキューに 0 行**。I-A と同じ無言の全損 | `raw_extra[name]` → `raw_extra.get(name)` |
+| M-A | R-42 の `SIG_IGN` がモジュールのトップレベルにあり、import 副作用になっていた | `import collect` だけで呼び出し元プロセスの SIGINT が `SIG_IGN`(=1) に変わる（実測）。pytest で Ctrl-C が効かなくなる | `if __name__ == "__main__":` の内側に移す。スクリプト起動時の import 窓の保護は維持（SIGINT×10 で 10/10 が rc=0・stderr 空を再確認） |
+| M-D | git の `timeout=5` が `hooks.json` の hook 全体の `timeout: 5` と同値で余白ゼロ | git が固まると hook ごと打ち切られ、キューに 1 行も残らない | `_GIT_TIMEOUT_SEC = 3` として定数に分離 |
+
+採らなかったもの: M-B（プラグイン更新中の差し替えによる ImportError の窓。差し替えは原子的に行われるため窓が成立しない）、
+M-C（無効化判定の位置と import コスト。無効化時 33ms は hook の timeout 5 秒に対して十分小さい）、
+M-E（`_load_cache` の型検査。R-32 の `coerce` が非スカラーを `None` にするため実害に至らない）、
+M-F（`config.json` が読めないときキューに上限が無い。`ingest_url` が空の配布物は存在しない前提であり、[7] の配布検査で担保する）。
+
+**4 件とも変異検査で確認した。** 修正を 1 つずつ戻すと、対応する回帰テストがちょうど 1 件ずつ落ちる。
+
+#### この計画で 2 度起きたこと
+
+**裁定しただけで実装されない。** R-33 は台帳に「`raw_extra.get(name)` で引く」と書かれたまま、現物は `raw_extra[name]` だった。
+台帳への記録は実装の証拠ではない。**以後、裁定には必ず回帰テストを紐づけ、変異検査で落ちることを確かめる。**
