@@ -6,9 +6,8 @@
 
 | 文書 | 中身 |
 | --- | --- |
-| [01-uncollected-fields.md](01-uncollected-fields.md) | 実在が確認済みだが、今回の契約に入れていない収集項目 |
-| [02-unregistered-hooks.md](02-unregistered-hooks.md) | 実在が確認済みだが、登録していない hook |
-| [03-claude-code-behavior.md](03-claude-code-behavior.md) | Claude Code の挙動で、設計には書かないが知っておくと役立つこと |
-| [04-measurements.md](04-measurements.md) | 性能と DB の実測値 |
-| [05-future-options.md](05-future-options.md) | 今回は採らないが、条件が変われば検討しうること |
-| [06-db-and-framework-facts.md](06-db-and-framework-facts.md) | DB とフレームワークの仕様として決まっていること |
+| [unused-upstream-features.md](unused-upstream-features.md) | 上流に実在するが、この実装が使っていない収集項目と hook の目録 |
+| [claude-code-behavior.md](claude-code-behavior.md) | Claude Code の振る舞い |
+| [measurements.md](measurements.md) | 測って出た数字（性能・容量・分布） |
+| [db-and-framework-facts.md](db-and-framework-facts.md) | DB とフレームワークの仕様として決まっていること |
+| [future-options.md](future-options.md) | 今は使わないが、条件を満たせば検討しうること |
