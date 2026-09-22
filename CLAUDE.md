@@ -5,6 +5,10 @@ Claude Code の端末プラグイン（`governance/`）と集計サーバ（`cc-
 既知の限界は `docs/limitations.md`、残っている作業は `docs/remaining/`、
 採らなかった選択肢と実測値は `docs/knowledge/`。
 
+現在のコードがそうなっている理由は `docs/decisions.md`
+（この文書は成果物ではない。`CLAUDE.md` 以外のドキュメント・実装コード・設定ファイル・
+コミットメッセージから参照しない。将来削除してよい）。
+
 ## Commands
 
 リポジトリのルートで実行
