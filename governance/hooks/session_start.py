@@ -72,7 +72,9 @@ def _apply_settings_step(plugin_version: Optional[str]) -> None:
     rows = apply_settings(_settings_path(), POLICY)
     ts = int(time.time())
     for key_name, value, prev_value, apply_result in rows:
-        _spool.append(_policy_row(key_name, value, prev_value, apply_result, ts, plugin_version))
+        _spool.append(
+            _policy_row(key_name, value, prev_value, apply_result, ts, plugin_version)
+        )
 
 
 def _seen_path() -> Path:
@@ -179,7 +181,7 @@ def main() -> None:
 
     try:
         _apply_settings_step(plugin_version)
-    except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
+    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
         pass
 
     try:
@@ -191,12 +193,12 @@ def main() -> None:
     if _emit_output(output) and unread:
         try:
             _write_seen(seen | {n["id"] for n in unread})
-        except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
+        except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
             pass
 
     try:
         _collect_step(raw_input, hook_event, disabled)
-    except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
+    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
         pass
 
 

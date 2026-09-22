@@ -41,7 +41,9 @@ def _isolate(monkeypatch, tmp_path):
     monkeypatch.delenv("CC_GOVERNANCE_DISABLE", raising=False)
     monkeypatch.setattr(session_start.sys, "argv", ["session_start.py", "SessionStart"])
     monkeypatch.setattr(
-        session_start, "_read_stdin_json", lambda: {"session_id": "s", "source": "startup"}
+        session_start,
+        "_read_stdin_json",
+        lambda: {"session_id": "s", "source": "startup"},
     )
     return tmp_path
 
@@ -124,7 +126,10 @@ def test_policy_event_7_2_key_names_keep_dots(tmp_path):
     """#7-2: 各行の key_name が POLICY のキーそのまま（`.` を含む）。"""
     _write_settings(tmp_path, {})
     session_start.main()
-    assert {row["key_name"] for row in _policy_rows(tmp_path)} == {PCT_KEY, AUTOUPDATE_KEY}
+    assert {row["key_name"] for row in _policy_rows(tmp_path)} == {
+        PCT_KEY,
+        AUTOUPDATE_KEY,
+    }
 
 
 def test_policy_event_7_3_plugin_version_matches_plugin_json(tmp_path):
@@ -252,7 +257,9 @@ def test_notices_8_8_empty_notices_array_no_unread(tmp_path, monkeypatch):
 
 def test_notices_8_9_missing_notices_file_no_unread(tmp_path, monkeypatch):
     """#8-9: notices.json が存在しない -> 未読なし。例外にならない。"""
-    monkeypatch.setattr(session_start, "_NOTICES_PATH", tmp_path / "no-such-notices.json")
+    monkeypatch.setattr(
+        session_start, "_NOTICES_PATH", tmp_path / "no-such-notices.json"
+    )
     assert _unread_ids() == set()
 
 
@@ -432,7 +439,9 @@ def test_order_10_4_settings_failure_still_shows_notice_and_collects(
     assert "systemMessage" in out
 
 
-def test_order_10_5_all_three_failures_still_exit_clean(notices_file, monkeypatch, capsys):
+def test_order_10_5_all_three_failures_still_exit_clean(
+    notices_file, monkeypatch, capsys
+):
     """#10-5: 3 つすべてを例外にしても、終了コード0、標準エラーが空、標準出力が JSON としてパースできる。"""
     monkeypatch.setattr(session_start, "_apply_settings_step", _raiser)
     monkeypatch.setattr(session_start, "_notices_step", _raiser)
@@ -445,7 +454,9 @@ def test_order_10_5_all_three_failures_still_exit_clean(notices_file, monkeypatc
     json.loads(captured.out)
 
 
-def test_order_10_6_call_order_is_settings_notice_collect(notices_file, monkeypatch, capsys):
+def test_order_10_6_call_order_is_settings_notice_collect(
+    notices_file, monkeypatch, capsys
+):
     """#10-6: 呼び出し順を記録して正常実行すると settings -> notices -> collect の順になる。"""
     calls = []
     original_settings = session_start._apply_settings_step
@@ -491,7 +502,9 @@ def test_disable_11_1_unset_runs_everything(notices_file, tmp_path, capsys):
     assert len(_event_rows(tmp_path)) == 1
 
 
-def test_disable_11_2_value_1_skips_notice_and_collect(notices_file, tmp_path, monkeypatch, capsys):
+def test_disable_11_2_value_1_skips_notice_and_collect(
+    notices_file, tmp_path, monkeypatch, capsys
+):
     """#11-2: "1" -> 適用は起きるが、systemMessage は出ず seen.json も作られず、収集も起きない。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
     _write_settings(tmp_path, {})
@@ -506,7 +519,9 @@ def test_disable_11_2_value_1_skips_notice_and_collect(notices_file, tmp_path, m
     assert _event_rows(tmp_path) == []
 
 
-def test_disable_11_3_value_0_still_counts_as_set(notices_file, tmp_path, monkeypatch, capsys):
+def test_disable_11_3_value_0_still_counts_as_set(
+    notices_file, tmp_path, monkeypatch, capsys
+):
     """#11-3: "0" も空でない値として、お知らせと収集を止める。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "0")
     _write_settings(tmp_path, {})
@@ -520,7 +535,9 @@ def test_disable_11_3_value_0_still_counts_as_set(notices_file, tmp_path, monkey
     assert _event_rows(tmp_path) == []
 
 
-def test_disable_11_4_value_false_still_counts_as_set(notices_file, tmp_path, monkeypatch, capsys):
+def test_disable_11_4_value_false_still_counts_as_set(
+    notices_file, tmp_path, monkeypatch, capsys
+):
     """#11-4: "false" も空でない値として、お知らせと収集を止める。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "false")
     _write_settings(tmp_path, {})
@@ -534,7 +551,9 @@ def test_disable_11_4_value_false_still_counts_as_set(notices_file, tmp_path, mo
     assert _event_rows(tmp_path) == []
 
 
-def test_disable_11_5_empty_value_runs_everything(notices_file, tmp_path, monkeypatch, capsys):
+def test_disable_11_5_empty_value_runs_everything(
+    notices_file, tmp_path, monkeypatch, capsys
+):
     """#11-5: "" は空文字列であり、11-1 と同じ（止まらない）。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "")
     _write_settings(tmp_path, {})
@@ -570,7 +589,9 @@ def test_disable_11_7_value_1_stdout_is_still_valid_json(tmp_path, monkeypatch, 
     assert captured.err == ""
 
 
-def test_disable_11_8_value_1_still_launches_sender_once(tmp_path, monkeypatch, _spy_launch):
+def test_disable_11_8_value_1_still_launches_sender_once(
+    tmp_path, monkeypatch, _spy_launch
+):
     """#11-8: "1" でも送信条件が真なら送信プロセスが1回起動する（送信は止まらない）。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
     _write_settings(tmp_path, {})
