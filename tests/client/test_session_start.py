@@ -7,6 +7,7 @@
 import json
 from pathlib import Path
 
+import _notices
 import _sender
 import _spool
 import pytest
@@ -26,6 +27,23 @@ class _RaisingStdout:
 
     def flush(self):
         pass
+
+
+class _FlushRaisingStdout:
+    """`write` は成功するが `flush` が必ず例外を投げる標準出力の代わり。
+
+    計画書タスク9は「標準出力への書き出しと flush が例外なく終わってから seen.json を
+    更新する」と明記する。`write` しか失敗させない `_RaisingStdout` ではこの条件を検査できない。
+    """
+
+    def __init__(self):
+        self.written = []
+
+    def write(self, data, *_args, **_kwargs):
+        self.written.append(data)
+
+    def flush(self):
+        raise OSError("boom")
 
 
 def _raiser(*_args, **_kwargs):
@@ -106,8 +124,8 @@ def _event_rows(tmp_path) -> list:
 
 
 def _unread_ids() -> set:
-    unread = session_start._select_unread(
-        session_start._read_notices(), session_start._read_seen()
+    unread = _notices._select_unread(
+        _notices._read_notices(session_start._NOTICES_PATH), _notices._read_seen()
     )
     return {n["id"] for n in unread}
 
@@ -269,6 +287,22 @@ def test_notices_8_10_seen_sequence_does_not_matter(notices_file, tmp_path):
     assert _unread_ids() == set()
 
 
+def test_notices_8_11_non_string_body_item_is_dropped_others_survive(
+    tmp_path, monkeypatch
+):
+    """#8-11 (M-1): title が無く body が非文字列の項目が1件混ざっても、その項目だけを飛ばし
+    正常な項目は未読として残る（1件の欠陥が同じファイルの正常な項目まで隠さない）。
+    """
+    path = tmp_path / "notices.json"
+    data = [
+        {"id": "n-broken", "body": 123},
+        {"id": "n-ok", "title": "件名", "body": "本文"},
+    ]
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(session_start, "_NOTICES_PATH", path)
+    assert _unread_ids() == {"n-ok"}
+
+
 # ---- タスク 9: お知らせの出力経路と既読を立てる順序 ----
 
 
@@ -328,6 +362,18 @@ def test_output_9_8_write_failure_keeps_seen_unchanged(notices_file, tmp_path):
     """#9-8: 標準出力への書き出しを例外にすると、seen.json は実行前と同じ（更新されない）ままになる。"""
     original_stdout = session_start.sys.stdout
     session_start.sys.stdout = _RaisingStdout()
+    try:
+        session_start.main()
+    finally:
+        session_start.sys.stdout = original_stdout
+
+    assert not _seen_file(tmp_path).exists()
+
+
+def test_output_9_8b_flush_only_failure_keeps_seen_unchanged(notices_file, tmp_path):
+    """#9-8b (I-2): write は成功するが flush だけが例外を投げても、seen.json は更新されない。"""
+    original_stdout = session_start.sys.stdout
+    session_start.sys.stdout = _FlushRaisingStdout()
     try:
         session_start.main()
     finally:
@@ -483,6 +529,32 @@ def test_order_10_6_call_order_is_settings_notice_collect(
     capsys.readouterr()
 
     assert calls == ["settings", "notices", "collect"]
+
+
+def test_order_10_7_stdin_read_failure_does_not_silence_settings_and_notices(
+    notices_file, tmp_path, monkeypatch, capsys
+):
+    """#10-7 (I-3): 標準入力の読み取り（深い入れ子で RecursionError）が3ステップの try の外にあると、
+    設定の適用・お知らせの表示・キューへの記録が丸ごと消え、端末が完全に無言で終わる
+    （実測で確認済み）。読み取りを `_collect_step` の中へ移すと、その失敗は収集だけに留まり、
+    設定の適用とお知らせの表示は生き残る。
+    """
+    _write_settings(tmp_path, {})
+    monkeypatch.setattr(
+        session_start,
+        "_read_stdin_json",
+        lambda: (_ for _ in ()).throw(RecursionError()),
+    )
+
+    session_start.main()
+    captured = capsys.readouterr()
+
+    assert captured.err == ""
+    out = json.loads(captured.out)
+    assert "systemMessage" in out
+    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
+    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
+    assert len(_policy_rows(tmp_path)) == len(POLICY)
 
 
 # ---- タスク 11: 無効化スイッチ ----

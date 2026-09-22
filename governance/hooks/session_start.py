@@ -19,18 +19,17 @@ from pathlib import Path
 from typing import Any, Optional
 
 import _identity
+import _notices
 import _spool
 from _settings import apply_settings
-from _spool import _state_dir
 from collect import _read_stdin_json, extract_event
 from contract import POLICY, POLICY_COLUMNS, coerce, to_day
 
 _DISABLE_ENV = "CC_GOVERNANCE_DISABLE"
 _CONFIG_DIR_ENV = "CLAUDE_CONFIG_DIR"
 _SETTINGS_FILENAME = "settings.json"
-_SEEN_FILENAME = "seen.json"
 
-_NOTICES_PATH = Path(__file__).resolve().parent.parent / "notices.json"
+_NOTICES_PATH = _notices._NOTICES_PATH
 
 
 def _settings_path() -> Path:
@@ -67,8 +66,13 @@ def _policy_row(
     return row
 
 
-def _apply_settings_step(plugin_version: Optional[str]) -> None:
-    """設定を適用し、結果を policy イベントとしてキューに積む。無効化スイッチの影響を受けない。"""
+def _apply_settings_step() -> None:
+    """設定を適用し、結果を policy イベントとしてキューに積む。無効化スイッチの影響を受けない。
+
+    `plugin_version` の取得もこの中で行う。ここより外に置くと、その失敗がお知らせの表示と
+    収集まで巻き添えにする（設計書 §3.3 が守る「hook は無言で消えない」に反する）。
+    """
+    plugin_version = _identity.get_plugin_version()
     rows = apply_settings(_settings_path(), POLICY)
     ts = int(time.time())
     for key_name, value, prev_value, apply_result in rows:
@@ -77,92 +81,41 @@ def _apply_settings_step(plugin_version: Optional[str]) -> None:
         )
 
 
-def _seen_path() -> Path:
-    """既読 ID 集合 `seen.json` のパスを返す。状態ディレクトリの規則は `_spool` に従う。"""
-    return _state_dir() / _SEEN_FILENAME
-
-
-def _read_notices() -> list:
-    """`notices.json` を読む。無い・壊れている・配列でない場合は空リストとする。"""
-    try:
-        with open(_NOTICES_PATH, encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, ValueError):
-        return []
-    if not isinstance(data, list):
-        return []
-    return [n for n in data if isinstance(n, dict) and isinstance(n.get("id"), str)]
-
-
-def _read_seen() -> set:
-    """既読 ID の集合を読む。無い・壊れている・配列でない場合は空集合とする。"""
-    try:
-        with open(_seen_path(), encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, ValueError):
-        return set()
-    if not isinstance(data, list):
-        return set()
-    return {item for item in data if isinstance(item, str)}
-
-
-def _select_unread(notices: list, seen: set) -> list:
-    """未読（`seen` に無い id）のお知らせだけを、`notices` の順序を保って返す。"""
-    return [n for n in notices if n["id"] not in seen]
-
-
-def _write_seen(seen_ids: set) -> None:
-    """既読 ID の集合を `seen.json` に書く。失敗しても例外を外に出さない。"""
-    path = _seen_path()
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(sorted(seen_ids), f)
-    except OSError:
-        pass
-
-
-def _format_message(unread: list) -> str:
-    """未読のお知らせを、空行 1 つで区切った 1 つの文字列にまとめる。件ごとの接頭辞は付けない。"""
-    parts = []
-    for notice in unread:
-        title = notice.get("title")
-        body = notice.get("body", "")
-        parts.append(f"{title}\n{body}" if isinstance(title, str) and title else body)
-    return "\n\n".join(parts)
+def _notices_step(disabled: bool) -> tuple:
+    """未読のお知らせから出力用の dict を組み立てる。実体は `_notices.notices_step`。"""
+    return _notices.notices_step(disabled, _NOTICES_PATH)
 
 
 def _emit_output(output: dict) -> bool:
-    """hook の JSON 出力を標準出力へ 1 個だけ書く。書き出しと flush が例外なく終われば真。"""
+    """hook の JSON 出力を標準出力へ 1 個だけ書く。書き出しと flush が例外なく終われば真。
+
+    失敗した場合、fd 1 を `/dev/null` に差し替える。標準出力のパイプの読み口が閉じている
+    ときなど、`write`/`flush` の失敗を捕まえてもなお、`TextIOWrapper` 内部の
+    `BufferedWriter` に書き込み済みのデータが残っていることがある。それがインタプリタ
+    終了時の最終 flush で再送され、そこでも失敗すると標準エラーに漏れて exit 120 になる
+    （`sys.stdout` を差し替えるだけでは、この残ったバッファには効かない）。
+    """
     try:
         sys.stdout.write(json.dumps(output, ensure_ascii=False))
         sys.stdout.write("\n")
         sys.stdout.flush()
         return True
     except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
+        try:
+            os.dup2(os.open(os.devnull, os.O_WRONLY), 1)
+        except OSError:
+            pass
         return False
 
 
-def _notices_step(disabled: bool) -> tuple:
-    """未読のお知らせから出力用の dict を組み立てる。戻り値は (output, unread, seen)。
+def _collect_step(hook_event: Optional[str], disabled: bool) -> None:
+    """SessionStart の利用ログを収集する。送信条件の判定は無効化スイッチの外側で行う。
 
-    出力も既読の書き込みもここでは行わない。呼び出し元が必ず 1 回だけ出力できるようにするため。
+    標準入力の読み取りもこの中で行う。ここより外に置くと、その失敗（深い入れ子の JSON
+    による `RecursionError` など）が設定の適用とお知らせの表示まで巻き添えにする。
     """
-    if disabled:
-        return {}, [], set()
-
-    seen = _read_seen()
-    unread = _select_unread(_read_notices(), seen)
-
-    output: dict[str, Any] = {}
-    if unread:
-        output["systemMessage"] = _format_message(unread)
-    return output, unread, seen
-
-
-def _collect_step(raw_input: Any, hook_event: Optional[str], disabled: bool) -> None:
-    """SessionStart の利用ログを収集する。送信条件の判定は無効化スイッチの外側で行う。"""
     if not disabled:
+        raw_input = _read_stdin_json()
         _spool.append(extract_event(raw_input, hook_event))
 
     if _spool.should_send():
@@ -175,12 +128,10 @@ def _collect_step(raw_input: Any, hook_event: Optional[str], disabled: bool) -> 
 def main() -> None:
     """設定の適用 -> お知らせの表示 -> イベントの収集の順に実行する。"""
     hook_event: Optional[str] = sys.argv[1] if len(sys.argv) > 1 else None
-    raw_input = _read_stdin_json()
     disabled = bool(os.environ.get(_DISABLE_ENV))
-    plugin_version = _identity.get_plugin_version()
 
     try:
-        _apply_settings_step(plugin_version)
+        _apply_settings_step()
     except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
         pass
 
@@ -192,12 +143,12 @@ def main() -> None:
     # 出力は必ず 1 回だけ行う。ここより上で何が失敗しても、少なくとも空の JSON を出す。
     if _emit_output(output) and unread:
         try:
-            _write_seen(seen | {n["id"] for n in unread})
+            _notices._write_seen(seen | {n["id"] for n in unread})
         except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
             pass
 
     try:
-        _collect_step(raw_input, hook_event, disabled)
+        _collect_step(hook_event, disabled)
     except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
         pass
 
