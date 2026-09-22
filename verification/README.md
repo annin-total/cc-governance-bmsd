@@ -17,6 +17,12 @@ hook stdin を実採取するたびに、`tests/fixtures/hook_inputs/` へ無害
 使い方: `python3 fixture-sanitization/sanitize_fixtures.py <採取先ディレクトリ>`
 （採取先を省略すると `fixture-sanitization/raw/` を見る。このディレクトリは git に入れない）。
 
+**警告 — 書き込み先はこのリポジトリの `tests/fixtures/hook_inputs/` に固定であり、
+引数でも環境変数でも変更できない。** 実装は書き込み前にこの書き込み先を空にしてからコピーする。
+**採取データを持たずに、あるいは間違った採取先ディレクトリを指定して実行すると、既存の
+フィクスチャが消える。** 実行前に `<採取先ディレクトリ>` に採取済みの stdin が入っていることを
+必ず確認する。
+
 ### hook-behavior/ — hook の実挙動の採取
 
 settings.json の hooks から呼び出し、Claude Code の実挙動を採取するための小スクリプト群。
@@ -25,9 +31,57 @@ settings.json の hooks から呼び出し、Claude Code の実挙動を採取�
 | --- | --- |
 | `capture_hook_stdin.py` | 任意の hook の stdin (JSON payload) をそのままファイルに保存する（圧縮前・スキル名など、確かめたい hook イベントに差し替えて使う汎用スクリプト） |
 | `stop_transcript_survey.py` | Stop hook の時点で transcript がどこまで書かれているか（行数・末尾の usage・コンテキストトークン数）を記録する |
-| `build_notice_message.py` | hook の `systemMessage` 出力が、指定文字数でどこまで届く／切り詰められるかを確かめる |
+| `build_notice_message.py` | hook の `systemMessage` 出力が、指定文字数でどこまで届く／切り詰められるかを確かめる。環境変数 `NOTICE_LEN`（文字数）・`NOTICE_MODE`（`ascii` \| `ja`）で切り替える |
 | `scriptname_subpath_app.py` | `SCRIPT_NAME` によるサブパス配備で Flask の URL 生成・ルーティングがどう振る舞うかを確かめる最小アプリ |
 | `plugin-data-probe/marketplace/` | プラグインのデータ領域（`CLAUDE_PLUGIN_DATA` とその展開値）を採取する擬似マーケットプレイス一式（プラグイン名 `pdtest`） |
+
+#### capture_hook_stdin.py の使い方
+
+隔離 `CLAUDE_CONFIG_DIR` 配下の `settings.json` の `hooks` に、確かめたい hook イベントごとに
+1 エントリを足す。`CAPTURE_DIR` は `command` の引数ではなく `env` ブロックで渡す必要がある
+（コマンド文字列の展開はシェルが行うため、ここに直接埋め込むと空白を含むパスで壊れる）。
+
+```json
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/path/to/verification/hook-behavior/capture_hook_stdin.py\" PreCompact",
+            "env": { "CAPTURE_DIR": "/path/to/captured" }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+保存先は `<CAPTURE_DIR>/<hook名>-<epoch_ms>-<pid>.json`。`CAPTURE_DIR` を渡し忘れると
+カレントディレクトリに書かれる。
+
+#### scriptname_subpath_app.py の使い方
+
+`SCRIPT_NAME` によるサブパス配備を確かめる最小 Flask アプリ。**`.venv` の python を使う**
+（システムの `python3` には Flask・waitress が入っていない）。
+
+```bash
+BASE_PATH=/gov PORT=5099 .venv/bin/python hook-behavior/scriptname_subpath_app.py
+curl http://127.0.0.1:5099/gov/       # サブパス付き
+curl http://127.0.0.1:5099/          # サブパス無し
+```
+
+`BASE_PATH`（既定は空文字列）と `PORT`（既定 `5099`）を環境変数で渡す。
+
+**このアプリ単体では、サブパス無しのアクセスを拒否しない。** `ScriptNameMiddleware` は
+`PATH_INFO` が `BASE_PATH` から始まるときだけそれを剥がして `SCRIPT_NAME` に付け替える設計で
+あり、始まらないとき（サブパス無しのアクセス）は素通しする。Flask のルーティングは
+`PATH_INFO` だけを見て `SCRIPT_NAME` を無視するため、`/` や `/policy` に直接アクセスしても
+`200` が返る。**サブパスの境界を強制するのはこのアプリの責務ではなく、前段のリバースプロキシの
+責務である。**このスクリプトは URL 生成（`url_for`）とルーティングの挙動だけを確かめるための
+ものであり、境界の強制自体を検査するものではない。
 
 #### plugin-data-probe/ の使い方（プラグインのデータ領域の採取）
 
@@ -55,7 +109,7 @@ settings.json の hooks から呼び出し、Claude Code の実挙動を採取�
 
 | ファイル/ディレクトリ | 何を確かめる／何をするか |
 | --- | --- |
-| `githttpd.py` | `git http-backend` を CGI として呼ぶ最小の smart HTTP サーバ（localhost 限定）。擬似マーケットプレイスを HTTP 経由の自動更新元として使う場合に立てる |
+| `githttpd.py` | `git http-backend` を CGI として呼ぶ最小の smart HTTP サーバ（localhost 限定）。擬似マーケットプレイスを HTTP 経由の自動更新元として使う場合に立てる。引数は `ROOT PORT`（`python3 githttpd.py <bare リポジトリの親ディレクトリ> <ポート>`）。**`ROOT` 配下に bare リポジトリ（`*.git`）を用意してから使う**。空のディレクトリを指定しても起動はするが `git clone` が失敗する |
 | `run.sh` | 隔離 HOME (`home-<n>/`) で `claude` を起動するラッパ（環境変数を落として汚染を防ぐ） |
 | `hold.py` / `hold.sh` | 隔離 HOME で Claude Code の対話セッションを pty 上に起動し、指定秒数だけ保持しながらログを取る |
 | `snap.sh` | 隔離 HOME を覗き、自動更新がどこまで進んだか（マーケットプレイス HEAD・plugin.json のバージョン・installed_plugins.json・キャッシュ）を一覧表示する |
@@ -87,5 +141,9 @@ settings.json の hooks から呼び出し、Claude Code の実挙動を採取�
 | `mysql_indexes.sql` | `mysql_schema.sql` のテーブルに対する被覆インデックス定義 |
 
 使い方: `python3 performance/sqlite_bench.py <db path> <DAYS> <PER_DAY>`。
+**このスクリプト自身は `ANALYZE` を呼ばない。** 統計情報が無いまま計測すると、`skill_name` 系の
+クエリでインデックスありの方がインデックス無しより遅くなることがある（実測: 18 万行で
+2 クエリとも悪化）。インデックスの効果そのものを見たいときは、計測前に手動で
+`ANALYZE` を実行してから流す。
 MySQL は `mysql_schema.sql` → データ投入 → `mysql_indexes.sql` → `ANALYZE TABLE` の順に流す
 （ANALYZE を省くとインデックスなしより遅くなることがある）。

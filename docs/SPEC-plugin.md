@@ -133,6 +133,10 @@ HOOK_FIELDS = (
 
 いずれも解釈できない値は `None` にする。`None` は `None` のまま通す。
 
+許可リストに載っている列でも、値そのものの中身は検査しない。`skill_name`（`tool_input.skill`）・
+`command_name`・`command_source` は利用者が自由に命名できる文字列であり、255 文字までそのまま
+送信・永続化される。収集を止めているのはキーパスの許可リストだけであり、値の語彙は絞っていない。
+
 端末側で組み立てる列。
 
 | 列 | 取得元 |
@@ -191,6 +195,10 @@ def context_tokens(path, tail=256 * 1024):
 2. `spool/` 内のファイルを古い順に `POST /ingest` する
    （`Content-Type: application/x-ndjson`、タイムアウト 60 秒、トークンをヘッダに付与）
 3. 2xx なら削除。それ以外は残す（次回まとめて再送される）
+
+送信元は `config.json` の `ingest_url` のスキームを検査しない。`http://` を設定すると、
+`X-Ingest-Token`（共有秘密）・`user_email`・`host` が平文で送信される。イベント本文に自由文は
+無いが、共有秘密が平文で流れる経路になる。`ingest_url` には `https://` を設定する運用で防ぐ。
 
 送信失敗時 — リトライループも指数バックオフも ACK も持たない。`spool/` の合計が
 5MB または 7 日を超えたら、古いものから破棄する。
