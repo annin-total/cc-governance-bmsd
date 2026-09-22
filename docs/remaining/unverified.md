@@ -48,7 +48,7 @@ Claude Code に同梱される実行環境を使う形にする。
 | ドライバの戻り値の列位置 | `SHOW INDEX` の `Key_name`、`SHOW COLUMNS` の `Field` |
 | プレースホルダ変換と複数行 INSERT | 置換の結果が実接続で通ること。部分失敗の粒度 |
 | 置換後の文字列 | 符号化できない文字を置換した値が保存できること |
-| `INTEGER` の桁 | 2038 年以降の `ts` が格納できないこと（→ `../decisions.md`） |
+| `INTEGER` の桁 | 2038 年以降の `ts` が格納できないこと（桁の事実は `../knowledge/db-and-framework-facts.md`） |
 | 初期化の失敗時のロールバック | SQLite では DDL が暗黙コミットのため確認できない |
 | インデックスキー長 | 接続先の行フォーマットで作成が通ること |
 | 8.0 系での挙動 | `sql_require_primary_key` と `CREATE INDEX IF NOT EXISTS` の扱い |
