@@ -5,6 +5,7 @@
 import json
 from pathlib import Path
 
+import _sender
 import _spool
 import pytest
 import session_start
@@ -22,11 +23,23 @@ def _raiser(*_args, **_kwargs):
 
 @pytest.fixture(autouse=True)
 def _isolate(monkeypatch, tmp_path):
-    """状態ディレクトリと設定ディレクトリを隔離する。"""
+    """状態ディレクトリと設定ディレクトリを隔離し、無効化スイッチを消して始める。"""
     monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "state"))
     monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "config"))
     monkeypatch.delenv("CC_GOVERNANCE_DISABLE", raising=False)
+    monkeypatch.setattr(session_start.sys, "argv", ["session_start.py", "SessionStart"])
+    monkeypatch.setattr(
+        session_start, "_read_stdin_json", lambda: {"session_id": "s", "source": "startup"}
+    )
     return tmp_path
+
+
+@pytest.fixture(autouse=True)
+def _spy_launch(monkeypatch):
+    """送信プロセスの実起動を避け、呼び出しの有無だけを数える。"""
+    calls = []
+    monkeypatch.setattr(_sender, "launch", lambda: calls.append(1))
+    return calls
 
 
 @pytest.fixture
@@ -62,6 +75,10 @@ def _queue_rows(tmp_path) -> list:
 
 def _policy_rows(tmp_path) -> list:
     return [row for row in _queue_rows(tmp_path) if row.get("kind") == "policy"]
+
+
+def _event_rows(tmp_path) -> list:
+    return [row for row in _queue_rows(tmp_path) if row.get("kind") == "event"]
 
 
 def _seen_file(tmp_path) -> Path:
@@ -347,3 +364,109 @@ def test_output_9_11_two_items_are_joined_by_blank_line(notices_file, capsys):
     assert "本文2" in parts[1]
     for decoration in ("【お知らせ】", "SessionStart:"):
         assert decoration not in message
+
+
+# ---- タスク 10: 実行順序 ----
+
+
+def test_order_10_1_normal_run_does_everything(notices_file, tmp_path, capsys):
+    """#10-1: 正常実行 -> 設定適用・お知らせ出力・policy/SessionStart イベントの収集がすべて起きる。"""
+    _write_settings(tmp_path, {})
+    session_start.main()
+    out = json.loads(capsys.readouterr().out)
+
+    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
+    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
+    assert "systemMessage" in out
+    assert len(_policy_rows(tmp_path)) == len(POLICY)
+    assert len(_event_rows(tmp_path)) == 1
+
+
+def test_order_10_2_collect_failure_leaves_earlier_steps_done(
+    notices_file, tmp_path, monkeypatch, capsys
+):
+    """#10-2: 収集を例外にしても、設定適用とお知らせの出力は既に終わっている。終了コード0、標準エラーが空。"""
+    _write_settings(tmp_path, {})
+    monkeypatch.setattr(session_start, "_collect_step", _raiser)
+
+    session_start.main()
+    captured = capsys.readouterr()
+    out = json.loads(captured.out)
+
+    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
+    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
+    assert "systemMessage" in out
+    seen = json.loads(_seen_file(tmp_path).read_text(encoding="utf-8"))
+    assert set(seen) == {"n-001", "n-002"}
+    assert captured.err == ""
+
+
+def test_order_10_3_notice_step_failure_still_runs_collect(
+    notices_file, tmp_path, monkeypatch, capsys
+):
+    """#10-3: お知らせの処理を例外にしても、設定適用と収集は実行される。終了コード0。"""
+    _write_settings(tmp_path, {})
+    monkeypatch.setattr(session_start, "_notices_step", _raiser)
+
+    session_start.main()
+    captured = capsys.readouterr()
+    json.loads(captured.out)  # それでも 1 個の JSON が出る
+
+    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
+    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
+    assert len(_event_rows(tmp_path)) == 1
+    assert captured.err == ""
+
+
+def test_order_10_4_settings_failure_still_shows_notice_and_collects(
+    notices_file, monkeypatch, capsys
+):
+    """#10-4: 設定の適用を例外にしても、systemMessage が出力され、収集は実行される。終了コード0。"""
+    monkeypatch.setattr(session_start, "_apply_settings_step", _raiser)
+
+    session_start.main()
+    out = json.loads(capsys.readouterr().out)
+
+    assert "systemMessage" in out
+
+
+def test_order_10_5_all_three_failures_still_exit_clean(notices_file, monkeypatch, capsys):
+    """#10-5: 3 つすべてを例外にしても、終了コード0、標準エラーが空、標準出力が JSON としてパースできる。"""
+    monkeypatch.setattr(session_start, "_apply_settings_step", _raiser)
+    monkeypatch.setattr(session_start, "_notices_step", _raiser)
+    monkeypatch.setattr(session_start, "_collect_step", _raiser)
+
+    session_start.main()
+    captured = capsys.readouterr()
+
+    assert captured.err == ""
+    json.loads(captured.out)
+
+
+def test_order_10_6_call_order_is_settings_notice_collect(notices_file, monkeypatch, capsys):
+    """#10-6: 呼び出し順を記録して正常実行すると settings -> notices -> collect の順になる。"""
+    calls = []
+    original_settings = session_start._apply_settings_step
+    original_notices = session_start._notices_step
+    original_collect = session_start._collect_step
+
+    def _settings_spy(*args, **kwargs):
+        calls.append("settings")
+        return original_settings(*args, **kwargs)
+
+    def _notices_spy(*args, **kwargs):
+        calls.append("notices")
+        return original_notices(*args, **kwargs)
+
+    def _collect_spy(*args, **kwargs):
+        calls.append("collect")
+        return original_collect(*args, **kwargs)
+
+    monkeypatch.setattr(session_start, "_apply_settings_step", _settings_spy)
+    monkeypatch.setattr(session_start, "_notices_step", _notices_spy)
+    monkeypatch.setattr(session_start, "_collect_step", _collect_spy)
+
+    session_start.main()
+    capsys.readouterr()
+
+    assert calls == ["settings", "notices", "collect"]
