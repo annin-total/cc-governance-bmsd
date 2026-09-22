@@ -31,7 +31,7 @@
   {% for command_name, command_source, recent_calls, recent_users, prev_calls, prev_users in commands %}
   <tr>
     <td>{{ command_name }}</td>
-    <td>{{ command_source }}</td>
+    <td>{{ command_source if command_source is not none else "—" }}</td>
     <td>{{ recent_calls }}</td>
     <td>{{ recent_users }}</td>
     <td>{{ prev_calls }}</td>

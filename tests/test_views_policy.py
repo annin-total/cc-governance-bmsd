@@ -6,6 +6,7 @@ import importlib
 import re
 from typing import Optional
 
+import db
 import pytest
 import queries_policy
 from test_fixtures import (
@@ -93,3 +94,38 @@ def test_latest_values_row_count_matches_query(policy_client, known_db):
         known_db, TODAY, queries_policy.REFERENCE_KEY
     )
     assert len(rows) == len(expected) == 7
+
+
+def test_未設定のprev_valueがNoneと表示されない(known_db, policy_client):
+    """`prev_value` が NULL の行が「None」ではなく「未設定」と表示される。
+
+    キーが無い端末では `prev_value` が NULL になる。**初回適用時は全端末がこれに当たる**ため、
+    ここが「None」だと運用開始直後の画面がほぼ全行「None」で埋まる。
+    共有フィクスチャにはこの状態の行が無いので、このテストが自分で 1 行足す。
+    """
+    cur = known_db.cursor()
+    cur.execute(
+        db.q(
+            "INSERT INTO policy_state (event_id, ts, day, user_email, host, key_name,"
+            " value, prev_value, apply_result, plugin_version)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?)"
+        ),
+        (
+            "ev-null-prev",
+            10**9,
+            TODAY,
+            "u-first-time",
+            "h-first-time",
+            queries_policy.REFERENCE_KEY,
+            "60",
+            None,
+            "applied",
+            "1.4.0",
+        ),
+    )
+    known_db.commit()
+
+    html = policy_client.get("/policy").get_data(as_text=True)
+
+    assert "<td>None</td>" not in html
+    assert "未設定" in html

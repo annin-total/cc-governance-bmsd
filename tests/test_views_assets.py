@@ -5,6 +5,7 @@
 import importlib
 import re
 
+import db
 import pytest
 from test_fixtures import (
     TODAY,
@@ -55,3 +56,33 @@ def test_subagent_ratio_shown(assets_client):
     """サブエージェント利用の割合が 1 行で出る。"""
     html = assets_client.get("/assets").get_data(as_text=True)
     assert "15.4%" in html
+
+
+def test_command_sourceがNoneと表示されない(known_db, assets_client):
+    """`command_source` が NULL のコマンドが「None」ではなく「—」と表示される。
+
+    共有フィクスチャには `command_source` が NULL の行が無いので、このテストが自分で足す。
+    """
+    cur = known_db.cursor()
+    cur.execute(
+        db.q(
+            "INSERT INTO events (event_id, ts, day, user_email, host, hook_event,"
+            " command_name, command_source) VALUES (?,?,?,?,?,?,?,?)"
+        ),
+        (
+            "ev-null-src",
+            1,
+            TODAY,
+            "u1",
+            "h1",
+            "UserPromptExpansion",
+            "/no-source",
+            None,
+        ),
+    )
+    known_db.commit()
+
+    html = assets_client.get("/assets").get_data(as_text=True)
+
+    assert "/no-source" in html
+    assert "<td>None</td>" not in html

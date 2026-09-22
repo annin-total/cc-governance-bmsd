@@ -126,3 +126,25 @@ u1（1 台・準拠）、u2（2 台持ちで片方が未準拠）、u3（`cost_d
 - `context_distribution` が準拠者 1 人につき 1 クエリを発行する件（設計書は「2 本」と書いている）。設計との突き合わせが要るため今回は対応しない。
 - Minor-2（準拠前後の境界 `day < start_day` 未固定）、Minor-3（`not_introduced` の 30 日絞り未固定）、Minor-4（`STALE_DAYS` の境界未固定）は、いずれも fixture へ境界データを追加すれば塞がるが、今回のスコープでは未対応。
 - Minor-4 台帳の M-4（同一 `ts` のタイブレーク未定義）も未対応のまま。
+
+### 監督役による再検証と追加修正（2026-09-22）
+
+レビュー指摘 Imp-1 / Imp-2 は、修正を受け取る前に監督役が独立に実測で再現した。
+
+| 記号 | 再現した故障 |
+| --- | --- |
+| Imp-1 | `cost` が NULL の `cost_daily` 行があると、実サーバで `/effect` が **HTTP 500**（`TypeError: unsupported operand type(s) for +=: 'float' and 'NoneType'`）。AI Gateway の CSV の `Cost` 欄が 1 セル空なだけで画面全体が開けない |
+| Imp-2 | `command_source` が NULL の `/review` を 2 人が 2 回ずつ使った状態で、`command_usage` が `('/review', None, 0, 0, 0, 0)` を返す。**「使われていない」と積極的に嘘をつく** |
+
+修正後、実サーバ（waitress + curl）で 4 画面すべてが 200 を返し、`command_usage` が `('/review', None, 4, 2, 0, 0)` を返すことを確認した。
+
+#### 画面に `None` がそのまま出ていた件
+
+再検証の過程で、`/policy` の `prev_value` と `/assets` の `command_source` が、NULL のとき文字列 `None` として描画されることを実測した。
+**`prev_value` が NULL になるのはキーが無い端末であり、初回適用時は全端末がこれに当たる。** 運用開始直後の `/policy` がほぼ全行 `None` で埋まる。
+`prev_value` を「未設定」、`command_source` を「—」と表示するよう直した。
+
+**この 2 つのテストは、最初に書いたとき両方とも空振りしていた。** 共有フィクスチャに `prev_value` が NULL の行も
+`command_source` が NULL の行も 1 つも無く、`assert "<td>None</td>" not in html` が真になるだけだった。
+**つまり、初回適用という最も普通の状態を、どのテストも覆っていなかった。** 各テストが自前でその行を足す形に直し、
+テンプレートを元に戻すとそれぞれ 1 件ずつ落ちることを変異検査で確かめた。

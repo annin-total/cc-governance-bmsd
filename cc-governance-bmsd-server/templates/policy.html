@@ -10,7 +10,7 @@
   <tr>
     <td>{{ user_email }}</td>
     <td>{{ host }}</td>
-    <td>{{ prev_value }}</td>
+    <td>{{ prev_value if prev_value is not none else "未設定" }}</td>
     <td>{{ day }}</td>
   </tr>
   {% endfor %}
@@ -38,7 +38,7 @@
   <tr>
     <td>{{ user_email }}</td>
     <td>{{ host }}</td>
-    <td>{{ prev_value }}</td>
+    <td>{{ prev_value if prev_value is not none else "未設定" }}</td>
     <td>{{ day }}</td>
   </tr>
   {% endfor %}
