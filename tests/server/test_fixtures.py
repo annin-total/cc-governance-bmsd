@@ -1,8 +1,7 @@
 """集計検証の土台。既知データの投入と、重複行を注入するヘルパを置く。
 
-このファイルの fixture・ヘルパは、後続の `/policy` `/assets` のテストからも
-`from test_fixtures import ...` の形で再利用する（`tests/conftest.py` には
-一切手を入れない方針のため、共有先はここに集約する）。
+このファイルの fixture・ヘルパは、同じ `tests/server/` にある `/policy` `/assets` のテストからも
+`from test_fixtures import ...` の形で再利用する。
 
 基準日は 20005（epoch 日）。窓の長さ・キー名は `queries_*.py` の定数と揃える。
 """

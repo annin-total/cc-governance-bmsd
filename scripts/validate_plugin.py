@@ -11,7 +11,7 @@
 一切検証しない。「在ること」は見るが「何であるか」は見ない、が切り分けの基準
 である。将来ここに列名やキーの検査を足さないこと。
 
-使い方: python scripts/validate_plugin.py [プラグインのディレクトリ名]（既定: governance）
+使い方: python scripts/validate_plugin.py [プラグインのディレクトリ名]（既定: plugin）
         python3 でも python でも起動できる。標準ライブラリだけで動く。
 """
 
@@ -453,7 +453,7 @@ def check_ruff(repo_root: Path, plugin_name: str) -> None:
 def main(argv: list) -> int:
     script_dir = Path(__file__).resolve().parent
     repo_root = script_dir.parent
-    plugin_name = argv[1] if len(argv) > 1 else "governance"
+    plugin_name = argv[1] if len(argv) > 1 else "plugin"
     plugin_dir = repo_root / plugin_name
 
     if not plugin_dir.is_dir():

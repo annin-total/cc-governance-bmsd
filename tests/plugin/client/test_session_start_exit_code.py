@@ -1,6 +1,6 @@
 """session_start.py が、故意に壊した入出力・環境でも常に exit 0・標準エラー空で終わることを検証する。
 
-`governance/hooks` 一式を一時ディレクトリへコピーして起動する。実 `governance/config.json` は
+`plugin/hooks` 一式を一時ディレクトリへコピーして起動する。実 `plugin/config.json` は
 変更しない。標準出力に書く唯一の hook である session_start.py には、この検証が無いまま
 BrokenPipeError による exit 120 の欠陥が入り込んでいた（設計書 §3.3。`test_collect_exit_code.py`
 と同じ作法に揃える）。
@@ -16,17 +16,17 @@ from pathlib import Path
 
 import pytest
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-_HOOKS_SRC = _REPO_ROOT / "governance" / "hooks"
-_CONFIG_SRC = _REPO_ROOT / "governance" / "config.json"
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+_HOOKS_SRC = _REPO_ROOT / "plugin" / "hooks"
+_CONFIG_SRC = _REPO_ROOT / "plugin" / "config.json"
 
 
 @pytest.fixture
 def tree(tmp_path):
-    """`governance/hooks` と `config.json` を一時ディレクトリへコピーし、session_start.py のパスを返す。"""
-    hooks_dst = tmp_path / "governance" / "hooks"
+    """`plugin/hooks` と `config.json` を一時ディレクトリへコピーし、session_start.py のパスを返す。"""
+    hooks_dst = tmp_path / "plugin" / "hooks"
     shutil.copytree(_HOOKS_SRC, hooks_dst, ignore=shutil.ignore_patterns("__pycache__"))
-    shutil.copy(_CONFIG_SRC, tmp_path / "governance" / "config.json")
+    shutil.copy(_CONFIG_SRC, tmp_path / "plugin" / "config.json")
     return hooks_dst / "session_start.py"
 
 

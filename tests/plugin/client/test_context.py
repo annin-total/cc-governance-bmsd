@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from _context import context_tokens
 
-_HOOKS_DIR = Path(__file__).resolve().parents[2] / "governance" / "hooks"
+_HOOKS_DIR = Path(__file__).resolve().parents[3] / "plugin" / "hooks"
 
 
 def _write_jsonl(path, lines):

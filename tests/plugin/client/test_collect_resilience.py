@@ -13,18 +13,18 @@ from pathlib import Path
 
 import pytest
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-_HOOKS_SRC = _REPO_ROOT / "governance" / "hooks"
-_CONFIG_SRC = _REPO_ROOT / "governance" / "config.json"
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+_HOOKS_SRC = _REPO_ROOT / "plugin" / "hooks"
+_CONFIG_SRC = _REPO_ROOT / "plugin" / "config.json"
 _HOOKS_JSON = _HOOKS_SRC / "hooks.json"
 
 
 @pytest.fixture
 def tree(tmp_path):
-    """`governance/hooks` 一式を一時ディレクトリへ複製し、collect.py のパスを返す。"""
-    hooks_dst = tmp_path / "governance" / "hooks"
+    """`plugin/hooks` 一式を一時ディレクトリへ複製し、collect.py のパスを返す。"""
+    hooks_dst = tmp_path / "plugin" / "hooks"
     shutil.copytree(_HOOKS_SRC, hooks_dst, ignore=shutil.ignore_patterns("__pycache__"))
-    shutil.copy(_CONFIG_SRC, tmp_path / "governance" / "config.json")
+    shutil.copy(_CONFIG_SRC, tmp_path / "plugin" / "config.json")
     return hooks_dst / "collect.py"
 
 

@@ -1,7 +1,7 @@
 # CLAUDE.md - cc-governance-bmsd
 
-Claude Code の端末プラグイン（`governance/`）と集計サーバ（`cc-governance-bmsd-server/`）。
-両者は契約の正本 `governance/hooks/contract.py` を共有する。設計の正本は `docs/design.md`、
+Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`cc-governance-bmsd-server/`）。
+両者は契約の正本 `plugin/hooks/contract.py` を共有する。設計の正本は `docs/design.md`、
 外界の事実（実測値・仕様・上流の振る舞い）は `docs/knowledge/`。
 
 **`docs/` 配下の構成と参照規約は `docs/CLAUDE.md` にある。**`docs/` を書き換える前に読む。
@@ -51,5 +51,5 @@ cd cc-governance-bmsd-server && \
 - **重複を前提に数える**：件数も率の分子も、常に `event_id` で一意化して数える。期間を限定しない集計は画面に出さない
 - **収集は最小限にする**：契約が名指ししたものだけを読む。本文（prompt・応答・メッセージ）には触れない
 - **hook は利用者の作業を妨げない**：常に exit 0 で終わり、標準エラーにも何も出力しない
-- **配布物を汚さない**：`governance/` はそのまま配布される。テストや生成物を置かない
+- **配布物を汚さない**：`plugin/` はそのまま配布される。テストや生成物を置かない
 - **依存と機能を増やさない**：依存の追加は設計判断として扱い、理由を残す。「将来必要かもしれない」を理由に足さない

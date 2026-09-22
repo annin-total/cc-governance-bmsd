@@ -13,7 +13,7 @@ import db
 import pytest
 from shared import CSV_COLUMNS
 
-FIXTURES = Path(__file__).parent / "fixtures"
+FIXTURES = Path(__file__).parent.parent / "fixtures"
 
 
 def _count_and_sum(conn):
@@ -575,7 +575,7 @@ _FRAMEWORK_IMPORT_RE = re.compile(
     r"^\s*(import|from)\s+(flask|werkzeug|jinja2|waitress)\b", re.IGNORECASE
 )
 
-_SERVER_DIR = Path(__file__).parent.parent / "cc-governance-bmsd-server"
+_SERVER_DIR = Path(__file__).parent.parent.parent / "cc-governance-bmsd-server"
 
 
 def _framework_import_lines(path: Path) -> list:

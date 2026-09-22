@@ -21,7 +21,7 @@ def _run(cwd: Path, code: str) -> subprocess.CompletedProcess:
         [sys.executable, "-c", code],
         cwd=str(cwd),
         # PATH を決め打ちすると Windows で成立しない。PYTHONDONTWRITEBYTECODE は、
-        # 配布物である `governance/` に `__pycache__` を残さないために渡す。
+        # 配布物である `plugin/` に `__pycache__` を残さないために渡す。
         env={
             "PATH": os.environ.get("PATH", ""),
             "PYTHONPATH": str(SERVER_DIR),

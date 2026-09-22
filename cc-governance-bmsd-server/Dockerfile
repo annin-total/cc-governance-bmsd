@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-COPY governance/ /app/governance/
+COPY plugin/ /app/plugin/
 COPY cc-governance-bmsd-server/ /app/cc-governance-bmsd-server/
 
 WORKDIR /app/cc-governance-bmsd-server
