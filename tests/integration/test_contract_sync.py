@@ -2,12 +2,11 @@
 
 契約がずれても実行時に例外は出ない（サーバ側の列定義を回して値を引くだけで、
 増えた項目は黙って捨てられ、減った項目は黙って NULL になる）。この検査がそのずれを
-唯一機械的に捕まえる層である（もう一層は `cc-governance-bmsd-server/entry.sh`）。
+唯一機械的に捕まえる層である（もう一層は submodule `server/`（`cc-governance-monitor`）の `entry.sh`）。
 
-**`import contract` に頼らない。**`tests/plugin/` と `tests/server/` の両方が
-`sys.path` に乗るテスト実行環境では、"contract" という同名モジュールが 2 か所
-（正本・複製）に存在し、どちらを import するかは sys.path の順序と
-インポート順に依存する。一致検査の結果がその順序で無言に変わってはならないため、
+**`import contract` に頼らない。**複製は別リポジトリ（submodule）の中にあり、
+"contract" という同名モジュールが正本・複製の 2 か所に存在しうる。どちらを import するかを
+sys.path の順序に委ねると、一致検査の結果がその順序で無言に変わりかねないため、
 ここでは正本・複製・ハッシュ記録をすべて生のバイト列として直接読み、
 `scripts/sync_contract.py` と同じロジックで比較する（import 経由の検査ではない）。
 
@@ -25,7 +24,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import sync_contract
 
-ENTRY_SH = ROOT / "cc-governance-bmsd-server" / "entry.sh"
+ENTRY_SH = ROOT / "server" / "entry.sh"
 
 _HEREDOC_PATTERN = re.compile(r"<<'PY'\n(.*?)\nPY\n", re.DOTALL)
 _HEADER_ASSIGN_PATTERN = re.compile(
@@ -41,14 +40,14 @@ def test_master_exists():
 
 
 def test_replica_exists():
-    """複製 (cc-governance-bmsd-server/contract.py) が存在する。"""
+    """複製 (server/contract.py) が存在する。"""
     assert sync_contract.REPLICA.is_file(), (
         f"複製が見つからない: {sync_contract.REPLICA}"
     )
 
 
 def test_hash_file_exists():
-    """ハッシュ記録 (cc-governance-bmsd-server/contract.sha256) が存在する。"""
+    """ハッシュ記録 (server/contract.sha256) が存在する。"""
     assert sync_contract.HASH_FILE.is_file(), (
         f"ハッシュ記録が見つからない: {sync_contract.HASH_FILE}"
     )

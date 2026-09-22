@@ -2,13 +2,13 @@
 """sync_contract.py — 契約の正本をサーバ側の複製へ同期する。
 
 正本: `plugin/hooks/contract.py`（配布物。端末に同梱される）
-複製: `cc-governance-bmsd-server/contract.py`（このスクリプトの生成物。直接編集しない）
-記録: `cc-governance-bmsd-server/contract.sha256`（正本のハッシュ。複製と一緒にコミットする）
+複製: `server/contract.py`（submodule `cc-governance-monitor` の中。このスクリプトの生成物。直接編集しない）
+記録: `server/contract.sha256`（正本のハッシュ。複製と一緒にコミットする）
 
 複製は固定の生成物ヘッダ（`_REPLICA_HEADER`）＋正本のバイト列そのもの、という構成を取る。
 これにより、複製ファイル単体（正本が手元に無い場所）でも、ヘッダの既知の長さを引いた残りを
 ハッシュ化すれば正本のハッシュと比較でき、複製が直接編集されていないかを検査できる
-（`cc-governance-bmsd-server/entry.sh` がこの方式でサーバ起動時に検査する）。
+（`server/entry.sh` がこの方式でサーバ起動時に検査する）。
 
 使い方:
     python scripts/sync_contract.py          複製とハッシュを正本から書き出す
@@ -22,7 +22,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MASTER = ROOT / "plugin" / "hooks" / "contract.py"
-SERVER_DIR = ROOT / "cc-governance-bmsd-server"
+SERVER_DIR = ROOT / "server"
 REPLICA = SERVER_DIR / "contract.py"
 HASH_FILE = SERVER_DIR / "contract.sha256"
 

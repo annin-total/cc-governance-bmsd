@@ -1,6 +1,6 @@
 # CLAUDE.md - cc-governance-bmsd
 
-Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`cc-governance-bmsd-server/`）。
+Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/`、submodule `cc-governance-monitor`）。
 両者は契約の正本 `plugin/hooks/contract.py` を共有する。設計の正本は `docs/design.md`、
 外界の事実（実測値・仕様・上流の振る舞い）は `docs/knowledge/`。
 
@@ -16,10 +16,8 @@ ruff check . && ruff format .   # リントとフォーマット
 ```
 
 ```bash
-# サーバのローカル起動
-cd cc-governance-bmsd-server && \
-  DB_DSN=sqlite:///../local/governance.db INGEST_TOKEN=dev CSV_DIR=../local/csv \
-  waitress-serve --listen=127.0.0.1:5000 app:app
+# サーバのローカル起動（server/ の詳細は server/README.md・server/CLAUDE.md）
+cd server && docker compose up
 ```
 
 ## Subagents
