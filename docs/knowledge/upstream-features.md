@@ -1,7 +1,7 @@
-# 使っていない上流の機能
+# 上流に実在する項目と hook
 
-Claude Code が提供していて**実在を確認済み**だが、この実装が読んでいない収集項目と、
-登録していない hook の目録。実在が確認できていないものは載せない。
+Claude Code が届ける収集項目・hook・環境変数のうち、**実在を確認できたもの**の目録。
+実在が確認できていないものは載せない。網羅ではない。
 断りのない限り Claude Code 2.1.278 / macOS での実測。
 
 ## 1. `SessionStart`（`source="resume"`）でしか届かないキー
@@ -36,33 +36,34 @@ Claude Code が提供していて**実在を確認済み**だが、この実装�
 **自由文・本文を含むキー**: `prompt` / `tool_response.stdout` / `tool_response.stderr` /
 `last_assistant_message` / `error` / `custom_instructions`（`PreCompact`）/ `command_args` / `cwd`（絶対パス）。
 
-## 3. transcript の `message.usage` にある付随キー
+## 3. transcript の `message.usage` にあるキー
 
-文脈量の算出に使う 3 値（`input_tokens` / `cache_creation_input_tokens` / `cache_read_input_tokens`）
-のほかに、実データ（20 transcript）で常に付いていたキー。
+実データ（20 transcript）で常に付いていたキー。
 
 ```
+input_tokens  cache_creation_input_tokens  cache_read_input_tokens
 output_tokens  output_tokens_details  server_tool_use  service_tier
 cache_creation  inference_geo  iterations  speed
 ```
 
-`output_tokens` は応答側のトークン数であり、文脈量ではない。
+前の 3 つが文脈量を表す値である。`output_tokens` は応答側のトークン数であり、文脈量ではない。
 `cache_creation`（dict）と `cache_creation_input_tokens` の関係は**未確認**。
 
 ## 4. hook プロセスに渡る環境変数
 
-`CLAUDE_PLUGIN_DATA` / `CLAUDE_PLUGIN_ROOT` のほかに、実機で存在を確認したもの。
+実機で存在を確認したもの。
 
 ```
-CLAUDE_PROJECT_DIR  CLAUDE_ENV_FILE  CLAUDE_CODE_SESSION_ID  CLAUDE_CODE_ENTRYPOINT  CLAUDE_PID
+CLAUDE_PLUGIN_DATA  CLAUDE_PLUGIN_ROOT  CLAUDE_PROJECT_DIR  CLAUDE_ENV_FILE
+CLAUDE_CODE_SESSION_ID  CLAUDE_CODE_ENTRYPOINT  CLAUDE_PID
 ```
 
 `CLAUDE_ENV_FILE` は `~/.claude/session-env/<session_id>/<hook>.sh` を指す。
 hook から環境変数をセッションへ戻す経路である。
 
-## 5. 登録していない hook
+## 5. hook が届けるもの
 
-公式の hook は全 31 種ある。ここに挙げるのは実在が確認されているもののうち、この実装が登録していないもの。
+公式の hook は全 31 種ある。このうち実在が確認できているものの性質。
 
 | hook | いつ発火するか | そこでしか取れないもの | 付随する事実 |
 | --- | --- | --- | --- |
@@ -72,6 +73,9 @@ hook から環境変数をセッションへ戻す経路である。
 | `SubagentStart` / `SubagentStop` | サブエージェントの開始・終了 | サブエージェントの区切り | `agent_id` / `agent_type` は `PostToolUse` にも付く |
 | `PostCompact` | 自動圧縮の**後**（低頻度） | 圧縮**後**のコンテキスト量＝「圧縮の効き目」 | **キー構成が未確認**（`transcript_path` が届くかも未確認） |
 | `PreModelSwitch` / `PostModelSwitch` | モデル切替時 | 切替の発生と前後のモデル | — |
+
+`SessionEnd` の文脈量は `Stop` の最終値と同じで、`UserPromptSubmit` の文脈量は
+前ターンの `Stop` の値と同じである。
 
 ## 6. hook の頻度帯
 
