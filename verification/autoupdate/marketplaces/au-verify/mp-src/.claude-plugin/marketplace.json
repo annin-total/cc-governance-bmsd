@@ -1,0 +1,7 @@
+{
+  "name": "au-verify",
+  "owner": { "name": "verify" },
+  "plugins": [
+    { "name": "audummy", "source": "./plugins/dummy", "description": "autoUpdate verification dummy" }
+  ]
+}
