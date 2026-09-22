@@ -5,13 +5,16 @@
 送信条件を判定して送信プロセスを起動する。例外は外に出さず、常に exit 0 とする。
 """
 
-import _signal
+if __name__ == "__main__":
+    # R-42: `except BaseException` は `main()` の実行中しか守らない。SIGINT がこの下の
+    # import 文の最中に届くと、まだ try 節の外であるためトレースバックが標準エラーに漏れる
+    # （実測で確認済み）。`_signal` は enum ラッパーを介さない素の C 拡張であり、
+    # import より前に SIGINT を無視することで、この窓を最小化する。
+    # スクリプトとして起動されたときだけ立てる。モジュールとして import しただけの
+    # 呼び出し元プロセス（pytest 等）の SIGINT まで殺さないため。
+    import _signal
 
-# R-42: `except BaseException` は `main()` の実行中しか守らない。SIGINT がこの下の
-# import 文の最中に届くと、まだ try 節の外であるためトレースバックが標準エラーに漏れる
-# （実測で確認済み）。`_signal` は enum ラッパーを介さない素の C 拡張であり、
-# import より前に SIGINT を無視することで、この窓を最小化する。
-_signal.signal(_signal.SIGINT, _signal.SIG_IGN)
+    _signal.signal(_signal.SIGINT, _signal.SIG_IGN)
 
 import json
 import os
@@ -50,7 +53,7 @@ def extract_event(raw_input: Any, hook_event: Optional[str]) -> dict[str, Any]:
 
     row: dict[str, Any] = {"kind": "event"}
     for name, type_str in EXTRA_COLUMNS:
-        row[name] = coerce(raw_extra[name], type_str)
+        row[name] = coerce(raw_extra.get(name), type_str)
 
     for name, path, type_str in HOOK_FIELDS:
         row[name] = coerce(dig(obj, path), type_str)
