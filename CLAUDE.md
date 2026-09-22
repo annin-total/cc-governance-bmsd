@@ -2,12 +2,9 @@
 
 Claude Code の端末プラグイン（`governance/`）と集計サーバ（`cc-governance-bmsd-server/`）。
 両者は契約の正本 `governance/hooks/contract.py` を共有する。設計の正本は `docs/design.md`、
-既知の限界は `docs/limitations.md`、残っている作業は `docs/remaining/`、
-採らなかった選択肢と実測値は `docs/knowledge/`。
+外界の事実（実測値・仕様・採らなかった選択肢）は `docs/knowledge/`。
 
-現在のコードがそうなっている理由は `docs/decisions.md`
-（この文書は成果物ではない。`CLAUDE.md` 以外のドキュメント・実装コード・設定ファイル・
-コミットメッセージから参照しない。将来削除してよい）。
+**`docs/` 配下の構成と参照規約は `docs/CLAUDE.md` にある。**`docs/` を書き換える前に読む。
 
 ## Commands
 
