@@ -135,7 +135,13 @@ else
 fi
 
 # --- 6. git に無視されているファイルが無い ---
-IGNORED=$(git -C "$REPO_ROOT" ls-files --others --ignored --exclude-standard -- "$PLUGIN_NAME")
+# 狙いは「プラグインの一部であるべきファイルが .gitignore に隠されていないか」を見ること。
+# .DS_Store / Thumbs.db は OS がディレクトリを覗くたびに作り直すノイズであり、
+# プラグインの中身になることはない。消しても即座に戻るため対象から外す
+# （差し込み先に混ざった場合は、マーケットプレイス側の検証が捕まえる）。
+OS_NOISE='(^|/)(\.DS_Store|Thumbs\.db)$'
+IGNORED=$(git -C "$REPO_ROOT" ls-files --others --ignored --exclude-standard -- "$PLUGIN_NAME" \
+  | grep -Ev "$OS_NOISE" || true)
 if [ -n "$IGNORED" ]; then
   while IFS= read -r i; do
     ng "git に無視されているファイルが存在: $i"
@@ -291,8 +297,15 @@ else
 fi
 
 # --- 10. Python 3.9 で動く構文であること（ruff が使える場合のみ）---
+# PATH と、リポジトリの仮想環境の両方を探す
+RUFF=""
 if command -v ruff >/dev/null 2>&1; then
-  if (cd "$REPO_ROOT" && ruff check "$PLUGIN_NAME" >/dev/null 2>&1); then
+  RUFF="ruff"
+elif [ -x "$REPO_ROOT/.venv/bin/ruff" ]; then
+  RUFF="$REPO_ROOT/.venv/bin/ruff"
+fi
+if [ -n "$RUFF" ]; then
+  if (cd "$REPO_ROOT" && "$RUFF" check "$PLUGIN_NAME" >/dev/null 2>&1); then
     ok "ruff check: py39 構文として妥当"
   else
     ng "ruff check で py39 構文の問題を検出"
