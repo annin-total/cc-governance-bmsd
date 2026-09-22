@@ -74,6 +74,41 @@ def test_command_usage_unchanged_after_duplicate_injection(known_db):
     assert_invariant_under_duplication(known_db, compute)
 
 
+def test_command_usage_counts_null_command_source(known_db):
+    """`command_source` が NULL のコマンドも呼出回数・利用者数が正しく数えられる（Imp-2）。
+
+    `NULL = NULL` は SQL では真にならないため、CTE + LEFT JOIN 実装だと 0/0 になっていた。
+    """
+    insert_event(
+        known_db,
+        event_id="e20",
+        ts=20005 * 86400,
+        day=20005,
+        user_email="u20",
+        host="h20",
+        hook_event="UserPromptExpansion",
+        session_id="s20",
+        command_name="commit",
+        command_source=None,
+        permission_mode="default",
+    )
+    insert_event(
+        known_db,
+        event_id="e21",
+        ts=20005 * 86400,
+        day=20005,
+        user_email="u21",
+        host="h21",
+        hook_event="UserPromptExpansion",
+        session_id="s21",
+        command_name="commit",
+        command_source=None,
+        permission_mode="default",
+    )
+    rows = {(r[0], r[1]): r[2:4] for r in queries_events.command_usage(known_db, TODAY)}
+    assert rows[("commit", None)] == (2, 2)
+
+
 def test_subagent_ratio(known_db):
     """分母 13（直近 7 日の全イベント）・分子 2（e9, e10）・割合 15.4%。"""
     [(numerator, denominator, rate)] = queries_events.subagent_ratio(known_db, TODAY)
@@ -102,9 +137,14 @@ def test_subagent_ratio_count_star_would_differ(known_db):
 
 
 def test_daily_cost_by_provider(known_db):
-    """`cost_daily` を day x provider で束ねる。6 行、aws-bedrock と openai が別行。"""
+    """`cost_daily` を day x provider で束ねる。7 行、aws-bedrock と openai が別行。
+
+    `daily_cost` は `day` で絞らない（`cost_daily` は集計済みの小さいテーブルのため）ので、
+    窓（`POLICY_DAYS`）より前の u20（day=19970）の行もそのまま現れる。
+    """
     rows = queries_events.daily_cost(known_db)
     assert rows == [
+        (19970, "aws-bedrock", 1.0),
         (20000, "aws-bedrock", 1.0),
         (20001, "aws-bedrock", 2.0),
         (20002, "aws-bedrock", 3.0),

@@ -30,39 +30,40 @@ def _usage_with_trend(
     """`filter_column` が非 NULL の行を `group_columns` で束ね、直近／前 7 日の呼出回数・
     利用者数を返す。戻り値は `group_columns` の各値の後に
     `(recent_calls, recent_users, prev_calls, prev_users)` が続く。
+
+    条件付き集約 1 本で書く。`group_columns` に NULL を取りうる列（例: `command_source`）が
+    含まれても、CTE + LEFT JOIN の結合キーのように `NULL = NULL` が偽になって落ちる経路が無い。
     """
     recent_start, recent_end = _recent_window(today)
     prev_start, prev_end = _previous_window(today)
     cols = ", ".join(group_columns)
-    select_cols = ", ".join(f"n.{c}" for c in group_columns)
-    join_r = " AND ".join(f"n.{c} = r.{c}" for c in group_columns)
-    join_p = " AND ".join(f"n.{c} = p.{c}" for c in group_columns)
+    recent_calls_col = len(group_columns) + 1
     sql = (
-        f"WITH names AS ("
-        f"  SELECT DISTINCT {cols} FROM events"
-        f"  WHERE {filter_column} IS NOT NULL AND day BETWEEN ? AND ?"
-        f"), recent AS ("
-        f"  SELECT {cols}, COUNT(DISTINCT event_id) AS calls,"
-        f"         COUNT(DISTINCT user_email) AS users"
-        f"    FROM events WHERE {filter_column} IS NOT NULL AND day BETWEEN ? AND ?"
-        f"   GROUP BY {cols}"
-        f"), prev AS ("
-        f"  SELECT {cols}, COUNT(DISTINCT event_id) AS calls,"
-        f"         COUNT(DISTINCT user_email) AS users"
-        f"    FROM events WHERE {filter_column} IS NOT NULL AND day BETWEEN ? AND ?"
-        f"   GROUP BY {cols}"
-        f")"
-        f"SELECT {select_cols}, COALESCE(r.calls, 0), COALESCE(r.users, 0),"
-        f"       COALESCE(p.calls, 0), COALESCE(p.users, 0)"
-        f"  FROM names n"
-        f"  LEFT JOIN recent r ON {join_r}"
-        f"  LEFT JOIN prev p ON {join_p}"
-        f" ORDER BY COALESCE(r.calls, 0) DESC, {select_cols}"
+        f"SELECT {cols},"
+        f" COUNT(DISTINCT CASE WHEN day BETWEEN ? AND ? THEN event_id END),"
+        f" COUNT(DISTINCT CASE WHEN day BETWEEN ? AND ? THEN user_email END),"
+        f" COUNT(DISTINCT CASE WHEN day BETWEEN ? AND ? THEN event_id END),"
+        f" COUNT(DISTINCT CASE WHEN day BETWEEN ? AND ? THEN user_email END)"
+        f" FROM events"
+        f" WHERE {filter_column} IS NOT NULL AND day BETWEEN ? AND ?"
+        f" GROUP BY {cols}"
+        f" ORDER BY {recent_calls_col} DESC, {cols}"
     )
     cur = conn.cursor()
     cur.execute(
         db.q(sql),
-        (prev_start, recent_end, recent_start, recent_end, prev_start, prev_end),
+        (
+            recent_start,
+            recent_end,
+            recent_start,
+            recent_end,
+            prev_start,
+            prev_end,
+            prev_start,
+            prev_end,
+            prev_start,
+            recent_end,
+        ),
     )
     return cur.fetchall()
 
