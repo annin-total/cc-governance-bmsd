@@ -28,7 +28,10 @@ def _load(path: Path):
         text = path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return "missing", {}, None
-    except OSError:
+    # 非 UTF-8 のバイト列を含むファイルでは strict デコードが UnicodeDecodeError を投げる。
+    # これは OSError ではなく ValueError 派生であり、捕まえ損ねると SessionStart のたびに
+    # 例外が漏れ、お知らせも policy イベントも到達しないままその端末が画面から消える。
+    except (OSError, ValueError):
         return "parse_failed", None, None
     try:
         mtime_ns = path.stat().st_mtime_ns
@@ -36,11 +39,25 @@ def _load(path: Path):
         return "parse_failed", None, None
     try:
         data = json.loads(text)
-    except ValueError:
+    # 深く入れ子になった JSON は RecursionError を投げる（ValueError 派生ではない）。
+    except (ValueError, RecursionError):
         return "parse_failed", None, None
     if not isinstance(data, dict):
         return "parse_failed", None, None
     return "ok", data, mtime_ns
+
+
+def _resolve(path: Path) -> Path:
+    """シンボリックリンクなら実体を指すパスに解決する。
+
+    `os.replace` はリンクそのものを置き換えるため、解決しないと dotfiles 管理下の端末で
+    リンクが普通のファイルに化け、実体側は古い内容のまま取り残される。しかも結果は
+    `applied` と記録されるため、壊れたことが画面からは分からない。
+    """
+    try:
+        return path.resolve()
+    except (OSError, RuntimeError):
+        return path
 
 
 def _equal_strict(a: Any, b: Any) -> bool:
@@ -119,7 +136,7 @@ def apply_settings(config_path, policy: dict) -> list[Row]:
 
     例外は呼び出し元に漏らさない。書けたかどうかに関わらず value は常にポリシー値。
     """
-    config_path = Path(config_path)
+    config_path = _resolve(Path(config_path))
     status, data, mtime_ns = _load(config_path)
 
     if status == "parse_failed":
