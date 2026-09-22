@@ -9,6 +9,13 @@ from pathlib import Path
 
 import pytest
 
+# `governance/` はそのままマーケットプレイスへ差し込まれる配布物である。
+# テストが import すると同ディレクトリに `__pycache__` が残り、配布物を汚す。
+# `sys.dont_write_bytecode` は親プロセスにしか効かないため、hook を subprocess で
+# 起動するテストのために環境変数も立てる（子プロセスが継承する）。
+sys.dont_write_bytecode = True
+os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "cc-governance-bmsd-server"))
 sys.path.insert(0, str(ROOT / "governance" / "hooks"))

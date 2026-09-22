@@ -6,6 +6,7 @@ conftest.py が事前に sys.path を設定してしまうため、シムの検�
 """
 
 import ast
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -19,7 +20,13 @@ def _run(cwd: Path, code: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, "-c", code],
         cwd=str(cwd),
-        env={"PATH": "/usr/bin:/bin", "PYTHONPATH": str(SERVER_DIR)},
+        # PATH を決め打ちすると Windows で成立しない。PYTHONDONTWRITEBYTECODE は、
+        # 配布物である `governance/` に `__pycache__` を残さないために渡す。
+        env={
+            "PATH": os.environ.get("PATH", ""),
+            "PYTHONPATH": str(SERVER_DIR),
+            "PYTHONDONTWRITEBYTECODE": "1",
+        },
         capture_output=True,
         text=True,
         check=False,

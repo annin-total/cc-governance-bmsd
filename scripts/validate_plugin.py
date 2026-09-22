@@ -263,7 +263,9 @@ def check_contract_module(plugin_dir: Path) -> None:
 def check_stdlib_only(plugin_dir: Path) -> None:
     stdlib_names = getattr(sys, "stdlib_module_names", None)
     if stdlib_names is None:
-        skip("標準ライブラリ判定: この python に sys.stdlib_module_names が無い（3.10 未満）")
+        skip(
+            "標準ライブラリ判定: この python に sys.stdlib_module_names が無い（3.10 未満）"
+        )
         return
 
     py_files = list(plugin_dir.rglob("*.py"))
@@ -345,12 +347,18 @@ def _run_hook_commands(hooks_json: Path, plugin_dir: Path) -> None:
         env["CLAUDE_PLUGIN_DATA"] = str(isolated_plugin_data)
         env["CLAUDE_CONFIG_DIR"] = str(isolated_config_dir)
         env["CC_GOVERNANCE_USER_EMAIL"] = ISOLATED_USER_EMAIL
-        env["CC_GOVERNANCE_DISABLE"] = "1"
+        # 無効化スイッチは立てない。立てると hook が冒頭で return し、
+        # 実際の収集経路を一度も通らないまま「exit 0 だった」と判定してしまう。
+        # 過去に見つかった rc=120 の欠陥は、いずれもその経路の中にあった。
+        env.pop("CC_GOVERNANCE_DISABLE", None)
         env["PYTHONDONTWRITEBYTECODE"] = "1"
 
         failed = False
         for cmd in commands:
-            expanded = _expand_plugin_root(cmd, plugin_dir)
+            # `shlex.split(posix=True)` はバックスラッシュをエスケープとして食う。
+            # Windows のパスをそのまま埋めると壊れるため、スラッシュ区切りに正規化する
+            # （Windows の Python はスラッシュ区切りのパスをそのまま受け付ける）。
+            expanded = _expand_plugin_root(cmd, Path(plugin_dir.as_posix()))
             argv = shlex.split(expanded, posix=True)
             try:
                 result = subprocess.run(
