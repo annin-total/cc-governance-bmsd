@@ -39,8 +39,12 @@ if [[ "$CHECK_ONLY" -eq 0 ]]; then
   if ! git -C "$DIST_REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     fail "配布リポジトリが git の作業ツリーではありません: $DIST_REPO"
   fi
-  if [[ -n "$(git -C "$DIST_REPO" status --porcelain)" ]]; then
-    fail "配布リポジトリの作業ツリーが clean ではありません"
+  # 前回の差し込みが未コミットのまま重なるのを防ぐ。判定は未追跡ファイルの有無で行う。
+  # 既に追跡済みのファイルへの変更（前回差し込んだ内容そのもの）は、そのまま重ねて
+  # 差し込んでよい —— 差し込みは常に governance/ の内容へ上書きする冪等な操作である。
+  UNTRACKED=$(git -C "$DIST_REPO" status --porcelain | grep -c '^??' || true)
+  if [[ "$UNTRACKED" -gt 0 ]]; then
+    fail "配布リポジトリの作業ツリーが clean ではありません（未追跡のファイルがある）"
   fi
 
   RSYNC_EXCLUDES=()
@@ -142,5 +146,39 @@ if [[ "$CONFIG_CHECK" != "OK" ]]; then
   fail "送信先が空です: ${CONFIG_CHECK}"
 fi
 echo "[OK] 送信先が埋まっている"
+
+# 検査 6: version の引き上げ忘れ
+PLUGIN_JSON_REL="${PLUGIN_REL}/.claude-plugin/plugin.json"
+if ! git -C "$DIST_REPO" cat-file -e "HEAD:${PLUGIN_JSON_REL}" 2>/dev/null; then
+  echo "[SKIP] version（初回リリース）"
+else
+  OLD_VERSION=$(git -C "$DIST_REPO" show "HEAD:${PLUGIN_JSON_REL}" | python3 -c 'import json,sys;print(json.load(sys.stdin)["version"])')
+  NEW_VERSION=$(python3 -c 'import json;print(json.load(open("'"$PLUGIN_DST"'/.claude-plugin/plugin.json"))["version"])')
+  CHANGED_COUNT=$(git -C "$DIST_REPO" status --porcelain -- "$PLUGIN_REL" | wc -l | tr -d ' ')
+
+  if [[ "$OLD_VERSION" == "$NEW_VERSION" ]]; then
+    if [[ "$CHANGED_COUNT" -gt 0 ]]; then
+      fail "version 据え置き: ${OLD_VERSION} のまま ${PLUGIN_REL} に ${CHANGED_COUNT} 件の変更がある"
+    fi
+    echo "[OK] version 据え置き（変更なし）"
+  else
+    IFS='.' read -r -a OLD_PARTS <<< "$OLD_VERSION"
+    IFS='.' read -r -a NEW_PARTS <<< "$NEW_VERSION"
+    IS_GREATER=0
+    for i in 0 1 2; do
+      o="${OLD_PARTS[$i]:-0}"
+      n="${NEW_PARTS[$i]:-0}"
+      if (( n > o )); then IS_GREATER=1; break; fi
+      if (( n < o )); then IS_GREATER=0; break; fi
+    done
+    if [[ "$IS_GREATER" -ne 1 ]]; then
+      fail "version 逆行: ${OLD_VERSION} -> ${NEW_VERSION}"
+    fi
+    if [[ "$CHANGED_COUNT" -eq 0 ]]; then
+      fail "version のみ変更: 中身の変更が無いのに ${OLD_VERSION} -> ${NEW_VERSION} に上げている"
+    fi
+    echo "[OK] version ${OLD_VERSION} -> ${NEW_VERSION}"
+  fi
+fi
 
 exit 0
