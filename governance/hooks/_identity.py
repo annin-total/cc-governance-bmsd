@@ -14,6 +14,8 @@ from typing import Optional
 from _spool import _state_dir
 
 _ENV_USER_EMAIL = "CC_GOVERNANCE_USER_EMAIL"
+_ENV_PLUGIN_ROOT = "CLAUDE_PLUGIN_ROOT"
+_PLUGIN_JSON_RELATIVE = (".claude-plugin", "plugin.json")
 
 # hooks.json の hook 全体の timeout が 5 秒であるため、git 単体はそれより短くする。
 _GIT_TIMEOUT_SEC = 3
@@ -105,3 +107,32 @@ def get_host() -> str:
 def new_event_id() -> str:
     """event_id を返す。呼び出しごとに新しい `uuid.uuid4()` の文字列を生成する。"""
     return str(uuid.uuid4())
+
+
+def _plugin_root() -> Path:
+    """プラグインのルートディレクトリを解決する。
+
+    `CLAUDE_PLUGIN_ROOT` があればそのディレクトリ、無ければこのファイルの 2 階層上
+    （`governance/`）を使う。呼び出しごとに評価し、import 時に固定しない。
+    """
+    root = os.environ.get(_ENV_PLUGIN_ROOT)
+    if root:
+        return Path(root)
+    return Path(__file__).resolve().parent.parent
+
+
+def get_plugin_version() -> Optional[str]:
+    """`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `version` を読む。
+
+    読めない・壊れている・`version` が文字列でない場合は None を返す。例外は外に出さない。
+    """
+    path = _plugin_root().joinpath(*_PLUGIN_JSON_RELATIVE)
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    version = data.get("version")
+    return version if isinstance(version, str) else None
