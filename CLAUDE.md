@@ -2,7 +2,7 @@
 
 Claude Code の端末プラグイン（`governance/`）と集計サーバ（`cc-governance-bmsd-server/`）。
 両者は契約の正本 `governance/hooks/contract.py` を共有する。設計の正本は `docs/design.md`、
-外界の事実（実測値・仕様・採らなかった選択肢）は `docs/knowledge/`。
+外界の事実（実測値・仕様・上流の振る舞い）は `docs/knowledge/`。
 
 **`docs/` 配下の構成と参照規約は `docs/CLAUDE.md` にある。**`docs/` を書き換える前に読む。
 
