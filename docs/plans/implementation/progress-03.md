@@ -124,3 +124,60 @@ Critical 1 件・Important 2 件・Minor 3 件の指摘に対応した。**I-1�
 
 - **`SessionStart:<source> says: ` の接頭辞は Claude Code 本体が自動付与する。** リポジトリの実セッション画面ログ `../../../../tests/cc-test-session-1.txt` に `SessionStart:startup says: [ガバナンス] ...` が実在する。実装者の前提（コード側で接頭辞を組み立てない）は正しい。
 - **`CLAUDE_CONFIG_DIR` による隔離は実機で効く。** 隔離側の `claude plugin marketplace list` は「No marketplaces configured」を返し、本人の登録が 1 件も映らないことを確認した。`claude plugin` サブコマンドはログインなしで動く。
+
+## タスク 12: 実機での発火確認（2026-09-22 実施・全条件合格）
+
+### 実施方法
+
+計画 [2] の裁定 R-51 と同じ理由（macOS では `HOME` を差し替えると login Keychain が
+`$HOME/Library/Keychains/` に解決されて存在せず、Keychain が書き込み不可になって認証が定着しない）により、
+**隔離した `CLAUDE_CONFIG_DIR` で実施した。**計画書 §2 が第一候補として挙げている方法であり、
+`CLAUDE_CONFIG_DIR` が実機で効くことは事前に確認済み（隔離側の `claude plugin marketplace list` が
+「No marketplaces configured」を返し、本人の登録が 1 件も映らない）。
+
+`session_start.py` は `settings.json` を**書く**ため、実 config ディレクトリでは決して実行しない。
+`_settings_path()` が `CLAUDE_CONFIG_DIR` を最優先し、`Path.home()` が関数の中でしか評価されないことを
+コードで確認したうえで実施した。
+
+### 手順 4 の結果は計画書の期待出力と完全に一致した
+
+```
+env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE None applied
+extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate None skipped_missing
+env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE '60' already_ok
+extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate None skipped_missing
+```
+
+### 完了条件
+
+| # | 条件 | 結果 |
+| --- | --- | --- |
+| 15 | 隔離環境の設定ファイルだけが書き換わり、本人のものは不変 | **合格。**指紋が作業前後で一致。`~/.claude` 全体を走査して新実装の痕跡 0 件 |
+| 16 | 2 回目の起動で `prev_value` が `"60"` になる | **合格** |
+| 17 | `systemMessage` が `SessionStart:<source> says: ` の接頭辞つきで表示され、日本語 600 字の文面が退避されない。未読 2 件が空行 1 つ区切りの 1 つのメッセージになる | **合格**（下記） |
+| 18 | `extraKnownMarketplaces` が作られず `skipped_missing` が記録される | **合格** |
+| 手順 6 | 既に別の値（`95`）を持つ端末 | **合格。**`prev_value` が `"95"`・`apply_result` が `applied` になり、`model` / `permissions` / 他のマーケットプレイスのエントリ / 両方の `source` がすべて保たれ、一時ファイルも残らない |
+| — | 既存キーの保全 | **合格**（`theme: dark` が保たれた） |
+| — | 画面が汚れない | **合格**（`Traceback` 等の検出 0 件） |
+| — | `SessionStart` が実機で発火する | **合格。**1 起動につき policy イベントが 2 行（`POLICY` の項目数）積まれる |
+
+### 完了条件 17 の実測
+
+短い文面（27 字）と長い文面（614 字）の 2 件を未読にして対話起動した。観測されたこと:
+
+- **`SessionStart:startup says: ` の接頭辞が付く**
+- **接頭辞が付くのは 1 行目だけ**である
+- **2 件が空行 1 つで区切られた 1 つのメッセージ**として出る。`systemMessage` が 2 回に分かれない
+- **614 字の文面はファイルへ退避されず、そのまま画面に出る**
+
+退避された場合の表示は `SessionStart:startup says: <persisted-output>` の形になる。今回はその形にならなかった。
+**設計書が置いた「お知らせ 1 件は目安として日本語 600 字程度まで」という目安は、実機で妥当である。**
+
+hook を直接叩いた検査でも、出力のキーが `systemMessage` の 1 つだけ（`additionalContext` を含まない）、
+値が 1 つの文字列、`\n\n` の出現が 1 回であることを確認した。
+
+### 裁定 R-48 の解消
+
+R-48 は「タスク 12 は `hooks.json` への登録までを行い、手順 1〜6 の実機確認は保留する」としていたが、
+`CLAUDE_CONFIG_DIR` 方式への切り替えにより**全手順を実施し、完了条件 15〜18 をすべて満たした。**
+未検証事項は残っていない。
