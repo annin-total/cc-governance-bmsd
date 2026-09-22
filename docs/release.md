@@ -49,7 +49,7 @@ cd ../cc-marketplace-governance-bmsd
 python scripts/validate.py
 ```
 
-`[NG]` が 1 つでも出たら、コミットする前に開発リポジトリの `plugin/` を直し、もう一度「3. プラグインを検証する」からやり直す。このスクリプトも形式だけを見る（`marketplace.json` の整合性、収録プラグインの `plugin.json` の名前一致、JSON の構文、開発用ファイルの混入なし、git に無視されているファイルが無いこと）。
+`[NG]` が 1 つでも出たら、コミットする前に開発リポジトリの `plugin/` を直し、もう一度「3. プラグインを検証する」からやり直す。このスクリプトは、マニフェストとしての形式検証を `claude plugin validate --strict` に委譲し、自身は上流が見ない項目（標準ライブラリ以外の import、hook の終了コード、git に無視されているファイルが無いこと）だけを見る。
 
 ## 6. 確認項目
 
