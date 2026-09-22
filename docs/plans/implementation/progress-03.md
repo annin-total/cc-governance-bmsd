@@ -93,3 +93,34 @@ M-6（`__pycache__` に改名前の `_queue.cpython-313.pyc` が残る。gitigno
 `-k apply` 15 → 16、タスク 5 の「40 passed」はタスク 6 の 9 本を含まない数）。
 **ケース番号は 2-1〜2-8 / 3-1〜3-7 / 4-1〜4-15 / 5-1〜5-10 / 6-1〜6-9 の 49 本すべてが 1 対 1 で実装されており、欠番は無い。**
 計画書側の数字の誤りであり、実装の欠陥ではない。設計書は触らない指示のため、ここに記録するにとどめる。
+
+## タスク 7〜12 完了とレビュー指摘の対応
+
+Critical 1 件・Important 2 件・Minor 3 件の指摘に対応した。**I-1・M-1 は先に落ちるテストを書き、
+実際に落ちることを確認したうえで直した。すべての修正を変異検査で確認している**（後述）。
+
+| 記号 | 内容 | 実測した故障 | 対応 |
+| --- | --- | --- | --- |
+| I-1 | 標準出力のパイプの読み口が閉じていると exit 120 + 標準エラーに出力 | 実測: `rc=120` / `stderr` に `"Exception ignored on flushing sys.stdout:\nBrokenPipeError: [Errno 32] Broken pipe"`。`_emit_output` は `write`/`flush` の例外を捕まえるが、`TextIOWrapper` 内部の `BufferedWriter` に残った書き込み済みデータがインタプリタ終了時の最終 flush で再送され、そこで再び失敗する | `_emit_output` の例外処理で `os.dup2(os.open(os.devnull, os.O_WRONLY), 1)` を行い、fd 1 を `/dev/null` に差し替える |
+| I-2 | 「flush が例外なく終わってから既読」が未テスト | `write` しか失敗させない `_RaisingStdout` では、flush だけが失敗する経路を検査できていなかった | `flush` だけが例外を投げる `_FlushRaisingStdout` を追加し、`seen.json` が更新されないことを縛るテストを足した |
+| I-3 | `_read_stdin_json()` と `_identity.get_plugin_version()` が 3 ステップの try の外にあり、そこで落ちると完全に無言で終わる | 深い入れ子の標準入力による `RecursionError` を模した monkeypatch で、`settings.json` 未作成・`queue.jsonl` 0 行・標準出力空で exit 0 になることを確認 | `plugin_version` の取得を `_apply_settings_step` の中へ、標準入力の読み取りを `_collect_step` の中へ移した |
+| M-1 | `notices.json` の 1 項目が壊れていると正常な項目まで全部出なくなる | `title` が無く `body` が非文字列（`int`）の項目が 1 件混ざると `_format_message` で `TypeError` になり、同じファイルの正常な項目（`n-ok`）も出力から消えることを確認 | `_read_notices`（→ `_notices.py`）の絞り込みに `body` の型検査を追加し、壊れた項目だけを飛ばすようにした |
+| M-2 | 209 行を分割する | — | お知らせ一式（`_seen_path` 〜 `_write_seen` / `_format_message` / `notices_step`）を `governance/hooks/_notices.py`（99 行）へ切り出した。`session_start.py` は 209 行 → 160 行。`hooks.json` の登録（`session_start.py` が入口）は変更していない |
+| M-3 | 台帳の追記 | — | 本節 |
+
+**I-1・M-1・I-3 の 3 件は、修正前に落ちるテストで実測してから直し、修正を戻すと対応するテストがちょうど落ちることを変異検査で確認した。** 詳細は監督役への報告（`plan03-fix-report.md`）に記録する。
+
+### タスク 12（実機確認）は依然未実施
+
+**裁定 R-48 が自ら約束した「タスク 12 の実機確認（手順 1〜6）は未実施であり、完了条件 15〜18 が未検証である」ことを、この修正作業でも解消していない。**
+`hooks.json` への `SessionStart` 登録は完了しているが、隔離 HOME での `claude` 起動に利用者の実アカウントでの OAuth 認可が要る壁は変わっておらず、次の完了条件は依然未検証のままである。
+
+- 完了条件 15: 本人の設定ファイルが不変であること
+- 完了条件 16: 2 回目の `prev_value` が `"60"` になること
+- 完了条件 17: `systemMessage` の接頭辞と 600 字の目安
+- 完了条件 18: `extraKnownMarketplaces` が作られないこと
+
+### 監督役が実機で確認した事実（記録）
+
+- **`SessionStart:<source> says: ` の接頭辞は Claude Code 本体が自動付与する。** リポジトリの実セッション画面ログ `../../../../tests/cc-test-session-1.txt` に `SessionStart:startup says: [ガバナンス] ...` が実在する。実装者の前提（コード側で接頭辞を組み立てない）は正しい。
+- **`CLAUDE_CONFIG_DIR` による隔離は実機で効く。** 隔離側の `claude plugin marketplace list` は「No marketplaces configured」を返し、本人の登録が 1 件も映らないことを確認した。`claude plugin` サブコマンドはログインなしで動く。
