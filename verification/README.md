@@ -38,11 +38,11 @@ settings.json の hooks から呼び出し、Claude Code の実挙動を採取�
 1. 隔離 HOME (`autoupdate/home/`) の `.claude/plugins/marketplaces/pdtest-mp/` に、
    `plugin-data-probe/marketplace/` の中身を配置し、`installed_plugins.json` で `pdtest` を有効化する。
    **併せて `.claude/settings.json` の `extraKnownMarketplaces` にも `pdtest-mp` を登録する**
-   （`docs/design.md` §3.6 は「`settings.json` が権威であり、セッション開始時に
+   （`docs/SPEC-plugin.md` §5.4 は「`settings.json` が権威であり、セッション開始時に
    `extraKnownMarketplaces` が `known_marketplaces.json` へ上書き同期される」と明記している。
    `known_marketplaces.json` / `installed_plugins.json` だけを直接編集しても、次のセッション開始で
    `settings.json` の内容に揃えられて消える可能性がある。**この経路は実機で未検証**であり、
-   design.md の記述からの帰結にとどまる）
+   仕様書の記述からの帰結にとどまる）
 2. `autoupdate/isolated_home_run.sh` で claude を起動する（SessionStart hook が `pdtest/hooks/probe.py` を呼ぶ）
 3. 採取結果は既定で `$HOME/../captured/probe-<epoch>-<pid>.json`（＝隔離 HOME の一つ上の `captured/`）に出る。
    採取先を変えたい場合は `CLAUDE_PROBE_DIR` を起動前に export する
@@ -70,10 +70,10 @@ settings.json の hooks から呼び出し、Claude Code の実挙動を採取�
 - `home-<n>/`（隔離 HOME）は実行のたびに用意する作業データなので、このリポジトリには含まれない。
   `.claude/plugins/marketplaces/<名前>` に、bare から clone した作業コピーを置いてから使う
 - **`.claude/plugins/marketplaces/<名前>` への配置だけでは足りない可能性が高い。**
-  `docs/design.md` §3.6 によれば `~/.claude/settings.json` が権威であり、セッション開始のたびに
+  `docs/SPEC-plugin.md` §5.4 によれば `~/.claude/settings.json` が権威であり、セッション開始のたびに
   `settings.json` の `extraKnownMarketplaces` が `~/.claude/plugins/known_marketplaces.json` へ
   上書き同期される。したがって隔離 HOME の `.claude/settings.json` の `extraKnownMarketplaces` にも
-  マーケットプレイス名を登録しておく必要がある（**実機での確認はしていない。design.md の記述からの
+  マーケットプレイス名を登録しておく必要がある（**実機での確認はしていない。仕様書の記述からの
   帰結**）
 - 擬似マーケットプレイスへバージョンを上げて反映させたいときは、bare から clone した作業コピー側で
   コミットして `git push` してから、隔離 HOME 側で自動更新を待つ

@@ -30,7 +30,7 @@ HASH_FILE = SERVER_DIR / "contract.sha256"
 # 場所（entry.sh）での「ヘッダを除いた残りが正本のハッシュと一致するか」という
 # 検査が壊れるため、変更する場合は entry.sh 側の同じ定数も揃えて直すこと。
 _REPLICA_HEADER = (
-    '"""cc-governance-bmsd-server/contract.py — 生成物。直接編集しない。\n'
+    '"""server/contract.py — 生成物。直接編集しない。\n'
     "\n"
     "正本: plugin/hooks/contract.py\n"
     "`scripts/sync_contract.py` が正本から生成する。\n"

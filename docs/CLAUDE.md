@@ -6,24 +6,32 @@
 
 ```
 docs/
-  CLAUDE.md      ← この文書。規約の正本
-  design.md      ← 設計の正本。何を作るかを定める
-  release.md     ← 運用手順
-  onboarding.md  ← 導入案内
-  knowledge/     ← 外界の事実。完全独立
-  decisions.md   ← 現在のコードがなぜそうなっているかの記録
-  remaining/     ← まだ終わっていない作業
+  CLAUDE.md         ← この文書。規約の正本
+  SPEC.md           ← 仕様書。全体像（何が何とどう繋がるか）
+  SPEC-plugin.md    ← 仕様書。端末プラグインの仕様
+  release.md        ← 運用手順
+  onboarding.md     ← 導入案内
+  knowledge/        ← 外界の事実。完全独立
+  decisions.md      ← 現在のコードがなぜそうなっているかの記録
+  remaining/        ← まだ終わっていない作業
 ```
+
+サーバ（submodule `cc-governance-monitor`）は `server/docs/` に自分の仕様書・デプロイ手順・
+判断の記録を独立して持つ（`SPEC.md` / `AIP-DEPLOY.md` / `decisions.md`）。このリポジトリの
+`knowledge/` を参照しない。
 
 ## 参照規約
 
 | 文書 | 参照してよい先 | 参照してよい元 |
 | --- | --- | --- |
 | `knowledge/` | **何も参照しない（完全独立）** | 誰でも |
-| `design.md` | `knowledge/` | 誰でも |
-| `release.md` / `onboarding.md` | `design.md` / `knowledge/` | 誰でも |
+| `SPEC.md` / `SPEC-plugin.md` | `knowledge/` | 誰でも |
+| `release.md` / `onboarding.md` | `SPEC.md` / `SPEC-plugin.md` / `knowledge/` | 誰でも |
 | `decisions.md` | 上のどれでも | **この `docs/CLAUDE.md` だけ** |
 | `remaining/` | 上のどれでも | **この `docs/CLAUDE.md` だけ** |
+
+仕様書は事実だけを書く。なぜそうしたかは `decisions.md` が持ち、未検証のことは `remaining/`
+が持つ。仕様書はこの 2 つを本文に混ぜない。
 
 `decisions.md` と `remaining/` は互いを参照してよい。どちらも削除してよい側であり、
 片方が消えるときにもう片方も同時に見直せる。
