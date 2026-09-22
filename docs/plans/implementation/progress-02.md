@@ -464,3 +464,60 @@ M-F（`config.json` が読めないときキューに上限が無い。`ingest_u
 
 **裁定しただけで実装されない。** R-33 は台帳に「`raw_extra.get(name)` で引く」と書かれたまま、現物は `raw_extra[name]` だった。
 台帳への記録は実装の証拠ではない。**以後、裁定には必ず回帰テストを紐づけ、変異検査で落ちることを確かめる。**
+
+## タスク 11: 実機での発火確認（2026-09-22 実施・合格）
+
+### 計画書の手順が macOS で成立しなかった
+
+計画書は `HOME` の差し替えを指定しているが、**macOS ではこの方法で認証が通らない。**
+`HOME` を差し替えると、Security フレームワークが login Keychain を `$HOME/Library/Keychains/login.keychain-db`
+で解決するためパスが存在せず、**Keychain が書き込み不可になって認証トークンを保存できない。**
+認証フロー自体は成功するため `Login successful` と出た直後に `Not logged in` になる。
+
+実測での切り分け:
+
+| 環境 | `claude doctor` |
+| --- | --- |
+| 隔離 `HOME` | `macOS Keychain is not writable` / `Not signed in to claude.ai` |
+| 通常の `HOME` | `No installation issues found.`（Keychain 警告なし・Remote Control 有効） |
+| 隔離 `CLAUDE_CONFIG_DIR`（`HOME` は本人のまま） | Keychain 警告なし |
+
+計画書はこの場合の回避策として「隔離環境のまま 1 度対話で起動して済ませてから戻る」と書いているが、
+**macOS ではその回避策自体が成立しない。**
+
+Keychain のエントリは `CLAUDE_CONFIG_DIR` ごとに分かれる（既定の `Claude Code-credentials` と、
+設定ディレクトリごとのハッシュ付きエントリが別々に存在することを実機で確認）。
+このため、隔離環境でのログインが利用者本来の認証情報を上書きすることはない。
+
+### 裁定 R-51: 実機確認は `HOME` ではなく、実 config ディレクトリ + `CLAUDE_PLUGIN_DATA` の隔離で行う
+
+**根拠:** `collect.py` 経路の書き込み先がすべて `_state_dir()`（= `CLAUDE_PLUGIN_DATA`）配下に閉じていることを
+コードで確認した。`_identity_path()` も `_state_dir()` 経由であり、`_sender.py` は `config.json` を読むだけで書かない。
+**`settings.json` への書き込み経路は `collect.py` 側に存在しない。**
+hook は検証用ディレクトリの `.claude/settings.json` にだけ登録し、設定を書き換える `SessionStart` は登録しない。
+外れたときの損: 利用者本人の `~/.claude/` に書き込む。→ 実行前後に指紋を照合し、`~/.claude` 全体を走査して確認した。
+
+### 結果
+
+| 手順 | 結果 |
+| --- | --- |
+| 3 往復 | 成功 |
+| 4 発火した hook | **`UserPromptSubmit` / `PostToolUse` / `Stop` の 3 種が各 1 件**（完了条件を満たす） |
+| 5 列 | `kind` 全行 `event`、`session_id` / `host` 非空、`PostToolUse` の `tool_name` = `Bash`、**`Stop` の `context_tokens` = 34523** |
+| 6 キー集合 | ちょうど 20 個（`kind` + `EXTRA_COLUMNS` 7 + `HOOK_FIELDS` 12）。`prompt` / `tool_response` / `message` / `tool_input` は 0 件 |
+| 7 無効化 | `CC_GOVERNANCE_DISABLE=1` で `queue.jsonl` が作られない |
+| 8 画面 | `Traceback` 等の検出 0 件（両実行とも） |
+| 9 本人の環境 | `settings.json` の指紋が一致。`~/.claude` 全体に**新実装の痕跡 0 件** |
+
+`Stop` の `context_tokens` が実データで取れたことにより、transcript 末尾 256KB からの算出が実機で機能することを確認した。
+
+### 計画書の検査方法の穴
+
+手順 9 の指紋照合（`ls -aR ~/.claude/plugins/data ~/.claude/cc-governance | shasum`）は**一度不一致になった**。
+原因は新実装ではなく、**利用者の環境に既に導入されている旧実装のプラグイン**（`governance-company` /
+`usage-company`）が通常どおり発火して自分の状態を書いたことである（更新時刻 13:09:35 / 13:09:45 を確認）。
+
+この指紋照合は「`HOME` を差し替えれば他のプラグインは一切動かない」という前提で設計されており、
+**実 config ディレクトリを使う方式では常に不一致になる。**判定は指紋の一致ではなく、
+**`~/.claude` 配下に新実装の痕跡（`cc-governance` ディレクトリ・`queue.jsonl`・`identity.json`）が
+1 件も無いこと**で行うべきである。実際にこの走査を行い 0 件を確認した。
