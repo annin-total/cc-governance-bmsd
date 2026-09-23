@@ -1,0 +1,9 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [
+        { "type": "command", "command": "PROBE_DIR=\"${CLAUDE_PROBE_DIR:-$HOME/../captured}\" PROBE_EXPANDED='${CLAUDE_PLUGIN_DATA}' python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/probe.py\"" }
+      ] }
+    ]
+  }
+}

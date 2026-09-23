@@ -1,0 +1,15 @@
+target-version = "py39"
+# verification/autoupdate/marketplaces/ 配下は、bare リポジトリにコミット済みのファイルを
+# バイト単位で一致させておく必要があるスナップショットである（正本は bare リポジトリ側）。
+# lint で直すとバイト列が変わり bare と食い違うため、ここだけは docs/ と同様に丸ごと除外する。
+# server/ は submodule（別リポジトリ cc-governance-monitor）であり、lint はそちらの責務。
+extend-exclude = ["docs/", "verification/autoupdate/marketplaces/", "server/"]
+
+[lint]
+ignore = ["FA100"]
+
+[lint.per-file-ignores]
+# hook は利用者の作業を妨げないため、意図的に例外を握り潰して必ず exit 0 で終える設計。
+# 採取用スクリプトも同じ思想で書いているため、bare except / bare except-pass を許容する。
+"verification/hook-behavior/*.py" = ["BLE001", "S112"]
+"verification/hook-behavior/plugin-data-probe/marketplace/plugins/pdtest/hooks/probe.py" = ["BLE001", "S110", "S112"]

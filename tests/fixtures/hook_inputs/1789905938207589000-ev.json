@@ -1,0 +1,10 @@
+{
+  "session_id": "3403e444-5f86-401b-abde-04ce4b7befd6",
+  "transcript_path": "/home/u/.claude/projects/-home-u-cc-verify-session/3403e444-5f86-401b-abde-04ce4b7befd6.jsonl",
+  "cwd": "/home/u/cc-verify-session",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-cc-verify-session/3403e444-5f86-401b-abde-04ce4b7befd6/scratchpad",
+  "prompt_id": "db307692-d9a3-49c7-b6f8-35345637f941",
+  "hook_event_name": "SessionStart",
+  "source": "compact",
+  "model": "claude-opus-5[1m]"
+}

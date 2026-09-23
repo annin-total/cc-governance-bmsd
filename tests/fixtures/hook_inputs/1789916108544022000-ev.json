@@ -1,0 +1,9 @@
+{
+  "session_id": "e81a3b5d-0790-4020-bcb3-38be7acc090d",
+  "transcript_path": "/home/u/.claude/projects/-home-u-Documents-program-Development-cc-governance-cc-merged-cc-marketplace-company-plugins-governance/e81a3b5d-0790-4020-bcb3-38be7acc090d.jsonl",
+  "cwd": "/home/u/Documents/program/Development/cc-governance/cc-merged/cc-marketplace-company/plugins/governance",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-Documents-program-Development-cc-governance-cc-merged-cc-marketplace-company-plugins-governance/e81a3b5d-0790-4020-bcb3-38be7acc090d/scratchpad",
+  "prompt_id": "69911121-fd28-4e1a-a46c-98b004e386f0",
+  "hook_event_name": "SessionEnd",
+  "reason": "prompt_input_exit"
+}

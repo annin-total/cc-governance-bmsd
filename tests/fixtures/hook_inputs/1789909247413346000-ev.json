@@ -1,0 +1,14 @@
+{
+  "session_id": "6bc08f7f-e2b9-4353-b4b9-d47994d88c68",
+  "transcript_path": "/home/u/.claude/projects/-home-u-Documents-program-Development-cc-governance/6bc08f7f-e2b9-4353-b4b9-d47994d88c68.jsonl",
+  "cwd": "/home/u/Documents/program/Development/cc-governance",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-Documents-program-Development-cc-governance/6bc08f7f-e2b9-4353-b4b9-d47994d88c68/scratchpad",
+  "prompt_id": "6ea4d33d-470a-4915-8c31-858a215301cc",
+  "permission_mode": "auto",
+  "hook_event_name": "UserPromptExpansion",
+  "expansion_type": "slash_command",
+  "command_name": "usage:flush",
+  "command_args": "SENTINEL-250",
+  "command_source": "plugin",
+  "prompt": "SENTINEL-249"
+}

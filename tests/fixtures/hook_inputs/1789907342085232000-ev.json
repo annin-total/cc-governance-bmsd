@@ -1,0 +1,24 @@
+{
+  "session_id": "7f678d60-4adb-4d26-94a9-ab07e6368ee5",
+  "transcript_path": "/home/u/.claude/projects/-home-u-Documents-program-Development-cc-governance/7f678d60-4adb-4d26-94a9-ab07e6368ee5.jsonl",
+  "cwd": "/home/u/Documents/program/Development/cc-governance",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-Documents-program-Development-cc-governance/7f678d60-4adb-4d26-94a9-ab07e6368ee5/scratchpad",
+  "prompt_id": "61cfacd5-830f-400d-bd9e-e966ad342295",
+  "permission_mode": "auto",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "PostToolUse",
+  "tool_name": "mcp__claude_ai_Gmail__get_thread",
+  "tool_input": {
+    "threadId": "1a0b48d49b055a49",
+    "messageFormat": "PLAIN_TEXT"
+  },
+  "tool_response": "SENTINEL-143",
+  "tool_use_id": "toolu_0128k52Cwm8cZwK3qtk78m6u",
+  "duration_ms": 594,
+  "mcp_server": {
+    "name": "claude.ai Gmail",
+    "source": "claudeai"
+  }
+}

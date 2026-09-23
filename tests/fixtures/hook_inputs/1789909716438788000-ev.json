@@ -1,0 +1,12 @@
+{
+  "session_id": "6bc08f7f-e2b9-4353-b4b9-d47994d88c68",
+  "transcript_path": "/home/u/.claude/projects/-home-u-Documents-program-Development-cc-governance/6bc08f7f-e2b9-4353-b4b9-d47994d88c68.jsonl",
+  "cwd": "/home/u/Documents/program/Development/cc-governance",
+  "scratchpad_dir": "/private/tmp/claude-501/-home-u-Documents-program-Development-cc-governance/6bc08f7f-e2b9-4353-b4b9-d47994d88c68/scratchpad",
+  "hook_event_name": "SessionStart",
+  "source": "resume",
+  "seconds_since_last_response": 458,
+  "context_tokens": 55212,
+  "prompt_cache_likely_expired": false,
+  "estimated_cache_write_usd": 0.2208
+}
