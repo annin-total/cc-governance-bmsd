@@ -154,6 +154,32 @@ JSON Lines である。
 （`seen.json` に記録される）。`CC_GOVERNANCE_DISABLE` を立てると出ず、**`seen.json` も
 作られない**。`seen.json` を削除すると再表示される。未読が複数件のときは空行 1 つで連結される。
 
+#### お知らせの URL
+
+検証用のコピーの `notices.json` に、`url` を持つ項目を 2 件加える（例: `https://example.com/?from=cc-e2e&n=1` と
+`...&n=2`）。本物のブラウザを開かないよう、引数をファイルに追記するだけの偽の `open` を置いたディレクトリを
+`PATH` の先頭にして `claude` を起動する。**`env -i` で環境変数を空にしてから起動する。**親の
+`CLAUDE_CODE_ENTRYPOINT` を継承すると、起動形態の判定が汚れる。
+
+```bash
+env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$CC_VERIFY_ROOT/fakebin:/usr/local/bin:/usr/bin:/bin" \
+  CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG_DIR" claude -p "Reply with exactly: OK" --model haiku < /dev/null
+```
+
+対話起動は `tmux -L <専用ソケット名>` の中で同じ環境変数を与えて `claude` を起動し、`capture-pane` で
+画面を読む。初回のテーマ選択とフォルダの信頼で止まる場合は、隔離側の `.claude.json` に
+`hasCompletedOnboarding` と、作業ディレクトリの `projects["<cwd>"].hasTrustDialogAccepted` を入れる。
+
+**合格の条件**
+
+- `claude -p` では、プレーン出力と `--output-format json` の標準出力に、お知らせの本文が現れない。
+  `stream-json --verbose` の `hook_response` には `詳細: <url>` が入る。**`seen.json` は作られず**、
+  偽の `open` は呼ばれない。2 回目の `-p` でも同じお知らせが出る
+- 対話起動では、偽の `open` が**先頭の URL 1 件だけ**を、`&` を含んだまま 1 つの引数として受け取る。
+  `seen.json` に全件の id が入る。2 回目の起動では、お知らせも `open` の呼び出しも増えない
+
+`/login` も偽の `open` を呼ぶ（OAuth の認可 URL）。呼び出しの数ではなく、記録された URL で判定する。
+
 ### A6. 端末からサーバへ届く
 
 `config.json` の `ingest_url` を `http://127.0.0.1:15000/ingest`、`ingest_token` を `dev-token`
