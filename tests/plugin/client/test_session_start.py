@@ -154,10 +154,16 @@ def test_policy_event_7_2_key_names_keep_dots(tmp_path):
 
 
 def test_policy_event_7_3_plugin_version_matches_plugin_json(tmp_path):
-    """#7-3: plugin_version が plugin.json の version（0.1.0）と一致する。"""
+    """#7-3: plugin_version が plugin.json の version と一致する。"""
+    manifest = (
+        Path(session_start.__file__).resolve().parent.parent
+        / ".claude-plugin"
+        / "plugin.json"
+    )
+    expected = json.loads(manifest.read_text(encoding="utf-8"))["version"]
     _write_settings(tmp_path, {})
     session_start.main()
-    assert {row["plugin_version"] for row in _policy_rows(tmp_path)} == {"0.1.0"}
+    assert {row["plugin_version"] for row in _policy_rows(tmp_path)} == {expected}
 
 
 def test_policy_event_7_4_event_ids_are_distinct(tmp_path):

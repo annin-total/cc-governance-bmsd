@@ -50,11 +50,50 @@ python scripts/validate.py
 
 受信トークンは平文でリポジトリに入る。機密防御ではなく誤送信の防止のために置き、到達制御はネットワーク境界が担う。トークンを入れ替えるときは、サーバの Secret ファイルの更新と同じリリースで行う。新旧どちらでも通る期間は作れず、その間の 401 は端末の spool が吸収する。
 
-## 7. PR を作りマージする
+## 7. staging で確かめる
+
+配布リポジトリの `main` へ入れる前に、`staging` ブランチで開発者の端末だけに届けて確かめる。
+
+1. 配布リポジトリで、差し込んだコミットを `staging` ブランチへ push する
+2. 開発者の端末で、次の 2 段階を行う（登録が済んでいなければ、先に下記の方法で登録する）
+
+   ```
+   claude plugin marketplace update cc-marketplace-governance-bmsd
+   claude plugin update governance
+   ```
+
+3. `/plugin` の版と動作を確かめてから、「PR を作りマージする」へ進む
+
+開発者の端末だけ、ref に `staging` を付けて登録する。CLI では `#` の後ろに ref を書く。
+
+```
+claude plugin marketplace add <owner>/<repo>#staging
+```
+
+`settings.json` に直接書く場合は `source.ref` を置く。CLI で登録しても同じ形で書き込まれる。
+
+```json
+"extraKnownMarketplaces": {
+  "cc-marketplace-governance-bmsd": {
+    "source": { "source": "github", "repo": "<owner>/<repo>", "ref": "staging" }
+  }
+}
+```
+
+実測した挙動（Claude Code 2.1.282）:
+
+- ref を付けている間、2 段階の更新は `staging` の先端の版を入れる。`main` の版は拾わない
+- `policy.py` が配る `autoUpdate` は `source` を書き換えないので、ref は保たれる
+- **戻すには `source` から `ref` を消し、セッションを 1 度開始してから 2 段階の更新を行う。**登録の変更はセッションの開始時に反映され、`marketplace update` だけでは `staging` のまま残る
+- `plugin update` は版が下がる向きにも入れ替える。戻した時点で `main` の版が `staging` より低ければ、端末の版は下がる
+
+未検証: 起動時の自動更新（`autoUpdate`）が ref を付けたまま `staging` の新しい版を取り込むか。
+
+## 8. PR を作りマージする
 
 配布リポジトリで PR を作る。マージされた時点で配布される。
 
-## 8. 届いたことを確認する
+## 9. 届いたことを確認する
 
 数日後に概況画面の健全性の行で `plugin_version` の分布を見る。この列はセッションを開始した時点の版であり、長く開いたままのセッションは古い版を報告し続ける。更新の直後に新旧が混じるのは正常で、**古い版が何日も残り続けることが、配布の届いていない端末の印である。**
 
@@ -65,7 +104,7 @@ claude plugin marketplace update cc-marketplace-governance-bmsd
 claude plugin update governance
 ```
 
-## 9. 誤った設定値を配ってしまったとき
+## 10. 誤った設定値を配ってしまったとき
 
 - `policy.py` に正しい値を書く。施策をやめる場合は `SET` の値を `None`（キーを消す）か Claude Code の既定値にし、`ADD` で配った要素は `REMOVE` に移す
 - `version` を上げて配り直す
@@ -73,10 +112,11 @@ claude plugin update governance
 
 **`policy.py` から項目を消すだけでは撤回にならない。**消した項目は以後何もされず、既に書き込まれた値が全端末に残り続ける。`ONCE` で配った値も同じで、戻すには値を変えて配り直す。端末ごとに書き換える直前の `settings.json` は `<config_dir>/governance/backups/` に 10 世代残っている。
 
-## 10. 列を足したとき
+## 11. 列を足したとき
 
 契約（`plugin/hooks/contract.py`）に列を足すリリースでは、サーバ側のテーブルの作り直し（`../spec/server.md` の「契約と実テーブルの突き合わせ」）を先に済ませる。**順序を誤るとサーバが起動しない。**
 
 ## 改訂履歴
 
 - 2026-09-25: 設定値の置き場を `policy.py` にし、撤回の方法を `SET` の `None` と `REMOVE` で書いた
+- 2026-09-25: `staging` ブランチで開発者の端末だけに先に届けて確かめる手順を加えた
