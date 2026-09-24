@@ -10,13 +10,16 @@ from pathlib import Path
 import _notices
 import _sender
 import _spool
+import policy
 import pytest
 import session_start
-from contract import POLICY
 
 PCT_KEY = "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 AUTOUPDATE_KEY = "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate"
 MARKER = "ZZMARKER-NOTICE-BODY"
+POLICY_KEY_COUNT = sum(
+    len(table) for table in (policy.SET, policy.ADD, policy.REMOVE, policy.ONCE)
+)
 
 
 class _RaisingStdout:
@@ -134,14 +137,14 @@ def _unread_ids() -> set:
 
 
 def test_policy_event_7_1_count_matches_policy_items(tmp_path):
-    """#7-1: 積まれる policy イベントが POLICY の項目数と同じ 2 行になる。"""
+    """#7-1: 積まれる policy イベントが policy.py の項目数と同じ行数になる。"""
     _write_settings(tmp_path, {})
     session_start.main()
-    assert len(_policy_rows(tmp_path)) == len(POLICY)
+    assert len(_policy_rows(tmp_path)) == POLICY_KEY_COUNT
 
 
 def test_policy_event_7_2_key_names_keep_dots(tmp_path):
-    """#7-2: 各行の key_name が POLICY のキーそのまま（`.` を含む）。"""
+    """#7-2: SET の各行の key_name がパスそのまま（`.` を含む）。"""
     _write_settings(tmp_path, {})
     session_start.main()
     assert {row["key_name"] for row in _policy_rows(tmp_path)} == {
@@ -151,10 +154,16 @@ def test_policy_event_7_2_key_names_keep_dots(tmp_path):
 
 
 def test_policy_event_7_3_plugin_version_matches_plugin_json(tmp_path):
-    """#7-3: plugin_version が plugin.json の version（0.1.0）と一致する。"""
+    """#7-3: plugin_version が plugin.json の version と一致する。"""
+    manifest = (
+        Path(session_start.__file__).resolve().parent.parent
+        / ".claude-plugin"
+        / "plugin.json"
+    )
+    expected = json.loads(manifest.read_text(encoding="utf-8"))["version"]
     _write_settings(tmp_path, {})
     session_start.main()
-    assert {row["plugin_version"] for row in _policy_rows(tmp_path)} == {"0.1.0"}
+    assert {row["plugin_version"] for row in _policy_rows(tmp_path)} == {expected}
 
 
 def test_policy_event_7_4_event_ids_are_distinct(tmp_path):
@@ -433,7 +442,7 @@ def test_order_10_1_normal_run_does_everything(notices_file, tmp_path, capsys):
     settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
     assert "systemMessage" in out
-    assert len(_policy_rows(tmp_path)) == len(POLICY)
+    assert len(_policy_rows(tmp_path)) == POLICY_KEY_COUNT
     assert len(_event_rows(tmp_path)) == 1
 
 
@@ -554,7 +563,7 @@ def test_order_10_7_stdin_read_failure_does_not_silence_settings_and_notices(
     assert "systemMessage" in out
     settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
-    assert len(_policy_rows(tmp_path)) == len(POLICY)
+    assert len(_policy_rows(tmp_path)) == POLICY_KEY_COUNT
 
 
 # ---- タスク 11: 無効化スイッチ ----
@@ -646,7 +655,7 @@ def test_disable_11_6_value_1_still_records_policy_rows(tmp_path, monkeypatch):
 
     session_start.main()
 
-    assert len(_policy_rows(tmp_path)) == len(POLICY)
+    assert len(_policy_rows(tmp_path)) == POLICY_KEY_COUNT
 
 
 def test_disable_11_7_value_1_stdout_is_still_valid_json(tmp_path, monkeypatch, capsys):

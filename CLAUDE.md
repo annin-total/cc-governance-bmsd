@@ -1,7 +1,7 @@
 # CLAUDE.md - cc-governance-bmsd
 
 Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/`、submodule）。
-両者は契約の正本 `plugin/hooks/contract.py` を共有する。
+両者は契約の正本 `plugin/hooks/contract.py` と標準設定の正本 `plugin/hooks/policy.py` を共有する。
 
 文書はすべて `docs/` にある。どれを読むかは `docs/README.md`、文書を書くときの判断基準と規約は
 `docs/CLAUDE.md`。ルートの `README.md` は人向けの入口（概要・実行手順・よく変える設定）だけを持つ。
@@ -13,7 +13,7 @@ Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt  # 初回のみ
 .venv/bin/python -m pytest -q                        # -k やファイル指定で絞り込み可
 .venv/bin/ruff check . && .venv/bin/ruff format .
-.venv/bin/python scripts/sync_contract.py            # contract.py を変えたら複製とハッシュを書き出す
+.venv/bin/python scripts/sync_contract.py            # contract.py / policy.py を変えたら複製とハッシュを書き出す
 
 # サーバ（server/ で）
 python3.9 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt  # 初回のみ。3.9 が無ければ python3 でよい
@@ -40,7 +40,7 @@ docker compose up                                    # http://localhost:15000/ �
 
 ## Design
 
-- **契約は単一の正本に置く**：収集項目・ポリシー・CSV 列などの定義は `contract.py` にだけ置き、ほかの場所で複製や再定義をしない
+- **定義は単一の正本に置く**：契約（収集項目・policy イベントの列・CSV 列などの列と型）は `contract.py`、配る設定値は `policy.py` が正本である。どちらも 1 か所にだけ置き、ほかの場所で複製や再定義をしない（サーバの複製は `sync_contract.py` の生成物）
 - **収集は最小限にする**：契約が名指ししたものだけを読む。本文（prompt・応答・メッセージ）には触れない
 - **hook は利用者の作業を妨げない**：常に exit 0 で終わり、標準エラーにも何も出力しない
 - **配布物を汚さない**：`plugin/` はそのまま配布される。テストや生成物を置かない

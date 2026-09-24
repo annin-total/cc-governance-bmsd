@@ -7,8 +7,9 @@ Claude Code の端末プラグイン。設定の自動適用・お知らせの�
 の位置づけは `system.md` にある。
 
 hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `session_start.py`
-（設定適用 → お知らせ表示 → 収集）の 2 つだけであり、`_` 始まりのファイルは内部モジュール
-である。端末の状態（識別子のキャッシュ・既読・送信待ち）は `${CLAUDE_PLUGIN_DATA}`
+（statusline.js の同期 → 設定適用 → お知らせ表示 → 収集）の 2 つだけであり、`_` 始まりの
+ファイルは内部モジュールである。ほかに利用者が呼ぶ `/governance:reapply`（入口は
+`reapply.py`）がある。端末の状態（識別子のキャッシュ・既読・送信待ち）は `${CLAUDE_PLUGIN_DATA}`
 （無ければ `~/.claude/cc-governance/`）に置く。
 
 ## 規約
@@ -61,16 +62,41 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 
 ## 設定の自動適用
 
-`session_start.py` は、契約の `POLICY` に書かれた値を `settings.json`（`CLAUDE_CONFIG_DIR`、
-無ければ `~/.claude`）へ強制的に適用する。利用者が施策を選ぶモードは無い。施策を変えるときは
-`POLICY` を直してリリースする（手順と、キーを削除してはならない理由は `../guide/release.md`）。
+`session_start.py` は、`plugin/hooks/policy.py` の標準設定を `<config_dir>/settings.json`
+（config_dir は `CLAUDE_CONFIG_DIR`、無ければ `~/.claude`）へ強制的に適用する。利用者が施策を
+選ぶモードは無い。施策を変えるときは `policy.py` を直してリリースする（手順は `../guide/release.md`）。
+書き方の見本は `plugin/hooks/policy_sample.py` にある（hook は読まない）。
 
+`policy.py` は 4 つの表を持ち、この順に当てる。キーは `.` 区切りのパスで、途中の名前に `.` を
+含められない。
+
+| 表 | 動作 |
+| --- | --- |
+| `SET` | 値で上書きする。dict・list も丸ごと置き換える。値 `None` はキーを消す |
+| `ADD` | 配列に無い要素だけ末尾に足す。要素は型まで含めて等値で比べる（dict も可） |
+| `REMOVE` | 配列にある要素だけ消す |
+| `ONCE` | (パス, 値) の組ごとに 1 回だけ `SET` と同じく書く。以後は利用者が変えても戻さない。値を変えて配れば再度 1 回書く。値の文字列中の `${GOVERNANCE_HOME}` は書き込み時に `<config_dir>/governance` の絶対パス（`/` 区切り）になる |
+
+- 途中の dict は無ければ作る。ただし `extraKnownMarketplaces` の下には作らず、利用者が登録済みの
+  項目にだけ書く。途中が dict でないとき、対象が配列でないとき（`ADD` / `REMOVE`）は書かない
 - 差分が無ければ書かない。読んでから書くまでに mtime が変わっていたら今回は諦め、
   パースに失敗したら何もしない。書き込みは一時ファイル + `os.replace` で原子的に行う
-- `POLICY` のキーは `.` 区切りのパスであり、途中の名前に `.` を含められない。入れ子の途中が
-  無いとき、作ってよいのは `env` だけである
-- 結果はキーごとに policy イベント（書き込み前の値 `prev_value` と適用結果）として記録する。
-  サーバはこの `prev_value` で準拠を判定する
+- 書き換える直前に、元のファイルを丸ごと `<config_dir>/governance/backups/` に日時付きで保存し、
+  直近 10 世代を残す。保存に失敗したら書かない
+- 結果はキーごとに policy イベントとして記録する。`key_name` は `SET` ならパスそのまま、ほかは
+  `add:` / `remove:` / `once:` を前に付ける。`value` は `SET` / `ONCE` なら配る値（dict・list は
+  JSON 文字列）、`ADD` / `REMOVE` なら今回足した・消した要素の JSON 配列（無ければ NULL）。
+  `prev_value` は書き込み前の値で、スカラ以外は NULL にする。サーバは `SET` の `prev_value` で準拠を判定する
+- `/governance:reapply` は `ONCE` の記録を消して全体を今すぐ適用し直し、結果を利用者に見せる。
+  policy イベントは積まない
+
+**責務は標準設定を利用者の `settings.json` に書き戻すところまでである。**プロジェクトの設定や
+セッション中の変更による上書きは追わない。
+
+`<config_dir>/governance/` には、バックアップ・`ONCE` の記録（`once.json`）・`statusline.js` を置く。
+`statusline.js` は同梱の `plugin/statusline/statusline.js` を毎セッション、内容が違うときだけ複製する。
+この同期の失敗はほかの工程に波及させない。**このディレクトリはアンインストールしても残る。**
+利用者の設定から参照されうるため、プラグインの状態ディレクトリには置かない。
 
 `~/.claude/settings.json` が権威である（同期の挙動は `../knowledge/claude-code-behavior.md`）。
 
@@ -94,3 +120,9 @@ JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポー�
 
 表示の接頭辞と長文の退避の挙動は `../knowledge/claude-code-behavior.md` にある。
 **お知らせ 1 件は日本語で 600 字程度までに収める。**
+
+## 改訂履歴
+
+- 2026-09-25: 設定の定義を `policy.py` に分け、`SET` / `ADD` / `REMOVE` / `ONCE`・バックアップ・
+  statusline.js の同期・`/governance:reapply` を加えた。途中の dict を作れるのを `env` だけに
+  限っていた規則を、`extraKnownMarketplaces` の下だけ作らない規則にした
