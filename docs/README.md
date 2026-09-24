@@ -18,7 +18,7 @@
 | `decisions/server.md` | サーバの設計判断 |
 | `guide/onboarding.md` | 利用者への導入案内と段階的な展開の進め方 |
 | `guide/release.md` | プラグインを配布リポジトリへ差し込んでリリースする手順 |
-| `guide/deploy.md` | サーバを実行基盤（AIP）へデプロイする手順 |
+| `guide/deploy-aip.md` | サーバを実行基盤（AIP）へデプロイする手順 |
 | `guide/local-e2e.md` | 導入から画面表示までを手元の実機で確かめる手順 |
 | `knowledge/upstream-features.md` | Claude Code に実在する hook・キー・環境変数の目録 |
 | `knowledge/claude-code-behavior.md` | Claude Code の振る舞い（プラグインの更新・hook の実行環境・transcript） |

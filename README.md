@@ -131,4 +131,4 @@ docker compose up --build
 
 - 詳しくは [`docs/README.md`](docs/README.md)（読者別の入口と文書の一覧）
 - リリース手順: [`docs/guide/release.md`](docs/guide/release.md)
-- デプロイ手順: [`docs/guide/deploy.md`](docs/guide/deploy.md)
+- デプロイ手順: [`docs/guide/deploy-aip.md`](docs/guide/deploy-aip.md)

@@ -35,7 +35,7 @@
 
 このリポジトリ（`cc-governance-bmsd`）は統合開発環境であり、プラグインのソース・統合テスト・
 横断ドキュメント・契約の正本を持つ。サーバの実行環境の制約（Python 3.9・ポート 5000・
-サブパス配下での公開・永続領域 `/mnt/data/cc-governance-server/`）は `../guide/deploy.md` にある。
+サブパス配下での公開・永続領域 `/mnt/data/cc-governance-server/`）は `../guide/deploy-aip.md` にある。
 
 ```
 [管理者] ─ git push（設定値・お知らせ・配布物）
