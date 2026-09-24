@@ -1,11 +1,11 @@
-# cc-governance-monitor 仕様書
+# 集計サーバ 仕様書
 
 ## 概要
 
 Claude Code 利用状況の集計サーバ。端末プラグインから NDJSON で届く利用イベントとポリシー
 適用結果を受信・保存し、AI Gateway の日次 CSV と突き合わせて 4 枚の画面で可視化する。
 単独でデプロイされる 1 プロセスの Flask アプリケーションであり、ソースは submodule
-`server/`（リポジトリ `cc-governance-monitor`）にある。全体の中での位置づけは `system.md`、
+`server/` にある。全体の中での位置づけは `system.md`、
 デプロイ手順は `../guide/deploy.md`、画面のスタイルは `dashboard-style.md` にある。
 
 このサーバが止まっても、設定の適用とお知らせの配信（git 経由）は止まらない。止まるのは測定だけである。
@@ -69,7 +69,7 @@ Claude Code 利用状況の集計サーバ。端末プラグインから NDJSON 
 
 ### CSV 取込
 
-ボタンを押すたびに `CSV_DIR`（既定 `/mnt/data/csv`）の全ファイルを取り直し、最後に `ANALYZE`
+ボタンを押すたびに `CSV_DIR`（`/mnt/data/cc-governance-server/csv`）の全ファイルを取り直し、最後に `ANALYZE`
 を実行する。1 ファイルの取込は「そのファイルが含む `day` の行を `DELETE` → `INSERT`」を
 1 トランザクションで行う。**冪等キーはファイル名ではなく `day` である。**ヘッダは契約の
 `CSV_COLUMNS` に載った列だけを拾い、`Provider` は生の文字列のまま保存する。

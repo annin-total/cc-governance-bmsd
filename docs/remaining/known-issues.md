@@ -1,7 +1,7 @@
 # 既知の不具合
 
 原因箇所まで特定できているが、まだ直していないもの。
-サーバ（submodule `cc-governance-monitor`）の修正は submodule 側でコミット・push する。
+サーバ（submodule `server/`）の修正は submodule 側でコミット・push する。
 
 ## 端末プラグイン
 

@@ -2,7 +2,7 @@ target-version = "py39"
 # verification/autoupdate/marketplaces/ 配下は、bare リポジトリにコミット済みのファイルを
 # バイト単位で一致させておく必要があるスナップショットである（正本は bare リポジトリ側）。
 # lint で直すとバイト列が変わり bare と食い違うため、ここだけは docs/ と同様に丸ごと除外する。
-# server/ は submodule（別リポジトリ cc-governance-monitor）であり、lint はそちらの責務。
+# server/ は submodule（別リポジトリ）であり、lint はそちらの責務。
 extend-exclude = ["docs/", "verification/autoupdate/marketplaces/", "server/"]
 
 [lint]

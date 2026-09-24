@@ -30,12 +30,12 @@
 | 要素 | 実体 | 責務 |
 | --- | --- | --- |
 | 端末プラグイン | `plugin/`（配布名 `governance`。マーケットプレイスの git 経由で配布） | 設定の自動適用・お知らせ表示・利用イベントの収集と送信 |
-| 集計サーバ | `server/`（submodule `cc-governance-monitor`。単独でデプロイする 1 プロセス） | 受信・保存・集計・管理画面・CSV 取込 |
+| 集計サーバ | `server/`（submodule。単独でデプロイする 1 プロセス） | 受信・保存・集計・管理画面・CSV 取込 |
 | マーケットプレイス | `cc-marketplace-governance-bmsd`（別リポジトリ） | 完成したプラグインを差し込む配布用の箱 |
 
 このリポジトリ（`cc-governance-bmsd`）は統合開発環境であり、プラグインのソース・統合テスト・
 横断ドキュメント・契約の正本を持つ。サーバの実行環境の制約（Python 3.9・ポート 5000・
-サブパス配下での公開・永続領域 `/mnt/data`）は `../guide/deploy.md` にある。
+サブパス配下での公開・永続領域 `/mnt/data/cc-governance-server/`）は `../guide/deploy.md` にある。
 
 ```
 [管理者] ─ git push（設定値・お知らせ・配布物）
@@ -96,4 +96,3 @@ NULL 率が 100% に跳ねるのはキーの改名・消滅、準拠率の急落
 人手で追随する箇所は `contract.py` の中の 3 つだけである。`HOOK_FIELDS`（hook 入力の
 キーパスの改名時）、`POLICY`（設定キー名の変更時・施策の変更時）、`CSV_COLUMNS`（CSV の
 ヘッダ名の変更時）。
-

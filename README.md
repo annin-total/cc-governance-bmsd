@@ -19,7 +19,7 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 | ディレクトリ | 中身 |
 | --- | --- |
 | `plugin/` | 端末プラグイン `governance`。そのまま配布される |
-| `server/` | 集計サーバと管理画面。submodule `cc-governance-monitor` |
+| `server/` | 集計サーバと管理画面（submodule） |
 | `docs/` | 仕様・設計判断・手順書 |
 | `tests/` | プラグインと契約のテスト、統合テスト |
 | `scripts/` | 契約の同期、プラグインの検証 |
@@ -125,7 +125,7 @@ docker compose up --build
 | `INGEST_TOKEN` | 受信用のトークン | `dummy-token` |
 | `DB_DSN` | DB の接続先 | `sqlite:////app/data/dev.db`、`mysql://user:pass@host/db` |
 | `BASE_PATH` | サブパスで公開するときのパス。末尾に `/` を付けない | `/governance` |
-| `CSV_DIR` | AI Gateway の CSV を置くディレクトリ | `/mnt/data/csv` |
+| `CSV_DIR` | AI Gateway の CSV を置くディレクトリ。未設定なら取り込まない | `/mnt/data/cc-governance-server/csv` |
 
 ## ドキュメント
 

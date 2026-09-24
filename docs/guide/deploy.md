@@ -17,14 +17,20 @@ waitress-serve --listen=0.0.0.0:5000 app:app
 | 項目 | 値 |
 | --- | --- |
 | `BASE_PATH` | 公開サブパス。`SCRIPT_NAME` として WSGI 環境に与える。末尾スラッシュを付けない |
-| `DB_DSN` | `sqlite:////mnt/data/governance.db` または `mysql://user:pass@host/db` |
+| `DB_DSN` | `sqlite:////mnt/data/cc-governance-server/governance.db` または `mysql://user:pass@host/db` |
 | `INGEST_TOKEN` | 受信トークン。プラグインの `config.json` の `ingest_token` と文字列として完全に一致させる |
-| `CSV_DIR` | 既定 `/mnt/data/csv` |
+| `CSV_DIR` | `/mnt/data/cc-governance-server/csv`。未設定なら取り込まず、画面にエラーを出す |
 | `PKG_PROXY` | 依存を取得するためのプロキシ。社内のホスト名を含むため、値をこのリポジトリにも git にも書かない |
 
-これらは Secret ファイル `/mnt/data/secrets/cc-governance-bmsd.env` に `KEY=VALUE` 形式で
+これらは Secret ファイル `/mnt/data/secrets/cc-governance-server.env` に `KEY=VALUE` 形式で
 置き、`entry.sh` が起動時に読み込む。ファイルは基盤の Open Terminal から事前に作成し、
 権限を `600` に絞る。
+
+**`/mnt/data/` と `/mnt/data/secrets/` は他のアプリと共有されている。このアプリのファイルは
+`/mnt/data/cc-governance-server/` の下と、Secret ファイル `/mnt/data/secrets/cc-governance-server.env`
+だけに置く。**`/mnt/data/` の直下にファイルを作らず、汎用的な名前を使わない。
+アプリはこのディレクトリを作らないため、Secret ファイルと同じ機会に Open Terminal から
+`mkdir -p /mnt/data/cc-governance-server/csv` で作っておく。
 
 ## 3. Function を作る
 

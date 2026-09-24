@@ -2,7 +2,7 @@
 """sync_contract.py — 契約の正本をサーバ側の複製へ同期する。
 
 正本: `plugin/hooks/contract.py`（配布物。端末に同梱される）
-複製: `server/contract.py`（submodule `cc-governance-monitor` の中。このスクリプトの生成物。直接編集しない）
+複製: `server/contract.py`（submodule の中。このスクリプトの生成物。直接編集しない）
 記録: `server/contract.sha256`（正本のハッシュ。複製と一緒にコミットする）
 
 複製は固定の生成物ヘッダ（`_REPLICA_HEADER`）＋正本のバイト列そのもの、という構成を取る。

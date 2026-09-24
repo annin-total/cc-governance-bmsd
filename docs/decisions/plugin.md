@@ -8,7 +8,7 @@
 参照規約は `../CLAUDE.md` に従う。
 
 契約（`plugin/hooks/contract.py`）とプラグイン（`plugin/`）の判断はここに、
-サーバ（`cc-governance-monitor`）の判断は `server.md` に置く。
+サーバ（`server/`）の判断は `server.md` に置く。
 
 ---
 

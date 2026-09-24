@@ -2,7 +2,7 @@
 
 契約がずれても実行時に例外は出ない（サーバ側の列定義を回して値を引くだけで、
 増えた項目は黙って捨てられ、減った項目は黙って NULL になる）。この検査がそのずれを
-唯一機械的に捕まえる層である（もう一層は submodule `server/`（`cc-governance-monitor`）の `entry.sh`）。
+唯一機械的に捕まえる層である（もう一層は submodule `server/` の `entry.sh`）。
 
 **`import contract` に頼らない。**複製は別リポジトリ（submodule）の中にあり、
 "contract" という同名モジュールが正本・複製の 2 か所に存在しうる。どちらを import するかを

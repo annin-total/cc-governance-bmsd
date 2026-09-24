@@ -1,6 +1,6 @@
 # CLAUDE.md - cc-governance-bmsd
 
-Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/`、submodule `cc-governance-monitor`）。
+Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/`、submodule）。
 両者は契約の正本 `plugin/hooks/contract.py` を共有する。
 
 文書はすべて `docs/` にある。どれを読むかは `docs/README.md`、文書を書くときの判断基準と規約は
