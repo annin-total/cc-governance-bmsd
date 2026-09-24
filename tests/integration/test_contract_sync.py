@@ -19,6 +19,8 @@ import re
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -32,25 +34,11 @@ _HEADER_ASSIGN_PATTERN = re.compile(
 )
 
 
-def test_master_exists():
-    """正本 (plugin/hooks/contract.py) が存在する。"""
-    assert sync_contract.MASTER.is_file(), (
-        f"契約の正本が見つからない: {sync_contract.MASTER}"
-    )
-
-
-def test_replica_exists():
-    """複製 (server/contract.py) が存在する。"""
-    assert sync_contract.REPLICA.is_file(), (
-        f"複製が見つからない: {sync_contract.REPLICA}"
-    )
-
-
-def test_hash_file_exists():
-    """ハッシュ記録 (server/contract.sha256) が存在する。"""
-    assert sync_contract.HASH_FILE.is_file(), (
-        f"ハッシュ記録が見つからない: {sync_contract.HASH_FILE}"
-    )
+@pytest.mark.parametrize("name", sync_contract.NAMES)
+def test_master_replica_hash_exist(name):
+    """正本 (plugin/hooks/<name>)・複製 (server/<name>)・ハッシュ記録が存在する。"""
+    for path in sync_contract._paths(name):
+        assert path.is_file(), f"見つからない: {path}"
 
 
 def test_master_replica_hash_in_sync():
@@ -106,8 +94,8 @@ def _extract_entry_sh_header() -> bytes:
 
 
 def test_entry_sh_header_matches_sync_contract_header():
-    """`entry.sh` の `REPLICA_HEADER` と `scripts/sync_contract.py` の `_REPLICA_HEADER` が
-    同一バイト列である。
+    """`entry.sh` の `REPLICA_HEADER` と `scripts/sync_contract.py` が組み立てる contract.py の
+    ヘッダが同一バイト列である。
 
     サーバは `scripts/` を持たずに単独デプロイされるため、ヘッダ定数は
     `scripts/sync_contract.py` と `entry.sh` の 2 か所に重複して存在する（設計上避けられない）。
@@ -116,8 +104,8 @@ def test_entry_sh_header_matches_sync_contract_header():
     という「ローカル緑・本番死」が起きる。この不変条件を機械的に固定する。
     """
     entry_sh_header = _extract_entry_sh_header()
-    sync_contract_header = sync_contract._REPLICA_HEADER.encode("utf-8")
+    sync_contract_header = sync_contract._header("contract.py").encode("utf-8")
     assert entry_sh_header == sync_contract_header, (
-        f"{ENTRY_SH} の REPLICA_HEADER と scripts/sync_contract.py の _REPLICA_HEADER が"
+        f"{ENTRY_SH} の REPLICA_HEADER と scripts/sync_contract.py の contract.py のヘッダが"
         "一致しない。どちらか一方だけを変更して他方を直し忘れている"
     )

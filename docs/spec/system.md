@@ -58,14 +58,15 @@
 
 ## 契約（端末とサーバで共有する定義）
 
-収集項目（`HOOK_FIELDS` / `EXTRA_COLUMNS`）・ポリシー（`POLICY` / `POLICY_COLUMNS`）・
+収集項目（`HOOK_FIELDS` / `EXTRA_COLUMNS`）・policy イベントの列（`POLICY_COLUMNS`）・
 CSV 列（`CSV_COLUMNS`）の定義は、**`plugin/hooks/contract.py` ただ 1 ファイルが正本である。**
 端末の抽出処理、サーバの DDL・INSERT・受信時の検査・起動時の列の突き合わせは、すべて
-ここから導出する。ほかの場所で複製や再定義をしない。
+ここから導出する。配る設定値（標準設定）は変わりやすいため `plugin/hooks/policy.py` に分け、
+こちらが正本になる。どちらもほかの場所で複製や再定義をしない。
 
 - 端末には、プラグインの一部としてそのまま配布される
-- サーバには、正本に生成物ヘッダを付けた複製（`server/contract.py`）とハッシュ記録
-  （`server/contract.sha256`）を置く。どちらも `scripts/sync_contract.py` が正本から生成し、
+- サーバには、正本に生成物ヘッダを付けた複製（`server/contract.py` / `server/policy.py`）と
+  ハッシュ記録（`server/contract.sha256` / `server/policy.sha256`）を置く。どちらも `scripts/sync_contract.py` が正本から生成し、
   `--check` で一致を検証する。起動時の検査は `server.md` にある
 - `HOOK_FIELDS` は挙動を切り替える設定ではなく「どのキーパスがどの列になるか」という
   事実である。これを読んで動作を分岐させるコードは置かない
@@ -93,6 +94,10 @@ NULL 率が 100% に跳ねるのはキーの改名・消滅、準拠率の急落
 上書き、突合率の低下は `user_email` と CSV の不一致、古い `plugin_version` の残留は配布の
 未達を示す。
 
-人手で追随する箇所は `contract.py` の中の 3 つだけである。`HOOK_FIELDS`（hook 入力の
-キーパスの改名時）、`POLICY`（設定キー名の変更時・施策の変更時）、`CSV_COLUMNS`（CSV の
-ヘッダ名の変更時）。
+人手で追随する箇所は 3 つだけである。`contract.py` の `HOOK_FIELDS`（hook 入力の
+キーパスの改名時）と `CSV_COLUMNS`（CSV のヘッダ名の変更時）、`policy.py`（設定キー名の
+変更時・施策の変更時）。
+
+## 改訂履歴
+
+- 2026-09-25: 配る設定値を `contract.py` から `policy.py` に分けた

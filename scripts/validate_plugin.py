@@ -45,7 +45,6 @@ OS_NOISE_NAMES = frozenset({".DS_Store", "Thumbs.db"})
 CONTRACT_REQUIRED_NAMES = (
     "HOOK_FIELDS",
     "EXTRA_COLUMNS",
-    "POLICY",
     "POLICY_COLUMNS",
     "CSV_COLUMNS",
     "dig",

@@ -10,8 +10,8 @@ import sys
 from pathlib import Path
 
 import _settings
+import policy
 import pytest
-from contract import POLICY
 
 _PCT_KEY = "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 
@@ -33,7 +33,7 @@ def test_非UTF8のファイルで例外が漏れない(tmp_path):
     path.write_bytes(raw)
     before = path.stat().st_mtime_ns
 
-    rows = _settings.apply_settings(str(path), POLICY)
+    rows = _settings.apply_settings(str(path), policy, tmp_path / "governance")
 
     assert set(_results(rows).values()) == {"parse_failed"}
     assert path.read_bytes() == raw
@@ -49,7 +49,7 @@ def test_深い入れ子のJSONで例外が漏れない(tmp_path):
     raw = ('{"a":' * depth) + "1" + ("}" * depth)
     path.write_text(raw, encoding="utf-8")
 
-    rows = _settings.apply_settings(str(path), POLICY)
+    rows = _settings.apply_settings(str(path), policy, tmp_path / "governance")
 
     assert set(_results(rows).values()) == {"parse_failed"}
     assert path.read_text(encoding="utf-8") == raw
@@ -68,7 +68,7 @@ def test_シンボリックリンクを壊さず実体に書く(tmp_path):
     link = tmp_path / "settings.json"
     link.symlink_to(real)
 
-    rows = _settings.apply_settings(str(link), POLICY)
+    rows = _settings.apply_settings(str(link), policy, tmp_path / "governance")
 
     assert _results(rows)[_PCT_KEY] == "applied"
     assert link.is_symlink(), "リンクが普通のファイルに置き換わった"
@@ -98,7 +98,7 @@ def test_一時ファイルを対象と同じディレクトリに作る(tmp_pat
         return real_mkstemp(*args, **kwargs)
 
     monkeypatch.setattr(_settings.tempfile, "mkstemp", _spy)
-    _settings.apply_settings(str(path), POLICY)
+    _settings.apply_settings(str(path), policy, tmp_path / "governance")
 
     assert seen, "一時ファイルが作られていない"
     assert [Path(d).resolve() for d in seen] == [path.parent.resolve()] * len(seen)
@@ -107,15 +107,14 @@ def test_一時ファイルを対象と同じディレクトリに作る(tmp_pat
 def test_envがdictでないときファイルを触らない(tmp_path):
     """`{"env":"proxy"}` で 2 キーとも `skipped_missing` になり、ファイルが不変である。
 
-    計画書 2-7 は戻り値だけを縛っており、`_container_ok` の型検査を落としても通る。
-    ここでファイル不変まで縛る。
+    戻り値だけを縛ると、途中の型検査を落としても通る。ここでファイル不変まで縛る。
     """
     path = tmp_path / "settings.json"
     raw = '{"env":"proxy"}'
     path.write_text(raw, encoding="utf-8")
     before = path.stat().st_mtime_ns
 
-    rows = _settings.apply_settings(str(path), POLICY)
+    rows = _settings.apply_settings(str(path), policy, tmp_path / "governance")
 
     assert set(_results(rows).values()) == {"skipped_missing"}
     assert path.read_text(encoding="utf-8") == raw
@@ -141,8 +140,8 @@ def test_真偽値と整数を同一視しない(tmp_path):
         encoding="utf-8",
     )
 
-    rows = _settings.apply_settings(str(path), POLICY)
-    auto_key = next(k for k in POLICY if k.endswith("autoUpdate"))
+    rows = _settings.apply_settings(str(path), policy, tmp_path / "governance")
+    auto_key = next(k for k in policy.SET if k.endswith("autoUpdate"))
 
     assert _results(rows)[auto_key] == "applied"
     written = json.loads(path.read_text(encoding="utf-8"))

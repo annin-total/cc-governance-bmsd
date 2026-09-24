@@ -115,7 +115,7 @@ docker compose up --build
 | --- | --- | --- |
 | `plugin/config.json` の `ingest_url` | 送信先（サーバの `/ingest`） | `https://example.com/governance/ingest` |
 | `plugin/config.json` の `ingest_token` | 送信用のトークン。サーバの `INGEST_TOKEN` と同じ値 | `dummy-token` |
-| `plugin/hooks/contract.py` の `POLICY` | 端末の `settings.json` に適用する設定値 | `"env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"` |
+| `plugin/hooks/policy.py` | 端末の `settings.json` に適用する設定値（書き方は `policy_sample.py`） | `SET = {"env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"}` |
 | `plugin/notices.json` | 利用者に表示するお知らせ（`id`・`title`・`body`） | `{"id": "2026-10-01-intro", "title": "...", "body": "..."}` |
 
 ### サーバ（環境変数）

@@ -100,14 +100,6 @@ def test_type_tokens_are_subset_of_known_types():
     assert tokens <= {"VARCHAR", "INTEGER", "BIGINT", "DOUBLE"}
 
 
-def test_policy_keys():
-    """POLICY のキーが settings.json 内のドット区切りパスの 2 つである。"""
-    assert set(contract.POLICY.keys()) == {
-        "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE",
-        "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate",
-    }
-
-
 def test_contract_imports_only_standard_library():
     """contract.py がサードパーティを import していない。"""
     stdlib_names = (
