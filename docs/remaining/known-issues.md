@@ -1,55 +1,45 @@
-# 端末プラグインの既知の不具合
+# 既知の不具合
 
-実機検証で再現し、原因箇所まで特定できているが、**まだ直していない**もの。
-いずれも「修正して回帰テストを足す」で完了条件が書ける。
+原因箇所まで特定できているが、まだ直していないもの。
+サーバ（submodule `cc-governance-monitor`）の修正は submodule 側でコミット・push する。
 
----
+## 端末プラグイン
 
-## 1. `sent_at` が未来日時だと送信が無期限に止まる
+### `sent_at` が未来日時だと送信が無期限に止まる
 
-`_sender.py` の `should_send()` は `elapsed = now - sent_at.mtime` で判定し、`elapsed` が
-送信間隔（10 分）を超えていることを送信条件とする。`sent_at` の mtime が現在時刻より未来に
-なっていると `elapsed` が負になり、**判定が恒久的に偽になる。**時計のズレや `sent_at` の手動
-改変で起こりうる。
+`_spool.py` の `should_send()` は `sent_at` の mtime からの経過秒で判定する。mtime が未来
+（時計のズレ・手動改変）だと経過が負になり、その時刻を過ぎるまで送信が止まる。
+エラーは出ず、自己修復もしない。
 
-その未来の時刻を過ぎるまでテレメトリが静かに欠け続け、**エラーは一切出ず、自己修復もしない。**
-「無言で壊れる」ことを最も嫌うこのプロジェクトの設計原則に反する経路である。
+**完了条件** — 経過が負のときも送信するよう直し、`sent_at` が未来日時のケースのテストを足す。
 
-**完了条件** — `elapsed` が負のときも送信条件が真になるよう判定を直し、`sent_at` が未来日時の
-ケースを再現するテストを `tests/` に足す。
+### 単体で `spool_max_bytes` を超えたスプールは、送信を試みずに捨てられる
 
-## 2. スプールが単体で `spool_max_bytes` を超えると、送信を試みずに捨てられる
+`_sender.run()` は `rotate()` → `prune()` → 送信の順で動くため、単体で上限（既定 5MB）を
+超えたファイルは一度も POST されずに消える。実機では 104MB の queue が既定のまま消滅し、
+上限を 500MB に広げると送信・格納された。長期間オフラインだった端末の復帰時に起こる。
 
-`_sender.run()` は `rotate()` → `prune()` → 送信ループの順で動く。**`prune()` が送信より先に
-走る。**スプールファイルが単体で `spool_max_bytes`（既定 5MB）を超えていると、一度も
-`POST /ingest` を試みないまま削除される。
+**完了条件** — 送信を 1 回試みてから `prune()` する（または分割して送る）よう直してテストで
+固定する。この挙動を維持するなら、境界条件として `../spec/plugin.md` に書き、
+受け入れている限界として `../decisions/plugin.md` へ移す。
 
-実機で 104MB の queue を既定のまま送信させると、spool が空になり送信ログも残らず消滅した。
-上限を 500MB に広げると正常に送信・格納された。**長期間オフラインだった端末が復帰したとき、
-溜まったデータがまとめて捨てられる。**「端末を圧迫しない」設計目的には合致するが、この境界
-条件は `../spec/plugin.md` に未記載である。
+### `SessionStart(source=resume)` の `context_tokens` を取りこぼしている
 
-**完了条件** — 送信を 1 回試みてから `prune()` する（または閾値超過ファイルを分割してから
-送信する）よう順序または処理を見直し、単体ファイルが上限を超えるケースの挙動をテストで固定する。
-あるいは、この挙動を維持すると判断するなら `../spec/plugin.md` §5.3 に境界条件として明記し、
-この項目を `../decisions/plugin.md` §6（受け入れている限界）へ移す。
+`collect.py` は `context_tokens` を `PreCompact` / `Stop` のときだけ transcript から算出するが、
+`SessionStart(source=resume)` の stdin には `context_tokens` が直接含まれる。
+`resume` 直後の文脈量を取り逃している（バグではなく機会損失）。
 
-## 3. `SessionStart(source=resume)` の raw stdin にある `context_tokens` を取りこぼしている
+**完了条件** — 契約に採るかを決める。採るなら `HOOK_FIELDS` に足して回帰テストを足す。
+採らないなら理由を `../decisions/plugin.md` に記録する。
 
-`collect.py` は `context_tokens` を `PreCompact` / `Stop` のときだけ transcript から算出する
-設計だが、`SessionStart(source=resume)` の raw stdin には `context_tokens` が直接含まれている。
-同様に `seconds_since_last_response` / `prompt_cache_likely_expired` /
-`estimated_cache_write_usd` も上流が提供しているが使っていない。
+## サーバ
 
-バグではなく機会損失だが、`resume` 直後の文脈量を取り逃している点は記録・判断が要る。
+### `/ingest` 経路では `ANALYZE` が一度も呼ばれない
 
-**完了条件** — `SessionStart(source=resume)` の raw `context_tokens` を契約に採るかどうかを
-決める（採るなら `HOOK_FIELDS` に追加して回帰テストを足す。採らないなら理由を
-`../decisions/plugin.md` に記録してこの項目を消す）。
+`db.analyze()` を呼ぶのは `csv_import.import_all()` だけで、`events` は `/ingest` でしか
+増えないため、`events` の統計情報が更新されない。実機の DB（約 31 万件）で `sqlite_stat1` に
+`events` の行が 0 件だった。クエリは実機で 207.6ms → `ANALYZE` 後 73.1ms、合成データでは
+106.9ms → 3.3ms。`ANALYZE` 自体は実機で約 65ms かかる。
 
----
-
-## サーバ側
-
-サーバ（`cc-governance-monitor`）に関する既知の不具合は `server-issues.md` に記録する
-（submodule のため、修正はそちらでコミット・push する）。
+**完了条件** — `/ingest` 経由でも（一定件数・一定間隔ごとなど）`analyze()` が呼ばれるよう直し、
+テストで固定する。受信のレイテンシを悪化させる場合の間引き方は `../decisions/server.md` に記録する。

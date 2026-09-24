@@ -1,34 +1,30 @@
 # CLAUDE.md - cc-governance-bmsd
 
 Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/`、submodule `cc-governance-monitor`）。
-両者は契約の正本 `plugin/hooks/contract.py` を共有する。仕様書は `docs/spec/system.md`
-（全体像）と `docs/spec/plugin.md`（プラグイン）、外界の事実（実測値・仕様・上流の振る舞い）
-は `docs/knowledge/`。サーバの仕様書は `docs/spec/server.md` にある。
+両者は契約の正本 `plugin/hooks/contract.py` を共有する。
 
-**`docs/` 配下の構成と参照規約は `docs/CLAUDE.md` にある。**`docs/` を書き換える前に読む。
+文書はすべて `docs/` にある。どれを読むかは `docs/README.md`、文書を書き換えるときの規約は
+`docs/CLAUDE.md`。
 
 ## Commands
 
-リポジトリのルートで実行
-
 ```bash
-pytest -q                       # テスト（-k やファイル指定で絞り込み可）
-ruff check . && ruff format .   # リントとフォーマット
+# プラグインと統合テスト（リポジトリのルートで）
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt  # 初回のみ
+.venv/bin/python -m pytest -q                        # -k やファイル指定で絞り込み可
+.venv/bin/ruff check . && .venv/bin/ruff format .
+.venv/bin/python scripts/sync_contract.py            # contract.py を変えたら複製とハッシュを書き出す
+
+# サーバ（server/ で）
+python3.9 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt  # 初回のみ。3.9 が無ければ python3 でよい
+.venv/bin/python -m pytest -q
+.venv/bin/ruff check . && .venv/bin/ruff format .
+docker compose up                                    # http://localhost:15000/ 。終了は docker compose down
 ```
-
-```bash
-# サーバのローカル起動（server/ の詳細は server/README.md・server/CLAUDE.md）
-cd server && docker compose up
-```
-
-## Subagents
-
-- 実装タスクは Sonnet、レビュータスクは Opus、その他は Sonnet に割り当てる（監督役は Opus）
 
 ## Coding
 
 - 依頼範囲外の変更はしない。既存の設計思想を尊重し、差分を最小限に保つ
-- サーバは Python 3.9 で動かす。3.10 以降の構文や標準ライブラリは使わない
 - 端末側は標準ライブラリだけで書く。配布先に `pip install` を求めない
 - 破壊的変更を行わない。実施前に承認を求める
 - 外部入力はバリデーションし、APIキー等の機密情報は環境変数で管理する
@@ -40,14 +36,11 @@ cd server && docker compose up
 - docstring を 1 行程度で簡潔に書く（自明なら省略してよい）
 - 値のハードコードは避けて定数に分離する。ただし過剰にはしない
 - 内部関数・内部メソッドは識別子を付与して区別する
+- `tests/fixtures/hook_inputs/` を書き換えない。実採取した hook stdin の記録であり、一括置換は改竄になる
 
 ## Design
 
 - **契約は単一の正本に置く**：収集項目・ポリシー・CSV 列などの定義は `contract.py` にだけ置き、ほかの場所で複製や再定義をしない
-- **フレームワークは境界に閉じ込める**：Web フレームワークに依存するのは `app.py` だけ。それ以外のモジュールは素の値を受け取り、素の値を返す
-- **SQL はデータアクセス層に閉じ込める**：画面やルーティングに SQL を書かない
-- **DB の方言に依存しない**：方言差が出る機能（UPSERT、JSON 型、日時型、主キーなど）を使わない。プレースホルダは `?` で書く
-- **重複を前提に数える**：件数も率の分子も、常に `event_id` で一意化して数える。期間を限定しない集計は画面に出さない
 - **収集は最小限にする**：契約が名指ししたものだけを読む。本文（prompt・応答・メッセージ）には触れない
 - **hook は利用者の作業を妨げない**：常に exit 0 で終わり、標準エラーにも何も出力しない
 - **配布物を汚さない**：`plugin/` はそのまま配布される。テストや生成物を置かない

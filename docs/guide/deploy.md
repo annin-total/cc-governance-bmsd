@@ -50,43 +50,17 @@ push だけでは反映されない。ソースの更新も Secret の作成も�
 
 ## 4. デプロイ単位
 
-デプロイ単位は統合開発環境（`cc-governance-bmsd`）のリポジトリルートである。FaaS に
-渡すルートも、Docker のビルドコンテキストも、同じくリポジトリルートとする。プロセスの
-作業ディレクトリは `server/`（submodule）とする。
+デプロイ単位はこのリポジトリのルートである。FaaS に渡すルートはリポジトリルートとし、
+プロセスの作業ディレクトリは `server/`（submodule）とする。Docker のビルドコンテキストは
+`server/` であり、`server/Dockerfile` と `server/compose.yaml` がそれを前提にしている。
 
-Dockerfile はサーバのソース一式（`contract.py` を含む）をコピーする 10 数行のみである。
-起動コマンドが FaaS と同じであるため、Dockerfile があれば移行時の作業は最小になる。
+## 5. 起動スクリプト
 
-## 5. 起動スクリプト（`entry.sh`）
-
-起動スクリプトが行うのは、Secret の読み込み・契約の複製検査・プロキシの設定・依存の
-install・待受の開始である。
-
-```sh
-#!/bin/sh
-set -eu
-
-SECRET_FILE="/mnt/data/secrets/cc-governance-bmsd.env"
-if [ -f "$SECRET_FILE" ]; then
-  set -a
-  . "$SECRET_FILE"
-  set +a
-else
-  echo "ERROR: Secretファイルが見つかりません: $SECRET_FILE" >&2
-  exit 1
-fi
-
-export http_proxy="$PKG_PROXY"
-export https_proxy="$PKG_PROXY"
-
-cd "$(dirname "$0")"
-# ここで contract.py の生成物ヘッダと contract.sha256 の一致を検査する（§server.md 3.1）
-pip install -r requirements.txt
-waitress-serve --listen=0.0.0.0:5000 app:app
-```
+起動スクリプトは `server/entry.sh` である。Secret の読み込み・契約の複製の検査・プロキシの設定・
+依存の install・待受の開始を行う。
 
 POSIX sh の範囲で書く。基盤がスクリプトをどのシェルで起動するかは選べない。
-`sh -n` による構文検査が通ることを配置前の確認に含める。
+`sh -n server/entry.sh` による構文検査が通ることを配置前の確認に含める。
 
 ## 6. 疎通の確認
 
