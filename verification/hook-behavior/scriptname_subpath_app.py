@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""SCRIPT_NAME によるサブパス対応だけを確かめる最小 Flask アプリ。"""
+"""SCRIPT_NAME によるサブパス対応だけを確かめる最小 Flask アプリ。
+
+環境変数 BASE_PATH で公開サブパス（例: `/cc-governance-bmsd`）を、PORT で待受ポート
+（既定 5099）を指定する。
+"""
 
 import os
 
@@ -39,7 +43,7 @@ def assets():
 
 
 class ScriptNameMiddleware:
-    """設計書 §4.3 の「WSGI ラッパ 1 個」。BASE_PATH を SCRIPT_NAME として与える。"""
+    """`docs/spec/server.md` の「構成の規約」にある「WSGI ラッパ 1 個」。BASE_PATH を SCRIPT_NAME として与える。"""
 
     def __init__(self, wsgi_app, base_path):
         self.wsgi_app = wsgi_app

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """hook 入力の実サンプルを無害化して tests/fixtures/hook_inputs/ にコピーする使い捨てスクリプト。
 
-置換規則（task-1-brief.md の表 + R-19 の裁定）:
+置換規則:
   - 自由文の可能性があるキー（トップレベル）:
       prompt / tool_response / message / last_assistant_message /
       custom_instructions / error / command_args
@@ -74,7 +74,7 @@ def _replace_strings(value):
 
 
 def _sanitize_free_text_value(value):
-    """トップレベルの自由文キーの値を無害化する（null でもセンチネルにする: R-19）。"""
+    """トップレベルの自由文キーの値を無害化する（null でもセンチネルにする）。"""
     if value is None:
         return _sentinel()
     return _replace_strings(value)

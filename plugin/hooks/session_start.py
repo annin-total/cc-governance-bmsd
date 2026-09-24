@@ -9,7 +9,7 @@
 """
 
 if __name__ == "__main__":
-    # collect.py と同じ理由（R-42）で、スクリプト起動時だけ SIGINT を無視する。
+    # collect.py と同じ理由（import 中の SIGINT でトレースバックが漏れる）で、スクリプト起動時だけ SIGINT を無視する。
     import _signal
 
     _signal.signal(_signal.SIGINT, _signal.SIG_IGN)
@@ -74,7 +74,7 @@ def _apply_settings_step() -> None:
     """設定を適用し、結果を policy イベントとしてキューに積む。無効化スイッチの影響を受けない。
 
     `plugin_version` の取得もこの中で行う。ここより外に置くと、その失敗がお知らせの表示と
-    収集まで巻き添えにする（設計書 §3.3 が守る「hook は無言で消えない」に反する）。
+    収集まで巻き添えにする（「hook は無言で消えない」という原則に反する）。
     """
     plugin_version = _identity.get_plugin_version()
     rows = apply_settings(_settings_path(), POLICY)
