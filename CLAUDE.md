@@ -4,7 +4,7 @@ Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/
 両者は契約の正本 `plugin/hooks/contract.py` を共有する。
 
 文書はすべて `docs/` にある。どれを読むかは `docs/README.md`、文書を書くときの判断基準と規約は
-`docs/CLAUDE.md`。
+`docs/CLAUDE.md`。ルートの `README.md` は人向けの入口（概要・実行手順・よく変える設定）だけを持つ。
 
 ## Commands
 
