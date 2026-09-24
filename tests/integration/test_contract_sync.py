@@ -29,9 +29,6 @@ import sync_contract
 ENTRY_SH = ROOT / "server" / "entry.sh"
 
 _HEREDOC_PATTERN = re.compile(r"<<'PY'\n(.*?)\nPY\n", re.DOTALL)
-_HEADER_ASSIGN_PATTERN = re.compile(
-    r'REPLICA_HEADER = \((.*?)\)\s*\.encode\("utf-8"\)', re.DOTALL
-)
 
 
 @pytest.mark.parametrize("name", sync_contract.NAMES)
@@ -60,52 +57,54 @@ def test_master_replica_hash_in_sync():
     )
 
 
-def _extract_entry_sh_header() -> bytes:
-    """`entry.sh` に埋め込まれた `REPLICA_HEADER` の値を、実際に entry.sh のソースから
-    抽出して返す。部分一致では変更を見落とすため、entry.sh のヒアドキュメントの中から
-    代入式そのものを取り出し、リテラルとして評価する。抽出できなければ例外で落とす
-    （検査対象 0 件で緑にしない）。
+def _load_entry_sh_checker() -> tuple:
+    """`entry.sh` のヒアドキュメントから `_header` 関数と `NAMES` を取り出して返す。
+
+    部分一致では変更を見落とすため、ヒアドキュメントを構文木として読み、関数定義だけを
+    実行して得る（検査本体は実行しない）。取り出せなければ例外で落とす（検査対象 0 件で緑にしない）。
     """
     if not ENTRY_SH.is_file():
         raise FileNotFoundError(f"entry.sh が見つからない: {ENTRY_SH}")
-
-    entry_sh_text = ENTRY_SH.read_text(encoding="utf-8")
-
-    heredoc_match = _HEREDOC_PATTERN.search(entry_sh_text)
+    heredoc_match = _HEREDOC_PATTERN.search(ENTRY_SH.read_text(encoding="utf-8"))
     if heredoc_match is None:
         raise ValueError(
-            f"{ENTRY_SH} から契約チェックのヒアドキュメント（<<'PY' ... PY）が見つからない"
+            f"{ENTRY_SH} から検査のヒアドキュメント（<<'PY' ... PY）が見つからない"
         )
 
-    header_match = _HEADER_ASSIGN_PATTERN.search(heredoc_match.group(1))
-    if header_match is None:
+    tree = ast.parse(heredoc_match.group(1))
+    funcs = [
+        n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_header"
+    ]
+    names = [
+        n.value
+        for n in tree.body
+        if isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "NAMES" for t in n.targets)
+    ]
+    if len(funcs) != 1 or len(names) != 1:
         raise ValueError(
-            f"{ENTRY_SH} のヒアドキュメントから REPLICA_HEADER の代入式が見つからない"
+            f"{ENTRY_SH} から _header 関数と NAMES が 1 つずつ見つからない"
         )
-
-    # 代入式の右辺は文字列リテラルの並び（暗黙の連結）のみで構成されており、
-    # 式でも変数参照でもないため ast.literal_eval で安全に評価できる。
-    header_value = ast.literal_eval(f"({header_match.group(1)})")
-    if not isinstance(header_value, str):
-        raise TypeError(
-            f"{ENTRY_SH} の REPLICA_HEADER が文字列として評価できない: {header_value!r}"
-        )
-    return header_value.encode("utf-8")
+    namespace: dict = {}
+    exec(  # noqa: S102 (自リポジトリの関数定義だけを実行する)
+        compile(ast.Module(body=funcs, type_ignores=[]), str(ENTRY_SH), "exec"),
+        namespace,
+    )
+    return namespace["_header"], ast.literal_eval(names[0])
 
 
 def test_entry_sh_header_matches_sync_contract_header():
-    """`entry.sh` の `REPLICA_HEADER` と `scripts/sync_contract.py` が組み立てる contract.py の
-    ヘッダが同一バイト列である。
+    """`entry.sh` が検査する名前とヘッダが、`scripts/sync_contract.py` の生成物と同一である。
 
-    サーバは `scripts/` を持たずに単独デプロイされるため、ヘッダ定数は
+    サーバは `scripts/` を持たずに単独デプロイされるため、ヘッダの組み立ては
     `scripts/sync_contract.py` と `entry.sh` の 2 か所に重複して存在する（設計上避けられない）。
-    ここを合わせ忘れると、層 2（この統合テスト群）は `sync_contract.py` 側の定数だけを見るため
+    ここを合わせ忘れると、層 2（この統合テスト群）は `sync_contract.py` 側だけを見るため
     緑のまま通り、層 1（`entry.sh`）だけが本番のサーバ起動時に複製との照合に失敗して落ちる、
     という「ローカル緑・本番死」が起きる。この不変条件を機械的に固定する。
     """
-    entry_sh_header = _extract_entry_sh_header()
-    sync_contract_header = sync_contract._header("contract.py").encode("utf-8")
-    assert entry_sh_header == sync_contract_header, (
-        f"{ENTRY_SH} の REPLICA_HEADER と scripts/sync_contract.py の contract.py のヘッダが"
-        "一致しない。どちらか一方だけを変更して他方を直し忘れている"
-    )
+    entry_header, entry_names = _load_entry_sh_checker()
+    assert tuple(entry_names) == sync_contract.NAMES
+    for name in sync_contract.NAMES:
+        assert entry_header(name).encode("utf-8") == sync_contract._header(name).encode(
+            "utf-8"
+        ), f"{ENTRY_SH} と scripts/sync_contract.py の {name} のヘッダが一致しない"

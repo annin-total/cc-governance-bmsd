@@ -18,6 +18,11 @@ SCHEMA = json.loads(
     .read_text(encoding="utf-8")
 )  # fmt: skip
 VALIDATOR = jsonschema.Draft7Validator(SCHEMA)
+# スキーマはトップレベルの未知のキーを許すため、キー名の誤りは検証を素通りする。
+# properties に無いキーは、実在を確かめたものだけをここで許す
+_KNOWN_KEYS = set(SCHEMA["properties"]) | {
+    "modelSettings",  # Claude Code 自身が書き込む（2026-09 確認）。スキーマ未収載
+}
 
 EXISTING = {
     # 利用者の設定らしい既存値。サンプルが書くキーと重なるものを含める
@@ -37,7 +42,8 @@ BASES = {"empty": {}, "existing": EXISTING}
 
 
 def _errors(data: dict) -> list:
-    return [e.message for e in VALIDATOR.iter_errors(data)]
+    unknown = [f"未知のトップレベルキー: {k}" for k in data if k not in _KNOWN_KEYS]
+    return unknown + [e.message for e in VALIDATOR.iter_errors(data)]
 
 
 def test_スキーマが不正な設定を拒否する():
@@ -45,6 +51,7 @@ def test_スキーマが不正な設定を拒否する():
     assert _errors(EXISTING) == []
     assert _errors({"statusLine": {"type": "command"}}) != []
     assert _errors({"effortLevel": "max"}) != []
+    assert _errors({"permisions": {}}) != []
 
 
 @pytest.mark.parametrize("module_name", MODULES)

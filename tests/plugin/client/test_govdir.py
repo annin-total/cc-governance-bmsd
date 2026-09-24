@@ -4,6 +4,8 @@
 """
 
 import json
+import os
+from pathlib import Path
 from types import SimpleNamespace
 
 import _govdir
@@ -41,6 +43,13 @@ def test_書き換える直前の内容を丸ごと保存し10世代だけ残す
     assert len(backups) == 10
     kept = [json.loads(p.read_text(encoding="utf-8"))["n"] for p in backups]
     assert kept == list(range(2, 12)), "直近 10 世代（書き換え前の内容）が古い順に並ぶ"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX の権限ビットを見る")
+def test_バックアップは本人だけが読める権限で作る():
+    _govdir.settings_path().write_text('{"n": 0}', encoding="utf-8")
+    assert _apply(1) == "applied"
+    assert [p.stat().st_mode & 0o777 for p in _backups()] == [0o600]
 
 
 def test_差分が無ければ保存しない():
@@ -108,3 +117,18 @@ def test_statuslineの同期の失敗は設定の適用に波及しない(monkey
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
     json.loads(capsys.readouterr().out)
     assert (_govdir.config_dir().parent / "state" / "queue.jsonl").is_file()
+
+
+def test_SessionStartがstatuslineを配置する(monkeypatch):
+    """同梱の statusline.js が、SessionStart の後に <config_dir>/governance/ にある。"""
+    monkeypatch.setattr(session_start.sys, "argv", ["session_start.py", "SessionStart"])
+    monkeypatch.setattr(session_start, "_read_stdin_json", lambda: {"session_id": "s"})
+    monkeypatch.setattr(session_start._spool, "should_send", lambda: False)
+    src = (
+        Path(_govdir.__file__).resolve().parent.parent / "statusline" / "statusline.js"
+    )
+
+    session_start.main()
+
+    dst = _govdir.governance_dir() / "statusline.js"
+    assert dst.read_bytes() == src.read_bytes()

@@ -14,6 +14,8 @@ _SETTINGS_FILENAME = "settings.json"
 _GOVERNANCE_DIRNAME = "governance"
 _BACKUP_DIRNAME = "backups"
 _BACKUP_KEEP = 10
+# 本人だけが読める権限で作る。settings.json の env にはトークンが入りうる（Windows では無害）
+_BACKUP_MODE = 0o600
 _ONCE_FILENAME = "once.json"
 _STATUSLINE_FILENAME = "statusline.js"
 _STATUSLINE_SRC = (
@@ -38,7 +40,7 @@ def governance_dir() -> Path:
 def backup(settings: Path, gov_dir: Path) -> bool:
     """settings.json を丸ごと日時付きで保存し、直近 `_BACKUP_KEEP` 世代だけ残す。保存できれば真。
 
-    時計の粒度が粗い OS でも名前が衝突しないよう連番を付け、既存のファイルは上書きしない。
+    時計の粒度が粗い OS でも名前が衝突しないよう連番を付け、既存のファイルは上書きしない（O_EXCL）。
     古い世代を消せなくても保存は済んでいるので真を返す。
     """
     backup_dir = gov_dir / _BACKUP_DIRNAME
@@ -48,7 +50,9 @@ def backup(settings: Path, gov_dir: Path) -> bool:
         backup_dir.mkdir(parents=True, exist_ok=True)
         for n in range(_BACKUP_KEEP):
             try:
-                with open(backup_dir / f"settings-{stamp}-{n:02d}.json", "xb") as f:
+                name = backup_dir / f"settings-{stamp}-{n:02d}.json"
+                fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, _BACKUP_MODE)
+                with os.fdopen(fd, "wb") as f:
                     f.write(content)
                 break
             except FileExistsError:
