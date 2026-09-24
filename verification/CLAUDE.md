@@ -8,15 +8,15 @@
 verification/
   CLAUDE.md              ← この文書。規約の正本
   README.md              ← 道具のカタログ。何があり、どう動かすか
-  LOCAL-E2E.md           ← 手順書。何をどの順で確かめるか
   fixture-sanitization/  ← 実採取した hook stdin を無害化して tests/fixtures/ を作り直す
   hook-behavior/         ← Claude Code が hook に何を渡すかを調べる
   autoupdate/            ← 配布経路が端末まで降りるかを調べる（擬似マーケットプレイスを含む）
   performance/           ← 性能の測定を再現する
 ```
 
-`README.md` と `LOCAL-E2E.md` の役割は違う。**道具の使い方は `README.md`、確かめる順序と
-合格の条件は `LOCAL-E2E.md`。**片方にしか書かないこと。両方に書くと必ず食い違う。
+確かめる順序と合格の条件は `docs/guide/local-e2e.md` にある。**道具の使い方は
+`README.md`、確かめる順序と合格の条件は `docs/guide/local-e2e.md`。**片方にしか書かない
+こと。両方に書くと必ず食い違う。
 
 ## 何を置き、何を置かないか
 

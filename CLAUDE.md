@@ -1,9 +1,9 @@
 # CLAUDE.md - cc-governance-bmsd
 
 Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/`、submodule `cc-governance-monitor`）。
-両者は契約の正本 `plugin/hooks/contract.py` を共有する。仕様書は `docs/SPEC.md`
-（全体像）と `docs/SPEC-plugin.md`（プラグイン）、外界の事実（実測値・仕様・上流の振る舞い）
-は `docs/knowledge/`。サーバの仕様書は `server/docs/SPEC.md` にある。
+両者は契約の正本 `plugin/hooks/contract.py` を共有する。仕様書は `docs/spec/system.md`
+（全体像）と `docs/spec/plugin.md`（プラグイン）、外界の事実（実測値・仕様・上流の振る舞い）
+は `docs/knowledge/`。サーバの仕様書は `docs/spec/server.md` にある。
 
 **`docs/` 配下の構成と参照規約は `docs/CLAUDE.md` にある。**`docs/` を書き換える前に読む。
 

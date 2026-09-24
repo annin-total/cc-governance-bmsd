@@ -66,7 +66,7 @@ hook を手で実行するとき（A3）と `claude` に呼ばせるとき（フ
 本体（`product/cc-governance-bmsd/` 直下）を直接指さない。**hook がそこへ書き込みうる。
 
 git source（配布経路の実運用形態）での `CLAUDE_PLUGIN_ROOT` の解決先は本手順では確認していない。
-**未検証**（`../docs/remaining/unverified.md` §6）。
+**未検証**（`../remaining/unverified.md` §6）。
 
 ## フェーズ
 
@@ -221,7 +221,7 @@ detach を確かめる — hook プロセスの `PPID` が `1` になってい�
 
 **あわせて確認する留保点** — `_sender.py` は `ingest_url` のスキームを検査しない。`http://` を
 設定すると `X-Ingest-Token`・`user_email`・`host` が平文で流れることを、生のリクエストで確認
-できる。事実として記録する（`../docs/SPEC-plugin.md` §5.3）。**コードは直さない。**
+できる。事実として記録する（`../spec/plugin.md` §5.3）。**コードは直さない。**
 
 ### A8. CSV が取り込まれる
 
@@ -335,7 +335,7 @@ A6・A8 でデータを入れた状態で 4 画面を見る。**準拠率と突�
 `claude -p` では、モデル（haiku / sonnet）・`--effort low,high,xhigh` フラグ・「よく考えて」
 のような思考を促すプロンプトのいずれを試しても、**stdin に `effort` キー自体が一度も現れない。**
 対話モードでの挙動は、自動操作が初回オンボーディングの対話ダイアログを突破できず未確認である
-（3 回試行で打ち切り）。**契約の誤りとは断定できない**（`../docs/remaining/unverified.md` §6）。
+（3 回試行で打ち切り）。**契約の誤りとは断定できない**（`../remaining/unverified.md` §6）。
 
 #### MCP の設定方法
 
@@ -370,7 +370,7 @@ ASCII 10000 字の文面を通しても、Claude Code 側の追加切り詰め�
 **合格の条件** — `queue.jsonl` に、A3 で手動実行したときと同じ形の行が増える。`hooks.json` に
 登録した 7 種のうち、その実行で発生するものが実際に発火している。**非対話モード（`claude -p`）
 では `permission_mode` が `default`、`effort_level` は `None` になる**（対話モードや別モデルでの
-挙動は未検証。`../docs/remaining/unverified.md` §6）。
+挙動は未検証。`../remaining/unverified.md` §6）。
 
 ### B2. stdin の実形状が契約と合う
 
@@ -383,7 +383,7 @@ ASCII 10000 字の文面を通しても、Claude Code 側の追加切り詰め�
 `prompt_id` / `session_crons` / `session_id` / `stop_hook_active` / `transcript_path` が含まれる。
 `last_assistant_message` は AI の応答本文そのものであり、契約が名指ししていないため収集され
 ない。**この実 stdin には `effort` キー自体が無い**（合成フィクスチャには入っていたため、契約の
-誤りではないかを別途確認する。`../docs/remaining/unverified.md` §6）。
+誤りではないかを別途確認する。`../remaining/unverified.md` §6）。
 
 未発火に終わった hook（`PostToolUse` / `PostToolUseFailure` / `PreCompact` /
 `UserPromptExpansion`）は、プロンプトが発火条件を踏まなかっただけであり契約の欠陥ではない。
@@ -428,7 +428,7 @@ B0 の手順で再採取した結果、契約が名指ししないキーが複�
 5. 未読が複数件のときに空行 1 つで連結されて見えることを確認する
 
 **確認すること** — 日本語 600 字程度のお知らせが読める形で表示されること。退避が始まる境界
-（日本語で約 680 字、ASCII で約 2,000 字。`../docs/knowledge/claude-code-behavior.md`）をまたぐ
+（日本語で約 680 字、ASCII で約 2,000 字。`../knowledge/claude-code-behavior.md`）をまたぐ
 文面で、退避後のプレビューが実用的な長さで見えること。
 
 ### C2. 自動更新の反映
@@ -447,7 +447,7 @@ B0 の手順で再採取した結果、契約が名指ししないキーが複�
 
 **確認すること** — 新しいバージョンが端末に降り、以後の hook 実行に反映されること。反映までの
 時間は環境によって変わりうるため、**固定値として扱わない**（1 回だけの観測が
-`../docs/knowledge/claude-code-behavior.md` にある）。
+`../knowledge/claude-code-behavior.md` にある）。
 
 ---
 

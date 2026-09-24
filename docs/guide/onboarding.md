@@ -1,7 +1,7 @@
 # 導入案内と段階的な展開
 
 利用者への導入案内の雛形と、案内を 2〜3 群に分けて日付をずらす設計を記す
-（`server/docs/SPEC.md` §5.2 / `cc-marketplace-governance-bmsd/README.md`）。
+（`../spec/server.md` §5.2 / `cc-marketplace-governance-bmsd/README.md`）。
 
 ## 1. 導入前の前提条件（Windows 端末）
 

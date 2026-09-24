@@ -85,12 +85,12 @@
 
 ## 4. 運用設計
 
-- プラグインの詳細仕様は [`SPEC-plugin.md`](SPEC-plugin.md) にある
-- サーバの詳細仕様は `server/docs/SPEC.md`、実行基盤へのデプロイ手順は
-  `server/docs/AIP-DEPLOY.md` にある（submodule `cc-governance-monitor`）
+- プラグインの詳細仕様は [`plugin.md`](plugin.md) にある
+- サーバの詳細仕様は `server.md`、実行基盤へのデプロイ手順は
+  `../guide/deploy.md` にある（submodule `cc-governance-monitor`）
 - マーケットプレイスの構造とリリース手順は `cc-marketplace-governance-bmsd/README.md` と
-  [`release.md`](release.md) にある
-- 導入案内の手順は [`onboarding.md`](onboarding.md) にある
+  [`release.md`](../guide/release.md) にある
+- 導入案内の手順は [`onboarding.md`](../guide/onboarding.md) にある
 
 ## 5. 仕様一覧
 
@@ -99,7 +99,7 @@
 
 - **契約は単一の正本に置く。** 収集項目・ポリシー・CSV 列などの定義は
   `plugin/hooks/contract.py` にだけ置き、ほかの場所で複製や再定義をしない
-  （サーバ側の複製の扱いは `server/docs/SPEC.md` §3.1）
+  （サーバ側の複製の扱いは `server.md` §3.1）
 - **フレームワークは境界に閉じ込める。** Web フレームワークに依存するのはサーバの
   `app.py` だけである
 - **収集は最小限にする。** 契約が名指ししたものだけを読む。本文（prompt・応答・

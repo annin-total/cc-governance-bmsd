@@ -27,12 +27,12 @@
 実機で 104MB の queue を既定のまま送信させると、spool が空になり送信ログも残らず消滅した。
 上限を 500MB に広げると正常に送信・格納された。**長期間オフラインだった端末が復帰したとき、
 溜まったデータがまとめて捨てられる。**「端末を圧迫しない」設計目的には合致するが、この境界
-条件は `docs/SPEC-plugin.md` に未記載である。
+条件は `../spec/plugin.md` に未記載である。
 
 **完了条件** — 送信を 1 回試みてから `prune()` する（または閾値超過ファイルを分割してから
 送信する）よう順序または処理を見直し、単体ファイルが上限を超えるケースの挙動をテストで固定する。
-あるいは、この挙動を維持すると判断するなら `docs/SPEC-plugin.md` §5.3 に境界条件として明記し、
-この項目を `../decisions.md` §6（受け入れている限界）へ移す。
+あるいは、この挙動を維持すると判断するなら `../spec/plugin.md` §5.3 に境界条件として明記し、
+この項目を `../decisions/plugin.md` §6（受け入れている限界）へ移す。
 
 ## 3. `SessionStart(source=resume)` の raw stdin にある `context_tokens` を取りこぼしている
 
@@ -45,11 +45,11 @@
 
 **完了条件** — `SessionStart(source=resume)` の raw `context_tokens` を契約に採るかどうかを
 決める（採るなら `HOOK_FIELDS` に追加して回帰テストを足す。採らないなら理由を
-`../decisions.md` に記録してこの項目を消す）。
+`../decisions/plugin.md` に記録してこの項目を消す）。
 
 ---
 
 ## サーバ側
 
-サーバ（`cc-governance-monitor`）に関する既知の不具合は `server/docs/remaining.md` に記録する
+サーバ（`cc-governance-monitor`）に関する既知の不具合は `server-issues.md` に記録する
 （submodule のため、修正はそちらでコミット・push する）。

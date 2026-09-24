@@ -113,7 +113,7 @@ curl http://127.0.0.1:5099/          # サブパス無し
 1. 隔離 HOME (`autoupdate/home/`) の `.claude/plugins/marketplaces/pdtest-mp/` に、
    `plugin-data-probe/marketplace/` の中身を配置し、`installed_plugins.json` で `pdtest` を有効化する。
    **併せて `.claude/settings.json` の `extraKnownMarketplaces` にも `pdtest-mp` を登録する**
-   （`docs/SPEC-plugin.md` §5.4 は「`settings.json` が権威であり、セッション開始時に
+   （`docs/spec/plugin.md` §5.4 は「`settings.json` が権威であり、セッション開始時に
    `extraKnownMarketplaces` が `known_marketplaces.json` へ上書き同期される」と明記している。
    `known_marketplaces.json` / `installed_plugins.json` だけを直接編集しても、次のセッション開始で
    `settings.json` の内容に揃えられて消える可能性がある。**この経路は実機で未検証**であり、
@@ -145,7 +145,7 @@ curl http://127.0.0.1:5099/          # サブパス無し
 - `home-<n>/`（隔離 HOME）は実行のたびに用意する作業データなので、このリポジトリには含まれない。
   `.claude/plugins/marketplaces/<名前>` に、bare から clone した作業コピーを置いてから使う
 - **`.claude/plugins/marketplaces/<名前>` への配置だけでは足りない可能性が高い。**
-  `docs/SPEC-plugin.md` §5.4 によれば `~/.claude/settings.json` が権威であり、セッション開始のたびに
+  `docs/spec/plugin.md` §5.4 によれば `~/.claude/settings.json` が権威であり、セッション開始のたびに
   `settings.json` の `extraKnownMarketplaces` が `~/.claude/plugins/known_marketplaces.json` へ
   上書き同期される。したがって隔離 HOME の `.claude/settings.json` の `extraKnownMarketplaces` にも
   マーケットプレイス名を登録しておく必要がある（**実機での確認はしていない。仕様書の記述からの

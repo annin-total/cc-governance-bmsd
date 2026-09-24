@@ -107,7 +107,7 @@ Claude Code に同梱される実行環境を使う形にする。
 | 準拠の前後を分ける境界（準拠開始日ちょうどの日） |
 | 未導入者の判定における 30 日の窓 |
 | 途絶えと見なす日数の境界 |
-| 同一の `ts` を持つ行のタイブレーク（実装側も未定義。→ `../decisions.md`） |
+| 同一の `ts` を持つ行のタイブレーク（実装側も未定義。→ `../decisions/plugin.md`） |
 
 ## 5. 観測されていない値
 
@@ -126,6 +126,6 @@ Claude Code に同梱される実行環境を使う形にする。
 | 事項 | 確かめること |
 | --- | --- |
 | `effort.level` | `claude -p` では、haiku / sonnet / `--effort low,high,xhigh` フラグ / 思考を促すプロンプトのいずれでも現れないことを確認済み（`../knowledge/claude-code-behavior.md`）。**対話モードでの挙動は、自動操作が初回オンボーディングを突破できず未検証のまま** |
-| `PostToolUse` / `PostToolUseFailure` / `PreCompact` / `UserPromptExpansion` の実 stdin | ツール呼出・ツール失敗・圧縮・スラッシュコマンドを伴うプロンプトで再採取済み。列の充足は確認したが、契約に無い追加キー（`agent_type` / `duration_ms` / `tool_use_id` / `error` など）が複数見つかっている（`../verification/LOCAL-E2E.md` B2） |
+| `PostToolUse` / `PostToolUseFailure` / `PreCompact` / `UserPromptExpansion` の実 stdin | ツール呼出・ツール失敗・圧縮・スラッシュコマンドを伴うプロンプトで再採取済み。列の充足は確認したが、契約に無い追加キー（`agent_type` / `duration_ms` / `tool_use_id` / `error` など）が複数見つかっている（`../guide/local-e2e.md` B2） |
 | git source マーケットプレイスでの `CLAUDE_PLUGIN_ROOT` の解決先 | `directory` source（ローカルパス）ではソースツリーを直接指すことを確認済み（`../knowledge/claude-code-behavior.md`）。**git source（配布経路の実運用形態）での挙動は未検証** |
 | detach した送信プロセスが自動起動後に確実に走るか | 手動で `_sender.py` を叩くと即座に送信が完了することは確認済みだが、`claude -p` 終了後に queue が残留する（送信が起きない）現象を独立した 2 回の検証で観測している。**条件が未特定。**再現条件（連続実行間隔・並列度など）を変えて隔離環境で切り分ければ確認できる |
