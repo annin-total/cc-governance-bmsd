@@ -38,65 +38,57 @@ Secret ファイルに `KEY=VALUE` 形式で書く。`entry.sh` が起動時に�
 
 ## 3. AIP操作手順
 
-### 1. 対象ワークスペースに移動
-
-### 2. 新規Function作成
-
-- Function type: **WebApp**
-- Name: 任意（例: `cc-governance-server`）
-- Ingress Path: `/cc-governance-server`
-- Function Base: **sh-centos-science**（例: `sh-centos-science-py39`）
-- HTTP Access Mode: 端末が `/ingest` に直接 POST できる設定にする（下記「既知の制約・未検証事項」参照）
-- Input Method: **Git Repository**
-  - Git Repository Url: 対象リポジトリの SSH URL
-  - Branch: デプロイ対象のブランチ
-  - Entrypoint: `server/entry.sh`（リポジトリルートからの相対パス）
-- Tags: `NGINX_ENABLE_REWRITE_TARGET` = `false`（既定のままだと AIP がリクエストパスを書き換え、`BASE_PATH` によるサブパス対応と噛み合わない）
-- スケールアウトの設定はしない。永続領域上の SQLite の 1 ファイルを複数のレプリカが掴むと壊れる
-
-### 3. Secretを設定する（初回のみ・手動作業）
-
-1. 手順 2 で作成した Function の詳細画面で「Open Terminal」を開く
-2. データのディレクトリと Secret ファイルを作成し、権限を絞る:
-   ```bash
-   mkdir -p /mnt/data/cc-governance-server/csv
-   mkdir -p /mnt/data/secrets
-   cat > /mnt/data/secrets/cc-governance-server.env << 'EOF'
-   BASE_PATH=/<workspace_id>/cc-governance-server
-   DB_DSN=sqlite:////mnt/data/cc-governance-server/governance.db
-   INGEST_TOKEN=dummy-ingest-token
-   CSV_DIR=/mnt/data/cc-governance-server/csv
-   PKG_PROXY=http://<社内プロキシのホスト>:<ポート>
-   EOF
-   chmod 600 /mnt/data/secrets/cc-governance-server.env
-   ```
-   値はすべてダミーである。実際の値に置き換える
-3. Function を「restart」する（Secret ファイルは起動時に一度だけ読み込まれるため、反映にはこの再起動が必要）
-
-### 4. 疎通の確認
-
-1. FaaS List で作成した Function を確認し、Deployment Log で依存の install と待受の開始が通ったことを確認する
-2. Open ボタンでサーバの URL を取得する
-3. 公開サブパス付きの URL が `200` を返すこと、画面が生成するリンクにサブパスが載ることを確認する
-   ```bash
-   curl -s -o /dev/null -w '%{http_code}\n' https://<取得したURL>/   # => 200
-   ```
-4. 受信の口にトークン無しで POST し、`401` が返ることを確認する
-   ```bash
-   curl -s -o /dev/null -w '%{http_code}\n' -X POST https://<取得したURL>/ingest   # => 401
-   ```
-5. 端末が送りうる最大サイズの本文を POST し、`413` が返らないことを確認する（前段の `client_max_body_size` を確かめる）
-6. `CSV_DIR` に CSV を 1 本置いて画面のボタンから取り込み、同じファイルをもう一度取り込んでコストが二重計上されないことを確認する
-7. 1 台の端末で `claude` を動かし、イベントが `events` に入ること、送信後に端末の spool が消えることを確認する
-
-### 5. コード更新時は「restart」ボタンで再起動
+1. 対象ワークスペースに移動
+2. 新規Function作成
+   - Function type: **WebApp**
+   - Name: 任意（例: `cc-governance-server`）
+   - Ingress Path: `/cc-governance-server`
+   - Function Base: **sh-centos-science**（例: `sh-centos-science-py39`）
+   - HTTP Access Mode: **Public Access**（社内 VPN に接続できる人なら誰でも到達できる）
+   - Input Method: **Git Repository**
+      - Git Repository Url: `対象リポジトリの SSH URL`
+      - Branch: デプロイ対象のブランチ
+      - Entrypoint: `server/entry.sh`（リポジトリルートからの相対パス）
+   - Tags: `NGINX_ENABLE_REWRITE_TARGET` = `false`（既定のままだと AIP がリクエストパスを書き換え、`BASE_PATH` によるサブパス対応と噛み合わない）
+   - スケールアウトの設定はしない。永続領域上の SQLite の 1 ファイルを複数のレプリカが掴むと壊れる
+3. Secretを設定する（初回のみ・手動作業）
+   1. 手順 2 で作成した Function の詳細画面で「Open Terminal」を開く
+   2. データのディレクトリと Secret ファイルを作成し、権限を絞る:
+      ```bash
+      mkdir -p /mnt/data/cc-governance-server/csv
+      mkdir -p /mnt/data/secrets
+      cat > /mnt/data/secrets/cc-governance-server.env << 'EOF'
+      BASE_PATH=/<workspace_id>/cc-governance-server
+      DB_DSN=sqlite:////mnt/data/cc-governance-server/governance.db
+      INGEST_TOKEN=<プラグインのconfig.jsonのingest_token>
+      CSV_DIR=/mnt/data/cc-governance-server/csv
+      PKG_PROXY=http://<社内プロキシのホスト>:<ポート>
+      EOF
+      chmod 600 /mnt/data/secrets/cc-governance-server.env
+      ```
+      値はすべてダミーである。実際の値に置き換える
+   3. Function を「restart」する（Secret ファイルは起動時に一度だけ読み込まれるため、反映にはこの再起動が必要）
+4. 疎通の確認
+   1. FaaS List で作成した Function を確認し、Deployment Log で依存の install と待受の開始が通ったことを確認する
+   2. Open ボタンでサーバの URL を取得する
+   3. 公開サブパス付きの URL が `200` を返すこと、画面が生成するリンクにサブパスが載ることを確認する
+      ```bash
+      curl -s -o /dev/null -w '%{http_code}\n' https://<取得したURL>/   # => 200
+      ```
+   4. 受信の口にトークン無しで POST し、`401` が返ることを確認する
+      ```bash
+      curl -s -o /dev/null -w '%{http_code}\n' -X POST https://<取得したURL>/ingest   # => 401
+      ```
+   5. 端末が送りうる最大サイズの本文を POST し、`413` が返らないことを確認する（前段の `client_max_body_size` を確かめる）
+   6. `CSV_DIR` に CSV を 1 本置いて画面のボタンから取り込み、同じファイルをもう一度取り込んでコストが二重計上されないことを確認する
+   7. 1 台の端末で `claude` を動かし、イベントが `events` に入ること、送信後に端末の spool が消えることを確認する
+5. コード更新時は「restart」ボタンで再起動
 
 push だけでは反映されない。ソースの更新も Secret の変更も、「restart」を経て初めて効く。
 
 ## 既知の制約・未検証事項
 
 - **初回デプロイ時、Secret ファイル未作成による起動失敗は想定内**: `entry.sh` は Secret ファイルが無いと起動を中止する。Open Terminal は Function の作成後にしか開けないため、手順「新規Function作成」の直後は必ず一度失敗する。手順「Secretを設定する」の Secret 作成 → restart で解消する
-- **HTTP Access Mode は未確定**: 画面の認証は Ingress に委ねる一方、端末は `X-Ingest-Token` だけを付けて `/ingest` に POST する。両方を満たす設定は未検証
 - **submodule の取得は未検証**: AIP が clone 時に submodule `server/` を取得するか、取得元に到達できるかを確かめていない。取得できなければ `server/entry.sh` が存在せず起動しない
 - `sh-centos-science` は公式ドキュメント上 alpha 版扱いのため、AIP 側の仕様変更・非推奨化のリスクが残る
 - Git Repository Url は SSH 接続のみ有効。HTTP は使えない
