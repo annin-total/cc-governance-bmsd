@@ -45,6 +45,15 @@ def test_valid_url_accepts_well_formed_https(url):
         "https://example.com/^x",
         "https://example.com/\\x",
         "https://example.com/`x",
+        "https://example.com/>x",
+        "https://example.com/{x",
+        "https://example.com/}x",
+        "https://example.com/\x7fx",  # DEL
+        "https://example.com/\x00x",  # NUL
+        "https://@/x",  # netloc はあるがホストが空
+        "https://:443/",  # netloc はあるがホストが空
+        "https://[x/",  # urlsplit が ValueError を投げる
+        "https://a]b/",  # urlsplit が ValueError を投げる
         "https://example.com/あ",  # 非 ASCII
         "https://" + "a" * 2049,  # 長すぎる（2049字超）
     ],

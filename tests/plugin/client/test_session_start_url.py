@@ -175,6 +175,27 @@ def test_cli_no_url_items_do_not_open(
     assert _open_spy == []
 
 
+def test_cli_unparsable_url_does_not_hide_other_notices(
+    tmp_path, monkeypatch, capsys, _open_spy
+):
+    """#3b: `urlsplit` が例外を投げる url があっても、全項目が表示され、正常な URL が開く。"""
+    path = tmp_path / "notices.json"
+    data = [
+        {"id": "n-020", "title": "件名A", "body": "本文A", "url": "https://[x/"},
+        {"id": "n-021", "title": "件名B", "body": "本文B", "url": URL_1},
+    ]
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(session_start, "_NOTICES_PATH", path)
+    _set_entrypoint(monkeypatch, "cli")
+
+    session_start.main()
+    message = json.loads(capsys.readouterr().out)["systemMessage"]
+    assert "件名A" in message
+    assert "件名B" in message
+    assert "https://[x/" not in message
+    assert _open_spy == [URL_1]
+
+
 # ---- sdk-*（非対話）: 開かない・既読にもしない ----
 
 
@@ -401,7 +422,8 @@ def test_real_process_opens_url_via_fake_open_not_real_one(tree, tmp_path):
     env["CLAUDE_PLUGIN_DATA"] = str(tmp_path / "state")
     env["CLAUDE_CONFIG_DIR"] = str(tmp_path / "config")
     env["CLAUDE_CODE_ENTRYPOINT"] = "cli"
-    env["PATH"] = f"{fake_bin_dir}{os.pathsep}{env.get('PATH', '')}"
+    # 偽 open が実行できなくても本物の /usr/bin/open に落ちないよう、PATH を偽の bin だけにする。
+    env["PATH"] = str(fake_bin_dir)
 
     result = subprocess.run(
         [sys.executable, str(tree), "SessionStart"],
