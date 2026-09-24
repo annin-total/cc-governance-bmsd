@@ -33,7 +33,7 @@ _HEREDOC_PATTERN = re.compile(r"<<'PY'\n(.*?)\nPY\n", re.DOTALL)
 
 @pytest.mark.parametrize("name", sync_contract.NAMES)
 def test_master_replica_hash_exist(name):
-    """正本 (plugin/hooks/<name>)・複製 (server/<name>)・ハッシュ記録が存在する。"""
+    """正本 (plugin/hooks/<name>)・複製 (server/ccgov/vendor/<name>)・ハッシュ記録が存在する。"""
     for path in sync_contract._paths(name):
         assert path.is_file(), f"見つからない: {path}"
 
