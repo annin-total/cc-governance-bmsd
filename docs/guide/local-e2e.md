@@ -55,7 +55,8 @@ AirPlay レシーバーが握る）。送信先は `http://127.0.0.1:15000/inges
 
 ### A1. サーバが起動し、全画面が応答する
 
-`server/` で `docker compose up -d --build` し、`/` `/policy` `/effect` `/assets` を `curl` で叩く。
+`server/` で `docker compose up -d --build` し、`dev.env` の `ADMIN_PATH` の下の `/` `/policy` `/effect` `/assets` を、
+`ADMIN_PASSWORD` の Basic 認証を付けて `curl` で叩く。
 
 **合格の条件** — 4 画面がいずれも `200`。データが 0 件でも `500` にならない。
 `docker compose logs` に例外が出ていない。
