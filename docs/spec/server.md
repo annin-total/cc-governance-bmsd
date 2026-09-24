@@ -16,7 +16,7 @@ Claude Code 利用状況の集計サーバ。端末プラグインから NDJSON 
 集計は現在時刻を読まないなど）は `server/CLAUDE.md` にある。ここに書くのは設計上の制約だけ。
 
 - 直接依存は `flask` / `waitress` / `pymysql` の 3 つで、`==` で完全固定する。Flask の拡張・
-  ブループリント・アプリケーションファクトリ・ORM・バリデーションライブラリは使わない。
+  ORM・バリデーションライブラリは使わない。
   画面は素の HTML と CSS だけで、JS ライブラリ・CDN に依存しない
 - サブパス配下での公開は、`BASE_PATH` を `SCRIPT_NAME` として与える WSGI ラッパ 1 個で行う。
   `PATH_INFO` が `BASE_PATH` で始まるときだけ剥がす
@@ -26,7 +26,7 @@ Claude Code 利用状況の集計サーバ。端末プラグインから NDJSON 
 `contract.py` は正本（`plugin/hooks/contract.py`）の複製であり、直接編集しない（生成の仕組みは
 `system.md`）。起動時に `entry.sh` が、複製の生成物ヘッダを除いた残りのハッシュを
 `contract.sha256` と比べ、一致しなければ起動を中止する。複製の直接編集と同期忘れをここで
-検出する。コードは `import contract` するだけで、`sys.path` を操作するシムを持たない。
+検出する。複製は通常の import で読み、`sys.path` を操作するシムを持たない。
 
 ## 契約と実テーブルの突き合わせ
 
