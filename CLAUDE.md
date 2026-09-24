@@ -3,7 +3,7 @@
 Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/`、submodule `cc-governance-monitor`）。
 両者は契約の正本 `plugin/hooks/contract.py` を共有する。
 
-文書はすべて `docs/` にある。どれを読むかは `docs/README.md`、文書を書き換えるときの規約は
+文書はすべて `docs/` にある。どれを読むかは `docs/README.md`、文書を書くときの判断基準と規約は
 `docs/CLAUDE.md`。
 
 ## Commands
