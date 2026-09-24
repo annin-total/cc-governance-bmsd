@@ -112,7 +112,6 @@ def _write_config(monkeypatch, tmp_path, **overrides):
     config = {
         "ingest_url": "",
         "ingest_token": "",
-        "flush_interval_sec": 600,
         "timeout_sec": 60,
         "spool_max_bytes": 5242880,
         "spool_max_days": 7,
