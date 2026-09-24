@@ -30,7 +30,7 @@
 
 | # | 要素 | 実体 | 責務 |
 | --- | --- | --- | --- |
-| 1 | 端末プラグイン | Claude Code プラグイン（`plugin/`。git で配布） | 設定の自動適用 / お知らせ表示 / hook によるイベント収集・送信 / スキル・コマンドの配布 |
+| 1 | 端末プラグイン | Claude Code プラグイン（`plugin/`。git で配布） | 設定の自動適用 / お知らせ表示（URL があれば既定ブラウザで開く）/ hook によるイベント収集・送信 / スキル・コマンドの配布 |
 | 2 | 収集サーバ | waitress で動く 1 プロセス（`server/`。submodule `cc-governance-monitor`） | 受信・保存・集計・管理画面・CSV 取込 |
 | 3 | AI Gateway 日次 CSV | ファイル | コストとトークンの正本。端末側では一切集計しない |
 
@@ -51,7 +51,8 @@
    ▼
 [端末の Claude Code]
    ├ SessionStart hook : settings.json へポリシー値を強制適用 /
-   │                     適用前後の「値そのもの」を policy イベント化 / 未読のお知らせを表示
+   │                     適用前後の「値そのもの」を policy イベント化 / 未読のお知らせを表示 /
+   │                     対話セッションなら有効な URL を既定ブラウザで開く
    └ 各種 hook         : 契約に定義されたキーだけを抽出 → ローカル JSONL に追記
    │
    │ HTTP POST /ingest（NDJSON バルク・detach プロセス）
