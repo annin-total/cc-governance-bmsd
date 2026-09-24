@@ -51,6 +51,7 @@ Basic 認証で守る（ユーザー名は問わない）。`ADMIN_PATH` の外�
 `/ingest` は `ADMIN_PATH` の外にあり、`X-Ingest-Token` ヘッダと環境変数 `INGEST_TOKEN` の一致で守る
 （未設定・空ならすべて 401）。
 このトークンは誤送信の防止のためのものであり、到達制御はネットワーク境界（VPN）が担う。
+AIP の HTTP Access Mode は Public Access であり、サーバには社内 VPN に接続できる人なら誰でも到達できる。
 
 ### `/ingest` の受信
 
