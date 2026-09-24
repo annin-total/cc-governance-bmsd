@@ -47,9 +47,9 @@ Claude Code 利用状況の集計サーバ。端末プラグインから NDJSON 
 
 管理画面（4 画面・`/import`・CSS）は環境変数 `ADMIN_PATH` の下にだけ置き、`ADMIN_PASSWORD` との
 Basic 認証で守る（ユーザー名は問わない）。`ADMIN_PATH` の外は `/ingest` を除いて 404 を返す。
-ログイン画面・セッション・試行回数の制限は持たない。どちらかが未設定なら起動しない。
-`/ingest` は `ADMIN_PATH` の外にあり、`X-Ingest-Token` ヘッダと環境変数 `INGEST_TOKEN` の一致で守る
-（未設定・空ならすべて 401）。
+ログイン画面・セッション・試行回数の制限は持たない。
+`/ingest` は `ADMIN_PATH` の外にあり、`X-Ingest-Token` ヘッダと環境変数 `INGEST_TOKEN` の一致で守る。
+`ADMIN_PATH`・`ADMIN_PASSWORD`・`INGEST_TOKEN` はいずれも未設定・空なら起動しない。
 このトークンは誤送信の防止のためのものであり、到達制御はネットワーク境界（VPN）が担う。
 AIP の HTTP Access Mode は Public Access であり、サーバには社内 VPN に接続できる人なら誰でも到達できる。
 

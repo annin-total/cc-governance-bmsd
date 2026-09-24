@@ -122,7 +122,7 @@ docker compose up --build
 
 | 項目 | 意味 | 例 |
 | --- | --- | --- |
-| `INGEST_TOKEN` | 受信用のトークン | `dummy-token` |
+| `INGEST_TOKEN` | 受信用のトークン。未設定・空なら起動しない | `dummy-token` |
 | `ADMIN_PATH` | 管理画面を置くパス。推測しにくいランダムな文字列。`/` を含めない。未設定なら起動しない | `dummy-admin-path` |
 | `ADMIN_PASSWORD` | 管理画面の Basic 認証の共有パスワード（ユーザー名は問わない）。未設定なら起動しない | `dummy-admin-password` |
 | `DB_DSN` | DB の接続先 | `sqlite:////app/data/dev.db`、`mysql://user:pass@host/db` |
