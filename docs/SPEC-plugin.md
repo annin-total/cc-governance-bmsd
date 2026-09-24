@@ -20,6 +20,7 @@ plugin/
   hooks/_identity.py            # user_email / host / event_id の解決とキャッシュ
   hooks/_settings.py            # settings.json の読み書き（原子的置換）
   hooks/_notices.py             # 未読お知らせの選定・出力文字列の組み立て
+  hooks/_browser.py             # 起動形態の判定 + お知らせの URL を既定ブラウザで開く処理
   notices.json                  # お知らせ文面（ロジックを持たない純データ）
   config.json                   # 送信先 URL・受信トークン・送信条件
   skills/                       # 配布スキル
@@ -43,7 +44,8 @@ ${CLAUDE_PLUGIN_DATA}/          # 無ければ ~/.claude/cc-governance/
 ## 3. 規約
 
 - 端末側は標準ライブラリだけで書く。配布先に `pip install` を求めない
-- hook は常に `exit 0` する。標準出力にも標準エラーにも何も出力しない
+- hook は常に `exit 0` する。標準エラーには何も出力しない。標準出力は `collect.py` が常に
+  無出力、`session_start.py` は hook の JSON 出力（`systemMessage` など、§5.5）を 1 回だけ書く
 - `tool_input` は `skill` キーのみを名指しで読む。`prompt` / `tool_response` / `message`
   には一切触れない
 - ファイル名は標準ライブラリのモジュール名と衝突させない（`plugin/hooks/` は
@@ -77,7 +79,8 @@ ${CLAUDE_PLUGIN_DATA}/          # 無ければ ~/.claude/cc-governance/
 ### 4.2 無効化スイッチ
 
 環境変数 `CC_GOVERNANCE_DISABLE` が空でない値のとき、プラグインは**利用ログの収集と
-お知らせの表示**を止める。設定の適用・その policy イベントの記録・送信は止まらない。
+お知らせの表示**を止める（お知らせに伴うブラウザの起動も含む）。設定の適用・その policy
+イベントの記録・送信は止まらない。
 
 ### 4.3 識別子
 
@@ -261,7 +264,7 @@ POLICY = {
 
 ```json
 [
-  {"id": "2026-09-01-a", "title": "...", "body": "..."}
+  {"id": "2026-09-01-a", "title": "...", "body": "...", "url": "https://..."}
 ]
 ```
 
@@ -270,6 +273,31 @@ JSON 出力の `systemMessage` として返す。サーバもポーリング API
 
 未読が複数あるときは、空行 1 つで区切って 1 つの `systemMessage` にまとめる。接頭辞が
 付くのは全体の 1 行目だけである。既読に加えるのは出力が成功した後である。
+
+各項目には任意で `url` を持たせられる。開いてよい形は次のすべてを満たすものである。
+
+- `https://` で始まる（小文字）
+- 長さが 2048 字以下
+- ASCII のみ
+- 空白・制御文字・二重引用符・`<` `>` `\` `^` `` ` `` `|` `{` `}` を含まない
+- ホスト部が空でない
+
+不正な `url` は、項目そのものではなく `url` だけを無視する（`title` / `body` は表示する）。
+有効な `url` は、その項目の本文の末尾に `詳細: <url>` として追記される。
+
+未読のうち、有効な `url` を持つ先頭 1 件に限り、既定ブラウザで開く。開くのは次の両方を
+満たすときだけである。
+
+- 起動形態が対話セッションである（環境変数 `CLAUDE_CODE_ENTRYPOINT` が `cli`）
+- 既読の記録（`seen.json` への書き込み）に成功している
+
+`CLAUDE_CODE_ENTRYPOINT` が `sdk-` で始まる値（`claude -p`・Agent SDK からの起動）のときは、
+テキストの出力は行うが既読には加えない。それ以外（値が無い・未知の値）では、既読には
+加えるが、ブラウザは開かない。
+
+開き方は OS ごとに異なる。macOS は `open` を detach 起動（`stdin`/`stdout`/`stderr` を
+`DEVNULL`、`start_new_session=True`）、Windows は `os.startfile`（ShellExecute）で開く。
+それ以外の OS では何もしない。
 
 表示には `SessionStart:<source> says: ` の接頭辞が付く。`source` は
 `startup` / `resume` / `clear` / `compact` のいずれかである。長い文面は Claude Code が

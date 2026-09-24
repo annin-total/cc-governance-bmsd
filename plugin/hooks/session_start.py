@@ -1,5 +1,8 @@
 """SessionStart hook のエントリ。設定の適用 -> お知らせの表示 -> イベントの収集の順に実行する。
 
+お知らせは、非対話起動（`claude -p` など）では既読にしない。URL 付きの未読があれば、
+既読の記録に成功した対話セッションに限り、先頭 1 件だけを既定ブラウザで開く。
+
 3 つはそれぞれ個別に例外から守り、1 つの失敗が残りを巻き添えにしない。無効化スイッチ
 （`CC_GOVERNANCE_DISABLE`）が止めるのは、お知らせの表示と利用ログの収集だけである。
 設定の適用・その policy イベントの記録・送信条件の判定はスイッチの外側で行う。
@@ -18,6 +21,7 @@ import time
 from pathlib import Path
 from typing import Any, Optional
 
+import _browser
 import _identity
 import _notices
 import _spool
@@ -86,6 +90,22 @@ def _notices_step(disabled: bool) -> tuple:
     return _notices.notices_step(disabled, _NOTICES_PATH)
 
 
+def _mark_seen_and_open(unread: list, seen: set) -> None:
+    """未読を既読に加え、書けた場合に限り対話セッションなら先頭の URL を開く。
+
+    非対話起動では既読にしない（人が表示を見ていないため）。既読を書けない端末で
+    ブラウザが毎回開かないよう、開くのは既読の記録に成功した後だけにする。
+    """
+    if _browser.is_headless():
+        return
+    if not _notices._write_seen(seen | {n["id"] for n in unread}):
+        return
+    if _browser.is_interactive():
+        url = _notices.first_url(unread)
+        if url:
+            _browser.open_url(url)
+
+
 def _emit_output(output: dict) -> bool:
     """hook の JSON 出力を標準出力へ 1 個だけ書く。書き出しと flush が例外なく終われば真。
 
@@ -143,7 +163,7 @@ def main() -> None:
     # 出力は必ず 1 回だけ行う。ここより上で何が失敗しても、少なくとも空の JSON を出す。
     if _emit_output(output) and unread:
         try:
-            _notices._write_seen(seen | {n["id"] for n in unread})
+            _mark_seen_and_open(unread, seen)
         except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
             pass
 

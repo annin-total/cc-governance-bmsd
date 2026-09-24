@@ -351,6 +351,8 @@ def _run_hook_commands(hooks_json: Path, plugin_dir: Path) -> None:
         # 実際の収集経路を一度も通らないまま「exit 0 だった」と判定してしまう。
         # 過去に見つかった rc=120 の欠陥は、いずれもその経路の中にあった。
         env.pop("CC_GOVERNANCE_DISABLE", None)
+        # 対話を示す値を継承すると、hook がお知らせの URL を本物のブラウザで開く。
+        env.pop("CLAUDE_CODE_ENTRYPOINT", None)
         env["PYTHONDONTWRITEBYTECODE"] = "1"
 
         failed = False
