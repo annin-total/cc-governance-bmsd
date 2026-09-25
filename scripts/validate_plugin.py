@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
@@ -62,6 +62,19 @@ def ng(message: str) -> None:
 
 def skip(message: str) -> None:
     print(f"[SKIP] {message}")
+
+
+def _run(argv: list, **kwargs: Any) -> subprocess.CompletedProcess:
+    """出力を UTF-8 の文字列で受け取り、終了コードでは例外にしない subprocess.run。"""
+    return subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        **kwargs,
+    )
 
 
 def _is_dev_artifact(path: Path) -> bool:
@@ -190,7 +203,7 @@ def check_no_dev_artifacts(plugin_dir: Path) -> None:
 # 配布物が .gitignore に隠されていないかを見る。.DS_Store / Thumbs.db は OS が作り直すノイズなので除く。
 def check_no_gitignored_files(repo_root: Path, plugin_name: str) -> None:
     try:
-        result = subprocess.run(
+        result = _run(
             [
                 "git",
                 "-C",
@@ -201,12 +214,7 @@ def check_no_gitignored_files(repo_root: Path, plugin_name: str) -> None:
                 "--exclude-standard",
                 "--",
                 plugin_name,
-            ],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            check=False,
+            ]
         )
     except OSError:
         ng("git に無視されているファイルを検査できない（git を実行できない）")
@@ -242,14 +250,7 @@ def check_contract_module(plugin_dir: Path) -> None:
         "missing = [n for n in required if not hasattr(mod, n)]\n"
         "sys.exit(1 if missing else 0)\n"
     )
-    result = subprocess.run(
-        [sys.executable, "-c", check_code, contract_dir],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
+    result = _run([sys.executable, "-c", check_code, contract_dir])
     if result.returncode == 0:
         ok("contract.py: import でき、契約の名前がすべて在る")
     else:
@@ -343,17 +344,7 @@ def _run_hook_commands(
             )
             argv = shlex.split(expanded, posix=True)
             try:
-                result = subprocess.run(
-                    argv,
-                    input="{}",
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                    errors="replace",
-                    env=env,
-                    timeout=HOOK_TIMEOUT_SECONDS,
-                    check=False,
-                )
+                result = _run(argv, input="{}", env=env, timeout=HOOK_TIMEOUT_SECONDS)
                 rc = result.returncode
                 stderr_content = result.stderr
             except subprocess.TimeoutExpired:
@@ -420,15 +411,7 @@ def check_ruff(repo_root: Path, plugin_name: str) -> None:
     if ruff is None:
         ng("ruff check: ruff が見つからない（検査できない）")
         return
-    result = subprocess.run(
-        [ruff, "check", plugin_name],
-        cwd=str(repo_root),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
+    result = _run([ruff, "check", plugin_name], cwd=str(repo_root))
     if result.returncode == 0:
         ok("ruff check: py39 構文として妥当")
     else:
