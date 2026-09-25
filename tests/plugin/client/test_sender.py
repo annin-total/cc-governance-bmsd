@@ -15,6 +15,8 @@ import _sender
 import _spool
 import pytest
 
+_SPOOL_NAME = f"{1000}-{'a' * 32}.jsonl"
+
 
 @pytest.fixture(autouse=True)
 def _isolate_state_dir(monkeypatch, tmp_path):
@@ -132,7 +134,7 @@ def test_post_success_deletes_file(server, monkeypatch, tmp_path):
     """#1: spool に 1 ファイル、サーバが 200 -> ファイルが削除される。"""
     srv = server()
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
@@ -143,7 +145,7 @@ def test_post_body_matches_spool_bytes(server, monkeypatch, tmp_path):
     """#2: サーバが受け取ったボディが spool の内容とバイト単位で一致する。"""
     srv = server()
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}, {"n": 2}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}, {"n": 2}])
     expected = path.read_bytes()
 
     _sender.run()
@@ -155,7 +157,7 @@ def test_post_content_type_header(server, monkeypatch, tmp_path):
     """#3: Content-Type が application/x-ndjson。"""
     srv = server()
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
@@ -168,7 +170,7 @@ def test_post_token_header_matches_config(server, monkeypatch, tmp_path):
     _write_config(
         monkeypatch, tmp_path, ingest_url=srv.url, ingest_token="secret-token"
     )
-    _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
@@ -179,7 +181,7 @@ def test_201_is_treated_as_success(server, monkeypatch, tmp_path):
     """#5: サーバが 201 -> ファイルが削除される（2xx はすべて成功）。"""
     srv = server(status_codes=[201])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
@@ -191,7 +193,7 @@ def test_non_2xx_keeps_file(server, monkeypatch, tmp_path, status):
     """#6-#8: サーバが 401 / 500 / 404 -> ファイルが残る。"""
     srv = server(status_codes=[status])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
@@ -205,7 +207,7 @@ def test_connection_refused_is_silent(monkeypatch, tmp_path, unused_port):
     """#9: 接続できないポート -> 例外なし。ファイルが残る。終了コード 0（例外が上がらない）。"""
     port = unused_port()
     _write_config(monkeypatch, tmp_path, ingest_url=f"http://127.0.0.1:{port}/ingest")
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
@@ -216,7 +218,7 @@ def test_unresponsive_server_respects_timeout(server, monkeypatch, tmp_path):
     """#10: 応答しないサーバ、timeout_sec=1 -> 例外なし。ファイルが残る。実行時間が 5 秒未満。"""
     srv = server(status_codes=[200], delay_sec=2)
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url, timeout_sec=1)
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     started = time.monotonic()
     _sender.run()
@@ -234,7 +236,7 @@ def test_multiple_files_posted_in_epoch_order(server, monkeypatch, tmp_path):
     srv = server(status_codes=[200, 200, 200])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
     _seed_spool_file(f"{3000}-{'c' * 32}.jsonl", [{"n": 3}])
-    _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
     _seed_spool_file(f"{2000}-{'b' * 32}.jsonl", [{"n": 2}])
 
     _sender.run()
@@ -247,7 +249,7 @@ def test_middle_file_failure_keeps_only_that_file(server, monkeypatch, tmp_path)
     """#12: spool に 3 ファイル、2 番目だけ 500 -> 1・3 番目は削除、2 番目は残る。"""
     srv = server(status_codes=[200, 500, 200])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    p1 = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    p1 = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
     p2 = _seed_spool_file(f"{2000}-{'b' * 32}.jsonl", [{"n": 2}])
     p3 = _seed_spool_file(f"{3000}-{'c' * 32}.jsonl", [{"n": 3}])
 
@@ -326,7 +328,7 @@ def test_empty_ingest_url_skips_posting(server, monkeypatch, tmp_path):
     """#16: ingest_url が空文字 -> POST を行わない。終了コード 0。spool は残る。"""
     srv = server(status_codes=[200])
     _write_config(monkeypatch, tmp_path, ingest_url="")
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
