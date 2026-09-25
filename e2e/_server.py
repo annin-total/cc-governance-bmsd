@@ -38,6 +38,7 @@ LABEL = "cc-e2e=1"
 _IGNORE = (".git", ".venv", "venv", "__pycache__", "*_cache", ".DS_Store", "*.db")
 _BUILD_TIMEOUT = 600
 _START_TIMEOUT = 180
+_DELIVER_TIMEOUT = 30
 _HTTP_TIMEOUT = 30
 # 前段のプロキシ設定を使わない（127.0.0.1 宛てが外へ出ないように）
 _OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -163,7 +164,7 @@ class DockerServer:
 
     def wait_event_ids(self, ids: set) -> None:
         """`ids` がすべて DB に入るまで待つ。"""
-        deadline = time.monotonic() + _START_TIMEOUT
+        deadline = time.monotonic() + _DELIVER_TIMEOUT
         while not ids <= self.event_ids():
             if time.monotonic() > deadline:
                 raise TimeoutError(f"届かなかった: {sorted(ids - self.event_ids())}")

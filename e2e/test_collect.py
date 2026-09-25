@@ -42,4 +42,4 @@ def test_全hookが発火し契約の全キーパスが埋まる(root, gitsrv):
     rows = [r for r in hook_rows(data_dir(root)) if r["kind"] == "event"]
     assert {r["hook_event"] for r in rows} == registered
     empty = [name for name, _, _ in fields if all(r[name] is None for r in rows)]
-    assert empty == [], rows
+    assert empty == []

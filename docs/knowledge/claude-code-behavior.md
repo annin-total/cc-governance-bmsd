@@ -26,7 +26,7 @@
 | 事実 | いつ効くか |
 | --- | --- |
 | `hooks.json` のコマンド文字列を展開しているのは **Claude Code ではなくシェル**。単引用符で囲んだ `${CLAUDE_PLUGIN_DATA}` はリテラルのまま届き、二重引用符の `${CLAUDE_PLUGIN_ROOT}` は展開された | コマンド文字列に変数を書くときは**二重引用符**で囲む。パスに空白が入りうる |
-| **起動モードでキーの有無が変わる。** `claude -p` では `permission_mode` が `default`（`SessionStart` では `None`）、`effort_level` は `None`、`SessionStart` に `model` も `scratchpad_dir` も無い | 非対話での検証結果を対話セッションの結論にしない。どのキーも「必ずある」前提で設計しない |
+| **起動モードでキーの有無が変わる。** `claude -p` では `permission_mode` が `default`（`SessionStart` では `None`）、`SessionStart` に `model` も `scratchpad_dir` も無い | 非対話での検証結果を対話セッションの結論にしない。どのキーも「必ずある」前提で設計しない |
 | 子プロセスには **親の Claude Code セッションの環境変数が引き継がれる**（`CLAUDECODE` / `CLAUDE_CODE_SESSION_ID` / `settings.json` の `env` 由来の値など） | 検証するときは `env -u …` で外す。外さないと対照群が壊れる |
 | **失敗したスキル呼出では `PreToolUse` / `PostToolUse` が発火しない**（存在しないスキル名で確認）。モデルにはツールエラーが返っている | 存在しないスキル名の呼出は、ツール系 hook の件数には現れない |
 | `SessionStart` は秒単位でブロックしうる（実運用ログに 4 秒前後の記録が 2 件、セッションの終了と開始が重なった瞬間） | `SessionStart` で同期処理を足すときの上限の感覚 |
@@ -37,6 +37,10 @@
 | `claude -p` では `SessionStart` の `systemMessage` が、プレーン出力にも `--output-format json` の標準出力にも現れない。`--output-format stream-json --verbose` では `type:"system"`・`subtype:"hook_response"` の `output` に入る（2.1.281、ログイン済みで実測。2.1.282 では未ログインでも同じく入る） | 非対話の出力を機械処理するスクリプトへの影響を見積もるとき。お知らせが毎回出ても、プレーンと `json` の出力は汚れない |
 | 対話起動では `SessionStart` の `systemMessage` が `SessionStart:<source> says: ` の接頭辞つきで表示され、複数行でも接頭辞は 1 行目だけに付く。長い文面はファイルへ退避され、先頭のプレビューとパスだけが表示される。退避の境界は日本語で約 680 字、ASCII で約 2,000 字（日本語 614 字は退避されない）（2026-09 に隔離環境で文字数を変えて目視。版は記録なし） | hook から人に見せる文面の長さを決めるとき |
 | 未ログインでも `SessionStart` hook（プラグインの hook を含む）は発火し、その後に `Login expired` で終了する（2.1.281） | hook の挙動だけを確かめたいとき。ログインしなくても観測できる |
+| 未ログインの `claude -p` でも、`SessionStart` の後に `UserPromptSubmit` が発火する（2.1.282） | 未ログインのセッションで発火する hook を見積もるとき。`SessionStart` だけとは限らない |
+| hook stdin の `effort`（`effort.level`）は、モデルが effort に対応するときだけ届く。`claude -p --model sonnet` では既定で `high`、`--effort low` で `low`。`--model haiku`（実体は `claude-haiku-4-5-20251001`）では `--effort` を付けても無い（2.1.282、Anthropic API の認証で実測） | `effort` が届かないとき、上流の変更とモデルの違いを取り違えないため |
+| `claude -p` でも、`--continue` と `/compact` で `PreCompact`（`trigger` は `manual`）が発火する。`--continue` の起動では `SessionStart` の `source` が `resume`、圧縮の後にもう一度 `compact` で発火する（2.1.282） | 非対話で圧縮系の hook を起こすとき |
+| 許可されたディレクトリの外を触る Bash は権限で拒否され、`PostToolUseFailure` は発火しない。作業ディレクトリ内で失敗したコマンドは `PostToolUseFailure`（`is_interrupt` は `false`）になる（2.1.282、`claude -p`） | ツールの失敗を意図して起こすとき |
 | `/login` は OAuth の認可 URL を、`PATH` 上の `open` で開く（2.1.281、macOS） | `PATH` に偽の `open` を置いて hook のブラウザ起動を数えるとき。ログインの分も記録されるので、URL で区別する |
 | `SessionStart` の標準入力には `-p` かどうかを示すキーが無く、`source` は対話・`-p` のどちらも `startup` になる。hook の標準入出力は対話起動でも端末に接続されていない（`isatty` では対話かどうかを判別できない）（2.1.281） | stdin の内容や `isatty` で対話起動を判定しようとしたとき。どちらも根拠にならない |
 
@@ -48,4 +52,5 @@
 | **巨大な 1 行が単独で読取窓を埋め尽くし、`message.usage` を窓の外へ押し出すことがある。** 窓を広げてもこの構造は消えない（行が伸びれば同じことが起きる） | 「窓を広げれば取れる」という対処には上限が無い |
 | `message.usage` の 3 値がすべて 0 の行が実在する（`isApiErrorMessage: true` の `assistant` 行） | 合計 0 を値として扱うと、API エラー応答が文脈量に混ざる |
 | 末尾から usage 行を取れない transcript には 2 系統ある。**usage 行の間隔が読取窓を超えるもの**と、**応答が 1 度も無かったもの**。取れなかったという結果からは、どちらが原因か区別できない | 取得できない割合を健全性の指標にするときのベースライン |
+| `claude -p` のプロンプトとツールの入出力は、config ディレクトリの中では `projects/<cwd を変換した名前>/` の transcript にだけ現れた（2.1.282、隔離した config で全ファイルを走査） | 本文が残る場所を調べるとき。transcript の置き場は本体の管理下にある |
 | transcript は append-only である。ファイルが差し替わる・退避されるという事象は、実データ 67 本で 1 件も確認できなかった | 読取位置を保存する機構の要否を判断するとき |
