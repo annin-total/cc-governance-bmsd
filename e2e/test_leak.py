@@ -89,5 +89,11 @@ def test_陽性対照_自由文のキーパスを足した契約では検出さ�
     leaky = src.replace(head, head + _LEAKY_FIELDS).encode()
     install(root, gitsrv, version(1), {_CONTRACT: leaky})
     sentinel = _leak_session(root)
+    # SENTINEL 入りの行は間引きで queue に残っている。送信プロセスにも扱わせてから走査する
+    # （送信先は空のまま。退避と破棄は走り、data 配下の外への書き出しがあれば検出される）
+    (data_dir(root) / "sent_at").unlink()
+    session(root)
+    root.wait_quiet()
     leaks = _leaks(root, sentinel)
-    assert leaks and all(data_dir(root) in p.parents for p in leaks), leaks
+    assert any(p.parent.name == "spool" for p in leaks), leaks
+    assert all(data_dir(root) in p.parents for p in leaks), leaks
