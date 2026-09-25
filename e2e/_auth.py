@@ -8,6 +8,7 @@ AUTH_KEYS = ("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CODE_USE_BE
 _PREFIXES = ("AWS_",)
 # 別名（haiku・sonnet）の解決先。Bedrock では組織で有効なモデル ID への固定が要りうる
 _MODEL_KEYS = ("ANTHROPIC_DEFAULT_HAIKU_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL")
+_ENDPOINT_KEYS = ("ANTHROPIC_BEDROCK_BASE_URL",)
 
 
 class _Secret(str):
@@ -26,5 +27,5 @@ def auth_env() -> dict:
     return {
         k: _Secret(v)
         for k, v in os.environ.items()
-        if k in AUTH_KEYS + _MODEL_KEYS or k.startswith(_PREFIXES)
+        if k in AUTH_KEYS + _MODEL_KEYS + _ENDPOINT_KEYS or k.startswith(_PREFIXES)
     }

@@ -39,12 +39,12 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt  # 初回
 
 ## 認証
 
-要認証のテスト（marker `requires_auth`）は、Claude Code の認証を環境変数で渡して実行する。Bedrock なら
-`CLAUDE_CODE_USE_BEDROCK=1` と `AWS_PROFILE`・`AWS_REGION` などの `AWS_*`、ほかの方式の例は `ANTHROPIC_API_KEY`。
-無ければ skip される。渡るのは `e2e/_auth.py` の許可リストの変数だけで、隔離した config には
-`~/.claude/settings.json` の `env` が引き継がれない（公式文書からの推論で未検証）。Bedrock での実行は未検証。
-モデルは別名（`haiku`、effort の列だけ `sonnet`）で指定し、解決先は `ANTHROPIC_DEFAULT_HAIKU_MODEL` /
-`ANTHROPIC_DEFAULT_SONNET_MODEL` で固定できる。
+要認証のテスト（marker `requires_auth`）は、Claude Code の認証を環境変数で渡して実行する。無ければ黙って skip される。
+Bedrock なら `CLAUDE_CODE_USE_BEDROCK=1` と `AWS_PROFILE`・`AWS_REGION` などの `AWS_*`（他の方式の例は `ANTHROPIC_API_KEY`）。
+`/setup-bedrock` で設定した値は `~/.claude/settings.json` の `env` にあり、隔離した config には届かないので、同じ値を export する。
+SSO なら先に `aws sso login` を済ませる（`awsAuthRefresh` も settings のキーなので届かない）。Bedrock での実行は未検証。
+渡るのは `e2e/_auth.py` とプロキシ（`e2e/_root.py`）の許可リストの変数だけ。モデルは別名 `haiku`（effort の列だけ `sonnet`）で、
+解決先は `ANTHROPIC_DEFAULT_HAIKU_MODEL` / `ANTHROPIC_DEFAULT_SONNET_MODEL` で固定できる。
 
 ## 安全の約束
 
@@ -170,13 +170,8 @@ cd <ルート>/project && CLAUDE_CONFIG_DIR=<ルート>/config claude   # 対話
 
 ### 前提と罠
 
-- 起こし方: スラッシュコマンド（`UserPromptExpansion`）、`echo` の成功と作業ディレクトリ内の存在しない
-  パスへの `ls`（`PostToolUse` / `PostToolUseFailure`）、スキル（`skill_name`）、サブエージェント
-  （`agent_id`）、`--continue` での `/compact`（`PreCompact`・`source`）。ツールは `--allowedTools` で
-  必要なものだけ許す
-- 許可されたディレクトリの外を触るコマンドは権限で拒否され、`PostToolUseFailure` にならない
-- `effort_level` は effort に対応するモデルでしか埋まらないので、3 回目だけ `sonnet` で起動する
-  （どちらも `docs/knowledge/claude-code-behavior.md`）
+- ツールの失敗と `effort` の起こし方の制約は `docs/knowledge/claude-code-behavior.md`（`PostToolUseFailure` と
+  `effort` の行）
 - 期待するイベントは `hooks.json` から導くため、hook を登録から外すと期待も一緒に減る。外したことには、
   その hook でしか埋まらない列が NULL になることで気づく。他の hook と同じ列しか持たない hook
   （`UserPromptSubmit` など）の登録漏れは検出できない
@@ -200,10 +195,11 @@ cd <ルート>/project && CLAUDE_CONFIG_DIR=<ルート>/config claude   # 対話
 
 - 送信は前回から 10 分以上経ったときだけ起動する（`docs/spec/plugin.md` の「蓄積と送信」）。
   テストは `sent_at` を消して次の送信を起こす。送信先は installPath の `config.json` を直接直す
-- 未ログインの `claude -p` でも `SessionStart` の後に `UserPromptSubmit` が発火し、送信の退避より後に
-  queue へ積まれる（`docs/knowledge/claude-code-behavior.md`）。queue が空になることは判定に使えない
+- queue が空になることは送信完了の判定に使えない。未ログインでも `SessionStart` の後に発火する hook が
+  退避の後に積む（`docs/knowledge/claude-code-behavior.md`）
 - 送信プロセスの完了は、プラグインの data 配下が 2 秒変化しないことで判断する（OS に依存しない）。
-  片付けも同じ待ちを経る。接続したまま応答しない送信先では、完了と見分けられない
+  片付けも同じ待ちを経る。接続したまま応答しない送信先では完了と見分けられないため、組み立てる
+  `config.json` の送信タイムアウトを 5 秒に縮めている
 
 ### 実物でも確かめられない限界
 

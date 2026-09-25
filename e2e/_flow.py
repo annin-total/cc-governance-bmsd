@@ -10,6 +10,8 @@ from _server import BASE_PATH
 _CLI_TIMEOUT = 120
 _SESSION_TIMEOUT = 90
 _ASK_TIMEOUT = 300
+# 応答しない送信先で送信プロセスが片付けの後まで残らないように短くする
+_SEND_TIMEOUT_SEC = 5
 
 
 def ok(root, *args: str) -> None:
@@ -30,7 +32,9 @@ def ingest_config(port: int, token: str) -> dict:
     """送信先を 127.0.0.1:`port` の集計サーバにした config.json の上書き（install の overrides）。"""
     cfg = json.loads((PLUGIN_SRC / "config.json").read_text(encoding="utf-8"))
     cfg.update(
-        ingest_url=f"http://127.0.0.1:{port}{BASE_PATH}/ingest", ingest_token=token
+        ingest_url=f"http://127.0.0.1:{port}{BASE_PATH}/ingest",
+        ingest_token=token,
+        timeout_sec=_SEND_TIMEOUT_SEC,
     )
     return {"config.json": json.dumps(cfg).encode()}
 

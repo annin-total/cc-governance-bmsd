@@ -8,26 +8,28 @@ import stat
 import subprocess
 import sys
 import tempfile
-import time
 from pathlib import Path
 from typing import Any, Optional
 
 import pytest
 from _auth import auth_env
+from _quiet import wait_quiet
 
 MARKER = ".cc-e2e-root"
 KEEP_ENV = "CC_E2E_KEEP"
 _PASS_KEYS = (
     "PATH", "HOME", "USER", "LOGNAME", "LANG", "LC_ALL", "TERM",
     "SYSTEMROOT", "USERPROFILE", "APPDATA", "LOCALAPPDATA",
+    # 社内網の出口（未ログインの起動も外へ出る）。ループバック宛ては NO_PROXY で外す
+    "HTTPS_PROXY", "HTTP_PROXY", "https_proxy", "http_proxy", "NODE_EXTRA_CA_CERTS",
 )  # fmt: skip
+_LOOPBACK = "127.0.0.1,localhost"
 _FIXED_ENV = {
     "DISABLE_AUTOUPDATER": "1",
     "GIT_TERMINAL_PROMPT": "0",
     # 利用者の gitconfig（署名・改行変換・insteadOf など）の影響を消す。git 2.32 以上
     "GIT_CONFIG_GLOBAL": os.devnull,
     "GIT_CONFIG_NOSYSTEM": "1",
-    "NO_PROXY": "127.0.0.1,localhost",
 }
 # 起動時点の本物の config。import 時に控える（以後 os.environ を信用しない）
 REAL_CONFIG_DIRS = tuple(
@@ -36,10 +38,6 @@ REAL_CONFIG_DIRS = tuple(
         Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude"),
     }
 )
-# 切り離された送信プロセスの完了待ち。起動の遅れ（数百 ms）より長く静止したら終わったとみなす
-_QUIET_SEC = 2.0
-_QUIET_TIMEOUT = 60
-_POLL_SEC = 0.25
 # 許可リストの外から、テストが個別に渡してよい変数（無効化スイッチの検証用）
 _EXTRA_KEYS = ("CC_GOVERNANCE_DISABLE",)
 
@@ -76,6 +74,8 @@ class E2ERoot:
         assert _real(self.config) not in real, f"隔離先が本物の config: {self.config}"
         env = {k: os.environ[k] for k in _PASS_KEYS if k in os.environ}
         env.update(_FIXED_ENV, CLAUDE_CONFIG_DIR=str(self.config))
+        user = os.environ.get("NO_PROXY") or os.environ.get("no_proxy")
+        env["NO_PROXY"] = env["no_proxy"] = f"{user},{_LOOPBACK}" if user else _LOOPBACK
         env.update({k: str(self.tmp) for k in ("TMPDIR", "TEMP", "TMP")})
         env["PYTHONPYCACHEPREFIX"] = str(self.pycache)
         env.update(extra)
@@ -117,8 +117,11 @@ class E2ERoot:
         return self.run([path, *args], timeout=timeout, extra_env=extra_env, auth=auth)
 
     def cleanup(self) -> None:
-        """切り離された送信プロセスを待ってから消す。"""
-        self.wait_quiet()
+        """切り離された送信プロセスを待ってから消す。待ちきれなければ消さずに失敗する。"""
+        try:
+            self.wait_quiet()
+        except TimeoutError as e:
+            raise TimeoutError(f"{e}\n隔離ルートを残した: {self.path}") from e
         if os.environ.get(KEEP_ENV) == "1":
             sys.stderr.write(f"\n隔離ルートを残した: {self.path}\n")
             return
@@ -128,17 +131,8 @@ class E2ERoot:
         shutil.rmtree(p, onerror=_force_remove)
 
     def wait_quiet(self) -> None:
-        """data 配下が `_QUIET_SEC` 静止するまで待つ。応答待ちで止まった送信は完了と見分けられない。"""
-        deadline = time.monotonic() + _QUIET_TIMEOUT
-        last, since = None, time.monotonic()
-        while time.monotonic() < deadline:
-            state = _tree_state(self.config / "plugins" / "data")
-            if state != last:
-                last, since = state, time.monotonic()
-            elif time.monotonic() - since >= _QUIET_SEC:
-                return
-            time.sleep(_POLL_SEC)
-        raise TimeoutError(f"{_QUIET_TIMEOUT} 秒たっても data 配下が静止しない: {last}")
+        """プラグインの data 配下が静止するまで待つ（切り離された送信プロセスの完了待ち）。"""
+        wait_quiet(self.config / "plugins" / "data")
 
     # --- 証拠の読み出し
     def pycache_of(self, src_dir: Path) -> Path:
@@ -164,20 +158,6 @@ def hook_rows(data_dir: Path) -> list:
     for f in sorted((data_dir / "spool").glob("*.jsonl")):
         rows += _jsonl(f)
     return rows
-
-
-def _tree_state(top: Path) -> list:
-    """`top` 配下のファイルの (パス, サイズ, mtime)。走査中に消えたものは飛ばす。"""
-    state = []
-    # os.walk は走査中に消えたディレクトリを黙って飛ばす（rglob は例外になりうる）
-    for d, _, files in os.walk(top):
-        for name in files:
-            try:
-                st = os.stat(os.path.join(d, name))
-            except FileNotFoundError:
-                continue
-            state.append((os.path.join(d, name), st.st_size, st.st_mtime_ns))
-    return sorted(state)
 
 
 def _jsonl(path: Path) -> list:
