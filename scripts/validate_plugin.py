@@ -208,10 +208,15 @@ def check_no_gitignored_files(repo_root: Path, plugin_name: str) -> None:
             errors="replace",
             check=False,
         )
-        lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
     except OSError:
-        lines = []
+        ng("git に無視されているファイルを検査できない（git を実行できない）")
+        return
+    # 検査できなかったことを合格にしない（git 管理外のツリーでは returncode が 0 以外になる）。
+    if result.returncode != 0:
+        ng(f"git に無視されているファイルを検査できない（rc={result.returncode}）")
+        return
 
+    lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
     ignored = [ln for ln in lines if Path(ln).name not in OS_NOISE_NAMES]
     if ignored:
         for i in ignored:
@@ -373,7 +378,11 @@ def _run_hook_commands(
 def check_hook_execution(
     hooks_json: Path, commands: Optional[list], plugin_dir: Path
 ) -> None:
-    real_settings = Path.home() / ".claude" / "settings.json"
+    # 利用者が CLAUDE_CONFIG_DIR を設定していれば、実際に使われているのはその下の settings.json。
+    real_config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
+    real_settings = (
+        Path(real_config_dir) if real_config_dir else Path.home() / ".claude"
+    ) / "settings.json"
     hash_before = _settings_hash(real_settings)
 
     if hooks_json.is_file():
@@ -383,12 +392,12 @@ def check_hook_execution(
 
     hash_after = _settings_hash(real_settings)
     if hash_before == hash_after:
-        ok("実 ~/.claude/settings.json は変更されていない（隔離が効いている）")
+        ok(f"実 {real_settings} は変更されていない（隔離が効いている）")
     else:
-        ng("実 ~/.claude/settings.json が変更された（隔離が効いていない・重大）")
+        ng(f"実 {real_settings} が変更された（隔離が効いていない・重大）")
 
 
-# --- 10. Python 3.9 で動く構文であること（ruff が使える場合のみ）---
+# --- 10. Python 3.9 で動く構文であること（ruff が無ければ NG）---
 def _find_ruff(repo_root: Path) -> Optional[str]:
     """ruff を PATH とリポジトリの仮想環境から探す。"""
     found = shutil.which("ruff")
@@ -409,7 +418,7 @@ def _find_ruff(repo_root: Path) -> Optional[str]:
 def check_ruff(repo_root: Path, plugin_name: str) -> None:
     ruff = _find_ruff(repo_root)
     if ruff is None:
-        skip("ruff check: ruff が見つからない")
+        ng("ruff check: ruff が見つからない（検査できない）")
         return
     result = subprocess.run(
         [ruff, "check", plugin_name],
