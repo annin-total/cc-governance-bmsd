@@ -124,31 +124,56 @@ def test_is_interrupt_false_becomes_int_zero(hook_inputs):
         assert row["is_interrupt"] is not False
 
 
-def test_is_interrupt_none_when_absent(all_hook_inputs):
-    """#10: is_interrupt を持たない 109 件で None。"""
-    rows = [raw for raw in all_hook_inputs if "is_interrupt" not in raw]
-    assert len(rows) == 109
+# (hook 入力の選別条件, 件数, None になる列)。選別した行ではすべての列が None になる。
+_ABSENT_CASES = {
+    "is_interrupt": (lambda raw: "is_interrupt" not in raw, 109, ("is_interrupt",)),
+    "permission_mode": (
+        lambda raw: "permission_mode" not in raw,
+        18,
+        ("permission_mode",),
+    ),
+    "effort_level": (
+        lambda raw: not isinstance(raw.get("effort"), dict),
+        38,
+        ("effort_level",),
+    ),
+    "compact_trigger": (lambda raw: "trigger" not in raw, 111, ("compact_trigger",)),
+    "source": (lambda raw: "source" not in raw, 103, ("source",)),
+    "command_name_source": (
+        lambda raw: raw["hook_event_name"] != "UserPromptExpansion",
+        108,
+        ("command_name", "command_source"),
+    ),
+    "prompt_id": (lambda raw: "prompt_id" not in raw, 9, ("prompt_id",)),
+}
+
+# 入力のキーと出力の列が同名で、値がそのまま入るもの: (キー, 持つ件数)
+_COPIED_CASES = {"permission_mode": 94, "prompt_id": 103}
+
+
+@pytest.mark.parametrize(
+    ("predicate", "count", "columns"),
+    _ABSENT_CASES.values(),
+    ids=_ABSENT_CASES.keys(),
+)
+def test_field_none_when_absent(all_hook_inputs, predicate, count, columns):
+    rows = [raw for raw in all_hook_inputs if predicate(raw)]
+    assert len(rows) == count
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
-        assert row["is_interrupt"] is None
+        for column in columns:
+            assert row[column] is None
 
 
-def test_permission_mode_present(all_hook_inputs):
-    """#11: permission_mode を持つ 94 件で値が一致する。"""
-    rows = [raw for raw in all_hook_inputs if "permission_mode" in raw]
-    assert len(rows) == 94
+@pytest.mark.parametrize(
+    ("key", "count"), _COPIED_CASES.items(), ids=_COPIED_CASES.keys()
+)
+def test_field_copied_when_present(all_hook_inputs, key, count):
+    rows = [raw for raw in all_hook_inputs if key in raw]
+    assert len(rows) == count
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
-        assert row["permission_mode"] == raw["permission_mode"]
-
-
-def test_permission_mode_absent(all_hook_inputs):
-    """#12: permission_mode を持たない 18 件で None。"""
-    rows = [raw for raw in all_hook_inputs if "permission_mode" not in raw]
-    assert len(rows) == 18
-    for raw in rows:
-        row = collect.extract_event(raw, raw["hook_event_name"])
-        assert row["permission_mode"] is None
+        assert row[key] == raw[key]
 
 
 def test_effort_level_present(all_hook_inputs):
@@ -164,15 +189,6 @@ def test_effort_level_present(all_hook_inputs):
         assert row["effort_level"] in ("high", "medium")
 
 
-def test_effort_level_absent(all_hook_inputs):
-    """#14: effort を持たない 38 件で None。"""
-    rows = [raw for raw in all_hook_inputs if not isinstance(raw.get("effort"), dict)]
-    assert len(rows) == 38
-    for raw in rows:
-        row = collect.extract_event(raw, raw["hook_event_name"])
-        assert row["effort_level"] is None
-
-
 def test_compact_trigger_present(hook_inputs):
     """#15: PreCompact 1 件で compact_trigger = manual。"""
     rows = list(hook_inputs("PreCompact"))
@@ -181,15 +197,6 @@ def test_compact_trigger_present(hook_inputs):
     assert raw["trigger"] == "manual"
     row = collect.extract_event(raw, "PreCompact")
     assert row["compact_trigger"] == "manual"
-
-
-def test_compact_trigger_absent(all_hook_inputs):
-    """#16: trigger を持たない 111 件で None。"""
-    rows = [raw for raw in all_hook_inputs if "trigger" not in raw]
-    assert len(rows) == 111
-    for raw in rows:
-        row = collect.extract_event(raw, raw["hook_event_name"])
-        assert row["compact_trigger"] is None
 
 
 def test_source_present(hook_inputs):
@@ -201,15 +208,6 @@ def test_source_present(hook_inputs):
         assert row["source"] == raw["source"]
 
 
-def test_source_absent(all_hook_inputs):
-    """#18: source を持たない 103 件で None。"""
-    rows = [raw for raw in all_hook_inputs if "source" not in raw]
-    assert len(rows) == 103
-    for raw in rows:
-        row = collect.extract_event(raw, raw["hook_event_name"])
-        assert row["source"] is None
-
-
 def test_command_name_source_present(hook_inputs):
     """#19: UserPromptExpansion 4 件で command_name / command_source が一致する。"""
     rows = list(hook_inputs("UserPromptExpansion"))
@@ -218,38 +216,6 @@ def test_command_name_source_present(hook_inputs):
         row = collect.extract_event(raw, "UserPromptExpansion")
         assert row["command_name"] == raw["command_name"]
         assert row["command_source"] == raw["command_source"]
-
-
-def test_command_name_source_absent(all_hook_inputs):
-    """#20: UserPromptExpansion 以外の 108 件で None。"""
-    rows = [
-        raw
-        for raw in all_hook_inputs
-        if raw["hook_event_name"] != "UserPromptExpansion"
-    ]
-    assert len(rows) == 108
-    for raw in rows:
-        row = collect.extract_event(raw, raw["hook_event_name"])
-        assert row["command_name"] is None
-        assert row["command_source"] is None
-
-
-def test_prompt_id_present(all_hook_inputs):
-    """#21: prompt_id を持つ 103 件で値が一致する。"""
-    rows = [raw for raw in all_hook_inputs if "prompt_id" in raw]
-    assert len(rows) == 103
-    for raw in rows:
-        row = collect.extract_event(raw, raw["hook_event_name"])
-        assert row["prompt_id"] == raw["prompt_id"]
-
-
-def test_prompt_id_absent(all_hook_inputs):
-    """#22: prompt_id を持たない 9 件で None。"""
-    rows = [raw for raw in all_hook_inputs if "prompt_id" not in raw]
-    assert len(rows) == 9
-    for raw in rows:
-        row = collect.extract_event(raw, raw["hook_event_name"])
-        assert row["prompt_id"] is None
 
 
 def test_context_tokens_called_for_stop(hook_inputs, monkeypatch):
