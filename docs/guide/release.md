@@ -8,8 +8,8 @@
 
 - 変更がこのリポジトリの `main` にマージ済みであること（配布リポジトリの `main` は 8 でマージする）
 - `pytest -q tests` が通っていること
-- `pytest e2e` が通っていること。Docker・認証の無い環境では該当モジュールが skip になるため、
-  skip が出たら何が未確認のまま残っているかを意識する（`docs/guide/e2e.md`）
+- `pytest e2e` が通っていること。`claude` が PATH に無いと全件 skip になり、Docker・認証の無い環境では
+  該当モジュールだけが skip になる。skip が出たら何が未確認のまま残っているかを意識する（`docs/guide/e2e.md`）
 - **初回リリースの前に、`plugin/config.json` の `ingest_url` と `ingest_token` を埋める。**空のまま配ると、端末は 1 件も送信しないまま「導入済み」に見える。検証スクリプトはこれを見ない
 
 ## 2. `version` を上げる
@@ -67,48 +67,41 @@ python scripts/validate.py
 
    `staging` がまだ無ければこの push が作成を兼ねる。以降のリリースでも同じコマンドで進める。作業ブランチの履歴を書き換えた場合など fast-forward できないときは `--force` が要る。`staging` は検証専用で、履歴を保存する対象ではないため force push してよい
 
-2. 使い捨ての `CLAUDE_CONFIG_DIR` を用意し、認証を環境変数で渡す（会社は Bedrock。渡す変数は
-   `docs/guide/e2e.md` の「認証」の節）
+2. 使い捨ての隔離ディレクトリを用意する
 
    ```
-   export CLAUDE_CONFIG_DIR="$(mktemp -d)"
-   # Bedrock の場合: CLAUDE_CODE_USE_BEDROCK=1 と AWS_PROFILE・AWS_REGION などの AWS_* を export
+   STAGING="$(mktemp -d)"
    ```
 
-3. ref に `staging` を付けて登録し、導入する。CLI では `#` の後ろに ref を書く
+3. ref に `staging` を付けて登録し、導入する。`CLAUDE_CONFIG_DIR` はコマンドごとに前置し、export
+   しない。CLI では `#` の後ろに ref を書く
 
    ```
-   claude plugin marketplace add <owner>/<repo>#staging --scope user
-   claude plugin install governance@cc-marketplace-governance-bmsd --scope user
+   CLAUDE_CONFIG_DIR="$STAGING" claude plugin marketplace add <owner>/<repo>#staging --scope user
+   CLAUDE_CONFIG_DIR="$STAGING" claude plugin install governance@cc-marketplace-governance-bmsd --scope user
+   CLAUDE_CONFIG_DIR="$STAGING" claude plugin list
    ```
 
-4. セッションを開き、`/plugin` の版と動作を確かめる
+   合格: `governance` が `enabled` で現れ、版が上げた版と一致する（`main` の版のままなら ref が
+   効いていない）
 
-5. 確認後、その `CLAUDE_CONFIG_DIR` のディレクトリを消す
+4. 認証を環境変数で渡し（会社は Bedrock。渡す変数は `docs/guide/e2e.md` の「認証」の節）、空の
+   ディレクトリからセッションを開いて `/plugin` の版と動作を確かめる
 
    ```
-   rm -rf "$CLAUDE_CONFIG_DIR"
+   cd "$(mktemp -d)" && CLAUDE_CONFIG_DIR="$STAGING" claude
    ```
+
+5. 確認後、`STAGING` のディレクトリを消す
+
+   ```
+   rm -rf "$STAGING"
+   ```
+
+   macOS でログインした場合、キーチェーンに config ごとの項目が残る（消し方は未検証。
+   `docs/guide/e2e.md` の「手動確認の準備」）
 
 6. 「PR を作りマージする」へ進む
-
-`settings.json` に直接書く場合は `source.ref` を置く。CLI で登録しても同じ形で書き込まれる。
-
-```json
-"extraKnownMarketplaces": {
-  "cc-marketplace-governance-bmsd": {
-    "source": { "source": "github", "repo": "<owner>/<repo>", "ref": "staging" }
-  }
-}
-```
-
-実測した挙動（Claude Code 2.1.282）:
-
-- ref を付けている間、2 段階の更新（`claude plugin marketplace update` → `claude plugin update`）は
-  `staging` の先端の版を入れる。`main` の版は拾わない
-- `policy.py` が配る `autoUpdate` は `source` を書き換えないので、ref は保たれる
-
-未検証: 起動時の自動更新（`autoUpdate`）が ref を付けたまま `staging` の新しい版を取り込むか。
 
 ## 8. PR を作りマージする
 
@@ -144,3 +137,4 @@ claude plugin update governance
 - 2026-09-25: 配布側の作業を「作業ブランチへ複製・コミット→ staging へ push → 確認 → main へ PR」の順に揃え、1 の前提が指す `main` を明記した
 - 2026-09-25: 効果測定の実験の差し替えと、配布物と正本の一致の確認を確認項目に加えた
 - 2026-09-26: `staging` の確認を、本人の実環境ではなく使い捨ての `CLAUDE_CONFIG_DIR` で行う手順に変更した。前提に `pytest e2e` を加えた
+- 2026-09-26: `staging` の確認手順を `CLAUDE_CONFIG_DIR` の前置に統一し、ref の実測メモを `docs/knowledge/claude-code-behavior.md` へ移した。`pytest e2e` の skip 条件を明確にした
