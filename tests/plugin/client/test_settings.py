@@ -102,14 +102,14 @@ _BASELINE_ALREADY_OK = {
 }
 
 
-def test_already_ok_3_1_both_match(tmp_path):
+def test_already_ok_both_match(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_ALREADY_OK)
     rows = _rows_by_key(_apply(path))
     assert rows[PCT_KEY][3] == "already_ok"
     assert rows[AUTOUPDATE_KEY][3] == "already_ok"
 
 
-def test_already_ok_3_2_mtime_bit_exact(tmp_path):
+def test_already_ok_mtime_bit_exact(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_ALREADY_OK)
     os.utime(path, ns=(123_000_000_000, 456_000_000_000))
     before = path.stat().st_mtime_ns
@@ -117,20 +117,20 @@ def test_already_ok_3_2_mtime_bit_exact(tmp_path):
     assert path.stat().st_mtime_ns == before
 
 
-def test_already_ok_3_3_bytes_unchanged(tmp_path):
+def test_already_ok_bytes_unchanged(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_ALREADY_OK)
     before = path.read_bytes()
     _apply(path)
     assert path.read_bytes() == before
 
 
-def test_already_ok_3_4_no_tmp_file_left(tmp_path):
+def test_already_ok_no_tmp_file_left(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_ALREADY_OK)
     _apply(path)
     assert len(list(tmp_path.iterdir())) == 1
 
 
-def test_already_ok_3_5_partial_diff_writes_only_that_key(tmp_path):
+def test_already_ok_partial_diff_writes_only_that_key(tmp_path):
     content = {
         "env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"},
         "extraKnownMarketplaces": {
@@ -143,13 +143,13 @@ def test_already_ok_3_5_partial_diff_writes_only_that_key(tmp_path):
     assert rows[AUTOUPDATE_KEY][3] == "applied"
 
 
-def test_already_ok_3_6_numeric_pct_is_applied(tmp_path):
+def test_already_ok_numeric_pct_is_applied(tmp_path):
     path = _write_settings(tmp_path, {"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": 60}})
     rows = _rows_by_key(_apply(path))
     assert rows[PCT_KEY][3] == "applied"
 
 
-def test_already_ok_3_7_no_writable_diff_leaves_mtime(tmp_path):
+def test_already_ok_no_writable_diff_leaves_mtime(tmp_path):
     path = _write_settings(tmp_path, {"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"}})
     os.utime(path, ns=(123_000_000_000, 456_000_000_000))
     before = path.stat().st_mtime_ns
@@ -169,14 +169,14 @@ _BASELINE_APPLY = {
 }
 
 
-def test_apply_4_1_top_level_keys_preserved(tmp_path):
+def test_apply_top_level_keys_preserved(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_APPLY)
     _apply(path)
     data = json.loads(path.read_text(encoding="utf-8"))
     assert set(data.keys()) == {"model", "permissions", "env", "statusLine"}
 
 
-def test_apply_4_2_untouched_values_preserved(tmp_path):
+def test_apply_untouched_values_preserved(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_APPLY)
     _apply(path)
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -185,7 +185,7 @@ def test_apply_4_2_untouched_values_preserved(tmp_path):
     assert data["statusLine"] == {"type": "command", "command": "echo hi"}
 
 
-def test_apply_4_3_env_keys_and_http_proxy_preserved(tmp_path):
+def test_apply_env_keys_and_http_proxy_preserved(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_APPLY)
     _apply(path)
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -193,7 +193,7 @@ def test_apply_4_3_env_keys_and_http_proxy_preserved(tmp_path):
     assert data["env"]["HTTP_PROXY"] == "http://proxy.example:8080"
 
 
-def test_apply_4_4_pct_applied_autoupdate_skipped(tmp_path):
+def test_apply_pct_applied_autoupdate_skipped(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_APPLY)
     rows = _rows_by_key(_apply(path))
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -202,7 +202,7 @@ def test_apply_4_4_pct_applied_autoupdate_skipped(tmp_path):
     assert "extraKnownMarketplaces" not in data
 
 
-def test_apply_4_5_env_section_created(tmp_path):
+def test_apply_env_section_created(tmp_path):
     path = _write_settings(tmp_path, {})
     _apply(path)
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -210,7 +210,7 @@ def test_apply_4_5_env_section_created(tmp_path):
     assert data["env"] == {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"}
 
 
-def test_apply_4_6_file_created_when_missing(tmp_path):
+def test_apply_file_created_when_missing(tmp_path):
     path = tmp_path / "settings.json"
     rows = _rows_by_key(_apply(path))
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -219,7 +219,7 @@ def test_apply_4_6_file_created_when_missing(tmp_path):
     assert rows[AUTOUPDATE_KEY][3] == "skipped_missing"
 
 
-def test_apply_4_7_valid_json_with_trailing_newline(tmp_path):
+def test_apply_valid_json_with_trailing_newline(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_APPLY)
     _apply(path)
     text = path.read_text(encoding="utf-8")
@@ -228,13 +228,13 @@ def test_apply_4_7_valid_json_with_trailing_newline(tmp_path):
     assert not text.endswith("\n\n")
 
 
-def test_apply_4_8_no_tmp_file_left(tmp_path):
+def test_apply_no_tmp_file_left(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_APPLY)
     _apply(path)
     assert len(_entries(tmp_path)) == 1
 
 
-def test_apply_4_9_replace_failure_leaves_original(tmp_path, monkeypatch):
+def test_apply_replace_failure_leaves_original(tmp_path, monkeypatch):
     path = _write_settings(tmp_path, _BASELINE_APPLY)
     before_bytes = path.read_bytes()
     before_mtime = path.stat().st_mtime_ns
@@ -251,7 +251,7 @@ def test_apply_4_9_replace_failure_leaves_original(tmp_path, monkeypatch):
     assert rows[PCT_KEY][3] == "write_failed"
 
 
-def test_apply_4_10_tmp_write_failure_leaves_original(tmp_path, monkeypatch):
+def test_apply_tmp_write_failure_leaves_original(tmp_path, monkeypatch):
     path = _write_settings(tmp_path, _BASELINE_APPLY)
     before_bytes = path.read_bytes()
     before_mtime = path.stat().st_mtime_ns
@@ -268,7 +268,7 @@ def test_apply_4_10_tmp_write_failure_leaves_original(tmp_path, monkeypatch):
     assert rows[PCT_KEY][3] == "write_failed"
 
 
-def test_apply_4_11_existing_marketplace_entry_already_ok(tmp_path):
+def test_apply_existing_marketplace_entry_already_ok(tmp_path):
     content = dict(_BASELINE_APPLY)
     content["extraKnownMarketplaces"] = {
         "cc-marketplace-governance-bmsd": {
@@ -286,7 +286,7 @@ def test_apply_4_11_existing_marketplace_entry_already_ok(tmp_path):
     assert entry["source"] == {"source": "github", "repo": "x/y"}
 
 
-def test_apply_4_12_autoupdate_restored_siblings_preserved(tmp_path):
+def test_apply_autoupdate_restored_siblings_preserved(tmp_path):
     content = dict(_BASELINE_APPLY)
     content["extraKnownMarketplaces"] = {
         "other-marketplace": {"autoUpdate": True},
@@ -306,7 +306,7 @@ def test_apply_4_12_autoupdate_restored_siblings_preserved(tmp_path):
     assert entry["source"] == {"source": "github", "repo": "x/y"}
 
 
-def test_apply_4_13_no_extraknownmarketplaces_section_at_all(tmp_path):
+def test_apply_no_extraknownmarketplaces_section_at_all(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_APPLY)
     rows = _rows_by_key(_apply(path))
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -314,7 +314,7 @@ def test_apply_4_13_no_extraknownmarketplaces_section_at_all(tmp_path):
     assert "extraKnownMarketplaces" not in data
 
 
-def test_apply_4_14_entry_missing_not_created(tmp_path):
+def test_apply_entry_missing_not_created(tmp_path):
     content = dict(_BASELINE_APPLY)
     content["extraKnownMarketplaces"] = {
         "other-marketplace": {
@@ -334,7 +334,7 @@ def test_apply_4_14_entry_missing_not_created(tmp_path):
     }
 
 
-def test_apply_4_15_leaf_missing_is_not_entry_missing(tmp_path):
+def test_apply_leaf_missing_is_not_entry_missing(tmp_path):
     content = dict(_BASELINE_APPLY)
     content["extraKnownMarketplaces"] = {
         "cc-marketplace-governance-bmsd": {
@@ -374,7 +374,7 @@ def _interrupt_after_read(monkeypatch, path, new_content):
     monkeypatch.setattr(_settings.tempfile, "mkstemp", _mkstemp)
 
 
-def test_conflict_5_1_both_skipped(tmp_path, monkeypatch):
+def test_conflict_both_skipped(tmp_path, monkeypatch):
     path = _write_settings(tmp_path, _CONFLICT_INPUT)
     _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
     rows = _rows_by_key(_apply(path))
@@ -382,14 +382,14 @@ def test_conflict_5_1_both_skipped(tmp_path, monkeypatch):
     assert rows[AUTOUPDATE_KEY][3] == "skipped_conflict"
 
 
-def test_conflict_5_2_file_keeps_interrupted_content(tmp_path, monkeypatch):
+def test_conflict_file_keeps_interrupted_content(tmp_path, monkeypatch):
     path = _write_settings(tmp_path, _CONFLICT_INPUT)
     _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
     _apply(path)
     assert json.loads(path.read_text(encoding="utf-8")) == {"model": "sonnet"}
 
 
-def test_conflict_5_3_prev_value_is_read_time_value(tmp_path, monkeypatch):
+def test_conflict_prev_value_is_read_time_value(tmp_path, monkeypatch):
     path = _write_settings(tmp_path, _CONFLICT_INPUT)
     _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
     rows = _rows_by_key(_apply(path))
@@ -397,14 +397,14 @@ def test_conflict_5_3_prev_value_is_read_time_value(tmp_path, monkeypatch):
     assert rows[AUTOUPDATE_KEY][2] is None
 
 
-def test_conflict_5_4_no_tmp_file_left(tmp_path, monkeypatch):
+def test_conflict_no_tmp_file_left(tmp_path, monkeypatch):
     path = _write_settings(tmp_path, _CONFLICT_INPUT)
     _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
     _apply(path)
     assert len(list(tmp_path.iterdir())) == 1
 
 
-def test_conflict_5_5_same_content_different_mtime(tmp_path, monkeypatch):
+def test_conflict_same_content_different_mtime(tmp_path, monkeypatch):
     path = _write_settings(tmp_path, _CONFLICT_INPUT)
     _interrupt_after_read(monkeypatch, path, _CONFLICT_INPUT)
     rows = _rows_by_key(_apply(path))
@@ -412,7 +412,7 @@ def test_conflict_5_5_same_content_different_mtime(tmp_path, monkeypatch):
     assert rows[AUTOUPDATE_KEY][3] == "skipped_conflict"
 
 
-def test_parse_failed_5_6_truncated_json(tmp_path):
+def test_parse_failed_truncated_json(tmp_path):
     path = tmp_path / "settings.json"
     path.write_text('{"model":"opus"', encoding="utf-8")
     before_bytes = path.read_bytes()
@@ -424,7 +424,7 @@ def test_parse_failed_5_6_truncated_json(tmp_path):
     assert path.stat().st_mtime_ns == before_mtime
 
 
-def test_parse_failed_5_7_prev_value_none_no_exception(tmp_path):
+def test_parse_failed_prev_value_none_no_exception(tmp_path):
     path = tmp_path / "settings.json"
     path.write_text('{"model":"opus"', encoding="utf-8")
     rows = _rows_by_key(_apply(path))
@@ -432,7 +432,7 @@ def test_parse_failed_5_7_prev_value_none_no_exception(tmp_path):
     assert rows[AUTOUPDATE_KEY][2] is None
 
 
-def test_parse_failed_5_8_empty_file(tmp_path):
+def test_parse_failed_empty_file(tmp_path):
     path = tmp_path / "settings.json"
     path.write_text("", encoding="utf-8")
     rows = _rows_by_key(_apply(path))
@@ -440,7 +440,7 @@ def test_parse_failed_5_8_empty_file(tmp_path):
     assert path.read_bytes() == b""
 
 
-def test_parse_failed_5_9_top_level_list(tmp_path):
+def test_parse_failed_top_level_list(tmp_path):
     path = tmp_path / "settings.json"
     path.write_text("[1,2,3]", encoding="utf-8")
     before_bytes = path.read_bytes()
@@ -449,7 +449,7 @@ def test_parse_failed_5_9_top_level_list(tmp_path):
     assert path.read_bytes() == before_bytes
 
 
-def test_parse_failed_5_10_unreadable_file(tmp_path):
+def test_parse_failed_unreadable_file(tmp_path):
     path = _write_settings(tmp_path, {"model": "opus"})
     os.chmod(path, 0o000)
     try:
@@ -462,34 +462,34 @@ def test_parse_failed_5_10_unreadable_file(tmp_path):
 # ---- タスク 6: apply_result の 6 通りが揃うことの確認 ----
 
 
-def _result_6_1(tmp_path):
+def _result_applied(tmp_path):
     path = _write_settings(tmp_path, {})
     return _rows_by_key(_apply(path))
 
 
-def _result_6_2(tmp_path):
+def _result_applied_with_prev(tmp_path):
     path = _write_settings(tmp_path, {"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80"}})
     return _rows_by_key(_apply(path))
 
 
-def _result_6_3(tmp_path):
+def _result_already_ok(tmp_path):
     path = _write_settings(tmp_path, _BASELINE_ALREADY_OK)
     return _rows_by_key(_apply(path))
 
 
-def _result_6_4(tmp_path, monkeypatch):
+def _result_skipped_conflict(tmp_path, monkeypatch):
     path = _write_settings(tmp_path, _CONFLICT_INPUT)
     _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
     return _rows_by_key(_apply(path))
 
 
-def _result_6_5(tmp_path):
+def _result_parse_failed(tmp_path):
     path = tmp_path / "settings.json"
     path.write_text('{"model":"opus"', encoding="utf-8")
     return _rows_by_key(_apply(path))
 
 
-def _result_6_6(tmp_path, monkeypatch):
+def _result_write_failed(tmp_path, monkeypatch):
     path = _write_settings(tmp_path, {})
 
     def _raise(*args, **kwargs):
@@ -499,65 +499,65 @@ def _result_6_6(tmp_path, monkeypatch):
     return _rows_by_key(_apply(path))
 
 
-def _result_6_7(tmp_path):
+def _result_skipped_missing(tmp_path):
     path = _write_settings(tmp_path, {})
     return _rows_by_key(_apply(path))
 
 
-def test_result_6_1_applied(tmp_path):
-    rows = _result_6_1(tmp_path)
+def test_result_applied(tmp_path):
+    rows = _result_applied(tmp_path)
     assert rows[PCT_KEY][2] is None
     assert rows[PCT_KEY][3] == "applied"
 
 
-def test_result_6_2_applied_with_prev(tmp_path):
-    rows = _result_6_2(tmp_path)
+def test_result_applied_with_prev(tmp_path):
+    rows = _result_applied_with_prev(tmp_path)
     assert rows[PCT_KEY][2] == "80"
     assert rows[PCT_KEY][3] == "applied"
 
 
-def test_result_6_3_already_ok(tmp_path):
-    rows = _result_6_3(tmp_path)
+def test_result_already_ok(tmp_path):
+    rows = _result_already_ok(tmp_path)
     assert rows[PCT_KEY][2] == "60"
     assert rows[PCT_KEY][3] == "already_ok"
 
 
-def test_result_6_4_skipped_conflict(tmp_path, monkeypatch):
-    rows = _result_6_4(tmp_path, monkeypatch)
+def test_result_skipped_conflict(tmp_path, monkeypatch):
+    rows = _result_skipped_conflict(tmp_path, monkeypatch)
     assert rows[PCT_KEY][2] is None
     assert rows[PCT_KEY][3] == "skipped_conflict"
 
 
-def test_result_6_5_parse_failed(tmp_path):
-    rows = _result_6_5(tmp_path)
+def test_result_parse_failed(tmp_path):
+    rows = _result_parse_failed(tmp_path)
     assert rows[PCT_KEY][2] is None
     assert rows[PCT_KEY][3] == "parse_failed"
 
 
-def test_result_6_6_write_failed(tmp_path, monkeypatch):
-    rows = _result_6_6(tmp_path, monkeypatch)
+def test_result_write_failed(tmp_path, monkeypatch):
+    rows = _result_write_failed(tmp_path, monkeypatch)
     assert rows[PCT_KEY][2] is None
     assert rows[PCT_KEY][3] == "write_failed"
 
 
-def test_result_6_7_skipped_missing(tmp_path):
-    rows = _result_6_7(tmp_path)
+def test_result_skipped_missing(tmp_path):
+    rows = _result_skipped_missing(tmp_path)
     assert rows[AUTOUPDATE_KEY][3] == "skipped_missing"
     assert rows[PCT_KEY][3] == "applied"
 
 
-def test_result_6_8_all_six_apply_results_observed(tmp_path, monkeypatch):
+def test_result_all_six_apply_results_observed(tmp_path, monkeypatch):
     all_rows = []
     dirs = [tmp_path / str(i) for i in range(7)]
     for d in dirs:
         d.mkdir()
-    all_rows += list(_result_6_1(dirs[0]).values())
-    all_rows += list(_result_6_2(dirs[1]).values())
-    all_rows += list(_result_6_3(dirs[2]).values())
-    all_rows += list(_result_6_4(dirs[3], monkeypatch).values())
-    all_rows += list(_result_6_5(dirs[4]).values())
-    all_rows += list(_result_6_6(dirs[5], monkeypatch).values())
-    all_rows += list(_result_6_7(dirs[6]).values())
+    all_rows += list(_result_applied(dirs[0]).values())
+    all_rows += list(_result_applied_with_prev(dirs[1]).values())
+    all_rows += list(_result_already_ok(dirs[2]).values())
+    all_rows += list(_result_skipped_conflict(dirs[3], monkeypatch).values())
+    all_rows += list(_result_parse_failed(dirs[4]).values())
+    all_rows += list(_result_write_failed(dirs[5], monkeypatch).values())
+    all_rows += list(_result_skipped_missing(dirs[6]).values())
 
     observed = {row[3] for row in all_rows}
     assert observed == {
@@ -570,18 +570,18 @@ def test_result_6_8_all_six_apply_results_observed(tmp_path, monkeypatch):
     }
 
 
-def test_result_6_9_value_is_always_policy_value(tmp_path, monkeypatch):
+def test_result_value_is_always_policy_value(tmp_path, monkeypatch):
     dirs = [tmp_path / str(i) for i in range(7)]
     for d in dirs:
         d.mkdir()
     results = [
-        _result_6_1(dirs[0]),
-        _result_6_2(dirs[1]),
-        _result_6_3(dirs[2]),
-        _result_6_4(dirs[3], monkeypatch),
-        _result_6_5(dirs[4]),
-        _result_6_6(dirs[5], monkeypatch),
-        _result_6_7(dirs[6]),
+        _result_applied(dirs[0]),
+        _result_applied_with_prev(dirs[1]),
+        _result_already_ok(dirs[2]),
+        _result_skipped_conflict(dirs[3], monkeypatch),
+        _result_parse_failed(dirs[4]),
+        _result_write_failed(dirs[5], monkeypatch),
+        _result_skipped_missing(dirs[6]),
     ]
     for rows in results:
         assert rows[PCT_KEY][1] == "60"

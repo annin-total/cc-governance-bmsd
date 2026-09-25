@@ -42,7 +42,7 @@ def _table_columns(conn, table_name):
     return [row[1] for row in rows]
 
 
-def test_events_columns_match_task2_case2_order():
+def test_events_columns_are_extra_columns_then_hook_fields():
     """events の列名が EXTRA_COLUMNS + HOOK_FIELDS の順と一致する。"""
     conn = sqlite3.connect(":memory:")
     for statement in contract.ddl():
@@ -70,7 +70,7 @@ def test_events_columns_match_task2_case2_order():
     ]
 
 
-def test_policy_state_columns_match_task2_case3_order():
+def test_policy_state_columns_match_policy_columns():
     """policy_state の列名が POLICY_COLUMNS の順と一致する。"""
     conn = sqlite3.connect(":memory:")
     for statement in contract.ddl():
@@ -89,7 +89,7 @@ def test_policy_state_columns_match_task2_case3_order():
     ]
 
 
-def test_cost_daily_columns_match_task2_case4_order():
+def test_cost_daily_columns_match_csv_columns():
     """cost_daily の列名が CSV_COLUMNS の DB 列名の順と一致する。"""
     conn = sqlite3.connect(":memory:")
     for statement in contract.ddl():

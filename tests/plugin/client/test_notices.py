@@ -49,32 +49,30 @@ def _write_seen(tmp_path, ids) -> None:
 # ---- 未読の選別 ----
 
 
-def test_notices_8_1_no_seen_file_both_unread(notices_file, unread_ids):
+def test_notices_no_seen_file_both_unread(notices_file, unread_ids):
     """#8-1: seen.json が存在しない -> 未読は n-001, n-002。"""
     assert unread_ids() == {"n-001", "n-002"}
 
 
-def test_notices_8_2_partial_seen(notices_file, tmp_path, unread_ids):
+def test_notices_partial_seen(notices_file, tmp_path, unread_ids):
     """#8-2: seen.json = ["n-001"] -> 未読は n-002 のみ。"""
     _write_seen(tmp_path, ["n-001"])
     assert unread_ids() == {"n-002"}
 
 
-def test_notices_8_3_all_seen(notices_file, tmp_path, unread_ids):
+def test_notices_all_seen(notices_file, tmp_path, unread_ids):
     """#8-3: seen.json = ["n-001","n-002"] -> 未読なし。"""
     _write_seen(tmp_path, ["n-001", "n-002"])
     assert unread_ids() == set()
 
 
-def test_notices_8_4_unknown_id_in_seen_is_ignored(notices_file, tmp_path, unread_ids):
+def test_notices_unknown_id_in_seen_is_ignored(notices_file, tmp_path, unread_ids):
     """#8-4: seen.json に存在しない id を含む -> 未読は n-002。例外にならない。"""
     _write_seen(tmp_path, ["n-001", "n-999"])
     assert unread_ids() == {"n-002"}
 
 
-def test_notices_8_5_seen_as_dict_is_treated_as_empty(
-    notices_file, tmp_path, unread_ids
-):
+def test_notices_seen_as_dict_is_treated_as_empty(notices_file, tmp_path, unread_ids):
     """#8-5: seen.json が dict -> 空集合として扱い、未読は n-001, n-002。"""
     path = _seen_file(tmp_path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -82,9 +80,7 @@ def test_notices_8_5_seen_as_dict_is_treated_as_empty(
     assert unread_ids() == {"n-001", "n-002"}
 
 
-def test_notices_8_6_broken_json_is_treated_as_empty(
-    notices_file, tmp_path, unread_ids
-):
+def test_notices_broken_json_is_treated_as_empty(notices_file, tmp_path, unread_ids):
     """#8-6: seen.json が壊れた JSON -> 空集合として扱う。"""
     path = _seen_file(tmp_path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -92,7 +88,7 @@ def test_notices_8_6_broken_json_is_treated_as_empty(
     assert unread_ids() == {"n-001", "n-002"}
 
 
-def test_notices_8_7_empty_file_is_treated_as_empty(notices_file, tmp_path, unread_ids):
+def test_notices_empty_file_is_treated_as_empty(notices_file, tmp_path, unread_ids):
     """#8-7: seen.json が空ファイル -> 空集合として扱う。"""
     path = _seen_file(tmp_path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -100,25 +96,25 @@ def test_notices_8_7_empty_file_is_treated_as_empty(notices_file, tmp_path, unre
     assert unread_ids() == {"n-001", "n-002"}
 
 
-def test_notices_8_8_empty_notices_array_no_unread(write_notices, unread_ids):
+def test_notices_empty_notices_array_no_unread(write_notices, unread_ids):
     """#8-8: notices.json が空配列 -> 未読なし。例外にならない。"""
     write_notices([])
     assert unread_ids() == set()
 
 
-def test_notices_8_9_missing_notices_file_no_unread(tmp_path, monkeypatch, unread_ids):
+def test_notices_missing_notices_file_no_unread(tmp_path, monkeypatch, unread_ids):
     """#8-9: notices.json が存在しない -> 未読なし。例外にならない。"""
     monkeypatch.setattr(_notices, "_NOTICES_PATH", tmp_path / "no-such-notices.json")
     assert unread_ids() == set()
 
 
-def test_notices_8_10_seen_sequence_does_not_matter(notices_file, tmp_path, unread_ids):
+def test_notices_seen_sequence_does_not_matter(notices_file, tmp_path, unread_ids):
     """#8-10: seen.json = ["n-002","n-001"]（順序が逆） -> 未読なし。"""
     _write_seen(tmp_path, ["n-002", "n-001"])
     assert unread_ids() == set()
 
 
-def test_notices_8_11_non_string_body_item_is_dropped_others_survive(
+def test_notices_non_string_body_item_is_dropped_others_survive(
     write_notices, unread_ids
 ):
     """#8-11 (M-1): title が無く body が非文字列の項目が1件混ざっても、その項目だけを飛ばし
