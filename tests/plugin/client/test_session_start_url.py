@@ -91,7 +91,7 @@ def notices_file(tmp_path, monkeypatch):
         {"id": "n-003", "title": "件名3", "body": "本文3"},
     ]
     path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(session_start, "_NOTICES_PATH", path)
+    monkeypatch.setattr(session_start._notices, "_NOTICES_PATH", path)
     return path
 
 
@@ -101,7 +101,7 @@ def notices_file_no_url(tmp_path, monkeypatch):
     path = tmp_path / "notices.json"
     data = [{"id": "n-010", "title": "件名", "body": "本文のみ"}]
     path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(session_start, "_NOTICES_PATH", path)
+    monkeypatch.setattr(session_start._notices, "_NOTICES_PATH", path)
     return path
 
 
@@ -185,7 +185,7 @@ def test_cli_unparsable_url_does_not_hide_other_notices(
         {"id": "n-021", "title": "件名B", "body": "本文B", "url": URL_1},
     ]
     path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(session_start, "_NOTICES_PATH", path)
+    monkeypatch.setattr(session_start._notices, "_NOTICES_PATH", path)
     _set_entrypoint(monkeypatch, "cli")
 
     session_start.main()

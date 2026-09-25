@@ -86,7 +86,7 @@ def notices_file(tmp_path, monkeypatch):
         {"id": "n-002", "title": "件名2", "body": "本文2"},
     ]
     path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(session_start, "_NOTICES_PATH", path)
+    monkeypatch.setattr(_notices, "_NOTICES_PATH", path)
     return path
 
 
@@ -128,7 +128,7 @@ def _event_rows(tmp_path) -> list:
 
 def _unread_ids() -> set:
     unread = _notices._select_unread(
-        _notices._read_notices(session_start._NOTICES_PATH), _notices._read_seen()
+        _notices._read_notices(_notices._NOTICES_PATH), _notices._read_seen()
     )
     return {n["id"] for n in unread}
 
@@ -278,15 +278,13 @@ def test_notices_8_8_empty_notices_array_no_unread(tmp_path, monkeypatch):
     """#8-8: notices.json が空配列 -> 未読なし。例外にならない。"""
     path = tmp_path / "notices.json"
     path.write_text("[]", encoding="utf-8")
-    monkeypatch.setattr(session_start, "_NOTICES_PATH", path)
+    monkeypatch.setattr(_notices, "_NOTICES_PATH", path)
     assert _unread_ids() == set()
 
 
 def test_notices_8_9_missing_notices_file_no_unread(tmp_path, monkeypatch):
     """#8-9: notices.json が存在しない -> 未読なし。例外にならない。"""
-    monkeypatch.setattr(
-        session_start, "_NOTICES_PATH", tmp_path / "no-such-notices.json"
-    )
+    monkeypatch.setattr(_notices, "_NOTICES_PATH", tmp_path / "no-such-notices.json")
     assert _unread_ids() == set()
 
 
@@ -308,7 +306,7 @@ def test_notices_8_11_non_string_body_item_is_dropped_others_survive(
         {"id": "n-ok", "title": "件名", "body": "本文"},
     ]
     path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(session_start, "_NOTICES_PATH", path)
+    monkeypatch.setattr(_notices, "_NOTICES_PATH", path)
     assert _unread_ids() == {"n-ok"}
 
 
@@ -470,7 +468,7 @@ def test_order_10_3_notice_step_failure_still_runs_collect(
 ):
     """#10-3: お知らせの処理を例外にしても、設定適用と収集は実行される。終了コード0。"""
     _write_settings(tmp_path, {})
-    monkeypatch.setattr(session_start, "_notices_step", _raiser)
+    monkeypatch.setattr(_notices, "notices_step", _raiser)
 
     session_start.main()
     captured = capsys.readouterr()
@@ -499,7 +497,7 @@ def test_order_10_5_all_three_failures_still_exit_clean(
 ):
     """#10-5: 3 つすべてを例外にしても、終了コード0、標準エラーが空、標準出力が JSON としてパースできる。"""
     monkeypatch.setattr(session_start, "_apply_settings_step", _raiser)
-    monkeypatch.setattr(session_start, "_notices_step", _raiser)
+    monkeypatch.setattr(_notices, "notices_step", _raiser)
     monkeypatch.setattr(session_start, "_collect_step", _raiser)
 
     session_start.main()
@@ -515,7 +513,7 @@ def test_order_10_6_call_order_is_settings_notice_collect(
     """#10-6: 呼び出し順を記録して正常実行すると settings -> notices -> collect の順になる。"""
     calls = []
     original_settings = session_start._apply_settings_step
-    original_notices = session_start._notices_step
+    original_notices = _notices.notices_step
     original_collect = session_start._collect_step
 
     def _settings_spy(*args, **kwargs):
@@ -531,7 +529,7 @@ def test_order_10_6_call_order_is_settings_notice_collect(
         return original_collect(*args, **kwargs)
 
     monkeypatch.setattr(session_start, "_apply_settings_step", _settings_spy)
-    monkeypatch.setattr(session_start, "_notices_step", _notices_spy)
+    monkeypatch.setattr(_notices, "notices_step", _notices_spy)
     monkeypatch.setattr(session_start, "_collect_step", _collect_spy)
 
     session_start.main()

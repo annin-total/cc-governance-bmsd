@@ -24,8 +24,6 @@ from _settings import apply_settings
 from collect import _DISABLE_ENV, _read_stdin_json, extract_event, send_if_due
 from contract import POLICY_COLUMNS, coerce, to_day
 
-_NOTICES_PATH = _notices._NOTICES_PATH
-
 
 def _policy_row(
     key_name: str,
@@ -68,10 +66,6 @@ def _apply_settings_step() -> None:
         _spool.append(
             _policy_row(key_name, value, prev_value, apply_result, ts, plugin_version)
         )
-
-
-def _notices_step(disabled: bool) -> tuple:
-    return _notices.notices_step(disabled, _NOTICES_PATH)
 
 
 def _mark_seen_and_open(unread: list, seen: set) -> None:
@@ -136,7 +130,7 @@ def main() -> None:
         pass
 
     try:
-        output, unread, seen = _notices_step(disabled)
+        output, unread, seen = _notices.notices_step(disabled, _notices._NOTICES_PATH)
     except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
         output, unread, seen = {}, [], set()
 
