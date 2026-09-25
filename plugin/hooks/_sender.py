@@ -79,7 +79,9 @@ def _post_file(path: Path, config: dict[str, Any]) -> None:
 
 
 def run() -> None:
-    """送信プロセス本体。config を読み、退避 → 破棄 → 古い順に POST する。
+    """送信プロセス本体。config を読み、退避 → 古い順に POST → 破棄する。
+
+    破棄を POST の後に置くのは、単体で上限を超えたファイルにも 1 回は送信を試みるため。
 
     hook プロセスと同様に、例外を外に出さない（想定外の例外も握り潰す）。
     """
@@ -88,9 +90,9 @@ def run() -> None:
         if config is None or not config["ingest_url"]:
             return
         _spool.rotate()
-        _spool.prune(config["spool_max_bytes"], config["spool_max_days"])
         for path in _spool_files_sorted():
             _post_file(path, config)
+        _spool.prune(config["spool_max_bytes"], config["spool_max_days"])
     except Exception:  # noqa: BLE001, S110 (送信プロセスは例外を外に出さない)
         pass
 
