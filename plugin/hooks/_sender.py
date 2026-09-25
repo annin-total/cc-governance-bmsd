@@ -1,5 +1,6 @@
 """spool を POST する送信プロセス（`python3 _sender.py`）。例外を外に出さない。"""
 
+import http.client
 import json
 import os
 import subprocess
@@ -63,7 +64,8 @@ def _post_file(path: Path, config: dict[str, Any]) -> bool:
             status = response.status
     except urllib.error.HTTPError as err:
         status = err.code
-    except (urllib.error.URLError, OSError):
+    # 応答が壊れていると OSError 派生でない HTTPException が出る。逃がすと prune が飛ぶ
+    except (urllib.error.URLError, OSError, http.client.HTTPException):
         return False
 
     if 200 <= status < 300:

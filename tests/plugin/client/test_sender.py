@@ -7,6 +7,7 @@
 import http.server
 import json
 import os
+import socket
 import threading
 import time
 from typing import ClassVar
@@ -235,6 +236,50 @@ def test_unreachable_server_still_prunes(monkeypatch, tmp_path, unused_port):
     _sender.run()
 
     assert not old.exists()
+
+
+class _GarbageServer:
+    """HTTP でない応答を返して切るサーバ。受け付けた接続を数える。"""
+
+    def __init__(self):
+        self.connections = 0
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind(("127.0.0.1", 0))
+        self.sock.listen()
+        threading.Thread(target=self._serve, daemon=True).start()
+
+    def _serve(self):
+        while True:
+            try:
+                conn, _ = self.sock.accept()
+            except OSError:
+                return
+            self.connections += 1
+            with conn:
+                conn.recv(65536)
+                conn.sendall(b"garbage\r\n\r\n")
+
+    @property
+    def url(self):
+        return f"http://127.0.0.1:{self.sock.getsockname()[1]}/ingest"
+
+
+def test_malformed_response_stops_and_still_prunes(monkeypatch, tmp_path):
+    srv = _GarbageServer()
+    _write_config(monkeypatch, tmp_path, ingest_url=srv.url, timeout_sec=5)
+    old = _seed_spool_file(_SPOOL_NAME, [{"n": 0}], mtime=time.time() - 30 * 86400)
+    fresh = [
+        _seed_spool_file(f"{2000 + i}-{'b' * 32}.jsonl", [{"n": i}]) for i in range(2)
+    ]
+
+    try:
+        _sender.run()
+    finally:
+        srv.sock.close()
+
+    assert srv.connections == 1
+    assert not old.exists()
+    assert all(p.exists() for p in fresh)
 
 
 # --- 複数ファイルの処理順序・部分失敗 ---
