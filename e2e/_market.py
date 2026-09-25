@@ -15,23 +15,20 @@ MARKETPLACE = "cc-marketplace-governance-bmsd"
 PLUGIN = "governance"
 PLUGIN_ID = f"{PLUGIN}@{MARKETPLACE}"
 _PLUGIN_JSON = Path(".claude-plugin") / "plugin.json"
-_IGNORE = shutil.ignore_patterns("__pycache__", ".DS_Store")
+# 配布物に含めない名前（組み立てと、組み立て結果との比較の両方で使う）
+EXCLUDE = ("__pycache__", ".DS_Store")
 _LOCAL_HOSTS = ("127.0.0.1", "localhost")
-# 開発者の gitconfig（署名・改行変換・既定ブランチ）の影響を消す
+# gitconfig は隔離 env で遮断している。コミットに要る名前と既定ブランチだけ与える
 _GIT = [
     "git", "-c", "user.name=cc-e2e", "-c", "user.email=e2e@example.invalid",
-    "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false", "-c", "init.defaultBranch=main",
+    "-c", "init.defaultBranch=main",
 ]  # fmt: skip
-
-
-def dev_manifest() -> dict:
-    """開発ツリーの plugin.json。"""
-    return json.loads((PLUGIN_SRC / _PLUGIN_JSON).read_text(encoding="utf-8"))
 
 
 def version(n: int) -> str:
     """開発ツリーの版の patch を +n した版。開発ツリーと違う版であること自体が配布物から動いた証拠になる。"""
-    major, minor, patch = dev_manifest()["version"].split(".")
+    manifest = json.loads((PLUGIN_SRC / _PLUGIN_JSON).read_text(encoding="utf-8"))
+    major, minor, patch = manifest["version"].split(".")
     return f"{major}.{minor}.{int(patch) + n}"
 
 
@@ -44,33 +41,31 @@ def publish(root: E2ERoot, ver: str, overrides: Optional[dict] = None) -> None:
         _git(root, mp, "init", "-q")
         _git(root, root.srv, "init", "-q", "--bare", f"{MARKETPLACE}.git")
     shutil.rmtree(dest, ignore_errors=True)
-    shutil.copytree(PLUGIN_SRC, dest, ignore=_IGNORE)
+    shutil.copytree(PLUGIN_SRC, dest, ignore=shutil.ignore_patterns(*EXCLUDE))
     for rel, data in (overrides or {}).items():
         (dest / rel).parent.mkdir(parents=True, exist_ok=True)
         (dest / rel).write_bytes(data)
     manifest = json.loads((dest / _PLUGIN_JSON).read_text(encoding="utf-8"))
     manifest["version"] = ver
     _write_json(dest / _PLUGIN_JSON, manifest)
-    _write_json(mp / ".claude-plugin" / "marketplace.json", _marketplace_json(manifest))
+    # 配布用マーケットプレイスの marketplace.json と同じ形
+    desc = manifest["description"]
+    plugin_entry = {
+        "name": PLUGIN,
+        "source": f"./plugins/{PLUGIN}",
+        "description": desc,
+    }
+    _write_json(
+        mp / ".claude-plugin" / "marketplace.json",
+        {"name": MARKETPLACE, "owner": manifest["author"], "description": desc,
+         "plugins": [plugin_entry]},
+    )  # fmt: skip
     _check_ingest_url(dest / "config.json")
     _git(root, mp, "add", "-A")
     _git(root, mp, "commit", "-q", "-m", ver)
     _git(
         root, mp, "push", "-q", "-f", str(root.srv / f"{MARKETPLACE}.git"), "HEAD:main"
     )
-
-
-def _marketplace_json(manifest: dict) -> dict:
-    """配布用マーケットプレイスの marketplace.json と同じ形。"""
-    desc = manifest["description"]
-    return {
-        "name": MARKETPLACE,
-        "owner": manifest["author"],
-        "description": desc,
-        "plugins": [
-            {"name": PLUGIN, "source": f"./plugins/{PLUGIN}", "description": desc}
-        ],
-    }
 
 
 def _check_ingest_url(path: Path) -> None:

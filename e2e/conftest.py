@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from _githttp import GitHttpServer
 from _market import PLUGIN_SRC, REPO
-from _root import REAL_CONFIG_DIRS, E2ERoot, auth_env
+from _root import REAL_CONFIG_DIRS, E2ERoot
 
 _E2E_DIR = Path(__file__).resolve().parent
 _WATCHED = (
@@ -15,12 +15,6 @@ _WATCHED = (
     "plugins/installed_plugins.json",
     "plugins/known_marketplaces.json",
 )
-
-
-def pytest_configure(config) -> None:
-    config.addinivalue_line(
-        "markers", "requires_auth: 認証が要る。認証変数が無ければ skip"
-    )
 
 
 def pytest_collection_modifyitems(config, items) -> None:
@@ -36,11 +30,6 @@ def pytest_collection_modifyitems(config, items) -> None:
             "e2e は tests と同時に実行しない（pytest e2e で単独実行する）",
             returncode=4,
         )
-
-
-def pytest_runtest_setup(item) -> None:
-    if item.get_closest_marker("requires_auth") and not auth_env():
-        pytest.skip("認証変数が無い")
 
 
 def _digest(path: Path):
@@ -66,7 +55,9 @@ def _real_state_unchanged():
     changed = sorted(
         k for k in before.keys() | after.keys() if before.get(k) != after.get(k)
     )
-    assert not changed, f"本物の状態が変わった: {changed}"
+    assert not changed, (
+        f"本物の状態が変わった（並行する Claude Code セッションが書き換えた可能性もある）: {changed}"
+    )
 
 
 @pytest.fixture

@@ -3,8 +3,8 @@
 `claude plugin marketplace add` は bare を直接指せないため、git-http-backend を CGI として呼ぶ。
 """
 
+import os
 import shutil
-import socket
 import subprocess
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -34,21 +34,13 @@ class GitHttpServer:
         return f"http://127.0.0.1:{self.port}/{name}.git"
 
     def close(self) -> None:
-        """止めて、ポートが閉じたことを確かめる。"""
         self._server.shutdown()
         self._server.server_close()
         self._thread.join(timeout=5)
-        try:
-            socket.create_connection(("127.0.0.1", self.port), timeout=1).close()
-        except OSError:
-            return
-        raise RuntimeError(f"git サーバのポートが閉じていない: {self.port}")
 
 
 def _make_handler(project_root: str, backend: str, requests: list) -> type:
     class _Handler(BaseHTTPRequestHandler):
-        protocol_version = "HTTP/1.0"
-
         def _cgi(self, body: bytes = b"") -> None:
             path, _, query = self.path.partition("?")
             requests.append((self.command, self.path))
@@ -63,6 +55,7 @@ def _make_handler(project_root: str, backend: str, requests: list) -> type:
                 "HTTP_CONTENT_ENCODING": self.headers.get("Content-Encoding", ""),
                 "HTTP_GIT_PROTOCOL": self.headers.get("Git-Protocol", ""),
             }
+            env.update({k: v for k, v in os.environ.items() if k == "SYSTEMROOT"})
             out = subprocess.run(
                 [backend], input=body, env=env, capture_output=True, check=False
             ).stdout

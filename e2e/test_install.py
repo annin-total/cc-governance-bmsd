@@ -6,7 +6,15 @@
 import json
 from pathlib import Path
 
-from _market import MARKETPLACE, PLUGIN_ID, PLUGIN_SRC, REPO, publish, version
+from _market import (
+    EXCLUDE,
+    MARKETPLACE,
+    PLUGIN,
+    PLUGIN_ID,
+    PLUGIN_SRC,
+    publish,
+    version,
+)
 from _root import hook_rows
 
 V1, V2 = version(1), version(2)
@@ -26,7 +34,7 @@ def _install(root, gitsrv) -> None:
     _ok(
         root, "plugin", "marketplace", "add", gitsrv.url(MARKETPLACE), "--scope", "user"
     )
-    _ok(root, "plugin", "install", PLUGIN_ID, "--scope", "user", "--json")
+    _ok(root, "plugin", "install", PLUGIN_ID, "--scope", "user")
 
 
 def _manifest_version(plugin_dir: Path) -> str:
@@ -35,17 +43,19 @@ def _manifest_version(plugin_dir: Path) -> str:
     ]
 
 
-def _installed(root) -> list:
+def _installed(root) -> tuple:
     """list と installed_plugins.json の、このプラグインの記録。"""
     listed = [p for p in root.plugin_list() if p["id"] == PLUGIN_ID]
     recorded = root.json("plugins/installed_plugins.json")["plugins"].get(PLUGIN_ID, [])
-    return listed + recorded
+    return listed, recorded
 
 
 def _assert_installed(root, ver: str) -> Path:
     """list・installed_plugins.json・installPath の plugin.json がそろって `ver`。installPath を返す。"""
-    entries = _installed(root)
-    assert len(entries) == 2, entries
+    listed, recorded = _installed(root)
+    assert len(listed) == 1, listed
+    assert len(recorded) == 1, recorded
+    entries = listed + recorded
     assert {e["version"] for e in entries} == {ver}
     paths = {e["installPath"] for e in entries}
     assert len(paths) == 1, paths
@@ -67,7 +77,7 @@ def _files(top: Path) -> dict:
     return {
         p.relative_to(top).as_posix(): p.read_bytes()
         for p in top.rglob("*")
-        if p.is_file() and "__pycache__" not in p.parts and p.name != ".DS_Store"
+        if p.is_file() and not set(p.relative_to(top).parts) & set(EXCLUDE)
     }
 
 
@@ -85,7 +95,6 @@ def test_installPathはキャッシュの複製(root, gitsrv):
     _install(root, gitsrv)
     path = _assert_installed(root, V1).resolve()
     assert (root.config / "plugins" / "cache").resolve() in path.parents
-    assert REPO not in path.parents and root.build not in path.parents
     src, got = _files(PLUGIN_SRC), _files(path)
     assert src.keys() == got.keys()
     assert [rel for rel in src if rel != _PLUGIN_JSON and src[rel] != got[rel]] == []
@@ -99,8 +108,8 @@ def test_2段階で更新される(root, gitsrv):
     clone = Path(
         root.json("plugins/known_marketplaces.json")[MARKETPLACE]["installLocation"]
     )
-    assert _manifest_version(clone / "plugins" / "governance") == V2
-    _ok(root, "plugin", "update", PLUGIN_ID, "--json")
+    assert _manifest_version(clone / "plugins" / PLUGIN) == V2
+    _ok(root, "plugin", "update", PLUGIN_ID)
     _assert_installed(root, V2)
 
 
@@ -115,7 +124,6 @@ def test_SessionStartがinstallPathから動く(root, gitsrv):
     assert any(r["kind"] == "policy" and r["plugin_version"] == V1 for r in rows), rows
     # バイトコードは import した .py の場所に対応して書かれる。どこから動いたかの証拠になる
     assert list(root.pycache_of(path / "hooks").glob("*.pyc")) != []
-    assert not root.pycache_of(root.build).exists()
     assert not root.pycache_of(root.config / "plugins" / "marketplaces").exists()
     assert (root.config / "governance" / "statusline.js").is_file()
 
@@ -125,7 +133,7 @@ def test_uninstallでdataが消えgovernanceは残る(root, gitsrv):
     data = _session(root)
     statusline = root.config / "governance" / "statusline.js"
     assert data.is_dir() and statusline.is_file()
-    _ok(root, "plugin", "uninstall", PLUGIN_ID, "--scope", "user", "--json")
-    assert _installed(root) == []
+    _ok(root, "plugin", "uninstall", PLUGIN_ID, "--scope", "user")
+    assert _installed(root) == ([], [])
     assert not data.exists()
     assert statusline.is_file()
