@@ -3,8 +3,8 @@
 
 対象は契約（`contract.py`）と標準設定（`policy.py`）の 2 つで、扱いは同じである。
 正本: `plugin/hooks/<name>`（配布物。端末に同梱される）
-複製: `server/<name>`（submodule の中。このスクリプトの生成物。直接編集しない）
-記録: `server/<name の拡張子を .sha256 にしたもの>`（正本のハッシュ。複製と一緒にコミットする）
+複製: `server/ccgov/vendor/<name>`（submodule の中。このスクリプトの生成物。直接編集しない）
+記録: `server/ccgov/vendor/<name の拡張子を .sha256 にしたもの>`（正本のハッシュ。複製と一緒にコミットする）
 
 複製は固定の生成物ヘッダ（`_header`）＋正本のバイト列そのもの、という構成を取る。
 これにより、複製ファイル単体（正本が手元に無い場所）でも、ヘッダの既知の長さを引いた残りを
@@ -23,7 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MASTER_DIR = ROOT / "plugin" / "hooks"
-SERVER_DIR = ROOT / "server"
+VENDOR_DIR = ROOT / "server" / "ccgov" / "vendor"
 NAMES = ("contract.py", "policy.py")
 
 
@@ -35,7 +35,7 @@ def _header(name: str) -> str:
     同じ定数も揃えて直すこと。
     """
     return (
-        f'"""server/{name} — 生成物。直接編集しない。\n'
+        f'"""server/ccgov/vendor/{name} — 生成物。直接編集しない。\n'
         "\n"
         f"正本: plugin/hooks/{name}\n"
         "`scripts/sync_contract.py` が正本から生成する。\n"
@@ -49,8 +49,8 @@ def _paths(name: str) -> tuple:
     """(正本, 複製, ハッシュ記録) のパス。"""
     return (
         MASTER_DIR / name,
-        SERVER_DIR / name,
-        (SERVER_DIR / name).with_suffix(".sha256"),
+        VENDOR_DIR / name,
+        (VENDOR_DIR / name).with_suffix(".sha256"),
     )
 
 

@@ -22,7 +22,7 @@ Secret ファイルに `KEY=VALUE` 形式で書く。`entry.sh` が起動時に�
 | --- | --- | --- |
 | `BASE_PATH` | 公開サブパス。AIP は `/<workspace_id>/<ingress_path>` に公開する。末尾に `/` を付けない | `/<workspace_id>/cc-governance-server` |
 | `DB_DSN` | DB の接続先 | `sqlite:////mnt/data/cc-governance-server/governance.db` |
-| `INGEST_TOKEN` | 受信用のトークン。プラグインの `config.json` の `ingest_token` と文字列として完全に一致させる | `dummy-ingest-token` |
+| `INGEST_TOKEN` | 受信用のトークン。プラグインの `config.json` の `ingest_token` と文字列として完全に一致させる。未設定・空なら起動しない | `dummy-ingest-token` |
 | `ADMIN_PATH` | 管理画面を置くパス。推測しにくいランダムな文字列にする。`/` を含めない。未設定なら起動しない | `dummy-admin-path` |
 | `ADMIN_PASSWORD` | 管理画面の Basic 認証の共有パスワード（ユーザー名は問わない）。未設定なら起動しない | `dummy-admin-password` |
 | `CSV_DIR` | AI Gateway の CSV を置くディレクトリ。未設定なら取り込まず、画面にエラーを出す | `/mnt/data/cc-governance-server/csv` |

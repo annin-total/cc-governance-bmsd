@@ -16,7 +16,7 @@ Claude Code 利用状況の集計サーバ。端末プラグインから NDJSON 
 集計は現在時刻を読まないなど）は `server/CLAUDE.md` にある。ここに書くのは設計上の制約だけ。
 
 - 直接依存は `flask` / `waitress` / `pymysql` の 3 つで、`==` で完全固定する。Flask の拡張・
-  ブループリント・アプリケーションファクトリ・ORM・バリデーションライブラリは使わない。
+  ORM・バリデーションライブラリは使わない。
   画面は素の HTML と CSS だけで、JS ライブラリ・CDN に依存しない
 - サブパス配下での公開は、`BASE_PATH` を `SCRIPT_NAME` として与える WSGI ラッパ 1 個で行う。
   `PATH_INFO` が `BASE_PATH` で始まるときだけ剥がす
@@ -26,7 +26,7 @@ Claude Code 利用状況の集計サーバ。端末プラグインから NDJSON 
 `contract.py` は正本（`plugin/hooks/contract.py`）の複製であり、直接編集しない（生成の仕組みは
 `system.md`）。起動時に `entry.sh` が、複製の生成物ヘッダを除いた残りのハッシュを
 `contract.sha256` と比べ、一致しなければ起動を中止する。複製の直接編集と同期忘れをここで
-検出する。コードは `import contract` するだけで、`sys.path` を操作するシムを持たない。
+検出する。複製は通常の import で読み、`sys.path` を操作するシムを持たない。
 
 ## 契約と実テーブルの突き合わせ
 
@@ -47,9 +47,9 @@ Claude Code 利用状況の集計サーバ。端末プラグインから NDJSON 
 
 管理画面（4 画面・`/import`・CSS）は環境変数 `ADMIN_PATH` の下にだけ置き、`ADMIN_PASSWORD` との
 Basic 認証で守る（ユーザー名は問わない）。`ADMIN_PATH` の外は `/ingest` を除いて 404 を返す。
-ログイン画面・セッション・試行回数の制限は持たない。どちらかが未設定なら起動しない。
-`/ingest` は `ADMIN_PATH` の外にあり、`X-Ingest-Token` ヘッダと環境変数 `INGEST_TOKEN` の一致で守る
-（未設定・空ならすべて 401）。
+ログイン画面・セッション・試行回数の制限は持たない。
+`/ingest` は `ADMIN_PATH` の外にあり、`X-Ingest-Token` ヘッダと環境変数 `INGEST_TOKEN` の一致で守る。
+`ADMIN_PATH`・`ADMIN_PASSWORD`・`INGEST_TOKEN` はいずれも未設定・空なら起動しない。
 このトークンは誤送信の防止のためのものであり、到達制御はネットワーク境界（VPN）が担う。
 AIP の HTTP Access Mode は Public Access であり、サーバには社内 VPN に接続できる人なら誰でも到達できる。
 

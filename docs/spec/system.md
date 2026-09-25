@@ -65,8 +65,8 @@ CSV 列（`CSV_COLUMNS`）の定義は、**`plugin/hooks/contract.py` ただ 1 �
 こちらが正本になる。どちらもほかの場所で複製や再定義をしない。
 
 - 端末には、プラグインの一部としてそのまま配布される
-- サーバには、正本に生成物ヘッダを付けた複製（`server/contract.py` / `server/policy.py`）と
-  ハッシュ記録（`server/contract.sha256` / `server/policy.sha256`）を置く。どちらも `scripts/sync_contract.py` が正本から生成し、
+- サーバには、正本に生成物ヘッダを付けた複製（`server/ccgov/vendor/contract.py` / `server/ccgov/vendor/policy.py`）と
+  ハッシュ記録（`server/ccgov/vendor/contract.sha256` / `server/ccgov/vendor/policy.sha256`）を置く。どちらも `scripts/sync_contract.py` が正本から生成し、
   `--check` で一致を検証する。起動時の検査は `server.md` にある
 - `HOOK_FIELDS` は挙動を切り替える設定ではなく「どのキーパスがどの列になるか」という
   事実である。これを読んで動作を分岐させるコードは置かない
