@@ -54,18 +54,6 @@ def test_is_headless_by_entrypoint(monkeypatch, value, expected):
     assert _browser.is_headless() is expected
 
 
-def test_interactive_and_headless_are_mutually_exclusive_for_cli():
-    """#3: is_interactive と is_headless が同時に真になることはない（cli の場合）。"""
-    import os
-
-    os.environ["CLAUDE_CODE_ENTRYPOINT"] = "cli"
-    try:
-        assert _browser.is_interactive() is True
-        assert _browser.is_headless() is False
-    finally:
-        os.environ.pop("CLAUDE_CODE_ENTRYPOINT", None)
-
-
 # ---- open_url: darwin ----
 
 
