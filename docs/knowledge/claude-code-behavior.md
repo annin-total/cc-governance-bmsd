@@ -20,6 +20,10 @@
 | `env` ブロックも普通のキーとして設定の優先順位（managed > `--settings` > プロジェクトの local > プロジェクトの共有 > 利用者）に従う。利用者の `env` に 60、プロジェクトの `.claude/settings.json` の `env` に 90 を置くと実効値は 90。シェルで export した値は settings の `env` に負ける。hook プロセスの環境変数には合成後の実効値が入る（2.1.282 実測 + 公式ドキュメント settings / env-vars） | 利用者の `settings.json` の値で準拠を判定するとき。上位の層の上書きはその値に現れない |
 | `env.FORCE_AUTOUPDATE_PLUGINS` は hook プロセスまで値が届く。ただし**本体の入れ替えを起こす効果は観測できていない** | 本体の自動更新を抑止している端末で、プラグインの更新だけを生かせるかを考えるとき |
 | 外部から `export CLAUDE_PLUGIN_DATA=...` しても **Claude Code は無視する**。実際のプラグインのデータ領域は、Claude Code が自前で計算する `$CLAUDE_CONFIG_DIR/plugins/data/<plugin>-<marketplace>/` に固定される | hook を手動実行するときと `claude` に実行させるときとで、状態ディレクトリが別物になりうる。検証手順は実際に使われるパスを毎回計算し直す |
+| macOS で `HOME` を差し替えて `claude` を起動すると、`Login successful` の直後に `Not logged in` が出て認証が壊れる（版は記録なし） | 隔離環境を作るとき。`HOME` ではなく `CLAUDE_CONFIG_DIR` で隔離する |
+| `claude plugin marketplace add` は bare リポジトリを直接指せず、http(s) の git URL 越しでないと失敗する（版は記録なし） | ローカルの git リポジトリをマーケットプレイスとして登録するとき |
+| マーケットプレイスを remove してから add し直すと `plugins/data/` が空になり、`queue.jsonl` など既存の状態が消える（版は記録なし） | 登録をやり直す手順を書くとき。データを残したいなら remove を避ける |
+| 無人（非対話）の `claude` 起動は、初回起動時の対話 3 段（テーマ選択・フォルダ信頼・API キー確認）で止まる。`.claude.json` に `hasCompletedOnboarding` / `theme` / `projects["<cwd>"].hasTrustDialogAccepted` を事前投入すると前の 2 段は越えられるが、API キー確認の段は pty へのキー送信が要り、事前投入だけでは越えられない（版は記録なし） | 無人でセッションを起動する検証を組むとき。越えられる段と越えられない段を混同しない |
 
 ## hook の実行環境
 

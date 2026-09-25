@@ -1,7 +1,7 @@
 # CLAUDE.md - verification
 
 `verification/` に道具を足す・直すときの規約。道具のカタログ（何があり、何のためにあるか）は
-`README.md` に、確かめる順序と合格の条件は `docs/guide/local-e2e.md` に書く。
+`README.md` に、確かめる順序と合格の条件は `docs/guide/e2e.md` に書く。
 
 1. **置くのは再実行できる道具だけ。**実行結果（ログ・スクリーンショット・計測値）、実採取した
    生データ（hook stdin にはプロンプト本文が入る）、一度きりの解析スクリプトは置かない。
