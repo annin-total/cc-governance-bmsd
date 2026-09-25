@@ -29,10 +29,15 @@ function formatModelName(model, effort) {
   return name ? `${name} (${level})` : "";
 }
 
+/** 作業ディレクトリ。無ければ空文字。 */
+function currentDir(data) {
+  return (data.workspace && data.workspace.current_dir) || data.cwd || "";
+}
+
 /** 1 行目: model | dir | ctx% (used/window) · session tokens · edit (+a, -r) */
 function buildLine1(data) {
   const model = formatModelName(data.model, data.effort);
-  const dir = (data.workspace && data.workspace.current_dir) || data.cwd || "";
+  const dir = currentDir(data);
   const dirName = dir ? path.basename(dir) : "";
 
   const parts = [model, dirName].filter((s) => s);
@@ -105,8 +110,7 @@ function readGitInfo(dir, worktree) {
 
 /** 2 行目: branch [worktree] (+a, -r)。git 管理下でなければ null。 */
 function buildLine2(data) {
-  const dir = (data.workspace && data.workspace.current_dir) || data.cwd || "";
-  const info = readGitInfo(dir, data.worktree);
+  const info = readGitInfo(currentDir(data), data.worktree);
   if (!info) return null;
 
   let line = info.branch;
