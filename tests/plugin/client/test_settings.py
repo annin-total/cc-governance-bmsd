@@ -457,10 +457,21 @@ def test_parse_failed_unreadable_file(tmp_path):
 
 # ---- apply_result の 6 通りが揃うことの確認 ----
 # 末尾の 2 件は上の _result_* 7 つすべてに依存する。
+# 差し替えは各ヘルパーの中で閉じる（後続のヘルパーの結果を変えない）。
 
 
 def _result_applied(tmp_path):
-    path = _write_settings(tmp_path, {})
+    """両キーとも applied（マーケットプレイスの項目はあり、autoUpdate だけが無い）。"""
+    path = _write_settings(
+        tmp_path,
+        {
+            "extraKnownMarketplaces": {
+                "cc-marketplace-governance-bmsd": {
+                    "source": {"source": "github", "repo": "x/y"}
+                }
+            }
+        },
+    )
     return _rows_by_key(_apply(path))
 
 
@@ -474,10 +485,11 @@ def _result_already_ok(tmp_path):
     return _rows_by_key(_apply(path))
 
 
-def _result_skipped_conflict(tmp_path, monkeypatch):
+def _result_skipped_conflict(tmp_path):
     path = _write_settings(tmp_path, _CONFLICT_INPUT)
-    _interrupt_after_read(monkeypatch, path, {"model": "sonnet"})
-    return _rows_by_key(_apply(path))
+    with pytest.MonkeyPatch.context() as mp:
+        _interrupt_after_read(mp, path, {"model": "sonnet"})
+        return _rows_by_key(_apply(path))
 
 
 def _result_parse_failed(tmp_path):
@@ -486,14 +498,15 @@ def _result_parse_failed(tmp_path):
     return _rows_by_key(_apply(path))
 
 
-def _result_write_failed(tmp_path, monkeypatch):
+def _result_write_failed(tmp_path):
     path = _write_settings(tmp_path, {})
 
     def _raise(*args, **kwargs):
         raise OSError("boom")
 
-    monkeypatch.setattr(_settings.os, "replace", _raise)
-    return _rows_by_key(_apply(path))
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(_settings.os, "replace", _raise)
+        return _rows_by_key(_apply(path))
 
 
 def _result_skipped_missing(tmp_path):
@@ -519,8 +532,8 @@ def test_result_already_ok(tmp_path):
     assert rows[PCT_KEY][3] == "already_ok"
 
 
-def test_result_skipped_conflict(tmp_path, monkeypatch):
-    rows = _result_skipped_conflict(tmp_path, monkeypatch)
+def test_result_skipped_conflict(tmp_path):
+    rows = _result_skipped_conflict(tmp_path)
     assert rows[PCT_KEY][2] is None
     assert rows[PCT_KEY][3] == "skipped_conflict"
 
@@ -531,8 +544,8 @@ def test_result_parse_failed(tmp_path):
     assert rows[PCT_KEY][3] == "parse_failed"
 
 
-def test_result_write_failed(tmp_path, monkeypatch):
-    rows = _result_write_failed(tmp_path, monkeypatch)
+def test_result_write_failed(tmp_path):
+    rows = _result_write_failed(tmp_path)
     assert rows[PCT_KEY][2] is None
     assert rows[PCT_KEY][3] == "write_failed"
 
@@ -543,7 +556,7 @@ def test_result_skipped_missing(tmp_path):
     assert rows[PCT_KEY][3] == "applied"
 
 
-def test_result_all_six_apply_results_observed(tmp_path, monkeypatch):
+def test_result_all_six_apply_results_observed(tmp_path):
     all_rows = []
     dirs = [tmp_path / str(i) for i in range(7)]
     for d in dirs:
@@ -551,9 +564,9 @@ def test_result_all_six_apply_results_observed(tmp_path, monkeypatch):
     all_rows += list(_result_applied(dirs[0]).values())
     all_rows += list(_result_applied_with_prev(dirs[1]).values())
     all_rows += list(_result_already_ok(dirs[2]).values())
-    all_rows += list(_result_skipped_conflict(dirs[3], monkeypatch).values())
+    all_rows += list(_result_skipped_conflict(dirs[3]).values())
     all_rows += list(_result_parse_failed(dirs[4]).values())
-    all_rows += list(_result_write_failed(dirs[5], monkeypatch).values())
+    all_rows += list(_result_write_failed(dirs[5]).values())
     all_rows += list(_result_skipped_missing(dirs[6]).values())
 
     observed = {row[3] for row in all_rows}
@@ -567,7 +580,7 @@ def test_result_all_six_apply_results_observed(tmp_path, monkeypatch):
     }
 
 
-def test_result_value_is_always_policy_value(tmp_path, monkeypatch):
+def test_result_value_is_always_policy_value(tmp_path):
     dirs = [tmp_path / str(i) for i in range(7)]
     for d in dirs:
         d.mkdir()
@@ -575,9 +588,9 @@ def test_result_value_is_always_policy_value(tmp_path, monkeypatch):
         _result_applied(dirs[0]),
         _result_applied_with_prev(dirs[1]),
         _result_already_ok(dirs[2]),
-        _result_skipped_conflict(dirs[3], monkeypatch),
+        _result_skipped_conflict(dirs[3]),
         _result_parse_failed(dirs[4]),
-        _result_write_failed(dirs[5], monkeypatch),
+        _result_write_failed(dirs[5]),
         _result_skipped_missing(dirs[6]),
     ]
     for rows in results:
