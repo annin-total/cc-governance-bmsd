@@ -13,22 +13,6 @@ import sys
 import time
 from pathlib import Path
 
-_DEFAULT_CONFIG = {
-    "ingest_url": "",
-    "ingest_token": "",
-    "timeout_sec": 5,
-    "spool_max_bytes": 5242880,
-    "spool_max_days": 7,
-}
-
-
-def _write_config(hooks_dir, **overrides):
-    """コピー先の `config.json` を書き換える。"""
-    config = dict(_DEFAULT_CONFIG)
-    config.update(overrides)
-    path = hooks_dir.parent / "config.json"
-    path.write_text(json.dumps(config), encoding="utf-8")
-
 
 def _run(
     hooks_dir,
@@ -266,16 +250,14 @@ def test_plugin_data_and_home_both_missing(hooks_dir, tmp_path):
 # --- 送信条件が真で送信先に到達できない ---
 
 
-def test_ingest_url_unresolvable_host(hooks_dir, tmp_path):
+def test_ingest_url_unresolvable_host(hooks_dir, tmp_path, write_config):
     """#18: ingest_url を解決できないホストにした状態で送信条件を満たす。
 
     送信を起動する経路のため、検証後すぐに `queue.jsonl` が spool へ退避されうる
     （detach した送信プロセスが並行して `rotate()` する）。収集自体が成立したことの
     主張はここでは行わず、他の壊れた入力のケース（#1〜#13・#16・#17・#19・#20）で見る。
     """
-    _write_config(
-        hooks_dir, ingest_url="http://this-host-does-not-exist.invalid/ingest"
-    )
+    write_config(ingest_url="http://this-host-does-not-exist.invalid/ingest")
     result = _run(hooks_dir, plugin_data=tmp_path / "plugin-data", hook_event="Stop")
     _assert_clean_exit(result)
 

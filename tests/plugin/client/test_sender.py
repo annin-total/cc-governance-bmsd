@@ -7,7 +7,6 @@
 import http.server
 import json
 import os
-import socket
 import threading
 import time
 from typing import ClassVar
@@ -96,15 +95,6 @@ def server():
     yield _make
     for srv in instances:
         srv.close()
-
-
-def _free_unused_port():
-    """接続できないポートを 1 つ確保する（bind 直後に close する）。"""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(("127.0.0.1", 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    return port
 
 
 def _write_config(monkeypatch, tmp_path, **overrides):
@@ -221,9 +211,9 @@ def test_non_2xx_keeps_file(server, monkeypatch, tmp_path, status):
 # --- 到達できない・応答しないサーバ ---
 
 
-def test_connection_refused_is_silent(monkeypatch, tmp_path):
+def test_connection_refused_is_silent(monkeypatch, tmp_path, unused_port):
     """#9: 接続できないポート -> 例外なし。ファイルが残る。終了コード 0（例外が上がらない）。"""
-    port = _free_unused_port()
+    port = unused_port()
     _write_config(monkeypatch, tmp_path, ingest_url=f"http://127.0.0.1:{port}/ingest")
     path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
 

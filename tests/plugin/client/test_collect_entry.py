@@ -7,37 +7,11 @@
 
 import json
 import os
-import socket
 import subprocess
 import sys
 import time
 
 import pytest
-
-_DEFAULT_CONFIG = {
-    "ingest_url": "",
-    "ingest_token": "",
-    "timeout_sec": 5,
-    "spool_max_bytes": 5242880,
-    "spool_max_days": 7,
-}
-
-
-def _write_config(hooks_dir, **overrides):
-    """コピー先の `config.json` を書き換える。"""
-    config = dict(_DEFAULT_CONFIG)
-    config.update(overrides)
-    path = hooks_dir.parent / "config.json"
-    path.write_text(json.dumps(config), encoding="utf-8")
-
-
-def _free_port() -> int:
-    """接続できないポートを1つ確保する（bind 直後に close する）。"""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(("127.0.0.1", 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    return port
 
 
 def _run(hooks_dir, plugin_data, hook_event=None, stdin_text="{}", disable=None):
@@ -111,12 +85,14 @@ def test_disable_unset_collects(hooks_dir, tmp_path):
     assert len(lines) == 1
 
 
-def test_disable_blocks_launch_even_if_send_condition_met(hooks_dir, tmp_path):
+def test_disable_blocks_launch_even_if_send_condition_met(
+    hooks_dir, tmp_path, write_config, unused_port
+):
     """#6: 無効化スイッチが立っている状態で送信条件を満たしても、送信プロセスを起動しない。"""
     plugin_data = tmp_path / "plugin-data"
     plugin_data.mkdir(parents=True)
     (plugin_data / "queue.jsonl").write_text('{"n": 1}\n', encoding="utf-8")
-    _write_config(hooks_dir, ingest_url=f"http://127.0.0.1:{_free_port()}/ingest")
+    write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
     result = _run(hooks_dir, plugin_data, hook_event="Stop", disable="1")
 
@@ -163,13 +139,15 @@ def test_two_runs_append_two_distinct_events(hooks_dir, tmp_path):
 # --- 送信条件と起動 ---
 
 
-def test_send_condition_false_stop_does_not_launch(hooks_dir, tmp_path):
+def test_send_condition_false_stop_does_not_launch(
+    hooks_dir, tmp_path, write_config, unused_port
+):
     """#10: 送信条件が偽、引数 Stop -> 送信プロセスを起動しない。"""
     plugin_data = tmp_path / "plugin-data"
     sent_at = plugin_data / "sent_at"
     _touch_now(sent_at)
     before_mtime = sent_at.stat().st_mtime
-    _write_config(hooks_dir, ingest_url=f"http://127.0.0.1:{_free_port()}/ingest")
+    write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
     result = _run(hooks_dir, plugin_data, hook_event="Stop")
 
@@ -179,10 +157,12 @@ def test_send_condition_false_stop_does_not_launch(hooks_dir, tmp_path):
     assert sent_at.stat().st_mtime == before_mtime
 
 
-def test_send_condition_true_stop_launches_and_marks_sent(hooks_dir, tmp_path):
+def test_send_condition_true_stop_launches_and_marks_sent(
+    hooks_dir, tmp_path, write_config, unused_port
+):
     """#11: 送信条件が真、引数 Stop -> 送信プロセスを起動する。sent_at の mtime が更新される。"""
     plugin_data = tmp_path / "plugin-data"
-    _write_config(hooks_dir, ingest_url=f"http://127.0.0.1:{_free_port()}/ingest")
+    write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
     result = _run(hooks_dir, plugin_data, hook_event="Stop")
 
@@ -193,10 +173,12 @@ def test_send_condition_true_stop_launches_and_marks_sent(hooks_dir, tmp_path):
     assert _wait_until(lambda: _spool_has_file(plugin_data))
 
 
-def test_send_condition_true_session_start_launches(hooks_dir, tmp_path):
+def test_send_condition_true_session_start_launches(
+    hooks_dir, tmp_path, write_config, unused_port
+):
     """#12: 送信条件が真、引数 SessionStart -> 送信プロセスを起動する。"""
     plugin_data = tmp_path / "plugin-data"
-    _write_config(hooks_dir, ingest_url=f"http://127.0.0.1:{_free_port()}/ingest")
+    write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
     result = _run(hooks_dir, plugin_data, hook_event="SessionStart")
 
@@ -206,10 +188,12 @@ def test_send_condition_true_session_start_launches(hooks_dir, tmp_path):
 
 
 @pytest.mark.parametrize("hook_event", ["PostToolUse", "PreCompact"])
-def test_other_hook_events_never_launch(hooks_dir, tmp_path, hook_event):
+def test_other_hook_events_never_launch(
+    hooks_dir, tmp_path, write_config, unused_port, hook_event
+):
     """#13-14: 送信条件が真でも、引数が PostToolUse / PreCompact -> 起動しない（起動は2 hook のみ）。"""
     plugin_data = tmp_path / "plugin-data"
-    _write_config(hooks_dir, ingest_url=f"http://127.0.0.1:{_free_port()}/ingest")
+    write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
     result = _run(hooks_dir, plugin_data, hook_event=hook_event)
 
