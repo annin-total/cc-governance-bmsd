@@ -42,12 +42,12 @@ def _spool_files_sorted() -> list[Path]:
     return sorted(spool_dir.glob("*.jsonl"))
 
 
-def _post_file(path: Path, config: dict[str, Any]) -> None:
-    """1 ファイルを POST し、2xx なら消す。"""
+def _post_file(path: Path, config: dict[str, Any]) -> bool:
+    """1 ファイルを POST し、2xx なら消す。サーバに届かなかったら偽。"""
     try:
         body = path.read_bytes()
     except OSError:
-        return
+        return True
 
     request = urllib.request.Request(
         config["ingest_url"],
@@ -64,13 +64,14 @@ def _post_file(path: Path, config: dict[str, Any]) -> None:
     except urllib.error.HTTPError as err:
         status = err.code
     except (urllib.error.URLError, OSError):
-        return
+        return False
 
     if 200 <= status < 300:
         try:
             os.remove(path)
         except OSError:
             pass
+    return True
 
 
 def run() -> None:
@@ -81,7 +82,9 @@ def run() -> None:
             return
         _spool.rotate()
         for path in _spool_files_sorted():
-            _post_file(path, config)
+            # 応答しないサーバに対して、ファイル数 × timeout_sec 粘らない
+            if not _post_file(path, config):
+                break
         _spool.prune(config["spool_max_bytes"], config["spool_max_days"])
     except Exception:  # noqa: BLE001, S110 (送信プロセスは例外を外に出さない)
         pass

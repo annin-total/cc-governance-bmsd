@@ -211,6 +211,32 @@ def test_unresponsive_server_respects_timeout(server, monkeypatch, tmp_path):
     assert elapsed < 5
 
 
+def test_unresponsive_server_stops_after_first_file(server, monkeypatch, tmp_path):
+    """応答しないサーバには 1 ファイルで見切りを付け、ファイル数 × timeout 粘らない。"""
+    srv = server(status_codes=[200], delay_sec=3)
+    _write_config(monkeypatch, tmp_path, ingest_url=srv.url, timeout_sec=1)
+    paths = [
+        _seed_spool_file(f"{1000 + i}-{'a' * 32}.jsonl", [{"n": i}]) for i in range(3)
+    ]
+
+    started = time.monotonic()
+    _sender.run()
+    elapsed = time.monotonic() - started
+
+    assert all(p.exists() for p in paths)
+    assert elapsed < 2
+
+
+def test_unreachable_server_still_prunes(monkeypatch, tmp_path, unused_port):
+    port = unused_port()
+    _write_config(monkeypatch, tmp_path, ingest_url=f"http://127.0.0.1:{port}/ingest")
+    old = _seed_spool_file(_SPOOL_NAME, [{"n": 1}], mtime=time.time() - 30 * 86400)
+
+    _sender.run()
+
+    assert not old.exists()
+
+
 # --- 複数ファイルの処理順序・部分失敗 ---
 
 
