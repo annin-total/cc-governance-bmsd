@@ -8,7 +8,6 @@ import json
 from pathlib import Path
 
 import _notices
-import _sender
 import _spool
 import policy
 import pytest
@@ -22,72 +21,23 @@ POLICY_KEY_COUNT = sum(
 )
 
 
-class _RaisingStdout:
-    """`write` が必ず例外を投げる標準出力の代わり。書き出し失敗を再現するために使う。"""
-
-    def write(self, *_args, **_kwargs):
-        raise OSError("boom")
-
-    def flush(self):
-        pass
-
-
-class _FlushRaisingStdout:
-    """`write` は成功するが `flush` が必ず例外を投げる標準出力の代わり。
-
-    計画書タスク9は「標準出力への書き出しと flush が例外なく終わってから seen.json を
-    更新する」と明記する。`write` しか失敗させない `_RaisingStdout` ではこの条件を検査できない。
-    """
-
-    def __init__(self):
-        self.written = []
-
-    def write(self, data, *_args, **_kwargs):
-        self.written.append(data)
-
-    def flush(self):
-        raise OSError("boom")
-
-
 def _raiser(*_args, **_kwargs):
     """モックとして差し込む、必ず例外を投げる関数。"""
     raise RuntimeError("boom")
 
 
-@pytest.fixture(autouse=True)
-def _isolate(monkeypatch, tmp_path):
-    """状態ディレクトリと設定ディレクトリを隔離し、無効化スイッチを消して始める。"""
-    monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "state"))
-    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "config"))
-    monkeypatch.delenv("CC_GOVERNANCE_DISABLE", raising=False)
-    monkeypatch.setattr(session_start.sys, "argv", ["session_start.py", "SessionStart"])
-    monkeypatch.setattr(
-        session_start,
-        "_read_stdin_json",
-        lambda: {"session_id": "s", "source": "startup"},
-    )
-    return tmp_path
-
-
-@pytest.fixture(autouse=True)
-def _spy_launch(monkeypatch):
-    """送信プロセスの実起動を避け、呼び出しの有無だけを数える。"""
-    calls = []
-    monkeypatch.setattr(_sender, "launch", lambda: calls.append(1))
-    return calls
+pytestmark = pytest.mark.usefixtures("session_start_env", "spy_launch")
 
 
 @pytest.fixture
-def notices_file(tmp_path, monkeypatch):
+def notices_file(write_notices):
     """fixture の notices.json（n-001 / n-002、n-001 に一意なマーカー）を用意する。"""
-    path = tmp_path / "notices.json"
-    data = [
-        {"id": "n-001", "title": "件名1", "body": f"本文1 {MARKER}"},
-        {"id": "n-002", "title": "件名2", "body": "本文2"},
-    ]
-    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(_notices, "_NOTICES_PATH", path)
-    return path
+    return write_notices(
+        [
+            {"id": "n-001", "title": "件名1", "body": f"本文1 {MARKER}"},
+            {"id": "n-002", "title": "件名2", "body": "本文2"},
+        ]
+    )
 
 
 def _settings_file(tmp_path) -> Path:
@@ -274,11 +224,9 @@ def test_notices_8_7_empty_file_is_treated_as_empty(notices_file, tmp_path):
     assert _unread_ids() == {"n-001", "n-002"}
 
 
-def test_notices_8_8_empty_notices_array_no_unread(tmp_path, monkeypatch):
+def test_notices_8_8_empty_notices_array_no_unread(write_notices):
     """#8-8: notices.json が空配列 -> 未読なし。例外にならない。"""
-    path = tmp_path / "notices.json"
-    path.write_text("[]", encoding="utf-8")
-    monkeypatch.setattr(_notices, "_NOTICES_PATH", path)
+    write_notices([])
     assert _unread_ids() == set()
 
 
@@ -294,19 +242,16 @@ def test_notices_8_10_seen_sequence_does_not_matter(notices_file, tmp_path):
     assert _unread_ids() == set()
 
 
-def test_notices_8_11_non_string_body_item_is_dropped_others_survive(
-    tmp_path, monkeypatch
-):
+def test_notices_8_11_non_string_body_item_is_dropped_others_survive(write_notices):
     """#8-11 (M-1): title が無く body が非文字列の項目が1件混ざっても、その項目だけを飛ばし
     正常な項目は未読として残る（1件の欠陥が同じファイルの正常な項目まで隠さない）。
     """
-    path = tmp_path / "notices.json"
-    data = [
-        {"id": "n-broken", "body": 123},
-        {"id": "n-ok", "title": "件名", "body": "本文"},
-    ]
-    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(_notices, "_NOTICES_PATH", path)
+    write_notices(
+        [
+            {"id": "n-broken", "body": 123},
+            {"id": "n-ok", "title": "件名", "body": "本文"},
+        ]
+    )
     assert _unread_ids() == {"n-ok"}
 
 
@@ -365,10 +310,12 @@ def test_output_9_7_seen_file_contains_both_ids(notices_file, tmp_path, capsys):
     assert set(seen) == {"n-001", "n-002"}
 
 
-def test_output_9_8_write_failure_keeps_seen_unchanged(notices_file, tmp_path):
+def test_output_9_8_write_failure_keeps_seen_unchanged(
+    notices_file, tmp_path, raising_stdout
+):
     """#9-8: 標準出力への書き出しを例外にすると、seen.json は実行前と同じ（更新されない）ままになる。"""
     original_stdout = session_start.sys.stdout
-    session_start.sys.stdout = _RaisingStdout()
+    session_start.sys.stdout = raising_stdout
     try:
         session_start.main()
     finally:
@@ -377,10 +324,12 @@ def test_output_9_8_write_failure_keeps_seen_unchanged(notices_file, tmp_path):
     assert not _seen_file(tmp_path).exists()
 
 
-def test_output_9_8b_flush_only_failure_keeps_seen_unchanged(notices_file, tmp_path):
+def test_output_9_8b_flush_only_failure_keeps_seen_unchanged(
+    notices_file, tmp_path, flush_raising_stdout
+):
     """#9-8b (I-2): write は成功するが flush だけが例外を投げても、seen.json は更新されない。"""
     original_stdout = session_start.sys.stdout
-    session_start.sys.stdout = _FlushRaisingStdout()
+    session_start.sys.stdout = flush_raising_stdout
     try:
         session_start.main()
     finally:
@@ -389,10 +338,12 @@ def test_output_9_8b_flush_only_failure_keeps_seen_unchanged(notices_file, tmp_p
     assert not _seen_file(tmp_path).exists()
 
 
-def test_output_9_9_retried_after_failure_shows_again(notices_file, capsys):
+def test_output_9_9_retried_after_failure_shows_again(
+    notices_file, capsys, raising_stdout
+):
     """#9-9: 9-8 の失敗の後、もう一度正常に実行すると n-001, n-002 が改めて出力される。"""
     original_stdout = session_start.sys.stdout
-    session_start.sys.stdout = _RaisingStdout()
+    session_start.sys.stdout = raising_stdout
     try:
         session_start.main()
     finally:
@@ -669,7 +620,7 @@ def test_disable_11_7_value_1_stdout_is_still_valid_json(tmp_path, monkeypatch, 
 
 
 def test_disable_11_8_value_1_still_launches_sender_once(
-    tmp_path, monkeypatch, _spy_launch
+    tmp_path, monkeypatch, spy_launch
 ):
     """#11-8: "1" でも送信条件が真なら送信プロセスが1回起動する（送信は止まらない）。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
@@ -677,4 +628,4 @@ def test_disable_11_8_value_1_still_launches_sender_once(
 
     session_start.main()
 
-    assert len(_spy_launch) == 1
+    assert len(spy_launch) == 1

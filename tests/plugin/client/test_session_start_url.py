@@ -15,7 +15,6 @@ import sys
 from pathlib import Path
 
 import _browser
-import _sender
 import pytest
 import session_start
 
@@ -24,49 +23,14 @@ URL_1 = "https://example.com/first"
 URL_2 = "https://example.com/second"
 
 
-class _RaisingStdout:
-    """`write` が必ず例外を投げる標準出力の代わり。"""
-
-    def write(self, *_args, **_kwargs):
-        raise OSError("boom")
-
-    def flush(self):
-        pass
-
-
-class _FlushRaisingStdout:
-    """`write` は成功するが `flush` が必ず例外を投げる標準出力の代わり。"""
-
-    def write(self, *_args, **_kwargs):
-        pass
-
-    def flush(self):
-        raise OSError("boom")
+pytestmark = pytest.mark.usefixtures("session_start_env", "spy_launch")
 
 
 @pytest.fixture(autouse=True)
-def _isolate(monkeypatch, tmp_path):
-    """状態ディレクトリと設定ディレクトリを隔離し、無効化スイッチを消して始める。"""
-    monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "state"))
-    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "config"))
-    monkeypatch.delenv("CC_GOVERNANCE_DISABLE", raising=False)
-    monkeypatch.setattr(session_start.sys, "argv", ["session_start.py", "SessionStart"])
-    monkeypatch.setattr(
-        session_start,
-        "_read_stdin_json",
-        lambda: {"session_id": "s", "source": "startup"},
-    )
-    (tmp_path / "config").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "config" / "settings.json").write_text("{}", encoding="utf-8")
-    return tmp_path
-
-
-@pytest.fixture(autouse=True)
-def _spy_launch(monkeypatch):
-    """送信プロセスの実起動を避け、呼び出しの有無だけを数える。"""
-    calls = []
-    monkeypatch.setattr(_sender, "launch", lambda: calls.append(1))
-    return calls
+def _empty_settings(session_start_env):
+    """設定ディレクトリに空の settings.json を置く。"""
+    (session_start_env / "config").mkdir(parents=True, exist_ok=True)
+    (session_start_env / "config" / "settings.json").write_text("{}", encoding="utf-8")
 
 
 @pytest.fixture
@@ -78,27 +42,21 @@ def _open_spy(monkeypatch):
 
 
 @pytest.fixture
-def notices_file(tmp_path, monkeypatch):
+def notices_file(write_notices):
     """url 付き 2 件（n-001, n-002）と url なし 1 件（n-003）を持つ notices.json を用意する。"""
-    path = tmp_path / "notices.json"
-    data = [
-        {"id": "n-001", "title": "件名1", "body": f"本文1 {MARKER}", "url": URL_1},
-        {"id": "n-002", "title": "件名2", "body": "本文2", "url": URL_2},
-        {"id": "n-003", "title": "件名3", "body": "本文3"},
-    ]
-    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(session_start._notices, "_NOTICES_PATH", path)
-    return path
+    return write_notices(
+        [
+            {"id": "n-001", "title": "件名1", "body": f"本文1 {MARKER}", "url": URL_1},
+            {"id": "n-002", "title": "件名2", "body": "本文2", "url": URL_2},
+            {"id": "n-003", "title": "件名3", "body": "本文3"},
+        ]
+    )
 
 
 @pytest.fixture
-def notices_file_no_url(tmp_path, monkeypatch):
+def notices_file_no_url(write_notices):
     """url を持たない項目だけの notices.json を用意する。"""
-    path = tmp_path / "notices.json"
-    data = [{"id": "n-010", "title": "件名", "body": "本文のみ"}]
-    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(session_start._notices, "_NOTICES_PATH", path)
-    return path
+    return write_notices([{"id": "n-010", "title": "件名", "body": "本文のみ"}])
 
 
 def _seen_file(tmp_path) -> Path:
@@ -172,16 +130,15 @@ def test_cli_no_url_items_do_not_open(
 
 
 def test_cli_unparsable_url_does_not_hide_other_notices(
-    tmp_path, monkeypatch, capsys, _open_spy
+    write_notices, monkeypatch, capsys, _open_spy
 ):
     """#3b: `urlsplit` が例外を投げる url があっても、全項目が表示され、正常な URL が開く。"""
-    path = tmp_path / "notices.json"
-    data = [
-        {"id": "n-020", "title": "件名A", "body": "本文A", "url": "https://[x/"},
-        {"id": "n-021", "title": "件名B", "body": "本文B", "url": URL_1},
-    ]
-    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(session_start._notices, "_NOTICES_PATH", path)
+    write_notices(
+        [
+            {"id": "n-020", "title": "件名A", "body": "本文A", "url": "https://[x/"},
+            {"id": "n-021", "title": "件名B", "body": "本文B", "url": URL_1},
+        ]
+    )
     _set_entrypoint(monkeypatch, "cli")
 
     session_start.main()
@@ -318,11 +275,13 @@ def test_seen_write_readonly_dir_does_not_open(
 # ---- 標準出力の書き出し失敗 ----
 
 
-def test_stdout_write_failure_does_not_open(notices_file, monkeypatch, _open_spy):
+def test_stdout_write_failure_does_not_open(
+    notices_file, monkeypatch, _open_spy, raising_stdout
+):
     """#8: 標準出力への write が例外を投げると開かない（_emit_output が False のため）。"""
     _set_entrypoint(monkeypatch, "cli")
     original_stdout = session_start.sys.stdout
-    session_start.sys.stdout = _RaisingStdout()
+    session_start.sys.stdout = raising_stdout
     try:
         session_start.main()
     finally:
@@ -330,11 +289,13 @@ def test_stdout_write_failure_does_not_open(notices_file, monkeypatch, _open_spy
     assert _open_spy == []
 
 
-def test_stdout_flush_failure_does_not_open(notices_file, monkeypatch, _open_spy):
+def test_stdout_flush_failure_does_not_open(
+    notices_file, monkeypatch, _open_spy, flush_raising_stdout
+):
     """#9: 標準出力への flush が例外を投げると開かない（_emit_output が False のため）。"""
     _set_entrypoint(monkeypatch, "cli")
     original_stdout = session_start.sys.stdout
-    session_start.sys.stdout = _FlushRaisingStdout()
+    session_start.sys.stdout = flush_raising_stdout
     try:
         session_start.main()
     finally:
@@ -346,7 +307,7 @@ def test_stdout_flush_failure_does_not_open(notices_file, monkeypatch, _open_spy
 
 
 def test_open_url_exception_does_not_break_output_or_collection(
-    notices_file, monkeypatch, capsys, _spy_launch
+    notices_file, monkeypatch, capsys, spy_launch
 ):
     """#10: open_url が例外を投げても、標準出力は JSON 1 個、標準エラーは空、収集ステップも走る。"""
     _set_entrypoint(monkeypatch, "cli")
@@ -363,7 +324,7 @@ def test_open_url_exception_does_not_break_output_or_collection(
     assert len(lines) == 1
     json.loads(lines[0])
     assert captured.err == ""
-    assert len(_spy_launch) == 1
+    assert len(spy_launch) == 1
 
 
 # ---- 実プロセス版 ----

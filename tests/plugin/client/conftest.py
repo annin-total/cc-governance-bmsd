@@ -101,3 +101,79 @@ def run_collect(hooks_dir):
         )
 
     return _run
+
+
+# --- session_start.main をプロセス内で呼ぶテスト用 ---
+
+
+@pytest.fixture
+def session_start_env(monkeypatch, tmp_path):
+    """状態・設定ディレクトリを隔離し、無効化スイッチを消し、SessionStart の入力を固定する。"""
+    import session_start
+
+    monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "state"))
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.delenv("CC_GOVERNANCE_DISABLE", raising=False)
+    monkeypatch.setattr(session_start.sys, "argv", ["session_start.py", "SessionStart"])
+    monkeypatch.setattr(
+        session_start,
+        "_read_stdin_json",
+        lambda: {"session_id": "s", "source": "startup"},
+    )
+    return tmp_path
+
+
+@pytest.fixture
+def spy_launch(monkeypatch):
+    """送信プロセスの実起動を避け、呼び出しの有無だけを数える。"""
+    import _sender
+
+    calls = []
+    monkeypatch.setattr(_sender, "launch", lambda: calls.append(1))
+    return calls
+
+
+@pytest.fixture
+def write_notices(tmp_path, monkeypatch):
+    """渡した項目で notices.json を書き、読み込み先をそこへ向ける関数を返す。"""
+    import _notices
+
+    def _write(data) -> Path:
+        path = tmp_path / "notices.json"
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        monkeypatch.setattr(_notices, "_NOTICES_PATH", path)
+        return path
+
+    return _write
+
+
+class _RaisingStdout:
+    """`write` が必ず例外を投げる標準出力の代わり。"""
+
+    def write(self, *_args, **_kwargs):
+        raise OSError("boom")
+
+    def flush(self):
+        pass
+
+
+class _FlushRaisingStdout:
+    """`write` は成功するが `flush` が必ず例外を投げる標準出力の代わり。"""
+
+    def write(self, *_args, **_kwargs):
+        pass
+
+    def flush(self):
+        raise OSError("boom")
+
+
+@pytest.fixture
+def raising_stdout():
+    """`write` が必ず例外を投げる標準出力の代わり。"""
+    return _RaisingStdout()
+
+
+@pytest.fixture
+def flush_raising_stdout():
+    """`write` は成功するが `flush` が必ず例外を投げる標準出力の代わり。"""
+    return _FlushRaisingStdout()
