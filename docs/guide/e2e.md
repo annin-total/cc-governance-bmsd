@@ -12,6 +12,7 @@
 | 導入 | `e2e/test_install.py` | 不要 | 不要 | 不要 |
 | 設定の配布 | `e2e/test_settings.py` | 不要 | 不要 | 不要（手動確認は要る） |
 | お知らせ | `e2e/test_notices.py` | 不要 | 不要 | 不要（手動確認は要る） |
+| サーバ | `e2e/test_server.py` | 不要 | 要 | 不要（手動確認は要る） |
 
 書かれていないモジュールはまだ無い。
 
@@ -142,3 +143,48 @@ cd <ルート>/project && CLAUDE_CONFIG_DIR=<ルート>/config claude   # 対話
 
 ブラウザ起動は OS に依存する観測であり、自動では確かめない。Windows と、VS Code 拡張など
 `cli` 以外の対話起動での見え方は未検証。
+
+## サーバ（モジュール 7）
+
+集計サーバを本番に近い形（Docker イメージ・`entry.sh` による Secret ファイルの読み込みと契約の複製の
+照合・waitress・`BASE_PATH` 付き）で起動し、実 TCP 越しに管理画面・受信・CSV 取込が届くこと、
+契約の複製が正本と食い違うと起動しないことを確かめる。`server/tests` は Flask の `test_client()` で
+インプロセスに検査しており、イメージ・`entry.sh`・WSGI サーバ・ソケットを通らない。
+受信・取込・集計の中身は `server/tests` が見るので、ここでは繰り返さない。
+
+```bash
+.venv/bin/python -m pytest e2e -k server
+```
+
+### 前提と罠
+
+- Docker のデーモンに繋がること。繋がらなければ skip される。ビルドには PyPI への到達が要る
+- **バインドマウントを使わない。**Colima の既定ではホームの外（macOS の `TMPDIR` を含む）の
+  マウントが無言で空になる（`docs/knowledge/db-and-framework-facts.md`）。Secret ファイルと CSV は
+  `docker cp` で入れる
+- サーバはセッションで 1 つだけ起動し、テスト間で共有する（ビルドと起動が遅いため）。
+  このサーバにデータを入れるテストは、期待値を自分が入れたデータだけから導く
+- `BASE_PATH` を付けない `/<ADMIN_PATH>/` にも応答する。前段がサブパスを剥がす場合に備えた設計
+  （`docs/spec/server.md` の「構成の規約」）であり、欠陥ではない
+- ビルドのたびに Docker のビルドキャッシュが増える。テストは消さない（消す操作は他のイメージの
+  キャッシュも巻き込む）。必要なら `docker builder prune` を手で実行する
+
+### 手動確認項目
+
+画面の見た目はブラウザが要るため自動化しない。見た目の規約は `docs/spec/dashboard-style.md`。
+
+1. `server/` で `docker compose up -d --build` を実行し、
+   `docker compose cp ../e2e/samples/cost_daily.csv server:/app/data/csv/` で見本の CSV を入れる
+2. `http://127.0.0.1:15000/dev-admin/` を開き（パスワードは `dev.env` の `ADMIN_PASSWORD`、ユーザー名は任意）、
+   「CSV を取り込む」を押す
+3. ブラウザの幅を 1280px にし、4 画面（`/dev-admin/`・`/dev-admin/policy`・`/dev-admin/effect`・
+   `/dev-admin/assets`）を順に開く。合格: 開発者ツールのコンソールに error・warning が 0 件、
+   コンソールで `document.documentElement.scrollWidth <= document.documentElement.clientWidth` が
+   `true`、表のセルが切れていない。**スクリーンショットだけで判定しない**
+4. 終わったら `docker compose down -v` で止める（開発用のボリュームも消える）
+
+### 実物でも確かめられない限界
+
+DB は SQLite だけで、MySQL は確かめない。AIP の前段（Ingress のサブパスの扱い・HTTPS）、`/mnt/data` の
+永続（再起動をまたいだデータの保持）、起動時の `pip install` がプロキシ越しに通るか、起動時間と
+アイドル停止は、実行基盤でしか確かめられない。

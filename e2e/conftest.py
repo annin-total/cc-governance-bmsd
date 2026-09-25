@@ -1,4 +1,4 @@
-"""実機検証（`pytest e2e`）の共通設定。同時実行の禁止・本物の状態の監視・隔離ルートと git 配信。"""
+"""実機検証（`pytest e2e`）の共通設定。同時実行の禁止・本物の状態の監視・隔離ルート・git 配信・集計サーバ。"""
 
 import hashlib
 import json
@@ -9,6 +9,7 @@ import pytest
 from _githttp import GitHttpServer
 from _market import MARKETPLACE, PLUGIN_ID, PLUGIN_SRC, REPO, STATUSLINE_MARK
 from _root import REAL_CONFIG_DIRS, E2ERoot
+from _server import DockerServer, build_context, docker_available
 
 _E2E_DIR = Path(__file__).resolve().parent
 _WATCHED = (
@@ -119,3 +120,25 @@ def gitsrv(root):
     _TRACES.append(f"127.0.0.1:{server.port}")
     yield server
     server.close()
+
+
+@pytest.fixture(scope="session")
+def docker():
+    """docker が無い、またはデーモンに繋がらなければ skip。"""
+    if not docker_available():
+        pytest.skip("docker が無い、またはデーモンに繋がらない")
+
+
+@pytest.fixture(scope="session")
+def server(docker):
+    """Docker で起動した集計サーバ（セッションで 1 つ。ビルドと起動が遅いため共有する）。"""
+    r = E2ERoot()
+    _TRACES.append(r.path.name)
+    srv = DockerServer(r, "main")
+    try:
+        srv.start(build_context(r, "main"))
+        srv.wait_ready()
+        yield srv
+    finally:
+        srv.close()
+        r.cleanup()

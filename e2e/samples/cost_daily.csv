@@ -1,0 +1,5 @@
+Date,Workspace ID,Provider,Model,User ID,User Email,User Name,Cost,Currency,Input Tokens,Output Tokens,Cache Read Tokens,Cache Write Tokens,Cached Input Tokens,Uncached Input Tokens
+2026-01-05,e2e-ws,e2e-provider-a,e2e-model,e2e-u1,e2e-u1@example.invalid,e2e-u1,1.25,USD,10,20,0,0,0,10
+2026-01-05,e2e-ws,e2e-provider-a,e2e-model,e2e-u2,e2e-u2@example.invalid,e2e-u2,2.5,USD,10,20,0,0,0,10
+2026-01-05,e2e-ws,e2e-provider-b,e2e-model,e2e-u1,e2e-u1@example.invalid,e2e-u1,0.5,USD,10,20,0,0,0,10
+2026-01-06,e2e-ws,e2e-provider-a,e2e-model,e2e-u2,e2e-u2@example.invalid,e2e-u2,0.75,USD,10,20,0,0,0,10
