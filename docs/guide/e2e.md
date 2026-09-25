@@ -37,8 +37,11 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt  # 初回
 
 - **隔離は `CLAUDE_CONFIG_DIR` だけで行い、`HOME` は差し替えない。**macOS で `HOME` を差し替えると
   認証が壊れるため（`docs/guide/local-e2e.md` の原則）
-- **本物の `~/.claude` を前後比較する。**`e2e/conftest.py` のセッション fixture が開始時と終了時で
-  `settings.json` 等のハッシュと `plugin/` 木を比較し、差があればセッション全体を失敗させる
+- **本物の `~/.claude` に痕跡が無いことを確かめる。**`e2e/conftest.py` のセッション fixture が、
+  終了時に本物の `settings.json` 等へ今回の隔離ルート名・git 配信のアドレス・statusline の目印が
+  現れていないこと、開始時と終了時でこのプラグインの導入の有無が変わらないこと、`plugin/` 木が
+  変わらないことを見て、違えばセッション全体を失敗させる。本物の値そのものは比べない
+  （並行する本物の Claude Code が正当に書き換えるため）
 - **`tests/` と同時に流さない。**`tests/conftest.py` は import 時に `HOME` を差し替え、隔離の前提を
   崩す。混在すると `e2e/conftest.py` が検出して終了する
 - **`CC_E2E_KEEP=1` で隔離ルートを残せる。**失敗時の調査用。既定では片付けで消える
@@ -70,6 +73,21 @@ git source のマーケットプレイスとして導入し、cache への複製
 配布経路は開発ツリーから組み立てたローカルの git リポジトリで代替しており、実在の配布リポジトリ
 （社内 Bitbucket 等）への到達・認証は確かめない。Windows での実行は未検証。
 
+## 手動確認の準備
+
+認証と対話が要る確認は、テストが残した隔離ルートで行う。お知らせのテストのルートは、見本の
+お知らせが未読のまま設定も適用済みなので、両モジュールの手動確認に使える。
+
+```bash
+CC_E2E_KEEP=1 .venv/bin/python -m pytest e2e -k 未読   # 残したルートのパスが表示される
+CLAUDE_CONFIG_DIR=<ルート>/config claude               # 対話で起動し /login でログインする
+```
+
+- ログインは隔離した config ごとに 1 回要る（本人の認証は引き継がず、上書きもしない）
+- `url` 付きの項目は、`<ルート>/config/plugins/cache/` 配下の installPath にある `notices.json` に足す。
+  git source では hook は cache から動く（`docs/knowledge/claude-code-behavior.md`）
+- 終わったらルートを消す
+
 ## 設定の配布（モジュール 2）
 
 `installPath` の `policy.py` が `SessionStart` で隔離した `settings.json` に当たり、Claude Code 本体の
@@ -80,25 +98,16 @@ git source のマーケットプレイスとして導入し、cache への複製
 .venv/bin/python -m pytest e2e -k settings
 ```
 
-### 前提と罠
-
-- 期待値は組み立てたコピーの `policy.py` から導く。開発ツリーの `plugin/` を import すると
-  `__pycache__` が生え、`e2e/conftest.py` の前後比較が失敗する
-- `extraKnownMarketplaces.<name>` は `marketplace add --scope user` が `settings.json` に書く。
-  この項目が無いと `autoUpdate` は書かれない（`docs/spec/plugin.md` の「設定の自動適用」）
-- 本物の `~/.claude/plugins/known_marketplaces.json` は、並行して動く本物の Claude Code が
-  公式マーケットプレイスの更新で書き換えることがある。前後比較がこれで落ちたら、隔離側の痕跡
-  （`127.0.0.1` の URL）が無いことを確かめて再実行する
-
 ### 手動確認項目
 
-認証と対話が要るため自動化しない。隔離した config（`CLAUDE_CONFIG_DIR`）でログインして行う。
+準備は「手動確認の準備」。
 
-- **reapply**: `settings.json` の `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` を別の値に書き換え、対話で
-  `/governance:reapply` を実行する。合格: 結果が表示され、`settings.json` が `policy.py` の値に戻る
-- **設定が実際に効くか**: 適用後に対話セッションを開き直し、`!echo $CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`
-  を実行する（子プロセスは settings の `env` を受け継ぐ）。合格: `policy.py` の値が出る。自動更新の
-  有効化は、本体の記録（`known_marketplaces.json`）に取り込まれることまでを自動で見ている
+- **reapply**: 対話セッションを開いた後に `settings.json` の `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` を
+  別の値に書き換え、`/governance:reapply` を実行する。合格: その項目が `applied`（書き込んだ）と報告され、
+  `settings.json` の値が `policy.py` の値に戻る
+- **設定が実際に効くか**: 対話セッションで `!echo $CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` を実行する
+  （子プロセスが settings の `env` を受け継ぐことは `docs/knowledge/claude-code-behavior.md`）。
+  合格: `policy.py` の値が出る
 
 ### 実物でも確かめられない限界
 
@@ -116,22 +125,16 @@ git source のマーケットプレイスとして導入し、cache への複製
 .venv/bin/python -m pytest e2e -k notices
 ```
 
-### 前提と罠
-
-- `claude -p` のプレーン出力には `systemMessage` が出ない。`--output-format stream-json --verbose` の
-  `hook_response` から読む（`docs/knowledge/claude-code-behavior.md`）
-- `claude -p` は非対話起動なので、既読の記録とブラウザ起動は起きない。「2 回目は出ない」は
-  対話でしか確かめられない
-
 ### 手動確認項目
 
-隔離した config でログインし、`url` 付きの項目を持つ版を導入して対話で起動する。
+準備は「手動確認の準備」。`url` 付きの項目を足し、この順に行う（後の確認で既読になるため）。
 
-- **対話での見え方**: 起動直後にお知らせが `SessionStart:startup says:` の接頭辞つきで表示される。
-  合格: 題名・本文・`詳細: <url>` がそろい、文面が退避されていない
-- **URL が開くか**: 同じ起動で既定ブラウザが先頭の有効な `url` を 1 回だけ開く。合格: 開いたタブが
-  1 つで、閉じて開き直した 2 回目のセッションではお知らせも表示されずブラウザも開かない
-- **`-p` では開かない**: 同じ config で `claude -p ok` を実行する。合格: ブラウザが開かない
+1. **`-p` では開かない**: `CLAUDE_CONFIG_DIR=<ルート>/config claude -p ok` を実行する。
+   合格: ブラウザが開かず、`<ルート>/config/plugins/data/` 配下に `seen.json` が無い
+2. **対話での見え方**: 対話で起動する。合格: 題名・本文・`詳細: <url>` がそろって表示される
+   （表示の接頭辞と長文の退避は `docs/knowledge/claude-code-behavior.md`）
+3. **URL が開くか**: 2 と同じ起動で、既定ブラウザが先頭の有効な `url` を 1 回だけ開く。合格: 開いた
+   タブが 1 つで、開き直した次のセッションではお知らせも表示されずブラウザも開かない
 
 ### 実物でも確かめられない限界
 

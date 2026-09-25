@@ -9,6 +9,7 @@ from pathlib import Path
 
 from _flow import data_dir, install, session
 from _market import version
+from _root import hook_rows
 
 _SAMPLE = Path(__file__).resolve().parent / "samples" / "notices.json"
 _DISABLE = {"CC_GOVERNANCE_DISABLE": "1"}
@@ -53,3 +54,6 @@ def test_未読のお知らせが出て_pでは既読にしない(root, gitsrv):
 def test_無効化スイッチで出ない(root, gitsrv):
     _install(root, gitsrv)
     assert "systemMessage" not in _session_start_output(root, _DISABLE)
+    # 陽性対照: hook は動いている。無効化は収集を止め、設定の適用（policy 行）は止めない
+    rows = hook_rows(data_dir(root))
+    assert rows and {r["kind"] for r in rows} == {"policy"}, rows

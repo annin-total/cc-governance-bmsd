@@ -6,18 +6,20 @@ from typing import Optional
 
 from _market import MARKETPLACE, PLUGIN_ID, publish
 
-CLI_TIMEOUT = 120
+_CLI_TIMEOUT = 120
 _SESSION_TIMEOUT = 90
 
 
 def ok(root, *args: str) -> None:
-    res = root.run_claude(*args, timeout=CLI_TIMEOUT)
+    res = root.run_claude(*args, timeout=_CLI_TIMEOUT)
     assert res.returncode == 0, res.stdout + res.stderr
 
 
 def install(root, gitsrv, ver: str, overrides: Optional[dict] = None) -> None:
     """`ver` を publish し、git source のマーケットプレイスとして追加して導入する。"""
     publish(root, ver, overrides)
+    # user に入れる。policy.py の autoUpdate は、利用者の settings.json の
+    # extraKnownMarketplaces に項目が在るときだけ書かれる
     ok(root, "plugin", "marketplace", "add", gitsrv.url(MARKETPLACE), "--scope", "user")
     ok(root, "plugin", "install", PLUGIN_ID, "--scope", "user")
 

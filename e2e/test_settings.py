@@ -7,7 +7,14 @@ import json
 import runpy
 
 from _flow import data_dir, install, install_path, ok, session
-from _market import MARKETPLACE, PLUGIN_ID, PLUGIN_SRC, publish, version
+from _market import (
+    MARKETPLACE,
+    PLUGIN_ID,
+    PLUGIN_SRC,
+    STATUSLINE_MARK,
+    publish,
+    version,
+)
 from _root import hook_rows
 
 V1, V2 = version(1), version(2)
@@ -16,16 +23,11 @@ _AUTO_UPDATE = f"extraKnownMarketplaces.{MARKETPLACE}.autoUpdate"
 
 
 def _policy(root) -> dict:
-    """installPath の policy.py の表。run_path はバイトコードを書かず、sys.modules も汚さない。"""
+    """installPath の policy.py の表。
+
+    開発ツリーを import すると `__pycache__` が生え conftest の監視が落ちる。run_path は書かない。
+    """
     return runpy.run_path(str(install_path(root) / "hooks" / "policy.py"))
-
-
-def _key_names(pol: dict) -> set:
-    """policy イベントの key_name の集合（表ごとの接頭辞は docs/spec/plugin.md の定義）。"""
-    names = set(pol["SET"])
-    for table in ("ADD", "REMOVE", "ONCE"):
-        names |= {f"{table.lower()}:{k}" for k in pol[table]}
-    return names
 
 
 def _dig(data: dict, path: str):
@@ -66,6 +68,7 @@ def test_SETが入り本体の書き込みも残る(root, gitsrv):
     assert {k: _dig(after, k) for k in expected} == expected
     kept = {k: v for k, v in before.items() if k not in expected}
     assert {k: _leaves(after).get(k) for k in kept} == kept
+    # hook が実際に書いたことの唯一の証拠（値の一致だけなら本体が書いた可能性を消せない）
     backups = list((root.config / "governance" / "backups").iterdir())
     assert [b.read_bytes() for b in backups] == [before_bytes]
 
@@ -73,13 +76,16 @@ def test_SETが入り本体の書き込みも残る(root, gitsrv):
 def test_2回目は適用済みで本体に取り込まれる(root, gitsrv):
     install(root, gitsrv, V1)
     pol = _policy(root)
+    # 上流が既定で有効にしたら、取り込みの判定が空振りする
+    known = root.json("plugins/known_marketplaces.json")[MARKETPLACE]
+    assert "autoUpdate" not in known, known
     session(root)
     first = _policy_rows(root)
-    assert sorted(r["key_name"] for r in first.values()) == sorted(_key_names(pol))
+    assert sorted(r["key_name"] for r in first.values()) == sorted(pol["SET"])
     assert {r["apply_result"] for r in first.values()} == {"applied"}
     session(root)
     second = [r for k, r in _policy_rows(root).items() if k not in first]
-    assert sorted(r["key_name"] for r in second) == sorted(_key_names(pol))
+    assert sorted(r["key_name"] for r in second) == sorted(pol["SET"])
     assert {r["apply_result"] for r in second} == {"already_ok"}
     # autoUpdate は settings.json が権威で、セッション開始時に本体の記録へ同期される
     known = root.json("plugins/known_marketplaces.json")[MARKETPLACE]
@@ -89,13 +95,13 @@ def test_2回目は適用済みで本体に取り込まれる(root, gitsrv):
 def _marked_statusline(tag: str) -> dict:
     """開発ツリーの statusline.js に目印を足した上書き（配置元を取り違えないため）。"""
     src = (PLUGIN_SRC / _STATUSLINE).read_bytes()
-    return {_STATUSLINE: src + f"\n// cc-e2e {tag}\n".encode()}
+    return {_STATUSLINE: src + f"\n{STATUSLINE_MARK}{tag}\n".encode()}
 
 
 def _assert_statusline(root, tag: str) -> None:
     """governance の statusline.js が、目印 `tag` を持つ installPath の複製とバイト一致する。"""
     shipped = (install_path(root) / _STATUSLINE).read_bytes()
-    assert f"// cc-e2e {tag}\n".encode() in shipped
+    assert f"{STATUSLINE_MARK}{tag}\n".encode() in shipped
     assert (root.config / "governance" / "statusline.js").read_bytes() == shipped
 
 

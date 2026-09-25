@@ -22,10 +22,6 @@ V1, V2 = version(1), version(2)
 _PLUGIN_JSON = ".claude-plugin/plugin.json"
 
 
-def _install(root, gitsrv) -> None:
-    install(root, gitsrv, V1)
-
-
 def _manifest_version(plugin_dir: Path) -> str:
     return json.loads((plugin_dir / _PLUGIN_JSON).read_text(encoding="utf-8"))[
         "version"
@@ -53,12 +49,6 @@ def _assert_installed(root, ver: str) -> Path:
     return path
 
 
-def _session(root) -> Path:
-    """未ログインで 1 セッション起動し、プラグインの data ディレクトリを返す。"""
-    session(root)
-    return data_dir(root)
-
-
 def _files(top: Path) -> dict:
     return {
         p.relative_to(top).as_posix(): p.read_bytes()
@@ -68,7 +58,7 @@ def _files(top: Path) -> dict:
 
 
 def test_git_sourceで導入できる(root, gitsrv):
-    _install(root, gitsrv)
+    install(root, gitsrv, V1)
     _assert_installed(root, V1)
     known = root.json("plugins/known_marketplaces.json")[MARKETPLACE]
     assert known["source"] == {"source": "git", "url": gitsrv.url(MARKETPLACE)}
@@ -78,7 +68,7 @@ def test_git_sourceで導入できる(root, gitsrv):
 
 
 def test_installPathはキャッシュの複製(root, gitsrv):
-    _install(root, gitsrv)
+    install(root, gitsrv, V1)
     path = _assert_installed(root, V1).resolve()
     assert (root.config / "plugins" / "cache").resolve() in path.parents
     src, got = _files(PLUGIN_SRC), _files(path)
@@ -87,7 +77,7 @@ def test_installPathはキャッシュの複製(root, gitsrv):
 
 
 def test_2段階で更新される(root, gitsrv):
-    _install(root, gitsrv)
+    install(root, gitsrv, V1)
     publish(root, V2)
     ok(root, "plugin", "marketplace", "update", MARKETPLACE)
     _assert_installed(root, V1)
@@ -100,9 +90,10 @@ def test_2段階で更新される(root, gitsrv):
 
 
 def test_SessionStartがinstallPathから動く(root, gitsrv):
-    _install(root, gitsrv)
+    install(root, gitsrv, V1)
     path = _assert_installed(root, V1)
-    rows = hook_rows(_session(root))
+    session(root)
+    rows = hook_rows(data_dir(root))
     assert any(
         r["kind"] == "event" and r["hook_event"] == "SessionStart" for r in rows
     ), rows
@@ -115,8 +106,9 @@ def test_SessionStartがinstallPathから動く(root, gitsrv):
 
 
 def test_uninstallでdataが消えgovernanceは残る(root, gitsrv):
-    _install(root, gitsrv)
-    data = _session(root)
+    install(root, gitsrv, V1)
+    session(root)
+    data = data_dir(root)
     statusline = root.config / "governance" / "statusline.js"
     assert data.is_dir() and statusline.is_file()
     ok(root, "plugin", "uninstall", PLUGIN_ID, "--scope", "user")

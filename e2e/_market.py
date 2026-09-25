@@ -17,6 +17,8 @@ PLUGIN_ID = f"{PLUGIN}@{MARKETPLACE}"
 _PLUGIN_JSON = Path(".claude-plugin") / "plugin.json"
 # 配布物に含めない名前（組み立てと、組み立て結果との比較の両方で使う）
 EXCLUDE = ("__pycache__", ".DS_Store")
+# テストが配布物に足す目印。本物の config に現れたら漏れ（conftest が見る）
+STATUSLINE_MARK = "// cc-e2e "
 _LOCAL_HOSTS = ("127.0.0.1", "localhost")
 # gitconfig は隔離 env で遮断している。コミットに要る名前と既定ブランチだけ与える
 _GIT = [
