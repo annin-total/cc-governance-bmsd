@@ -21,7 +21,7 @@ import _identity
 import _notices
 import _spool
 from _settings import apply_settings
-from collect import _DISABLE_ENV, _read_stdin_json, extract_event
+from collect import _DISABLE_ENV, _read_stdin_json, extract_event, send_if_due
 from contract import POLICY_COLUMNS, coerce, to_day
 
 _NOTICES_PATH = _notices._NOTICES_PATH
@@ -117,11 +117,7 @@ def _collect_step(hook_event: Optional[str], disabled: bool) -> None:
         raw_input = _read_stdin_json()
         _spool.append(extract_event(raw_input, hook_event))
 
-    if _spool.should_send():
-        _spool.mark_sent()
-        import _sender
-
-        _sender.launch()
+    send_if_due()
 
 
 def main() -> None:

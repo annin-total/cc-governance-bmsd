@@ -67,6 +67,18 @@ def _read_stdin_json() -> Any:
         return None
 
 
+def send_if_due() -> None:
+    """送信条件を満たせば `sent_at` を更新し、送信プロセスを起動する。"""
+    if not _spool.should_send():
+        return
+    # 先に sent_at を更新し、同時に開いたセッションの一斉起動を防ぐ。
+    _spool.mark_sent()
+    # 先頭で import すると urllib.request・ssl の読み込みを毎回払う。
+    import _sender
+
+    _sender.launch()
+
+
 def main() -> None:
     if os.environ.get(_DISABLE_ENV):
         return
@@ -76,13 +88,8 @@ def main() -> None:
     row = extract_event(raw_input, hook_event)
     _spool.append(row)
 
-    if hook_event in _SEND_CHECK_HOOK_EVENTS and _spool.should_send():
-        # 先に sent_at を更新し、同時に開いたセッションの一斉起動を防ぐ。
-        _spool.mark_sent()
-        # 先頭で import すると urllib.request・ssl の読み込みを毎回払う。
-        import _sender
-
-        _sender.launch()
+    if hook_event in _SEND_CHECK_HOOK_EVENTS:
+        send_if_due()
 
 
 if __name__ == "__main__":
