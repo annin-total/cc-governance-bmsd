@@ -6,6 +6,7 @@
 """
 
 import base64
+import json
 import secrets
 import shutil
 import subprocess
@@ -19,7 +20,15 @@ from _market import REPO
 from _root import E2ERoot
 
 SERVER_SRC = REPO / "server"
-CSV_DIR = "/app/data/csv"
+DATA_DIR = "/app/data"
+CSV_DIR = f"{DATA_DIR}/csv"
+_DB = f"{DATA_DIR}/e2e.db"
+# コンテナ内の python3 で読む（sqlite3 CLI は入っていない）
+_EVENT_IDS = (
+    "import json,sqlite3,sys;c=sqlite3.connect(sys.argv[1]);"
+    "print(json.dumps([r[0] for r in c.execute('SELECT event_id FROM events '"
+    "'UNION SELECT event_id FROM policy_state')]))"
+)
 # AIP の公開サブパス `/<workspace_id>/<ingress_path>` と同じ 2 段にする
 BASE_PATH = "/e2e-ws/cc-governance-server"
 _SECRET_REL = Path("data") / "secrets" / "cc-governance-server.env"
@@ -71,7 +80,7 @@ class DockerServer:
             timeout=_BUILD_TIMEOUT,
         )  # fmt: skip
         env = {
-            "DB_DSN": "sqlite:////app/data/e2e.db",
+            "DB_DSN": f"sqlite:///{_DB}",
             "INGEST_TOKEN": self.token,
             "CSV_DIR": CSV_DIR,
             "PKG_PROXY": "",
@@ -146,6 +155,25 @@ class DockerServer:
                 e.read().decode("utf-8", "replace"),
                 e.headers["Content-Type"],
             )
+
+    def event_ids(self) -> set:
+        """events と policy_state に入っている event_id の全体。"""
+        res = docker("exec", self.name, "python3", "-c", _EVENT_IDS, _DB)
+        return set(json.loads(res.stdout))
+
+    def wait_event_ids(self, ids: set) -> None:
+        """`ids` がすべて DB に入るまで待つ。"""
+        deadline = time.monotonic() + _START_TIMEOUT
+        while not ids <= self.event_ids():
+            if time.monotonic() > deadline:
+                raise TimeoutError(f"届かなかった: {sorted(ids - self.event_ids())}")
+            time.sleep(1)
+
+    def copy_data(self, dest: Path) -> Path:
+        """コンテナの `DATA_DIR`（DB ファイルとジャーナルを含む）を `dest` 配下へ取り出す。"""
+        dest.mkdir(parents=True)  # 在るディレクトリへの cp はその下に同名で置く
+        docker("cp", f"{self.name}:{DATA_DIR}", str(dest))
+        return dest / Path(DATA_DIR).name
 
     def close(self) -> None:
         """コンテナとイメージを消す。無くても失敗しない。"""

@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import pytest
+from _auth import auth_env
 
 MARKER = ".cc-e2e-root"
 KEEP_ENV = "CC_E2E_KEEP"
@@ -35,7 +36,10 @@ REAL_CONFIG_DIRS = tuple(
         Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude"),
     }
 )
-_SETTLE_SEC = 1.0
+# 切り離された送信プロセスの完了待ち。起動の遅れ（数百 ms）より長く静止したら終わったとみなす
+_QUIET_SEC = 2.0
+_QUIET_TIMEOUT = 60
+_POLL_SEC = 0.25
 # 許可リストの外から、テストが個別に渡してよい変数（無効化スイッチの検証用）
 _EXTRA_KEYS = ("CC_GOVERNANCE_DISABLE",)
 
@@ -64,8 +68,8 @@ class E2ERoot:
         # hook のバイトコードの置き場。python3 によっては（macOS の Apple 版）ルートの外に書くため
         self.pycache = self.path / "pycache"
 
-    def env(self, extra: Optional[dict] = None) -> dict:
-        """許可リストで組み直した env に `extra` を重ねる。`os.environ` は書き換えない。"""
+    def env(self, extra: Optional[dict] = None, auth: bool = False) -> dict:
+        """許可リストで組み直した env に `extra`（と `auth` なら認証）を重ねる。`os.environ` は書き換えない。"""
         extra = extra or {}
         assert set(extra) <= set(_EXTRA_KEYS), f"渡せない変数: {sorted(extra)}"
         real = {_real(p) for p in REAL_CONFIG_DIRS}
@@ -75,15 +79,18 @@ class E2ERoot:
         env.update({k: str(self.tmp) for k in ("TMPDIR", "TEMP", "TMP")})
         env["PYTHONPYCACHEPREFIX"] = str(self.pycache)
         env.update(extra)
+        if auth:
+            env.update(auth_env())
         return env
 
     def run(
-        self, args: list, timeout: float, cwd=None, extra_env: Optional[dict] = None
-    ) -> subprocess.CompletedProcess:
+        self, args: list, timeout: float, cwd=None, extra_env: Optional[dict] = None,
+        auth: bool = False,
+    ) -> subprocess.CompletedProcess:  # fmt: skip
         """隔離 env でコマンドを起動する。終了コードは判定しない。"""
         posix = os.name == "posix"
         proc = subprocess.Popen(
-            args, cwd=cwd or self.project, env=self.env(extra_env), stdin=subprocess.DEVNULL,
+            args, cwd=cwd or self.project, env=self.env(extra_env, auth), stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8",
             errors="replace", start_new_session=posix,
         )  # fmt: skip
@@ -100,17 +107,18 @@ class E2ERoot:
         return subprocess.CompletedProcess(args, proc.returncode, out, err)
 
     def run_claude(
-        self, *args: str, timeout: float, extra_env: Optional[dict] = None
-    ) -> subprocess.CompletedProcess:
+        self, *args: str, timeout: float, extra_env: Optional[dict] = None,
+        auth: bool = False,
+    ) -> subprocess.CompletedProcess:  # fmt: skip
         """`claude` を隔離 env で起動する。`--bare` は hook を切るので使わない。"""
         path = shutil.which("claude")
         if path is None:
             pytest.skip("claude が PATH に無い")
-        return self.run([path, *args], timeout=timeout, extra_env=extra_env)
+        return self.run([path, *args], timeout=timeout, extra_env=extra_env, auth=auth)
 
     def cleanup(self) -> None:
         """切り離された送信プロセスを待ってから消す。"""
-        time.sleep(_SETTLE_SEC)
+        self.wait_quiet()
         if os.environ.get(KEEP_ENV) == "1":
             sys.stderr.write(f"\n隔離ルートを残した: {self.path}\n")
             return
@@ -118,6 +126,19 @@ class E2ERoot:
         if p.is_symlink() or not (p / MARKER).is_file() or _tmp_real() not in p.parents:
             raise RuntimeError(f"消してよいルートでない: {p}")
         shutil.rmtree(p, onerror=_force_remove)
+
+    def wait_quiet(self) -> None:
+        """data 配下が `_QUIET_SEC` 静止するまで待つ。応答待ちで止まった送信は完了と見分けられない。"""
+        deadline = time.monotonic() + _QUIET_TIMEOUT
+        last, since = None, time.monotonic()
+        while time.monotonic() < deadline:
+            state = _tree_state(self.config / "plugins" / "data")
+            if state != last:
+                last, since = state, time.monotonic()
+            elif time.monotonic() - since >= _QUIET_SEC:
+                return
+            time.sleep(_POLL_SEC)
+        raise TimeoutError(f"{_QUIET_TIMEOUT} 秒たっても data 配下が静止しない: {last}")
 
     # --- 証拠の読み出し
     def pycache_of(self, src_dir: Path) -> Path:
@@ -143,6 +164,20 @@ def hook_rows(data_dir: Path) -> list:
     for f in sorted((data_dir / "spool").glob("*.jsonl")):
         rows += _jsonl(f)
     return rows
+
+
+def _tree_state(top: Path) -> list:
+    """`top` 配下のファイルの (パス, サイズ, mtime)。走査中に消えたものは飛ばす。"""
+    state = []
+    # os.walk は走査中に消えたディレクトリを黙って飛ばす（rglob は例外になりうる）
+    for d, _, files in os.walk(top):
+        for name in files:
+            try:
+                st = os.stat(os.path.join(d, name))
+            except FileNotFoundError:
+                continue
+            state.append((os.path.join(d, name), st.st_size, st.st_mtime_ns))
+    return sorted(state)
 
 
 def _jsonl(path: Path) -> list:

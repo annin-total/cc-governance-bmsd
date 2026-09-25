@@ -1,13 +1,15 @@
-"""各モジュールが共有する手順（導入・未ログインのセッション起動・証拠の場所）。"""
+"""各モジュールが共有する手順（導入・送信先の設定・セッション起動・証拠の場所）。"""
 
 import json
 from pathlib import Path
 from typing import Optional
 
-from _market import MARKETPLACE, PLUGIN_ID, publish
+from _market import MARKETPLACE, PLUGIN_ID, PLUGIN_SRC, publish
+from _server import BASE_PATH
 
 _CLI_TIMEOUT = 120
 _SESSION_TIMEOUT = 90
+_ASK_TIMEOUT = 300
 
 
 def ok(root, *args: str) -> None:
@@ -22,6 +24,24 @@ def install(root, gitsrv, ver: str, overrides: Optional[dict] = None) -> None:
     # extraKnownMarketplaces に項目が在るときだけ書かれる
     ok(root, "plugin", "marketplace", "add", gitsrv.url(MARKETPLACE), "--scope", "user")
     ok(root, "plugin", "install", PLUGIN_ID, "--scope", "user")
+
+
+def ingest_config(port: int, token: str) -> dict:
+    """送信先を 127.0.0.1:`port` の集計サーバにした config.json の上書き（install の overrides）。"""
+    cfg = json.loads((PLUGIN_SRC / "config.json").read_text(encoding="utf-8"))
+    cfg.update(
+        ingest_url=f"http://127.0.0.1:{port}{BASE_PATH}/ingest", ingest_token=token
+    )
+    return {"config.json": json.dumps(cfg).encode()}
+
+
+def ask(root, *args: str, model: str, tools: tuple = ()) -> None:
+    """認証付きで `claude -p` を 1 回動かす。ツールは `tools` だけ許す。"""
+    allow = ("--allowedTools", *tools) if tools else ()
+    res = root.run_claude(
+        "-p", *args, "--model", model, *allow, timeout=_ASK_TIMEOUT, auth=True
+    )  # fmt: skip
+    assert res.returncode == 0, res.stdout[-2000:] + res.stderr[-2000:]
 
 
 def session(root, extra_env: Optional[dict] = None) -> list:
