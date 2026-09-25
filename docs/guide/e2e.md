@@ -53,14 +53,14 @@ git source のマーケットプレイスとして導入し、cache への複製
 
 ### 前提と罠
 
-- 検証用の bare リポジトリは `<name>.git` として作られるため、配信 URL も末尾 `.git` で一致させる
-  （`e2e/_githttp.py`）
+- http の git URL は末尾を `.git` にする。付けないと `marketplace add` は marketplace.json の URL と
+  解釈して 404 になる（Claude Code 2.1.282 で観測）
 - `claude plugin marketplace add` は bare リポジトリを直接指せないため、smart HTTP で配信する
   （`docs/guide/local-e2e.md` の該当箇所）
 - 導入が完了したことは `claude plugin marketplace add` と `claude plugin install` の明示実行で
   確認する。詳細は `docs/knowledge/claude-code-behavior.md`
-- `installPath` が指す実体は source の種別で異なる（git source では cache 配下の複製、directory
-  source では元ディレクトリ）。詳細は `docs/knowledge/claude-code-behavior.md`
+- 導入経路の判定に `installPath` は使えない。directory source でも `plugin list` の `installPath` は
+  cache 配下を示すが、hook が動くのは元のディレクトリ。詳細は `docs/knowledge/claude-code-behavior.md`
 - 手動更新は 2 段階。詳細は `docs/knowledge/claude-code-behavior.md`
 
 ### 実物でも確かめられない限界
