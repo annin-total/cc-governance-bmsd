@@ -208,10 +208,15 @@ def check_no_gitignored_files(repo_root: Path, plugin_name: str) -> None:
             errors="replace",
             check=False,
         )
-        lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
     except OSError:
-        lines = []
+        ng("git に無視されているファイルを検査できない（git を実行できない）")
+        return
+    # 検査できなかったことを合格にしない（git 管理外のツリーでは returncode が 0 以外になる）。
+    if result.returncode != 0:
+        ng(f"git に無視されているファイルを検査できない（rc={result.returncode}）")
+        return
 
+    lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
     ignored = [ln for ln in lines if Path(ln).name not in OS_NOISE_NAMES]
     if ignored:
         for i in ignored:
