@@ -52,5 +52,4 @@ Claude Code に同梱される実行環境を使う形にする。どちらも�
 | --- | --- |
 | `effort.level` | `claude -p` では現れないことを確認済み。**対話モードでは未検証**（自動操作が初回オンボーディングを突破できない） |
 | `PostToolUse` / `PostToolUseFailure` / `PreCompact` / `UserPromptExpansion` の実 stdin | 列の充足は確認済み。契約に無い追加キー（`agent_type` / `duration_ms` / `tool_use_id` / `error` など）を契約に採るかが未決 |
-| git source マーケットプレイスでの `CLAUDE_PLUGIN_ROOT` の解決先 | `directory` source ではソースツリーを直接指す。git source（実運用の形態）では未検証 |
 | detach した送信プロセスが確実に走るか | 手動で `_sender.py` を叩くと即座に送信される一方、`claude -p` 終了後に queue が残留する現象を独立した 2 回の検証で観測した。**条件が未特定。**連続実行の間隔・並列度を変えて切り分ける |
