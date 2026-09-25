@@ -130,15 +130,39 @@ def _seed_spool_file(name, rows, mtime=None):
 # --- POST の基本動作 ---
 
 
-def test_post_success_deletes_file(server, monkeypatch, tmp_path):
-    """#1: spool に 1 ファイル、サーバが 200 -> ファイルが削除される。"""
-    srv = server()
+@pytest.mark.parametrize("status", [200, 201])
+def test_2xx_deletes_file(server, monkeypatch, tmp_path, status):
+    """#1・#5: サーバが 200 / 201 -> ファイルが削除される（2xx はすべて成功）。"""
+    srv = server(status_codes=[status])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
     path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
     assert not path.exists()
+
+
+_HEADER_CASES = {
+    # (config.json に足す値, 記録したヘッダ, 期待値)
+    "content_type": ({}, "content_type", "application/x-ndjson"),
+    "token": ({"ingest_token": "secret-token"}, "token", "secret-token"),
+}
+
+
+@pytest.mark.parametrize(
+    ("overrides", "header", "expected"),
+    _HEADER_CASES.values(),
+    ids=_HEADER_CASES.keys(),
+)
+def test_post_header(server, monkeypatch, tmp_path, overrides, header, expected):
+    """#3・#4: Content-Type が application/x-ndjson、X-Ingest-Token が config.json の値。"""
+    srv = server()
+    _write_config(monkeypatch, tmp_path, ingest_url=srv.url, **overrides)
+    _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
+
+    _sender.run()
+
+    assert srv.requests[0][header] == expected
 
 
 def test_post_body_matches_spool_bytes(server, monkeypatch, tmp_path):
@@ -151,41 +175,6 @@ def test_post_body_matches_spool_bytes(server, monkeypatch, tmp_path):
     _sender.run()
 
     assert srv.requests[0]["body"] == expected
-
-
-def test_post_content_type_header(server, monkeypatch, tmp_path):
-    """#3: Content-Type が application/x-ndjson。"""
-    srv = server()
-    _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
-
-    _sender.run()
-
-    assert srv.requests[0]["content_type"] == "application/x-ndjson"
-
-
-def test_post_token_header_matches_config(server, monkeypatch, tmp_path):
-    """#4: X-Ingest-Token が config.json の値と一致する。"""
-    srv = server()
-    _write_config(
-        monkeypatch, tmp_path, ingest_url=srv.url, ingest_token="secret-token"
-    )
-    _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
-
-    _sender.run()
-
-    assert srv.requests[0]["token"] == "secret-token"
-
-
-def test_201_is_treated_as_success(server, monkeypatch, tmp_path):
-    """#5: サーバが 201 -> ファイルが削除される（2xx はすべて成功）。"""
-    srv = server(status_codes=[201])
-    _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
-
-    _sender.run()
-
-    assert not path.exists()
 
 
 @pytest.mark.parametrize("status", [401, 500, 404])
