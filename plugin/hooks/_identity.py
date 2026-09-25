@@ -71,8 +71,7 @@ def _resolve_via_git() -> Optional[str]:
 def get_user_email(refresh: bool = False) -> Optional[str]:
     """環境変数 → キャッシュ → git の順で user_email を解決する。
 
-    解決できなかった結果（None）もキャッシュする。`refresh` ならキャッシュを読まずに解決し直す
-    （SessionStart 用。None が固定されないよう、セッションごとに上書きする）。
+    解決できなかった結果（None）もキャッシュする。`refresh` ならキャッシュを読まずに解決し直す。
     """
     env_value = os.environ.get(_ENV_USER_EMAIL)
     if env_value:

@@ -199,19 +199,6 @@ def test_connection_refused_is_silent(monkeypatch, tmp_path, unused_port):
     assert path.exists()
 
 
-def test_unresponsive_server_respects_timeout(server, monkeypatch, tmp_path):
-    srv = server(status_codes=[200], delay_sec=2)
-    _write_config(monkeypatch, tmp_path, ingest_url=srv.url, timeout_sec=1)
-    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
-
-    started = time.monotonic()
-    _sender.run()
-    elapsed = time.monotonic() - started
-
-    assert path.exists()
-    assert elapsed < 5
-
-
 def test_unresponsive_server_stops_after_first_file(server, monkeypatch, tmp_path):
     """応答しないサーバには 1 ファイルで見切りを付け、ファイル数 × timeout 粘らない。"""
     srv = server(status_codes=[200], delay_sec=3)
