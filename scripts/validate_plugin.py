@@ -11,6 +11,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -85,6 +86,18 @@ def _walk_hook_commands(node: object, out: list) -> None:
             _walk_hook_commands(v, out)
 
 
+def _load_hook_commands(hooks_json: Path) -> Optional[list]:
+    """hooks.json の command 文字列を集める。読めない・パースできなければ None。"""
+    try:
+        with hooks_json.open(encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return None
+    commands: list = []
+    _walk_hook_commands(data, commands)
+    return commands
+
+
 # --- 1. plugin.json の存在・パース可否・name/version の非空文字列 ---
 def check_plugin_json(plugin_dir: Path) -> None:
     plugin_json = plugin_dir / ".claude-plugin" / "plugin.json"
@@ -140,19 +153,15 @@ def check_all_py_syntax(plugin_dir: Path) -> None:
 
 
 # --- 4. hooks/hooks.json の各 command が指すファイルが実在する ---
-def check_hooks_json_files(hooks_json: Path, plugin_dir: Path) -> None:
+def check_hooks_json_files(
+    hooks_json: Path, commands: Optional[list], plugin_dir: Path
+) -> None:
     if not hooks_json.is_file():
         ok("hooks/hooks.json は無い（検証対象外）")
         return
-    try:
-        with hooks_json.open(encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, ValueError):
+    if commands is None:
         ng(f"hooks.json のパースに失敗: {hooks_json}")
         return
-
-    commands: list = []
-    _walk_hook_commands(data, commands)
 
     missing: list = []
     for cmd in commands:
@@ -294,27 +303,13 @@ def _settings_hash(settings_path: Path) -> str:
     return digest.hexdigest()
 
 
-def _expand_plugin_root(command: str, plugin_dir: Path) -> str:
-    return command.replace("${CLAUDE_PLUGIN_ROOT}", str(plugin_dir))
-
-
-def _rmtree(path: Path) -> None:
-    import shutil
-
-    shutil.rmtree(path, ignore_errors=True)
-
-
-def _run_hook_commands(hooks_json: Path, plugin_dir: Path) -> None:
+def _run_hook_commands(
+    hooks_json: Path, commands: Optional[list], plugin_dir: Path
+) -> None:
     """hooks.json の各 command を隔離環境で実行し、exit 0・無出力を確かめる。"""
-    try:
-        with hooks_json.open(encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, ValueError):
+    if commands is None:
         ng(f"hooks.json のパースに失敗: {hooks_json}")
         return
-
-    commands: list = []
-    _walk_hook_commands(data, commands)
 
     isolation_dir = tempfile.mkdtemp(prefix="cc-governance-validate-")
     try:
@@ -338,7 +333,9 @@ def _run_hook_commands(hooks_json: Path, plugin_dir: Path) -> None:
         for cmd in commands:
             # `shlex.split(posix=True)` はバックスラッシュを食うため、Windows のパスを
             # スラッシュ区切りにしてから埋める。
-            expanded = _expand_plugin_root(cmd, Path(plugin_dir.as_posix()))
+            expanded = cmd.replace(
+                "${CLAUDE_PLUGIN_ROOT}", str(Path(plugin_dir.as_posix()))
+            )
             argv = shlex.split(expanded, posix=True)
             try:
                 result = subprocess.run(
@@ -368,17 +365,19 @@ def _run_hook_commands(hooks_json: Path, plugin_dir: Path) -> None:
         if not failed:
             ok("すべての hook が exit 0 で終わり、標準エラーに何も出さない")
     finally:
-        _rmtree(Path(isolation_dir))
+        shutil.rmtree(isolation_dir, ignore_errors=True)
 
 
 # --- 9. hook が常に exit 0 で終わり、標準エラーに何も出さない（隔離実行）---
 # 利用者の実ファイルに触れうる唯一の検査なので、実 settings.json のハッシュを前後で比べる。
-def check_hook_execution(hooks_json: Path, plugin_dir: Path) -> None:
+def check_hook_execution(
+    hooks_json: Path, commands: Optional[list], plugin_dir: Path
+) -> None:
     real_settings = Path.home() / ".claude" / "settings.json"
     hash_before = _settings_hash(real_settings)
 
     if hooks_json.is_file():
-        _run_hook_commands(hooks_json, plugin_dir)
+        _run_hook_commands(hooks_json, commands, plugin_dir)
     else:
         skip("hook 実行検査: hooks/hooks.json が無い")
 
@@ -392,9 +391,7 @@ def check_hook_execution(hooks_json: Path, plugin_dir: Path) -> None:
 # --- 10. Python 3.9 で動く構文であること（ruff が使える場合のみ）---
 def _find_ruff(repo_root: Path) -> Optional[str]:
     """ruff を PATH とリポジトリの仮想環境から探す。"""
-    from shutil import which
-
-    found = which("ruff")
+    found = shutil.which("ruff")
     if found:
         return found
 
@@ -440,16 +437,17 @@ def main(argv: list) -> int:
         return 1
 
     hooks_json = plugin_dir / "hooks" / "hooks.json"
+    hook_commands = _load_hook_commands(hooks_json)
 
     check_plugin_json(plugin_dir)
     check_all_json_parse(plugin_dir)
     check_all_py_syntax(plugin_dir)
-    check_hooks_json_files(hooks_json, plugin_dir)
+    check_hooks_json_files(hooks_json, hook_commands, plugin_dir)
     check_no_dev_artifacts(plugin_dir)
     check_no_gitignored_files(repo_root, plugin_name)
     check_contract_module(plugin_dir)
     check_stdlib_only(plugin_dir)
-    check_hook_execution(hooks_json, plugin_dir)
+    check_hook_execution(hooks_json, hook_commands, plugin_dir)
     check_ruff(repo_root, plugin_name)
 
     if FAIL:
