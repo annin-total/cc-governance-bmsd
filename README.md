@@ -35,6 +35,7 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 | 画面 | Jinja2 テンプレート、CSS |
 | 実行環境 | Docker（`python:3.9-slim`） |
 | 開発ツール | pytest、ruff |
+| 端末OS | Windows、macOS |
 
 ## 利用手順・実行手順
 
