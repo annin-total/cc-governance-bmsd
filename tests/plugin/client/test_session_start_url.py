@@ -19,10 +19,6 @@ import _sender
 import pytest
 import session_start
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-_HOOKS_SRC = _REPO_ROOT / "plugin" / "hooks"
-_CONFIG_SRC = _REPO_ROOT / "plugin" / "config.json"
-
 MARKER = "ZZMARKER-URL-BODY"
 URL_1 = "https://example.com/first"
 URL_2 = "https://example.com/second"
@@ -373,19 +369,10 @@ def test_open_url_exception_does_not_break_output_or_collection(
 # ---- 実プロセス版 ----
 
 
-@pytest.fixture
-def tree(tmp_path):
-    """`plugin/hooks` と `config.json` を一時ディレクトリへコピーし、session_start.py のパスを返す。"""
-    hooks_dst = tmp_path / "plugin" / "hooks"
-    shutil.copytree(_HOOKS_SRC, hooks_dst, ignore=shutil.ignore_patterns("__pycache__"))
-    shutil.copy(_CONFIG_SRC, tmp_path / "plugin" / "config.json")
-    return hooks_dst / "session_start.py"
-
-
 @pytest.mark.skipif(
     sys.platform != "darwin", reason="darwin だけが `open` コマンドで開く"
 )
-def test_real_process_opens_url_via_fake_open_not_real_one(tree, tmp_path):
+def test_real_process_opens_url_via_fake_open_not_real_one(hooks_dir, tmp_path):
     """#11: 実プロセスで起動し、PATH 先頭の偽 `open` に URL が渡ることを確かめる。
     本物の /usr/bin/open は PATH より後ろに置かれるため呼ばれない。偽 open が呼ばれた記録で担保する。
     """
@@ -426,7 +413,7 @@ def test_real_process_opens_url_via_fake_open_not_real_one(tree, tmp_path):
     env["PATH"] = str(fake_bin_dir)
 
     result = subprocess.run(
-        [sys.executable, str(tree), "SessionStart"],
+        [sys.executable, str(hooks_dir / "session_start.py"), "SessionStart"],
         input='{"session_id":"s","source":"startup"}',
         text=True,
         capture_output=True,
