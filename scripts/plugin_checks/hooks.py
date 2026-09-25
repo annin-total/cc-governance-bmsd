@@ -1,4 +1,4 @@
-"""hooks/hooks.json の command に関わる検査（4・9）。"""
+"""hooks/hooks.json の command に関わる検査。"""
 
 import hashlib
 import json
@@ -43,7 +43,7 @@ def load_hook_commands(hooks_json: Path) -> Optional[list]:
     return commands
 
 
-# --- 4. hooks/hooks.json の各 command が指すファイルが実在する ---
+# --- hooks/hooks.json の各 command が指すファイルが実在する ---
 def check_hooks_json_files(
     hooks_json: Path, commands: Optional[list], plugin_dir: Path
 ) -> None:
@@ -133,7 +133,7 @@ def _run_hook_commands(
         shutil.rmtree(isolation_dir, ignore_errors=True)
 
 
-# --- 9. hook が常に exit 0 で終わり、標準エラーに何も出さない（隔離実行）---
+# --- hook が常に exit 0 で終わり、標準エラーに何も出さない（隔離実行）---
 # 利用者の実ファイルに触れうる唯一の検査なので、実 settings.json のハッシュを前後で比べる。
 def check_hook_execution(
     hooks_json: Path, commands: Optional[list], plugin_dir: Path

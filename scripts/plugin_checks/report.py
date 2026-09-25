@@ -1,4 +1,4 @@
-"""検査結果の出力と、全体の失敗フラグ。"""
+"""検査結果の出力・全体の失敗フラグ・検査で使う subprocess の実行。"""
 
 import subprocess
 from typing import Any

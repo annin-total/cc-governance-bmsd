@@ -1,4 +1,4 @@
-"""外部のプロセスで確かめる検査（6・7・10）。"""
+"""外部のプロセスで確かめる検査。"""
 
 import os
 import shutil
@@ -22,7 +22,7 @@ CONTRACT_REQUIRED_NAMES = (
 )
 
 
-# --- 6. git に無視されているファイルが無い ---
+# --- git に無視されているファイルが無い ---
 # 配布物が .gitignore に隠されていないかを見る。.DS_Store / Thumbs.db は OS が作り直すノイズなので除く。
 def check_no_gitignored_files(repo_root: Path, plugin_name: str) -> None:
     try:
@@ -56,7 +56,7 @@ def check_no_gitignored_files(repo_root: Path, plugin_name: str) -> None:
         ok("git に無視されているファイルは無い")
 
 
-# --- 7. 契約の正本（hooks/contract.py）が import でき、決められた名前が在る ---
+# --- 契約の正本（hooks/contract.py）が import でき、決められた名前が在る ---
 # 中身（列名・キー・件数）は見ない。「在ること」だけを見る。
 def check_contract_module(plugin_dir: Path) -> None:
     contract_py = next(plugin_dir.rglob("contract.py"), None)
@@ -80,7 +80,7 @@ def check_contract_module(plugin_dir: Path) -> None:
         ng("contract.py: import に失敗、または契約の名前が欠けている")
 
 
-# --- 10. Python 3.9 で動く構文であること（ruff が無ければ NG）---
+# --- Python 3.9 で動く構文であること（ruff が無ければ NG）---
 def _find_ruff(repo_root: Path) -> Optional[str]:
     """ruff を PATH とリポジトリの仮想環境から探す。"""
     found = shutil.which("ruff")

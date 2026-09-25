@@ -1,4 +1,4 @@
-"""プラグイン配下のファイルを読むだけで済む検査（1・2・3・5・8）。"""
+"""プラグイン配下のファイルを読むだけで済む検査。"""
 
 import ast
 import json
@@ -19,7 +19,7 @@ DEV_ARTIFACT_NAMES = frozenset(
 DEV_ARTIFACT_PATTERNS = (re.compile(r"^test_.*\.py$"), re.compile(r".*_test\.py$"))
 
 
-# --- 1. plugin.json の存在・パース可否・name/version の非空文字列 ---
+# --- plugin.json の存在・パース可否・name/version の非空文字列 ---
 def check_plugin_json(plugin_dir: Path) -> None:
     plugin_json = plugin_dir / ".claude-plugin" / "plugin.json"
     if not plugin_json.is_file():
@@ -44,7 +44,7 @@ def check_plugin_json(plugin_dir: Path) -> None:
         ng("plugin.json: パース不可、または name/version が空・非文字列")
 
 
-# --- 2. プラグイン配下の全 *.json がパースできる ---
+# --- プラグイン配下の全 *.json がパースできる ---
 def check_all_json_parse(plugin_dir: Path) -> None:
     failed = False
     for f in plugin_dir.rglob("*.json"):
@@ -58,7 +58,7 @@ def check_all_json_parse(plugin_dir: Path) -> None:
         ok("すべての *.json がパース可能")
 
 
-# --- 3. プラグイン配下の全 *.py が構文として通る（バイトコードは書かない）---
+# --- プラグイン配下の全 *.py が構文として通る（バイトコードは書かない）---
 def check_all_py_syntax(plugin_dir: Path) -> None:
     failed = False
     for f in plugin_dir.rglob("*.py"):
@@ -82,7 +82,7 @@ def _is_dev_artifact(path: Path) -> bool:
     return any(p.match(name) for p in DEV_ARTIFACT_PATTERNS)
 
 
-# --- 5. 開発用ファイルの混入なし ---
+# --- 開発用ファイルの混入なし ---
 def check_no_dev_artifacts(plugin_dir: Path) -> None:
     found = [p for p in plugin_dir.rglob("*") if _is_dev_artifact(p)]
     if found:
@@ -92,7 +92,7 @@ def check_no_dev_artifacts(plugin_dir: Path) -> None:
         ok("開発用ファイル・生成物の混入なし")
 
 
-# --- 8. プラグイン配下の *.py が標準ライブラリだけで動く（pip install を要求しない） ---
+# --- プラグイン配下の *.py が標準ライブラリだけで動く（pip install を要求しない） ---
 def check_stdlib_only(plugin_dir: Path) -> None:
     stdlib_names = getattr(sys, "stdlib_module_names", None)
     if stdlib_names is None:
