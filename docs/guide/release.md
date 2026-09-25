@@ -44,6 +44,8 @@ python scripts/validate.py
 - **`version` を上げた**
 - **`policy.py` から項目を黙って削除していない**（理由は「誤った設定値を配ってしまったとき」）
 - `policy.py` を変えたら `scripts/sync_contract.py` を実行し、サーバ側の複製も同じリリースで更新した
+- 効果測定の対象の施策（`server/ccgov/constants.py` の `REFERENCE_KEY` / `REFERENCE_VALUE`）の値を変えたら、同じリリースでこの 2 つを差し替えた。差し替えると以前の実験は画面から消える（データは残る）
+- 配布リポジトリの作業ブランチで `diff -r -x __pycache__ -x .DS_Store plugin/ ../cc-marketplace-governance-bmsd/plugins/governance/` が差分なしで終わる（このリポジトリから実行する）
 - `notices.json` の `url` は `https://` で始まり、意図したページを指している
 - `config.json` の送信先 URL が、デプロイ済みのサーバの URL と一致している
 - `config.json` の受信トークンが、サーバの Secret ファイルの `INGEST_TOKEN` と一致している。**一致していなければ全端末の送信が 401 で跳ね返り続ける。**端末は spool を保持するのでイベントは失われないが、誰も気づかないまま溜まる
@@ -128,3 +130,4 @@ claude plugin update governance
 - 2026-09-25: 設定値の置き場を `policy.py` にし、撤回の方法を `SET` の `None` と `REMOVE` で書いた
 - 2026-09-25: `staging` ブランチで開発者の端末だけに先に届けて確かめる手順を加えた
 - 2026-09-25: 配布側の作業を「作業ブランチへ複製・コミット→ staging へ push → 確認 → main へ PR」の順に揃え、1 の前提が指す `main` を明記した
+- 2026-09-25: 効果測定の実験の差し替えと、配布物と正本の一致の確認を確認項目に加えた

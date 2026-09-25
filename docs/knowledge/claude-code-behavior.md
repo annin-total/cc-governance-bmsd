@@ -16,6 +16,7 @@
 | マーケットプレイスの `autoUpdate` は `settings.json` の `extraKnownMarketplaces.<name>.autoUpdate` が権威であり、セッション開始時に `plugins/known_marketplaces.json` へ上書き同期される。社外のマーケットプレイスは既定で無効（git リモートから導入した直後、どちらのファイルにもキーが無い）（2026-09 確認。版は記録なし） | 自動更新を有効にしたいとき。`known_marketplaces.json` を書き換えても次の起動で戻る |
 | 手動更新は 2 段階である。`claude plugin marketplace update` はカタログだけを更新し、導入済みプラグインの版は `claude plugin update` で上がる。更新が降りても反映は次に起動したセッションから。`source` に到達できなくても端末の複製で動き続け、止まるのは更新だけ（2026-09 確認。版は記録なし） | 更新手順を書くとき。版が上がらないと迷ったとき |
 | `managed-settings.json`（管理者が配る層）の設定は、利用者の `settings.json` より優先される | 端末側の設定が上位の設定に負けて効かないことがある |
+| `env` ブロックも普通のキーとして設定の優先順位（managed > `--settings` > プロジェクトの local > プロジェクトの共有 > 利用者）に従う。利用者の `env` に 60、プロジェクトの `.claude/settings.json` の `env` に 90 を置くと実効値は 90。シェルで export した値は settings の `env` に負ける。hook プロセスの環境変数には合成後の実効値が入る（2.1.282 実測 + 公式ドキュメント settings / env-vars） | 利用者の `settings.json` の値で準拠を判定するとき。上位の層の上書きはその値に現れない |
 | `env.FORCE_AUTOUPDATE_PLUGINS` は hook プロセスまで値が届く。ただし**本体の入れ替えを起こす効果は観測できていない** | 本体の自動更新を抑止している端末で、プラグインの更新だけを生かせるかを考えるとき |
 | 外部から `export CLAUDE_PLUGIN_DATA=...` しても **Claude Code は無視する**。実際のプラグインのデータ領域は、Claude Code が自前で計算する `$CLAUDE_CONFIG_DIR/plugins/data/<plugin>-<marketplace>/` に固定される | hook を手動実行するときと `claude` に実行させるときとで、状態ディレクトリが別物になりうる。検証手順は実際に使われるパスを毎回計算し直す |
 
@@ -42,6 +43,7 @@
 
 | 事実 | いつ効くか |
 | --- | --- |
+| 公式ドキュメント（hooks の Common input fields）は、transcript は非同期に書かれ、hook の発火時点では現在のターンの最新のメッセージを含まないことがある、と書く。`claude -p` の `Stop` では最新の応答まで書かれていた（実測） | 対話セッションで `Stop` の文脈量を読むとき。1 ターン遅れうる |
 | **巨大な 1 行が単独で読取窓を埋め尽くし、`message.usage` を窓の外へ押し出すことがある。** 窓を広げてもこの構造は消えない（行が伸びれば同じことが起きる） | 「窓を広げれば取れる」という対処には上限が無い |
 | `message.usage` の 3 値がすべて 0 の行が実在する（`isApiErrorMessage: true` の `assistant` 行） | 合計 0 を値として扱うと、API エラー応答が文脈量に混ざる |
 | 末尾から usage 行を取れない transcript には 2 系統ある。**usage 行の間隔が読取窓を超えるもの**と、**応答が 1 度も無かったもの**。取れなかったという結果からは、どちらが原因か区別できない | 取得できない割合を健全性の指標にするときのベースライン |
