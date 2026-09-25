@@ -90,7 +90,7 @@ def test_append_non_ascii_round_trips():
     assert json.loads(lines[0])["text"] == original
 
 
-def test_append_creates_missing_parent_dir(tmp_path):
+def test_append_creates_missing_parent_dir():
     """#6: 親ディレクトリが無い状態で追記 -> ディレクトリを作って成功する。"""
     path = _spool._queue_path()
     assert not path.parent.exists()

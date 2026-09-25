@@ -47,13 +47,13 @@ def _isolate_state_dir(monkeypatch, tmp_path):
     return tmp_path
 
 
-def test_env_var_no_cache(monkeypatch, tmp_path):
+def test_env_var_no_cache(monkeypatch):
     """#1: 環境変数あり・キャッシュ無し -> 小文字化された値を返す。"""
     monkeypatch.setenv("CC_GOVERNANCE_USER_EMAIL", "Foo@Example.COM")
     assert _identity.get_user_email() == "foo@example.com"
 
 
-def test_env_var_called_twice_caches(monkeypatch, tmp_path):
+def test_env_var_called_twice_caches(monkeypatch):
     """#2: 直後にもう一度呼んでも同じ値。identity.json が存在しその値を持つ。"""
     monkeypatch.setenv("CC_GOVERNANCE_USER_EMAIL", "Foo@Example.COM")
     first = _identity.get_user_email()

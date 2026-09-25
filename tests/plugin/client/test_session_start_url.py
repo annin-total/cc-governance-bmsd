@@ -74,7 +74,7 @@ def _set_entrypoint(monkeypatch, value):
 
 
 def test_cli_opens_only_first_valid_url_once(
-    notices_file, tmp_path, monkeypatch, capsys, _open_spy
+    notices_file, monkeypatch, capsys, _open_spy
 ):
     """#1: cli では先頭の有効な URL（n-001 の URL_1）だけが 1 回開かれる。"""
     _set_entrypoint(monkeypatch, "cli")
