@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 from _flow import ask, data_dir, ingest_config, install, session
-from _market import PLUGIN_SRC, version
+from _market import MARKETPLACE, PLUGIN, PLUGIN_SRC, version
 from _root import REAL_CONFIG_DIRS, hook_rows
 
 _PROMPTS = Path(__file__).resolve().parent / "samples" / "prompts.json"
@@ -88,9 +88,14 @@ def test_陽性対照_自由文のキーパスを足した契約では検出さ�
     assert src.count(head) == 1
     leaky = src.replace(head, head + _LEAKY_FIELDS).encode()
     install(root, gitsrv, version(1), {_CONTRACT: leaky})
+    # 送信プロセスを、SENTINEL 入りの行がすべて queue にそろってから 1 回だけ走らせる。
+    # 先に間引き中にしておき、後で sent_at を消す。送信先は空のまま（退避と破棄は走る）。
+    # 送信プロセスが data 配下の外へ書き出せば、そこに SENTINEL が現れて検出される
+    pending = root.config / "plugins" / "data" / f"{PLUGIN}-{MARKETPLACE}"
+    pending.mkdir(parents=True)
+    (pending / "sent_at").touch()
     sentinel = _leak_session(root)
-    # SENTINEL 入りの行は間引きで queue に残っている。送信プロセスにも扱わせてから走査する
-    # （送信先は空のまま。退避と破棄は走り、data 配下の外への書き出しがあれば検出される）
+    assert not (data_dir(root) / "spool").exists()
     (data_dir(root) / "sent_at").unlink()
     session(root)
     root.wait_quiet()
