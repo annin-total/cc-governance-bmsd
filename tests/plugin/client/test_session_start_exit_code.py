@@ -26,6 +26,19 @@ def _base_env(tmp_path, plugin_data=None, config_dir=None):
     return env
 
 
+def _run(hooks_dir, env, stdin):
+    """複製した session_start.py を SessionStart として起動する。"""
+    return subprocess.run(
+        [sys.executable, str(hooks_dir / "session_start.py"), "SessionStart"],
+        input=stdin,
+        text=True,
+        capture_output=True,
+        env=env,
+        timeout=15,
+        check=False,
+    )
+
+
 def _assert_clean_exit(rc, stderr):
     """終了コード0・標準エラーが空であることを確認する。"""
     assert rc == 0
@@ -87,30 +100,14 @@ def test_stdout_fd_closed(hooks_dir, tmp_path):
 def test_stdin_broken_json(hooks_dir, tmp_path):
     """#3: 標準入力が壊れた JSON。"""
     env = _base_env(tmp_path)
-    result = subprocess.run(
-        [sys.executable, str(hooks_dir / "session_start.py"), "SessionStart"],
-        input="{not json",
-        text=True,
-        capture_output=True,
-        env=env,
-        timeout=15,
-        check=False,
-    )
+    result = _run(hooks_dir, env, "{not json")
     _assert_clean_exit(result.returncode, result.stderr)
 
 
 def test_stdin_empty(hooks_dir, tmp_path):
     """#4: 標準入力が空。"""
     env = _base_env(tmp_path)
-    result = subprocess.run(
-        [sys.executable, str(hooks_dir / "session_start.py"), "SessionStart"],
-        input="",
-        text=True,
-        capture_output=True,
-        env=env,
-        timeout=15,
-        check=False,
-    )
+    result = _run(hooks_dir, env, "")
     _assert_clean_exit(result.returncode, result.stderr)
 
 
@@ -118,15 +115,7 @@ def test_stdin_10mb_single_line(hooks_dir, tmp_path):
     """#5: 標準入力が 10MB の JSON 1 行。"""
     env = _base_env(tmp_path)
     huge = json.dumps({"session_id": "x" * (10 * 1024 * 1024), "source": "startup"})
-    result = subprocess.run(
-        [sys.executable, str(hooks_dir / "session_start.py"), "SessionStart"],
-        input=huge,
-        text=True,
-        capture_output=True,
-        env=env,
-        timeout=15,
-        check=False,
-    )
+    result = _run(hooks_dir, env, huge)
     _assert_clean_exit(result.returncode, result.stderr)
 
 
@@ -140,15 +129,7 @@ def test_readonly_state_dir(hooks_dir, tmp_path):
     plugin_data.chmod(stat.S_IRUSR | stat.S_IXUSR)
     try:
         env = _base_env(tmp_path, plugin_data=plugin_data)
-        result = subprocess.run(
-            [sys.executable, str(hooks_dir / "session_start.py"), "SessionStart"],
-            input='{"session_id":"s","source":"startup"}',
-            text=True,
-            capture_output=True,
-            env=env,
-            timeout=15,
-            check=False,
-        )
+        result = _run(hooks_dir, env, '{"session_id":"s","source":"startup"}')
         _assert_clean_exit(result.returncode, result.stderr)
     finally:
         plugin_data.chmod(stat.S_IRWXU)
