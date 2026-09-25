@@ -1,8 +1,11 @@
 """tests/plugin/client の共通 fixture。"""
 
 import json
+import os
 import shutil
 import socket
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -54,3 +57,47 @@ def _unused_port() -> int:
 def unused_port():
     """呼ぶたびに接続できないポートを 1 つ返す関数。"""
     return _unused_port
+
+
+@pytest.fixture
+def run_collect(hooks_dir):
+    """複製した collect.py を subprocess で起動する関数を返す。
+
+    環境は `os.environ` を継承する（セッションの隔離 HOME も引き継ぐ）。無効化スイッチは外し、
+    `env` で個別に上書きする。標準入力は `stdin`（文字列）・`stdin_bytes`・`close_stdin` のいずれか。
+    """
+
+    def _run(
+        *argv,
+        plugin_data=None,
+        stdin="{}",
+        stdin_bytes=None,
+        close_stdin=False,
+        env=None,
+        timeout=15,
+    ):
+        run_env = os.environ.copy()
+        run_env.pop("CC_GOVERNANCE_DISABLE", None)
+        if plugin_data is not None:
+            run_env["CLAUDE_PLUGIN_DATA"] = str(plugin_data)
+        else:
+            run_env.pop("CLAUDE_PLUGIN_DATA", None)
+        run_env.update(env or {})
+
+        if close_stdin:
+            input_kwargs = {"stdin": subprocess.DEVNULL}
+        elif stdin_bytes is not None:
+            input_kwargs = {"input": stdin_bytes}
+        else:
+            input_kwargs = {"input": stdin, "text": True}
+
+        return subprocess.run(
+            [sys.executable, str(hooks_dir / "collect.py"), *argv],
+            capture_output=True,
+            env=run_env,
+            timeout=timeout,
+            check=False,
+            **input_kwargs,
+        )
+
+    return _run

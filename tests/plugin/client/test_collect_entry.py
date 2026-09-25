@@ -6,33 +6,9 @@
 """
 
 import json
-import os
-import subprocess
-import sys
 import time
 
 import pytest
-
-
-def _run(hooks_dir, plugin_data, hook_event=None, stdin_text="{}", disable=None):
-    """collect.py を subprocess として起動する。"""
-    args = [sys.executable, str(hooks_dir / "collect.py")]
-    if hook_event is not None:
-        args.append(hook_event)
-    env = os.environ.copy()
-    env.pop("CC_GOVERNANCE_DISABLE", None)
-    env["CLAUDE_PLUGIN_DATA"] = str(plugin_data)
-    if disable is not None:
-        env["CC_GOVERNANCE_DISABLE"] = disable
-    return subprocess.run(
-        args,
-        input=stdin_text,
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=10,
-        check=False,
-    )
 
 
 def _wait_until(predicate, timeout=3.0, interval=0.05) -> bool:
@@ -59,34 +35,38 @@ def _spool_has_file(plugin_data) -> bool:
 
 
 @pytest.mark.parametrize("value", ["1", "0", "false"])
-def test_disable_nonempty_value_skips_collection(hooks_dir, tmp_path, value):
+def test_disable_nonempty_value_skips_collection(run_collect, tmp_path, value):
     """#1-3: CC_GOVERNANCE_DISABLE が空でない値 -> exit 0。queue.jsonl を作らない。"""
     plugin_data = tmp_path / "plugin-data"
-    result = _run(hooks_dir, plugin_data, hook_event="Stop", disable=value)
+    result = run_collect(
+        "Stop", plugin_data=plugin_data, env={"CC_GOVERNANCE_DISABLE": value}
+    )
     assert result.returncode == 0
     assert not (plugin_data / "queue.jsonl").exists()
 
 
-def test_disable_empty_value_collects(hooks_dir, tmp_path):
+def test_disable_empty_value_collects(run_collect, tmp_path):
     """#4: CC_GOVERNANCE_DISABLE が空文字 -> 収集する。queue.jsonl が1行。"""
     plugin_data = tmp_path / "plugin-data"
-    result = _run(hooks_dir, plugin_data, hook_event="PostToolUse", disable="")
+    result = run_collect(
+        "PostToolUse", plugin_data=plugin_data, env={"CC_GOVERNANCE_DISABLE": ""}
+    )
     assert result.returncode == 0
     lines = (plugin_data / "queue.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(lines) == 1
 
 
-def test_disable_unset_collects(hooks_dir, tmp_path):
+def test_disable_unset_collects(run_collect, tmp_path):
     """#5: CC_GOVERNANCE_DISABLE 未設定 -> 収集する。queue.jsonl が1行。"""
     plugin_data = tmp_path / "plugin-data"
-    result = _run(hooks_dir, plugin_data, hook_event="PostToolUse")
+    result = run_collect("PostToolUse", plugin_data=plugin_data)
     assert result.returncode == 0
     lines = (plugin_data / "queue.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(lines) == 1
 
 
 def test_disable_blocks_launch_even_if_send_condition_met(
-    hooks_dir, tmp_path, write_config, unused_port
+    run_collect, tmp_path, write_config, unused_port
 ):
     """#6: 無効化スイッチが立っている状態で送信条件を満たしても、送信プロセスを起動しない。"""
     plugin_data = tmp_path / "plugin-data"
@@ -94,7 +74,9 @@ def test_disable_blocks_launch_even_if_send_condition_met(
     (plugin_data / "queue.jsonl").write_text('{"n": 1}\n', encoding="utf-8")
     write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
-    result = _run(hooks_dir, plugin_data, hook_event="Stop", disable="1")
+    result = run_collect(
+        "Stop", plugin_data=plugin_data, env={"CC_GOVERNANCE_DISABLE": "1"}
+    )
 
     assert result.returncode == 0
     time.sleep(0.3)
@@ -106,10 +88,10 @@ def test_disable_blocks_launch_even_if_send_condition_met(
 # --- 収集 ---
 
 
-def test_hook_event_field_matches_arg(hooks_dir, tmp_path):
+def test_hook_event_field_matches_arg(run_collect, tmp_path):
     """#7: 引数に PostToolUse を渡す -> 行の hook_event = "PostToolUse"。"""
     plugin_data = tmp_path / "plugin-data"
-    result = _run(hooks_dir, plugin_data, hook_event="PostToolUse")
+    result = run_collect("PostToolUse", plugin_data=plugin_data)
     assert result.returncode == 0
     row = json.loads(
         (plugin_data / "queue.jsonl").read_text(encoding="utf-8").splitlines()[0]
@@ -117,19 +99,19 @@ def test_hook_event_field_matches_arg(hooks_dir, tmp_path):
     assert row["hook_event"] == "PostToolUse"
 
 
-def test_missing_argv_exits_zero(hooks_dir, tmp_path):
+def test_missing_argv_exits_zero(run_collect, tmp_path):
     """#8: 引数を渡さない -> exit 0。例外を出さない（標準エラーが空）。"""
     plugin_data = tmp_path / "plugin-data"
-    result = _run(hooks_dir, plugin_data, hook_event=None)
+    result = run_collect(plugin_data=plugin_data)
     assert result.returncode == 0
     assert result.stderr == ""
 
 
-def test_two_runs_append_two_distinct_events(hooks_dir, tmp_path):
+def test_two_runs_append_two_distinct_events(run_collect, tmp_path):
     """#9: 2回続けて実行 -> queue.jsonl が2行。event_id が相異なる。"""
     plugin_data = tmp_path / "plugin-data"
-    _run(hooks_dir, plugin_data, hook_event="PostToolUse")
-    _run(hooks_dir, plugin_data, hook_event="PostToolUse")
+    run_collect("PostToolUse", plugin_data=plugin_data)
+    run_collect("PostToolUse", plugin_data=plugin_data)
     lines = (plugin_data / "queue.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(lines) == 2
     ids = {json.loads(line)["event_id"] for line in lines}
@@ -140,7 +122,7 @@ def test_two_runs_append_two_distinct_events(hooks_dir, tmp_path):
 
 
 def test_send_condition_false_stop_does_not_launch(
-    hooks_dir, tmp_path, write_config, unused_port
+    run_collect, tmp_path, write_config, unused_port
 ):
     """#10: 送信条件が偽、引数 Stop -> 送信プロセスを起動しない。"""
     plugin_data = tmp_path / "plugin-data"
@@ -149,7 +131,7 @@ def test_send_condition_false_stop_does_not_launch(
     before_mtime = sent_at.stat().st_mtime
     write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
-    result = _run(hooks_dir, plugin_data, hook_event="Stop")
+    result = run_collect("Stop", plugin_data=plugin_data)
 
     assert result.returncode == 0
     time.sleep(0.3)
@@ -158,13 +140,13 @@ def test_send_condition_false_stop_does_not_launch(
 
 
 def test_send_condition_true_stop_launches_and_marks_sent(
-    hooks_dir, tmp_path, write_config, unused_port
+    run_collect, tmp_path, write_config, unused_port
 ):
     """#11: 送信条件が真、引数 Stop -> 送信プロセスを起動する。sent_at の mtime が更新される。"""
     plugin_data = tmp_path / "plugin-data"
     write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
-    result = _run(hooks_dir, plugin_data, hook_event="Stop")
+    result = run_collect("Stop", plugin_data=plugin_data)
 
     assert result.returncode == 0
     sent_at = plugin_data / "sent_at"
@@ -174,13 +156,13 @@ def test_send_condition_true_stop_launches_and_marks_sent(
 
 
 def test_send_condition_true_session_start_launches(
-    hooks_dir, tmp_path, write_config, unused_port
+    run_collect, tmp_path, write_config, unused_port
 ):
     """#12: 送信条件が真、引数 SessionStart -> 送信プロセスを起動する。"""
     plugin_data = tmp_path / "plugin-data"
     write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
-    result = _run(hooks_dir, plugin_data, hook_event="SessionStart")
+    result = run_collect("SessionStart", plugin_data=plugin_data)
 
     assert result.returncode == 0
     assert (plugin_data / "sent_at").exists()
@@ -189,13 +171,13 @@ def test_send_condition_true_session_start_launches(
 
 @pytest.mark.parametrize("hook_event", ["PostToolUse", "PreCompact"])
 def test_other_hook_events_never_launch(
-    hooks_dir, tmp_path, write_config, unused_port, hook_event
+    run_collect, tmp_path, write_config, unused_port, hook_event
 ):
     """#13-14: 送信条件が真でも、引数が PostToolUse / PreCompact -> 起動しない（起動は2 hook のみ）。"""
     plugin_data = tmp_path / "plugin-data"
     write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
-    result = _run(hooks_dir, plugin_data, hook_event=hook_event)
+    result = run_collect(hook_event, plugin_data=plugin_data)
 
     assert result.returncode == 0
     time.sleep(0.3)
@@ -203,14 +185,11 @@ def test_other_hook_events_never_launch(
     assert not _spool_has_file(plugin_data)
 
 
-def test_normal_input_produces_empty_stdout(hooks_dir, tmp_path):
+def test_normal_input_produces_empty_stdout(run_collect, tmp_path):
     """#15: 正常な入力 -> 標準出力が空。"""
     plugin_data = tmp_path / "plugin-data"
-    result = _run(
-        hooks_dir,
-        plugin_data,
-        hook_event="PostToolUse",
-        stdin_text=json.dumps({"session_id": "abc"}),
+    result = run_collect(
+        "PostToolUse", plugin_data=plugin_data, stdin=json.dumps({"session_id": "abc"})
     )
     assert result.returncode == 0
     assert result.stdout == ""
