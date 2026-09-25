@@ -95,6 +95,7 @@ def should_send(threshold_sec: int = DEFAULT_FLUSH_INTERVAL_SEC) -> bool:
 
     `queue.jsonl` が無ければ偽（送るものが無い）。`sent_at` が無ければ真。
     それ以外は `sent_at` の mtime から `threshold_sec` 秒以上経過していれば真。
+    mtime が未来（経過が負）のときも真とする。偽にするとその時刻まで送信が止まる。
     """
     try:
         if not _queue_path().exists():
@@ -103,7 +104,7 @@ def should_send(threshold_sec: int = DEFAULT_FLUSH_INTERVAL_SEC) -> bool:
         if not sent_at_path.exists():
             return True
         elapsed = time.time() - sent_at_path.stat().st_mtime
-        return elapsed >= threshold_sec
+        return elapsed < 0 or elapsed >= threshold_sec
     except OSError:
         return False
 

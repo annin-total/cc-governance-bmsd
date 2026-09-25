@@ -307,18 +307,36 @@ def test_nothing_to_send_does_not_post(server, monkeypatch, tmp_path):
     assert srv.requests == []
 
 
-def test_prune_runs_before_posting(server, monkeypatch, tmp_path):
-    """#15: spool 合計が 6MB（1MB x 6） -> POST の前に破棄が走り、送られるのは 5 ファイル。"""
-    srv = server(status_codes=[200] * 6)
+def test_prune_runs_after_posting(server, monkeypatch, tmp_path):
+    """#15: spool 合計が 6MB（1MB x 6）、サーバが 500 -> 6 ファイルとも POST され、その後に古い 1 ファイルが破棄される。"""
+    srv = server(status_codes=[500] * 6)
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
     now = time.time()
     one_mb = 1024 * 1024
-    for i in range(6):
+    paths = [
         _seed_spool_bytes(f"{4000 + i}-{'d' * 32}.jsonl", one_mb, now - i * 60)
+        for i in range(6)
+    ]
 
     _sender.run()
 
-    assert len(srv.requests) == 5
+    assert len(srv.requests) == 6
+    assert [p.exists() for p in paths] == [True] * 5 + [False]
+
+
+@pytest.mark.parametrize("status", [200, 500])
+def test_oversized_queue_is_posted_once_before_prune(
+    server, monkeypatch, tmp_path, status
+):
+    """単体で spool_max_bytes を超える queue -> 1 回 POST される。成否にかかわらず spool には残らない。"""
+    srv = server(status_codes=[status])
+    _write_config(monkeypatch, tmp_path, ingest_url=srv.url, spool_max_bytes=10)
+    _spool.append({"n": 1, "pad": "x" * 100})
+
+    _sender.run()
+
+    assert len(srv.requests) == 1
+    assert list(_spool._spool_dir().glob("*.jsonl")) == []
 
 
 # --- ingest_url が空、config.json が無い・壊れている ---
