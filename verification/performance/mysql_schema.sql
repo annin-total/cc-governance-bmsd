@@ -1,5 +1,5 @@
 -- サーバのテーブル定義（MySQL 版）を実際に流して型・制約が通るかを確かめるためのスキーマ。
--- indexes.sql と合わせて使う。sqlite_bench.py の DDL の MySQL 移植版。
+-- mysql_indexes.sql と合わせて使う。sqlite_bench.py の DDL の MySQL 移植版。
 CREATE TABLE IF NOT EXISTS events (
   event_id VARCHAR(36), ts INTEGER, day INTEGER,
   user_email VARCHAR(255), host VARCHAR(255), hook_event VARCHAR(64),
