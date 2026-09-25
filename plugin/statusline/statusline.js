@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 /**
- * statusLine 用サンプルスクリプト（動作検証用、任意機能）。
- *
- * stdin に Claude Code の statusLine JSON を受け取り、stdout に表示文字列を出す。
- * 依存は Node 標準モジュールのみ。Windows/macOS で共通に動く。
- * スキーマ: https://code.claude.com/docs/en/statusline
- * 入力欠落・破損があっても例外で落ちず、出せる範囲で出して必ず exit 0 する。
+ * ステータスライン（配布物。SessionStart で `<config_dir>/governance/` へ同期される）。
+ * 入力: https://code.claude.com/docs/en/statusline 。入力が壊れていても必ず exit 0 する。
  */
 
 "use strict";

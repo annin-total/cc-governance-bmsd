@@ -28,11 +28,9 @@ NAMES = ("contract.py", "policy.py")
 
 
 def _header(name: str) -> str:
-    """複製ファイルの先頭に必ず置く固定ヘッダ。
+    """複製の先頭の固定ヘッダ。
 
-    バイト列を変えると、正本を持たない場所（entry.sh）での「ヘッダを除いた残りが
-    正本のハッシュと一致するか」という検査が壊れるため、変更する場合は entry.sh 側の
-    同じ定数も揃えて直すこと。
+    `server/entry.sh` がこの長さを引いてハッシュを検査するため、変えるなら entry.sh も揃える。
     """
     return (
         f'"""server/ccgov/vendor/{name} — 生成物。直接編集しない。\n'
@@ -55,24 +53,21 @@ def _paths(name: str) -> tuple:
 
 
 def _read_master_bytes(master: Path) -> bytes:
-    """正本のバイト列を読む。正本が無ければ例外で落ちる（検査対象0件で緑にしない）。"""
+    """正本を読む。無ければ例外で落ちる（検査対象 0 件で緑にしない）。"""
     if not master.is_file():
         raise FileNotFoundError(f"正本が見つからない: {master}")
     return master.read_bytes()
 
 
 def _expected_replica_bytes(name: str, master_bytes: bytes) -> bytes:
-    """正本のバイト列から、あるべき複製ファイルのバイト列を組み立てる。"""
     return _header(name).encode("utf-8") + master_bytes
 
 
 def _master_hash(master_bytes: bytes) -> str:
-    """正本のバイト列の sha256 16進文字列。"""
     return hashlib.sha256(master_bytes).hexdigest()
 
 
 def sync() -> None:
-    """正本から複製とハッシュ記録を書き出す。"""
     for name in NAMES:
         master, replica, hash_file = _paths(name)
         master_bytes = _read_master_bytes(master)
@@ -111,7 +106,7 @@ def _check_one(name: str) -> list:
 
 
 def check() -> list:
-    """すべての組の正本・複製・ハッシュ記録のずれを列挙する。ずれが無ければ空リスト。"""
+    """すべての組のずれを列挙する。"""
     return [e for name in NAMES for e in _check_one(name)]
 
 

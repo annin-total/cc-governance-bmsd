@@ -1,18 +1,8 @@
 #!/usr/bin/env python3
-"""validate_plugin.py — プラグインの「差し込み前」形式検証。
+"""プラグインの差し込み前検証（形式と、契約・標準ライブラリ・hook の exit 0・py39 の不変条件）。
 
-検証するのは Claude Code プラグインとしての「形式」に加えて、このプラグインの
-設計（docs/spec/plugin.md・CLAUDE.md）が定める根幹の不変条件である。不変条件とは
-「契約の正本が在ること」「標準ライブラリだけで動くこと」「hook が exit 0 で
-静かに終わること」「py39 構文であること」を指し、実装の詳細が変わっても残る。
-
-一方で、頻繁に変わる構造には厳格性を要求しない。列名・キー・件数・
-ファイル一覧・config.json の個々のフィールドの値・notices.json の中身は
-一切検証しない。「在ること」は見るが「何であるか」は見ない、が切り分けの基準
-である。将来ここに列名やキーの検査を足さないこと。
-
+「在ること」だけを見る。列名・キー・件数・設定値は見ない（頻繁に変わるため足さないこと）。
 使い方: python scripts/validate_plugin.py [プラグインのディレクトリ名]（既定: plugin）
-        python3 でも python でも起動できる。標準ライブラリだけで動く。
 """
 
 import ast
@@ -59,24 +49,21 @@ ISOLATED_USER_EMAIL = "validate-plugin-py@example.invalid"
 
 
 def ok(message: str) -> None:
-    """検証通過を1行で報告する。"""
     print(f"[OK] {message}")
 
 
 def ng(message: str) -> None:
-    """検証失敗を1行で報告し、全体の失敗フラグを立てる。"""
+    """失敗を報告し、全体の失敗フラグを立てる。"""
     global FAIL
     print(f"[NG] {message}")
     FAIL = True
 
 
 def skip(message: str) -> None:
-    """検証をスキップしたことを1行で報告する。"""
     print(f"[SKIP] {message}")
 
 
 def _is_dev_artifact(path: Path) -> bool:
-    """開発用ファイル・ディレクトリの命名規則に一致するか判定する。"""
     name = path.name
     if name in DEV_ARTIFACT_NAMES:
         return True
@@ -191,10 +178,7 @@ def check_no_dev_artifacts(plugin_dir: Path) -> None:
 
 
 # --- 6. git に無視されているファイルが無い ---
-# 狙いは「プラグインの一部であるべきファイルが .gitignore に隠されていないか」を見ること。
-# .DS_Store / Thumbs.db は OS がディレクトリを覗くたびに作り直すノイズであり、
-# プラグインの中身になることはない。消しても即座に戻るため対象から外す
-# （差し込み先に混ざった場合は、マーケットプレイス側の検証が捕まえる）。
+# 配布物が .gitignore に隠されていないかを見る。.DS_Store / Thumbs.db は OS が作り直すノイズなので除く。
 def check_no_gitignored_files(repo_root: Path, plugin_name: str) -> None:
     try:
         result = subprocess.run(
@@ -300,7 +284,7 @@ def check_stdlib_only(plugin_dir: Path) -> None:
 
 
 def _settings_hash(settings_path: Path) -> str:
-    """実 settings.json のハッシュを求める。無ければ MISSING を返す。"""
+    """無ければ MISSING。"""
     if not settings_path.is_file():
         return "MISSING"
     digest = hashlib.sha1()
@@ -311,12 +295,10 @@ def _settings_hash(settings_path: Path) -> str:
 
 
 def _expand_plugin_root(command: str, plugin_dir: Path) -> str:
-    """${CLAUDE_PLUGIN_ROOT} をプラグインの実パスに展開する。"""
     return command.replace("${CLAUDE_PLUGIN_ROOT}", str(plugin_dir))
 
 
 def _rmtree(path: Path) -> None:
-    """一時ディレクトリを後始末する。"""
     import shutil
 
     shutil.rmtree(path, ignore_errors=True)
@@ -346,9 +328,7 @@ def _run_hook_commands(hooks_json: Path, plugin_dir: Path) -> None:
         env["CLAUDE_PLUGIN_DATA"] = str(isolated_plugin_data)
         env["CLAUDE_CONFIG_DIR"] = str(isolated_config_dir)
         env["CC_GOVERNANCE_USER_EMAIL"] = ISOLATED_USER_EMAIL
-        # 無効化スイッチは立てない。立てると hook が冒頭で return し、
-        # 実際の収集経路を一度も通らないまま「exit 0 だった」と判定してしまう。
-        # 過去に見つかった rc=120 の欠陥は、いずれもその経路の中にあった。
+        # 無効化スイッチを立てると hook が冒頭で return し、収集経路を通らずに合格してしまう。
         env.pop("CC_GOVERNANCE_DISABLE", None)
         # 対話を示す値を継承すると、hook がお知らせの URL を本物のブラウザで開く。
         env.pop("CLAUDE_CODE_ENTRYPOINT", None)
@@ -356,9 +336,8 @@ def _run_hook_commands(hooks_json: Path, plugin_dir: Path) -> None:
 
         failed = False
         for cmd in commands:
-            # `shlex.split(posix=True)` はバックスラッシュをエスケープとして食う。
-            # Windows のパスをそのまま埋めると壊れるため、スラッシュ区切りに正規化する
-            # （Windows の Python はスラッシュ区切りのパスをそのまま受け付ける）。
+            # `shlex.split(posix=True)` はバックスラッシュを食うため、Windows のパスを
+            # スラッシュ区切りにしてから埋める。
             expanded = _expand_plugin_root(cmd, Path(plugin_dir.as_posix()))
             argv = shlex.split(expanded, posix=True)
             try:
@@ -393,8 +372,7 @@ def _run_hook_commands(hooks_json: Path, plugin_dir: Path) -> None:
 
 
 # --- 9. hook が常に exit 0 で終わり、標準エラーに何も出さない（隔離実行）---
-# 利用者の実ファイルに触れうる唯一の検査なので、実行前後で実 settings.json の
-# ハッシュを比較する安全網をスクリプト自身が持つ。
+# 利用者の実ファイルに触れうる唯一の検査なので、実 settings.json のハッシュを前後で比べる。
 def check_hook_execution(hooks_json: Path, plugin_dir: Path) -> None:
     real_settings = Path.home() / ".claude" / "settings.json"
     hash_before = _settings_hash(real_settings)
@@ -413,7 +391,7 @@ def check_hook_execution(hooks_json: Path, plugin_dir: Path) -> None:
 
 # --- 10. Python 3.9 で動く構文であること（ruff が使える場合のみ）---
 def _find_ruff(repo_root: Path) -> Optional[str]:
-    """ruff を PATH と、リポジトリの仮想環境の両方から探す。"""
+    """ruff を PATH とリポジトリの仮想環境から探す。"""
     from shutil import which
 
     found = which("ruff")
