@@ -20,6 +20,12 @@
 | `env` ブロックも普通のキーとして設定の優先順位（managed > `--settings` > プロジェクトの local > プロジェクトの共有 > 利用者）に従う。利用者の `env` に 60、プロジェクトの `.claude/settings.json` の `env` に 90 を置くと実効値は 90。シェルで export した値は settings の `env` に負ける。hook プロセスの環境変数には合成後の実効値が入る（2.1.282 実測 + 公式ドキュメント settings / env-vars） | 利用者の `settings.json` の値で準拠を判定するとき。上位の層の上書きはその値に現れない |
 | `env.FORCE_AUTOUPDATE_PLUGINS` は hook プロセスまで値が届く。ただし**本体の入れ替えを起こす効果は観測できていない** | 本体の自動更新を抑止している端末で、プラグインの更新だけを生かせるかを考えるとき |
 | 外部から `export CLAUDE_PLUGIN_DATA=...` しても **Claude Code は無視する**。実際のプラグインのデータ領域は、Claude Code が自前で計算する `$CLAUDE_CONFIG_DIR/plugins/data/<plugin>-<marketplace>/` に固定される | hook を手動実行するときと `claude` に実行させるときとで、状態ディレクトリが別物になりうる。検証手順は実際に使われるパスを毎回計算し直す |
+| macOS で `HOME` を差し替えて `claude` を起動すると、`Login successful` の直後に `Not logged in` が出て認証が壊れる。macOS の Security フレームワークが login Keychain を `$HOME/Library/Keychains/login.keychain-db` で解決するため、`HOME` を差し替えると認証情報が入った本来の Keychain に届かない（2026-09 確認。版は記録なし（同時期の観測は 2.1.280〜2.1.281）） | 隔離環境を作るとき |
+| `claude plugin marketplace add` は bare リポジトリを直接指すと失敗するが、http(s) の git URL なら通る（2026-09 確認。版は記録なし（同時期の観測は 2.1.280〜2.1.281）） | ローカルの git リポジトリをマーケットプレイスとして登録するとき |
+| マーケットプレイスを remove してから add し直すと `plugins/data/` が空になり、`queue.jsonl` など既存の状態が消える（2026-09 確認。版は記録なし（同時期の観測は 2.1.280〜2.1.281）） | 登録をやり直す手順を書くとき。データを残したいなら remove を避ける |
+| マーケットプレイスを `#<ref>` 付きで登録すると `settings.json` の `source.ref` に入り、`ref` を付けている間は 2 段階の更新（`claude plugin marketplace update` → `claude plugin update`）が `ref` の先端の版を入れる。既定ブランチの版は拾わない（2.1.282） | ref 付きで導入した環境の版の見積もりをするとき |
+| `claude plugin update` は版が下がる向きにも入れ替える（2.1.282） | ref を外す・切り替えるときに、端末の版が意図せず下がりうることを見積もるとき |
+| 無人の対話起動（pty 越し）は、初回起動時の対話 3 段（テーマ選択・フォルダ信頼・API キー確認）で止まる。`.claude.json` に `hasCompletedOnboarding` / `theme` / `projects["<cwd>"].hasTrustDialogAccepted`（`<cwd>` は realpath で書く。macOS の `/tmp` は `/private/tmp` に解決される）を事前投入すると前の 2 段は越えられるが、API キー確認の段は pty へのキー送信が要り、事前投入だけでは越えられない。`claude -p` は対話起動ではないため、この 3 段自体を踏まず事前投入なしで動く（2026-09 確認。版は記録なし（同時期の観測は 2.1.280〜2.1.281）） | 無人でセッションを起動する検証を組むとき。越えられる段と越えられない段を混同しない |
 
 ## hook の実行環境
 

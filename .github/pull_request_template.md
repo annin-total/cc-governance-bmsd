@@ -3,10 +3,10 @@ PRタイトル例: feat: ユーザー検索APIにページネーションを追�
 Conventional Commits 形式（feat / fix / docs / refactor / test / chore など）推奨
 -->
 
-## Description
+## 概要
 <!-- このPRが何をするのか、なぜ必要なのかを1〜3行で記載してください -->
 
-## Type of Change
+## 変更種別
 <!-- 該当するものに [x] -->
 - [ ] New feature（新機能）
 - [ ] Bug fix（バグ修正）
@@ -17,25 +17,25 @@ Conventional Commits 形式（feat / fix / docs / refactor / test / chore など
 - [ ] Infrastructure / CI/CD
 - [ ] Other（その他）: <!-- 内容を記載 -->
 
-## Changes Made
+## 変更内容
 <!-- 具体的にどのような変更を行ったかを箇条書きで記載してください -->
 -
 
-## How to Test
+## 動作確認
 <!-- レビュアーが確認できる手順を書いてください -->
 1.
 2.
 3.
 
-## Scope of Impact
+## 影響範囲
 <!-- 影響を受ける機能・画面・API・DB・他サービスなど -->
 -
 
-## Breaking Changes / Migration Notes
+## 破壊的変更・移行手順
 <!-- APIの互換性破壊、DBマイグレーション、環境変数の追加、設定変更など。なければ「なし」 -->
 なし
 
-## Checklist
+## チェックリスト
 <!-- 確認して [x] -->
 - [ ] 命名・コーディング規約に従っている
 - [ ] 不要なデバッグコード・コメントアウトを削除した
@@ -47,5 +47,6 @@ Conventional Commits 形式（feat / fix / docs / refactor / test / chore など
 - [ ] エラーハンドリング・境界値を考慮した
 <!-- - [ ] 1PRの責務が単一になっている（無関係な変更を含まない） -->
 
-## Additional Notes
+## 補足
 <!-- レビュアーに特に見てほしい点、既知の制限、代替案を検討した経緯などがあれば書いてください（任意） -->
+-

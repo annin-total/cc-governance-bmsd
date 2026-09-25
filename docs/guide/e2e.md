@@ -17,8 +17,6 @@
 | 非漏洩 | `e2e/test_leak.py` | 要 | 要（陽性対照は不要） | 不要 |
 | サーバ | `e2e/test_server.py` | 不要 | 要 | 不要（手動確認は要る） |
 
-書かれていないモジュールはまだ無い。
-
 ## 実行方法
 
 ```bash
@@ -49,7 +47,7 @@ SSO なら先に `aws sso login` を済ませる（`awsAuthRefresh` も settings
 ## 安全の約束
 
 - **隔離は `CLAUDE_CONFIG_DIR` だけで行い、`HOME` は差し替えない。**macOS で `HOME` を差し替えると
-  認証が壊れるため（`docs/guide/local-e2e.md` の原則）
+  認証が壊れるため（`docs/knowledge/claude-code-behavior.md`）
 - **本物の `~/.claude` に痕跡が無いことを確かめる。**`e2e/conftest.py` のセッション fixture が、
   終了時に本物の `settings.json` 等へ今回の隔離ルート名・git 配信のアドレス・statusline の目印が
   現れていないこと、開始時と終了時でこのプラグインの導入の有無が変わらないこと、`plugin/` 木が
@@ -74,12 +72,12 @@ git source のマーケットプレイスとして導入し、cache への複製
 - http の git URL は末尾を `.git` にする。付けないと `marketplace add` は marketplace.json の URL と
   解釈して 404 になる（Claude Code 2.1.282 で観測）
 - `claude plugin marketplace add` は bare リポジトリを直接指せないため、smart HTTP で配信する
-  （`docs/guide/local-e2e.md` の該当箇所）
-- 導入が完了したことは `claude plugin marketplace add` と `claude plugin install` の明示実行で
-  確認する。詳細は `docs/knowledge/claude-code-behavior.md`
+- 導入が完了したことは `claude plugin marketplace add` と `claude plugin install` の明示実行で確認する
 - 導入経路の判定に `installPath` は使えない。directory source でも `plugin list` の `installPath` は
-  cache 配下を示すが、hook が動くのは元のディレクトリ。詳細は `docs/knowledge/claude-code-behavior.md`
-- 手動更新は 2 段階。詳細は `docs/knowledge/claude-code-behavior.md`
+  cache 配下を示すが、hook が動くのは元のディレクトリ
+- 手動更新は 2 段階
+
+いずれも詳細は `docs/knowledge/claude-code-behavior.md`。
 
 ### 実物でも確かめられない限界
 
@@ -93,7 +91,8 @@ git source のマーケットプレイスとして導入し、cache への複製
 
 ```bash
 CC_E2E_KEEP=1 .venv/bin/python -m pytest e2e -k 未読 -s   # 残したルートのパスが表示される（-s が無いと出ない）
-cd <ルート>/project && CLAUDE_CONFIG_DIR=<ルート>/config claude   # 対話で起動し /login でログインする
+cd <ルート>/project
+env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<ルート>/config <認証の変数> claude   # 対話で起動し /login でログインする
 ```
 
 - ログインは隔離した config ごとに 1 回要る（本人の認証は引き継がず、上書きもしない）
@@ -101,6 +100,9 @@ cd <ルート>/project && CLAUDE_CONFIG_DIR=<ルート>/config claude   # 対話
 - macOS ではログインするとキーチェーンに config ごとの項目ができ、ルートを消しても残る。消し方は未検証
 - `url` 付きの項目は、`<ルート>/config/plugins/cache/` 配下の installPath にある `notices.json` に足す。
   git source では hook は cache から動く（`docs/knowledge/claude-code-behavior.md`）
+- **この `claude` を、別の Claude Code セッションの中（Bash 等）から起動しない。**起動形態を示す環境変数
+  （`CLAUDECODE` 等）を継承し、判定が汚れる。`env -i` で空の環境から起動し、基本の変数
+  （`e2e/_root.py` の許可リスト）と認証の変数（「認証」の節）だけを渡す
 - 終わったらルートを消す
 
 ## 設定の配布（モジュール 2）
@@ -265,6 +267,7 @@ HTTPS・プロキシ越しの送信と、本番の受信先への到達は確か
    `/dev-admin/assets`）を順に開く。合格: 開発者ツールのコンソールに error・warning が 0 件、
    コンソールで `document.documentElement.scrollWidth <= document.documentElement.clientWidth` が
    `true`、表のセルが切れていない。**スクリーンショットだけで判定しない**
+   - 端末のデータを入れた場合、1 回目の起動だけでは未準拠に見えるのが正常（`docs/spec/server.md` の準拠の判定）
 4. 終わったら `docker compose -p ccgov-manual down -v --rmi local` で、この確認のコンテナ・ボリューム・
    イメージだけを消す
 
