@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _auth import AUTH_KEYS, has_auth
 from _githttp import GitHttpServer
 from _market import MARKETPLACE, PLUGIN_ID, PLUGIN_SRC, REPO, STATUSLINE_MARK
 from _root import REAL_CONFIG_DIRS, E2ERoot
@@ -25,6 +26,12 @@ _FALLBACK_STATE = Path.home() / ".claude" / "cc-governance"
 _TRACES: list = []
 
 
+def pytest_configure(config) -> None:
+    config.addinivalue_line(
+        "markers", "requires_auth: 認証が要る（API を呼び、費用がかかる）"
+    )
+
+
 def pytest_collection_modifyitems(config, items) -> None:
     """tests/ と同時に動かさない。tests/conftest は import 時に HOME を差し替え、隔離の前提を崩す。"""
     outside = [i.nodeid for i in items if _E2E_DIR not in Path(str(i.fspath)).parents]
@@ -38,6 +45,11 @@ def pytest_collection_modifyitems(config, items) -> None:
             "e2e は tests と同時に実行しない（pytest e2e で単独実行する）",
             returncode=4,
         )
+    if not has_auth():
+        skip = pytest.mark.skip(reason=f"認証の環境変数が無い: {' / '.join(AUTH_KEYS)}")
+        for item in items:
+            if "requires_auth" in item.keywords:
+                item.add_marker(skip)
 
 
 def _digest(path: Path):

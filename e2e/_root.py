@@ -8,25 +8,28 @@ import stat
 import subprocess
 import sys
 import tempfile
-import time
 from pathlib import Path
 from typing import Any, Optional
 
 import pytest
+from _auth import auth_env
+from _quiet import wait_quiet
 
 MARKER = ".cc-e2e-root"
 KEEP_ENV = "CC_E2E_KEEP"
 _PASS_KEYS = (
     "PATH", "HOME", "USER", "LOGNAME", "LANG", "LC_ALL", "TERM",
     "SYSTEMROOT", "USERPROFILE", "APPDATA", "LOCALAPPDATA",
+    # 社内網の出口（未ログインの起動も外へ出る）。ループバック宛ては NO_PROXY で外す
+    "HTTPS_PROXY", "HTTP_PROXY", "https_proxy", "http_proxy", "NODE_EXTRA_CA_CERTS",
 )  # fmt: skip
+_LOOPBACK = "127.0.0.1,localhost"
 _FIXED_ENV = {
     "DISABLE_AUTOUPDATER": "1",
     "GIT_TERMINAL_PROMPT": "0",
     # 利用者の gitconfig（署名・改行変換・insteadOf など）の影響を消す。git 2.32 以上
     "GIT_CONFIG_GLOBAL": os.devnull,
     "GIT_CONFIG_NOSYSTEM": "1",
-    "NO_PROXY": "127.0.0.1,localhost",
 }
 # 起動時点の本物の config。import 時に控える（以後 os.environ を信用しない）
 REAL_CONFIG_DIRS = tuple(
@@ -35,7 +38,6 @@ REAL_CONFIG_DIRS = tuple(
         Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude"),
     }
 )
-_SETTLE_SEC = 1.0
 # 許可リストの外から、テストが個別に渡してよい変数（無効化スイッチの検証用）
 _EXTRA_KEYS = ("CC_GOVERNANCE_DISABLE",)
 
@@ -64,26 +66,31 @@ class E2ERoot:
         # hook のバイトコードの置き場。python3 によっては（macOS の Apple 版）ルートの外に書くため
         self.pycache = self.path / "pycache"
 
-    def env(self, extra: Optional[dict] = None) -> dict:
-        """許可リストで組み直した env に `extra` を重ねる。`os.environ` は書き換えない。"""
+    def env(self, extra: Optional[dict] = None, auth: bool = False) -> dict:
+        """許可リストで組み直した env に `extra`（と `auth` なら認証）を重ねる。`os.environ` は書き換えない。"""
         extra = extra or {}
         assert set(extra) <= set(_EXTRA_KEYS), f"渡せない変数: {sorted(extra)}"
         real = {_real(p) for p in REAL_CONFIG_DIRS}
         assert _real(self.config) not in real, f"隔離先が本物の config: {self.config}"
         env = {k: os.environ[k] for k in _PASS_KEYS if k in os.environ}
         env.update(_FIXED_ENV, CLAUDE_CONFIG_DIR=str(self.config))
+        user = os.environ.get("NO_PROXY") or os.environ.get("no_proxy")
+        env["NO_PROXY"] = env["no_proxy"] = f"{user},{_LOOPBACK}" if user else _LOOPBACK
         env.update({k: str(self.tmp) for k in ("TMPDIR", "TEMP", "TMP")})
         env["PYTHONPYCACHEPREFIX"] = str(self.pycache)
         env.update(extra)
+        if auth:
+            env.update(auth_env())
         return env
 
     def run(
-        self, args: list, timeout: float, cwd=None, extra_env: Optional[dict] = None
-    ) -> subprocess.CompletedProcess:
+        self, args: list, timeout: float, cwd=None, extra_env: Optional[dict] = None,
+        auth: bool = False,
+    ) -> subprocess.CompletedProcess:  # fmt: skip
         """隔離 env でコマンドを起動する。終了コードは判定しない。"""
         posix = os.name == "posix"
         proc = subprocess.Popen(
-            args, cwd=cwd or self.project, env=self.env(extra_env), stdin=subprocess.DEVNULL,
+            args, cwd=cwd or self.project, env=self.env(extra_env, auth), stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8",
             errors="replace", start_new_session=posix,
         )  # fmt: skip
@@ -100,17 +107,21 @@ class E2ERoot:
         return subprocess.CompletedProcess(args, proc.returncode, out, err)
 
     def run_claude(
-        self, *args: str, timeout: float, extra_env: Optional[dict] = None
-    ) -> subprocess.CompletedProcess:
+        self, *args: str, timeout: float, extra_env: Optional[dict] = None,
+        auth: bool = False,
+    ) -> subprocess.CompletedProcess:  # fmt: skip
         """`claude` を隔離 env で起動する。`--bare` は hook を切るので使わない。"""
         path = shutil.which("claude")
         if path is None:
             pytest.skip("claude が PATH に無い")
-        return self.run([path, *args], timeout=timeout, extra_env=extra_env)
+        return self.run([path, *args], timeout=timeout, extra_env=extra_env, auth=auth)
 
     def cleanup(self) -> None:
-        """切り離された送信プロセスを待ってから消す。"""
-        time.sleep(_SETTLE_SEC)
+        """切り離された送信プロセスを待ってから消す。待ちきれなければ消さずに失敗する。"""
+        try:
+            self.wait_quiet()
+        except TimeoutError as e:
+            raise TimeoutError(f"{e}\n隔離ルートを残した: {self.path}") from e
         if os.environ.get(KEEP_ENV) == "1":
             sys.stderr.write(f"\n隔離ルートを残した: {self.path}\n")
             return
@@ -118,6 +129,10 @@ class E2ERoot:
         if p.is_symlink() or not (p / MARKER).is_file() or _tmp_real() not in p.parents:
             raise RuntimeError(f"消してよいルートでない: {p}")
         shutil.rmtree(p, onerror=_force_remove)
+
+    def wait_quiet(self) -> None:
+        """プラグインの data 配下が静止するまで待つ（切り離された送信プロセスの完了待ち）。"""
+        wait_quiet(self.config / "plugins" / "data")
 
     # --- 証拠の読み出し
     def pycache_of(self, src_dir: Path) -> Path:

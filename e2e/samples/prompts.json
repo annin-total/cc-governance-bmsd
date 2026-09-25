@@ -1,0 +1,23 @@
+{
+  "command": {
+    "name": "e2e-probe",
+    "body": "Do these steps in order, one tool call each, then reply with the single word done.\n1. Run the Bash command `echo e2e-ok`.\n2. Run the Bash command `ls nonexistent-e2e-path` (it is expected to fail).\n3. Invoke the Skill tool with skill `e2e-skill`.\n4. Use the Agent tool (subagent_type general-purpose) with the prompt: Run the Bash command `echo e2e-sub` and reply done.\n"
+  },
+  "skill": {
+    "name": "e2e-skill",
+    "body": "---\nname: e2e-skill\ndescription: E2E probe skill. Use only when asked explicitly.\n---\nReply with the single word skill-ok.\n"
+  },
+  "collect": {
+    "tools": ["Bash(echo:*)", "Bash(ls:*)", "Skill", "Agent"],
+    "sessions": [
+      {"args": ["/e2e-probe"], "model": "haiku"},
+      {"args": ["--continue", "/compact"], "model": "haiku"},
+      {"args": ["--continue", "Reply with the single word ok."], "model": "sonnet"}
+    ]
+  },
+  "leak": {
+    "tools": ["Bash(echo:*)"],
+    "prompt": "Run the Bash command `echo {sentinel}` once, then reply done.",
+    "model": "haiku"
+  }
+}

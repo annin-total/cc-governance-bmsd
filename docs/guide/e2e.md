@@ -12,6 +12,9 @@
 | 導入 | `e2e/test_install.py` | 不要 | 不要 | 不要 |
 | 設定の配布 | `e2e/test_settings.py` | 不要 | 不要 | 不要（手動確認は要る） |
 | お知らせ | `e2e/test_notices.py` | 不要 | 不要 | 不要（手動確認は要る） |
+| 収集 | `e2e/test_collect.py` | 要 | 不要 | 不要 |
+| 送信 | `e2e/test_send.py` | 不要 | 要 | 不要 |
+| 非漏洩 | `e2e/test_leak.py` | 要 | 要（陽性対照は不要） | 不要 |
 | サーバ | `e2e/test_server.py` | 不要 | 要 | 不要（手動確認は要る） |
 
 書かれていないモジュールはまだ無い。
@@ -33,6 +36,15 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt  # 初回
 - `claude` が PATH にある。無いテストは自動的に skip される
 - git 2.32 以上（隔離環境の `GIT_CONFIG_GLOBAL` 遮断に必要）
 - 上記の `.venv`
+
+## 認証
+
+要認証のテスト（marker `requires_auth`）は、Claude Code の認証を環境変数で渡して実行する。無ければ黙って skip される。
+Bedrock なら `CLAUDE_CODE_USE_BEDROCK=1` と `AWS_PROFILE`・`AWS_REGION` などの `AWS_*`（他の方式の例は `ANTHROPIC_API_KEY`）。
+`/setup-bedrock` で設定した値は `~/.claude/settings.json` の `env` にあり、隔離した config には届かないので、同じ値を export する。
+SSO なら先に `aws sso login` を済ませる（`awsAuthRefresh` も settings のキーなので届かない）。Bedrock での実行は未検証。
+渡るのは `e2e/_auth.py` とプロキシ（`e2e/_root.py`）の許可リストの変数だけ。モデルは別名 `haiku`（effort の列だけ `sonnet`）で、
+解決先は `ANTHROPIC_DEFAULT_HAIKU_MODEL` / `ANTHROPIC_DEFAULT_SONNET_MODEL` で固定できる。
 
 ## 安全の約束
 
@@ -143,6 +155,80 @@ cd <ルート>/project && CLAUDE_CONFIG_DIR=<ルート>/config claude   # 対話
 
 ブラウザ起動は OS に依存する観測であり、自動では確かめない。Windows と、VS Code 拡張など
 `cli` 以外の対話起動での見え方は未検証。
+
+## 収集（モジュール 4）
+
+本物の Claude Code が `hooks.json` に登録した全 hook を呼び、`contract.py` の `HOOK_FIELDS` の各キーパスが
+実際の stdin で全行を通して 1 つ以上埋まることを確かめる。上流でキーが改名されると列は無言で NULL に
+なり、`tests/` の fixture（採取時点の stdin）では気づけない。入力は `e2e/samples/prompts.json`
+（ユーザー設定のコマンドとスキル、`claude -p` 3 回分）で、期待値は installPath の `hooks.json` と
+`contract.py` から導く。
+
+```bash
+.venv/bin/python -m pytest e2e -k collect
+```
+
+### 前提と罠
+
+- ツールの失敗と `effort` の起こし方の制約は `docs/knowledge/claude-code-behavior.md`（`PostToolUseFailure` と
+  `effort` の行）
+- 期待するイベントは `hooks.json` から導くため、hook を登録から外すと期待も一緒に減る。外したことには、
+  その hook でしか埋まらない列が NULL になることで気づく。他の hook と同じ列しか持たない hook
+  （`UserPromptSubmit` など）の登録漏れは検出できない
+
+### 実物でも確かめられない限界
+
+モデルが指示どおりにツールを呼ぶことに依存する（手順を飛ばすと落ちる。再実行で区別する）。
+対話起動でしか現れない値（`permission_mode` の `default` 以外、`is_interrupt` の真）は確かめない。
+
+## 送信（モジュール 5）
+
+切り離された送信プロセスが `claude` の終了後に実サーバ（モジュール 7 と同じ Docker の集計サーバ）へ
+届けること、届かなかった分（誤トークンの 401・閉じたポート）が spool に残り、送信先を直した次の
+セッションで届くことを確かめる。共有 DB なので判定は自分の `event_id` だけで行う。
+
+```bash
+.venv/bin/python -m pytest e2e -k send
+```
+
+### 前提と罠
+
+- 送信は前回から 10 分以上経ったときだけ起動する（`docs/spec/plugin.md` の「蓄積と送信」）。
+  テストは `sent_at` を消して次の送信を起こす。送信先は installPath の `config.json` を直接直す
+- queue が空になることは送信完了の判定に使えない。未ログインでも `SessionStart` の後に発火する hook が
+  退避の後に積む（`docs/knowledge/claude-code-behavior.md`）
+- 送信プロセスの完了は、プラグインの data 配下が 2 秒変化しないことで判断する（OS に依存しない）。
+  片付けも同じ待ちを経る。接続したまま応答しない送信先では完了と見分けられないため、組み立てる
+  `config.json` の送信タイムアウトを 5 秒に縮めている
+
+### 実物でも確かめられない限界
+
+HTTPS・プロキシ越しの送信と、本番の受信先への到達は確かめない。
+
+## 非漏洩（モジュール 6）
+
+プロンプトと Bash の入出力に仕込んだ一意の `SENTINEL-<乱数>` が、送信まで通してもどこにも残らないことを
+確かめる。
+
+```bash
+.venv/bin/python -m pytest e2e -k leak
+```
+
+| 対象 | 見方 |
+| --- | --- |
+| `queue.jsonl` / `spool/` | 送信前に隔離ルートごと走査する |
+| 送信の生バイト | 送信プロセスは spool のファイルをそのまま POST する（`tests/` が確認）ので、送信前の queue の走査で代える |
+| DB の全列と DB ファイル | コンテナの `/app/data` を `docker cp` で取り出し、バイト列を走査する（全列はバイト列に含まれる）。自分の `event_id` が見つかることで、走査が効いていることを先に確かめる |
+| 隔離ルート全体 | `config/projects/`（Claude Code 本体の transcript）を除く。transcript に SENTINEL が在ることを、届いた証拠として先に確かめる |
+| 本物の config | `~/.claude`（と起動時の `CLAUDE_CONFIG_DIR`）の全ファイル |
+
+**陽性対照**: `contract.py` に `prompt` と `tool_input.command` のキーパスを足して組み立てた版では、同じ走査が
+プラグインの data 配下で SENTINEL を検出する。サーバは契約に無い列を黙って捨てるため、陽性対照はサーバへ送らない。
+
+### 実物でも確かめられない限界
+
+探すのは ASCII の SENTINEL の完全一致だけで、変換（エスケープ・切り詰め）された断片は見ない。
+サーバと Docker のログは走査しない。
 
 ## サーバ（モジュール 7）
 

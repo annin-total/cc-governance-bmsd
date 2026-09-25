@@ -224,7 +224,7 @@ A6・A8 でデータを入れた状態で 4 画面を見る。先に次の 2 点
 | `command_source` | `userSettings`: `$CLAUDE_CONFIG_DIR/commands/` / `projectSettings`: `.claude/commands/` / `plugin`: プラグインのコマンド |
 | `prompt_id` / `permission_mode` | `UserPromptSubmit` 以降で自然に埋まる。`SessionStart` の stdin には無い |
 | `is_interrupt` | `false` は `PostToolUseFailure` で埋まる。`true` は非対話では踏めない（未検証） |
-| `effort_level` | `claude -p` ではモデル・`--effort` フラグ・プロンプトのどれを試しても stdin に `effort` キーが現れない。対話モードでは未検証 |
+| `effort_level` | effort に対応するモデル（`sonnet` など）で起動する。`haiku` では埋まらない（`../knowledge/claude-code-behavior.md`） |
 
 MCP は `claude mcp add --transport http deepwiki https://mcp.deepwiki.com/mcp` で足せる（無認証で動く）。
 非対話で使わせるには `settings.json` に `"enableAllProjectMcpServers": true` が要る。
@@ -235,7 +235,7 @@ A7 の 6 対象で行う。
 ### B1. Claude Code が実際に hook を呼ぶ
 
 **合格の条件** — `queue.jsonl` に、A3 と同じ形の行が増える。その実行で発生する hook が実際に
-発火している。`claude -p` では `permission_mode` が `default`、`effort_level` が `None` になる。
+発火している。`claude -p` では `permission_mode` が `default` になる。
 
 ### B2. stdin の実形状が契約と合う
 
