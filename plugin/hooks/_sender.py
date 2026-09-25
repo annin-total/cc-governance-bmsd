@@ -78,10 +78,12 @@ def run() -> None:
     """退避 → 古い順に POST → 破棄。破棄を後に置き、上限超えのファイルにも 1 回は送る。"""
     try:
         config = _load_config()
-        if config is None or not config["ingest_url"]:
+        if config is None:
             return
         _spool.rotate()
-        for path in _spool_files_sorted():
+        # 送信先が空でも退避と破棄は行う。行わないと queue.jsonl が上限なしに増える
+        paths = _spool_files_sorted() if config["ingest_url"] else []
+        for path in paths:
             # 応答しないサーバに対して、ファイル数 × timeout_sec 粘らない
             if not _post_file(path, config):
                 break

@@ -340,10 +340,25 @@ def test_empty_ingest_url_skips_posting(server, monkeypatch, tmp_path):
     assert path.exists()
 
 
-def test_missing_config_file_is_silent(monkeypatch, tmp_path):
-    monkeypatch.setattr(_sender, "_CONFIG_PATH", tmp_path / "no-such-config.json")
+def test_empty_ingest_url_still_rotates_and_prunes(monkeypatch, tmp_path):
+    """送信先が空でも queue.jsonl を退避し、spool の上限を効かせる。"""
+    _write_config(monkeypatch, tmp_path, ingest_url="")
+    _spool.append({"n": 1})
+    old = _seed_spool_file(_SPOOL_NAME, [{"n": 0}], mtime=time.time() - 30 * 86400)
 
     _sender.run()
+
+    assert not _spool._queue_path().exists()
+    assert not old.exists()
+
+
+def test_missing_config_file_is_silent(monkeypatch, tmp_path):
+    monkeypatch.setattr(_sender, "_CONFIG_PATH", tmp_path / "no-such-config.json")
+    _spool.append({"n": 1})
+
+    _sender.run()
+
+    assert _spool._queue_path().exists()
 
 
 def test_corrupt_config_file_is_silent(monkeypatch, tmp_path):
