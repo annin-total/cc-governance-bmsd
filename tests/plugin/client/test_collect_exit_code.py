@@ -13,6 +13,8 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 
 def _assert_clean_exit(result):
     """終了コード0・標準出力/標準エラーが空であることを確認する。"""
@@ -29,127 +31,84 @@ def _queue_line_count(plugin_data):
     return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line)
 
 
-# --- 壊れた標準入力 ---
-
-
-def test_empty_stdin(run_collect, tmp_path):
-    """#1: 標準入力が空。"""
-    plugin_data = tmp_path / "plugin-data"
-    result = run_collect("Stop", plugin_data=plugin_data, stdin="")
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-def test_stdin_not_json(run_collect, tmp_path):
-    """#2: 標準入力が `not json`。"""
-    plugin_data = tmp_path / "plugin-data"
-    result = run_collect("Stop", plugin_data=plugin_data, stdin="not json")
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-def test_stdin_json_array(run_collect, tmp_path):
-    """#3: 標準入力が `[]`。"""
-    plugin_data = tmp_path / "plugin-data"
-    result = run_collect("Stop", plugin_data=plugin_data, stdin="[]")
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-def test_stdin_json_null(run_collect, tmp_path):
-    """#4: 標準入力が `null`。"""
-    plugin_data = tmp_path / "plugin-data"
-    result = run_collect("Stop", plugin_data=plugin_data, stdin="null")
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-def test_stdin_truncated_json(run_collect, tmp_path):
-    """#5: 標準入力が `{` で終わる途中の JSON。"""
-    plugin_data = tmp_path / "plugin-data"
-    result = run_collect("Stop", plugin_data=plugin_data, stdin="{")
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-def test_stdin_invalid_utf8_bytes(run_collect, tmp_path):
-    """#6: 標準入力が UTF-8 として不正なバイト列。"""
-    plugin_data = tmp_path / "plugin-data"
-    result = run_collect(
-        "Stop", plugin_data=plugin_data, stdin_bytes=b"\xff\xfe\xfd\x00broken"
-    )
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-def test_stdin_10mb_single_line(run_collect, tmp_path):
-    """#7: 標準入力が 10MB の JSON 1 行。"""
-    plugin_data = tmp_path / "plugin-data"
-    huge = json.dumps({"session_id": "x" * (10 * 1024 * 1024)})
-    result = run_collect("Stop", plugin_data=plugin_data, stdin=huge)
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-def test_stdin_closed(run_collect, tmp_path):
-    """#8: 標準入力を閉じたまま起動。"""
-    plugin_data = tmp_path / "plugin-data"
-    result = run_collect("Stop", plugin_data=plugin_data, close_stdin=True)
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-# --- transcript_path の異常値 ---
-
-
-def test_transcript_path_missing_file(run_collect, tmp_path):
-    """#9: transcript_path が存在しないパス、引数 Stop。"""
-    plugin_data = tmp_path / "plugin-data"
-    stdin = json.dumps({"transcript_path": str(tmp_path / "no-such-file.jsonl")})
-    result = run_collect("Stop", plugin_data=plugin_data, stdin=stdin)
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-def test_transcript_path_is_directory(run_collect, tmp_path):
-    """#10: transcript_path がディレクトリ、引数 PreCompact。"""
-    plugin_data = tmp_path / "plugin-data"
+def _transcript_dir(tmp_path, _hooks_dir):
     a_dir = tmp_path / "a-directory"
     a_dir.mkdir()
-    stdin = json.dumps({"transcript_path": str(a_dir)})
-    result = run_collect("PreCompact", plugin_data=plugin_data, stdin=stdin)
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
+    return ("PreCompact",), {"stdin": json.dumps({"transcript_path": str(a_dir)})}
 
 
-def test_transcript_path_is_number(run_collect, tmp_path):
-    """#11: transcript_path が数値。`open()` に float を渡すと TypeError になる経路を張る。"""
-    plugin_data = tmp_path / "plugin-data"
-    stdin = json.dumps({"transcript_path": 123.5})
-    result = run_collect("Stop", plugin_data=plugin_data, stdin=stdin)
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-# --- config.json の異常 ---
-
-
-def test_corrupt_config_json(hooks_dir, run_collect, tmp_path):
-    """#12: config.json を壊した状態。"""
-    plugin_data = tmp_path / "plugin-data"
+def _corrupt_config(_tmp_path, hooks_dir):
     (hooks_dir.parent / "config.json").write_text("{not valid json", encoding="utf-8")
-    result = run_collect("Stop", plugin_data=plugin_data)
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
+    return ("Stop",), {}
 
 
-def test_missing_config_json(hooks_dir, run_collect, tmp_path):
-    """#13: config.json を削除した状態。"""
-    plugin_data = tmp_path / "plugin-data"
+def _missing_config(_tmp_path, hooks_dir):
     (hooks_dir.parent / "config.json").unlink()
-    result = run_collect("Stop", plugin_data=plugin_data)
+    return ("Stop",), {}
+
+
+def _corrupt_identity(tmp_path, _hooks_dir):
+    plugin_data = tmp_path / "plugin-data"
+    plugin_data.mkdir(parents=True)
+    (plugin_data / "identity.json").write_text("{not valid json", encoding="utf-8")
+    return ("Stop",), {}
+
+
+# 各ケースは (tmp_path, hooks_dir) を受け取り、collect.py の (引数, run_collect の追加引数) を返す。
+# 追加引数に plugin_data が無ければ tmp_path / "plugin-data" を使う。
+_COLLECTING_CASES = {
+    # 壊れた標準入力
+    "empty_stdin": lambda t, h: (("Stop",), {"stdin": ""}),
+    "stdin_not_json": lambda t, h: (("Stop",), {"stdin": "not json"}),
+    "stdin_json_array": lambda t, h: (("Stop",), {"stdin": "[]"}),
+    "stdin_json_null": lambda t, h: (("Stop",), {"stdin": "null"}),
+    "stdin_truncated_json": lambda t, h: (("Stop",), {"stdin": "{"}),
+    "stdin_invalid_utf8_bytes": lambda t, h: (
+        ("Stop",),
+        {"stdin_bytes": b"\xff\xfe\xfd\x00broken"},
+    ),
+    "stdin_10mb_single_line": lambda t, h: (
+        ("Stop",),
+        {"stdin": json.dumps({"session_id": "x" * (10 * 1024 * 1024)})},
+    ),
+    "stdin_closed": lambda t, h: (("Stop",), {"close_stdin": True}),
+    # transcript_path の異常値（数値は open() に float を渡して TypeError になる経路）
+    "transcript_path_missing_file": lambda t, h: (
+        ("Stop",),
+        {"stdin": json.dumps({"transcript_path": str(t / "no-such-file.jsonl")})},
+    ),
+    "transcript_path_is_directory": _transcript_dir,
+    "transcript_path_is_number": lambda t, h: (
+        ("Stop",),
+        {"stdin": json.dumps({"transcript_path": 123.5})},
+    ),
+    # config.json・状態ファイル・環境変数の異常
+    "corrupt_config_json": _corrupt_config,
+    "missing_config_json": _missing_config,
+    "corrupt_identity_json": _corrupt_identity,
+    "plugin_data_and_home_both_missing": lambda t, h: (
+        ("Stop",),
+        {
+            "plugin_data": t / "no-such-plugin-data",
+            "env": {"HOME": str(t / "no-such-home")},
+        },
+    ),
+    # 引数の異常
+    "empty_string_arg": lambda t, h: (("",), {}),
+    "five_args": lambda t, h: (("Stop", "extra1", "extra2", "extra3", "extra4"), {}),
+}
+
+
+@pytest.mark.parametrize(
+    "setup", _COLLECTING_CASES.values(), ids=_COLLECTING_CASES.keys()
+)
+def test_broken_input_still_collects(setup, run_collect, hooks_dir, tmp_path):
+    """壊れた入力・環境でも clean exit で終わり、収集自体は成立する（queue に 1 行）。"""
+    argv, kwargs = setup(tmp_path, hooks_dir)
+    kwargs.setdefault("plugin_data", tmp_path / "plugin-data")
+    result = run_collect(*argv, **kwargs)
     _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
+    assert _queue_line_count(kwargs["plugin_data"]) == 1  # R-44: 収集自体は成立する
 
 
 # --- 状態ディレクトリ・状態ファイルの異常 ---
@@ -175,26 +134,6 @@ def test_queue_path_is_directory(run_collect, tmp_path):
     _assert_clean_exit(result)
 
 
-def test_corrupt_identity_json(run_collect, tmp_path):
-    """#16: identity.json を壊した状態。"""
-    plugin_data = tmp_path / "plugin-data"
-    plugin_data.mkdir(parents=True)
-    (plugin_data / "identity.json").write_text("{not valid json", encoding="utf-8")
-    result = run_collect("Stop", plugin_data=plugin_data)
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-def test_plugin_data_and_home_both_missing(run_collect, tmp_path):
-    """#17: CLAUDE_PLUGIN_DATA と HOME の両方を存在しないパスに設定した状態。"""
-    plugin_data = tmp_path / "no-such-plugin-data"
-    result = run_collect(
-        "Stop", plugin_data=plugin_data, env={"HOME": str(tmp_path / "no-such-home")}
-    )
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
 # --- 送信条件が真で送信先に到達できない ---
 
 
@@ -203,32 +142,11 @@ def test_ingest_url_unresolvable_host(run_collect, tmp_path, write_config):
 
     送信を起動する経路のため、検証後すぐに `queue.jsonl` が spool へ退避されうる
     （detach した送信プロセスが並行して `rotate()` する）。収集自体が成立したことの
-    主張はここでは行わず、他の壊れた入力のケース（#1〜#13・#16・#17・#19・#20）で見る。
+    主張はここでは行わず、`test_broken_input_still_collects` で見る。
     """
     write_config(ingest_url="http://this-host-does-not-exist.invalid/ingest")
     result = run_collect("Stop", plugin_data=tmp_path / "plugin-data")
     _assert_clean_exit(result)
-
-
-# --- 引数の異常 ---
-
-
-def test_empty_string_arg(run_collect, tmp_path):
-    """#19: 引数に空文字を渡す。"""
-    plugin_data = tmp_path / "plugin-data"
-    result = run_collect("", plugin_data=plugin_data)
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
-
-
-def test_five_args(run_collect, tmp_path):
-    """#20: 引数を5つ渡す。"""
-    plugin_data = tmp_path / "plugin-data"
-    result = run_collect(
-        "Stop", "extra1", "extra2", "extra3", "extra4", plugin_data=plugin_data
-    )
-    _assert_clean_exit(result)
-    assert _queue_line_count(plugin_data) == 1  # R-44: 収集自体は成立する
 
 
 # --- SIGINT による中断（R-42） ---
