@@ -9,7 +9,7 @@
 | --- | --- |
 | アンインストールすると `plugins/data/<plugin>-<marketplace>/` は配下ごと消えるが、**`plugins/cache/<marketplace>/<plugin>/<version>/` は残る**（`.in_use` / `.orphaned_at` マーカー付き）。状態の残骸という観点で保証があるのは `data/` の削除だけ | 端末の掃除手順を書くとき。再導入で古い版が残っていても異常ではない |
 | `hooks.json` を読むのは **Claude Code 本体**であり、変更は**セッションを開き直すまで効かない**。一方、プラグインの hook が実行時に読むファイルは**次のツール実行から即時に効く** | プラグインの変更が端末に効くタイミングの見積もり。hook の追加・削除だけは利用者の再起動を待つ |
-| `directory`（ローカルパス）ソースのマーケットプレイスでは、`CLAUDE_PLUGIN_ROOT` が **`cache/` の複製ではなく元のディレクトリ**を指す。cache 側を編集しても何も起きない。git リモート（http で配信）ソースでは `plugins/cache/<marketplace>/<plugin>/<version>/` を指した（Claude Code 2.1.278・macOS、隔離環境で 1 系統を観測） | ローカル開発で「直したのに反映されない」と迷ったとき |
+| `directory`（ローカルパス）ソースのマーケットプレイスでは、`CLAUDE_PLUGIN_ROOT` が **`cache/` の複製ではなく元のディレクトリ**を指す。cache 側を編集しても何も起きない。このとき `claude plugin list` と `installed_plugins.json` の `installPath` は cache 配下を示したままで、実際に動く場所と一致しない（2.1.282）。git リモート（http で配信）ソースでは `plugins/cache/<marketplace>/<plugin>/<version>/` を指した（Claude Code 2.1.278・macOS、隔離環境で 1 系統を観測） | ローカル開発で「直したのに反映されない」と迷ったとき |
 | 初回導入は、`settings.json` に `extraKnownMarketplaces` / `enabledPlugins` を書いて起動を繰り返すだけでは完了しない場合がある（`temp_git_…_clone` が残って進まない状態を隔離環境で 2 例）。`claude plugin marketplace add` と `claude plugin install` の明示実行で完了した | 導入手順を書くとき。**導入が完了したことを確認する手段**を手順に含める必要がある |
 | 自動更新でマーケットプレイスの clone が新版に進むまで、隔離環境（git source + 自前の HTTP サーバ）で **15 分 23 秒**かかった（観測 1 回）。同条件の別の隔離環境では約 26 分・セッション 3 回待っても一度も進まなかった。固定値かどうか、条件差の原因は**未検証** | 展開の所要時間を見積もるとき |
 | 隔離 HOME（未ログイン）では、35 分放置しても自動の更新チェックが 1 度も走らなかった（git サーバのアクセスログにフェッチ 0 件）。実環境（ログイン済み）では走った。**未ログインだと走らない**という説明は素直だが**未検証** | **隔離 HOME では背景ジョブに依存する検証ができない。** 自動更新まわりは実環境でしか確かめられない |
