@@ -146,6 +146,23 @@ def test_ingest_url_unresolvable_host(run_collect, tmp_path, write_config):
     _assert_clean_exit(result)
 
 
+# --- 処理の途中で想定外の例外が起きる ---
+
+
+def test_unexpected_exception_is_swallowed(run_collect, tmp_path):
+    """処理の途中で想定外の例外が起きても clean exit で終わる（最外周の例外処理の検査）。
+
+    再帰上限を超える入れ子の JSON は `RecursionError`（ValueError 派生ではない）を投げ、
+    標準入力の読み取りで捕まえられずに最外周まで届く。標準入力は環境の側から与えられるので、
+    内部の関数名に依存せず想定外の失敗を起こせる。途中で捕まえるよう実装が変わっても
+    このテストは通るが、その場合は最外周の例外処理の検査ではなくなる。
+    """
+    result = run_collect(
+        "Stop", plugin_data=tmp_path / "plugin-data", stdin="[" * 100_000
+    )
+    _assert_clean_exit(result)
+
+
 # --- SIGINT による中断 ---
 
 # インタプリタの起動そのものにも時間がかかり、起動中に届いた SIGINT は Python 側で
