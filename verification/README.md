@@ -54,7 +54,6 @@
 | `hold.py` / `hold.sh` | 隔離 HOME で対話セッションを pty 上に起動し、指定秒数だけ保持してログを取る |
 | `snap.sh` | 隔離 HOME で自動更新がどこまで進んだかを一覧表示する |
 | `isolated_home_run.sh` | 隔離 HOME で `claude` を起動し、データ領域の作られ方を確かめる |
-| `marketplaces/dummy-verify/` | 擬似マーケットプレイス（プラグイン名 `dummy`） |
 | `marketplaces/au-verify/` | 擬似マーケットプレイス（プラグイン名 `audummy`。SessionStart で版を `$HOME/captured.log` に書く） |
 
 - 各擬似マーケットプレイスは、`*-bare.git` が履歴の正本で、隣のディレクトリは `.git` を持たないスナップショットである。作業コピーは bare から clone して作る
