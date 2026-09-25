@@ -1,10 +1,137 @@
-"""`_notices.py` の URL バリデーション（`_valid_url`）と、URL を含む出力経路を検証する。"""
+"""`_notices.py` の未読の選別・URL バリデーション・表示文字列・既読の書き込みを検証する。"""
 
+import json
 import os
 import stat
+from pathlib import Path
 
 import _notices
 import pytest
+
+MARKER = "ZZMARKER-NOTICE-BODY"
+
+
+@pytest.fixture
+def notices_file(write_notices):
+    """fixture の notices.json（n-001 / n-002、n-001 に一意なマーカー）を用意する。"""
+    return write_notices(
+        [
+            {"id": "n-001", "title": "件名1", "body": f"本文1 {MARKER}"},
+            {"id": "n-002", "title": "件名2", "body": "本文2"},
+        ]
+    )
+
+
+@pytest.fixture
+def unread_ids(monkeypatch, tmp_path):
+    """状態ディレクトリを tmp_path/state に向け、未読の id 集合を返す関数を返す。"""
+    monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "state"))
+
+    def _ids() -> set:
+        unread = _notices._select_unread(
+            _notices._read_notices(_notices._NOTICES_PATH), _notices._read_seen()
+        )
+        return {n["id"] for n in unread}
+
+    return _ids
+
+
+def _seen_file(tmp_path) -> Path:
+    return tmp_path / "state" / "seen.json"
+
+
+def _write_seen(tmp_path, ids) -> None:
+    path = _seen_file(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ids), encoding="utf-8")
+
+
+# ---- 未読の選別 ----
+
+
+def test_notices_8_1_no_seen_file_both_unread(notices_file, unread_ids):
+    """#8-1: seen.json が存在しない -> 未読は n-001, n-002。"""
+    assert unread_ids() == {"n-001", "n-002"}
+
+
+def test_notices_8_2_partial_seen(notices_file, tmp_path, unread_ids):
+    """#8-2: seen.json = ["n-001"] -> 未読は n-002 のみ。"""
+    _write_seen(tmp_path, ["n-001"])
+    assert unread_ids() == {"n-002"}
+
+
+def test_notices_8_3_all_seen(notices_file, tmp_path, unread_ids):
+    """#8-3: seen.json = ["n-001","n-002"] -> 未読なし。"""
+    _write_seen(tmp_path, ["n-001", "n-002"])
+    assert unread_ids() == set()
+
+
+def test_notices_8_4_unknown_id_in_seen_is_ignored(notices_file, tmp_path, unread_ids):
+    """#8-4: seen.json に存在しない id を含む -> 未読は n-002。例外にならない。"""
+    _write_seen(tmp_path, ["n-001", "n-999"])
+    assert unread_ids() == {"n-002"}
+
+
+def test_notices_8_5_seen_as_dict_is_treated_as_empty(
+    notices_file, tmp_path, unread_ids
+):
+    """#8-5: seen.json が dict -> 空集合として扱い、未読は n-001, n-002。"""
+    path = _seen_file(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"seen": ["n-001"]}), encoding="utf-8")
+    assert unread_ids() == {"n-001", "n-002"}
+
+
+def test_notices_8_6_broken_json_is_treated_as_empty(
+    notices_file, tmp_path, unread_ids
+):
+    """#8-6: seen.json が壊れた JSON -> 空集合として扱う。"""
+    path = _seen_file(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text('["n-001"', encoding="utf-8")
+    assert unread_ids() == {"n-001", "n-002"}
+
+
+def test_notices_8_7_empty_file_is_treated_as_empty(notices_file, tmp_path, unread_ids):
+    """#8-7: seen.json が空ファイル -> 空集合として扱う。"""
+    path = _seen_file(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("", encoding="utf-8")
+    assert unread_ids() == {"n-001", "n-002"}
+
+
+def test_notices_8_8_empty_notices_array_no_unread(write_notices, unread_ids):
+    """#8-8: notices.json が空配列 -> 未読なし。例外にならない。"""
+    write_notices([])
+    assert unread_ids() == set()
+
+
+def test_notices_8_9_missing_notices_file_no_unread(tmp_path, monkeypatch, unread_ids):
+    """#8-9: notices.json が存在しない -> 未読なし。例外にならない。"""
+    monkeypatch.setattr(_notices, "_NOTICES_PATH", tmp_path / "no-such-notices.json")
+    assert unread_ids() == set()
+
+
+def test_notices_8_10_seen_sequence_does_not_matter(notices_file, tmp_path, unread_ids):
+    """#8-10: seen.json = ["n-002","n-001"]（順序が逆） -> 未読なし。"""
+    _write_seen(tmp_path, ["n-002", "n-001"])
+    assert unread_ids() == set()
+
+
+def test_notices_8_11_non_string_body_item_is_dropped_others_survive(
+    write_notices, unread_ids
+):
+    """#8-11 (M-1): title が無く body が非文字列の項目が1件混ざっても、その項目だけを飛ばし
+    正常な項目は未読として残る（1件の欠陥が同じファイルの正常な項目まで隠さない）。
+    """
+    write_notices(
+        [
+            {"id": "n-broken", "body": 123},
+            {"id": "n-ok", "title": "件名", "body": "本文"},
+        ]
+    )
+    assert unread_ids() == {"n-ok"}
+
 
 # ---- _valid_url: 受理 ----
 

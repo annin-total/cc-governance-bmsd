@@ -76,13 +76,6 @@ def _event_rows(tmp_path) -> list:
     return [row for row in _queue_rows(tmp_path) if row.get("kind") == "event"]
 
 
-def _unread_ids() -> set:
-    unread = _notices._select_unread(
-        _notices._read_notices(_notices._NOTICES_PATH), _notices._read_seen()
-    )
-    return {n["id"] for n in unread}
-
-
 # ---- タスク 7: policy イベントの投入 ----
 
 
@@ -172,87 +165,6 @@ def test_policy_event_7_8_missing_marketplace_entry_is_skipped_missing(tmp_path)
     session_start.main()
     rows = {row["key_name"]: row["apply_result"] for row in _policy_rows(tmp_path)}
     assert rows[AUTOUPDATE_KEY] == "skipped_missing"
-
-
-# ---- タスク 8: notices.json と未読の選別 ----
-
-
-def test_notices_8_1_no_seen_file_both_unread(notices_file):
-    """#8-1: seen.json が存在しない -> 未読は n-001, n-002。"""
-    assert _unread_ids() == {"n-001", "n-002"}
-
-
-def test_notices_8_2_partial_seen(notices_file, tmp_path):
-    """#8-2: seen.json = ["n-001"] -> 未読は n-002 のみ。"""
-    _write_seen(tmp_path, ["n-001"])
-    assert _unread_ids() == {"n-002"}
-
-
-def test_notices_8_3_all_seen(notices_file, tmp_path):
-    """#8-3: seen.json = ["n-001","n-002"] -> 未読なし。"""
-    _write_seen(tmp_path, ["n-001", "n-002"])
-    assert _unread_ids() == set()
-
-
-def test_notices_8_4_unknown_id_in_seen_is_ignored(notices_file, tmp_path):
-    """#8-4: seen.json に存在しない id を含む -> 未読は n-002。例外にならない。"""
-    _write_seen(tmp_path, ["n-001", "n-999"])
-    assert _unread_ids() == {"n-002"}
-
-
-def test_notices_8_5_seen_as_dict_is_treated_as_empty(notices_file, tmp_path):
-    """#8-5: seen.json が dict -> 空集合として扱い、未読は n-001, n-002。"""
-    path = _seen_file(tmp_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"seen": ["n-001"]}), encoding="utf-8")
-    assert _unread_ids() == {"n-001", "n-002"}
-
-
-def test_notices_8_6_broken_json_is_treated_as_empty(notices_file, tmp_path):
-    """#8-6: seen.json が壊れた JSON -> 空集合として扱う。"""
-    path = _seen_file(tmp_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text('["n-001"', encoding="utf-8")
-    assert _unread_ids() == {"n-001", "n-002"}
-
-
-def test_notices_8_7_empty_file_is_treated_as_empty(notices_file, tmp_path):
-    """#8-7: seen.json が空ファイル -> 空集合として扱う。"""
-    path = _seen_file(tmp_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("", encoding="utf-8")
-    assert _unread_ids() == {"n-001", "n-002"}
-
-
-def test_notices_8_8_empty_notices_array_no_unread(write_notices):
-    """#8-8: notices.json が空配列 -> 未読なし。例外にならない。"""
-    write_notices([])
-    assert _unread_ids() == set()
-
-
-def test_notices_8_9_missing_notices_file_no_unread(tmp_path, monkeypatch):
-    """#8-9: notices.json が存在しない -> 未読なし。例外にならない。"""
-    monkeypatch.setattr(_notices, "_NOTICES_PATH", tmp_path / "no-such-notices.json")
-    assert _unread_ids() == set()
-
-
-def test_notices_8_10_seen_sequence_does_not_matter(notices_file, tmp_path):
-    """#8-10: seen.json = ["n-002","n-001"]（順序が逆） -> 未読なし。"""
-    _write_seen(tmp_path, ["n-002", "n-001"])
-    assert _unread_ids() == set()
-
-
-def test_notices_8_11_non_string_body_item_is_dropped_others_survive(write_notices):
-    """#8-11 (M-1): title が無く body が非文字列の項目が1件混ざっても、その項目だけを飛ばし
-    正常な項目は未読として残る（1件の欠陥が同じファイルの正常な項目まで隠さない）。
-    """
-    write_notices(
-        [
-            {"id": "n-broken", "body": 123},
-            {"id": "n-ok", "title": "件名", "body": "本文"},
-        ]
-    )
-    assert _unread_ids() == {"n-ok"}
 
 
 # ---- タスク 9: お知らせの出力経路と既読を立てる順序 ----
