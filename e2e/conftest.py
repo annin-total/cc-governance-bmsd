@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -9,7 +10,8 @@ import pytest
 from _githttp import GitHttpServer
 from _market import MARKETPLACE, PLUGIN_ID, PLUGIN_SRC, REPO, STATUSLINE_MARK
 from _root import REAL_CONFIG_DIRS, E2ERoot
-from _server import DockerServer, build_context, docker_available
+from _server import LABEL, DockerServer, build_context
+from _server import docker as _docker
 
 _E2E_DIR = Path(__file__).resolve().parent
 _WATCHED = (
@@ -123,15 +125,35 @@ def gitsrv(root):
 
 
 @pytest.fixture(scope="session")
-def docker():
-    """docker が無い、またはデーモンに繋がらなければ skip。"""
-    if not docker_available():
+def docker_ok():
+    """docker が無い・デーモンに繋がらなければ skip。前回の片付け漏れ（ラベル付きの資源）があれば失敗。"""
+    if (
+        shutil.which("docker") is None
+        or _docker("info", timeout=30, check=False).returncode
+    ):
         pytest.skip("docker が無い、またはデーモンに繋がらない")
+    queries = (
+        ("ps", "-a", "{{.ID}} {{.Names}}"),
+        ("images", "{{.ID}} {{.Repository}}"),
+    )
+    left = "".join(
+        _docker(*q[:-1], "--filter", f"label={LABEL}", "--format", q[-1]).stdout
+        for q in queries
+    )
+    if left:
+        pytest.fail(
+            f"前回の片付け漏れがある（自動では消さない）:\n{left}"
+            f"docker rm -f $(docker ps -aq --filter label={LABEL}); "
+            f"docker image rm $(docker images -q --filter label={LABEL})"
+        )
 
 
 @pytest.fixture(scope="session")
-def server(docker):
-    """Docker で起動した集計サーバ（セッションで 1 つ。ビルドと起動が遅いため共有する）。"""
+def server(docker_ok):
+    """Docker で起動した集計サーバ（セッションで 1 つ。ビルドと起動が遅いため共有する）。
+
+    共有 DB なので、判定は自分が入れたデータ（自分の event_id 等）だけから導く。
+    """
     r = E2ERoot()
     _TRACES.append(r.path.name)
     srv = DockerServer(r, "main")

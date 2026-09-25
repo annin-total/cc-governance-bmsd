@@ -36,7 +36,7 @@ utf8mb4 は 1 文字あたり 4 バイトで換算されるため、
 **WSGI の latin-1 による線上の符号化を経由しない。**
 このためヘッダの符号化に起因する欠陥は、`test_client()` では原理的に検出できない。
 
-## Colima のバインドマウント
+## Colima のバインドマウントと `docker cp`
 
 Colima は既定（`mounts: []`）でホームディレクトリだけを VM にマウントする（設定ファイルの注記）。
 ホームの外のパス（macOS の `TMPDIR` である `/var/folders/...` を含む）を `docker run -v` で指定すると、

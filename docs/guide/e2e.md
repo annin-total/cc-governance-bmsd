@@ -80,7 +80,7 @@ git source のマーケットプレイスとして導入し、cache への複製
 お知らせが未読のまま設定も適用済みなので、両モジュールの手動確認に使える。
 
 ```bash
-CC_E2E_KEEP=1 .venv/bin/python -m pytest e2e -k 未読   # 残したルートのパスが表示される
+CC_E2E_KEEP=1 .venv/bin/python -m pytest e2e -k 未読 -s   # 残したルートのパスが表示される（-s が無いと出ない）
 cd <ルート>/project && CLAUDE_CONFIG_DIR=<ルート>/config claude   # 対話で起動し /login でログインする
 ```
 
@@ -159,13 +159,8 @@ cd <ルート>/project && CLAUDE_CONFIG_DIR=<ルート>/config claude   # 対話
 ### 前提と罠
 
 - Docker のデーモンに繋がること。繋がらなければ skip される。ビルドには PyPI への到達が要る
-- **バインドマウントを使わない。**Colima の既定ではホームの外（macOS の `TMPDIR` を含む）の
-  マウントが無言で空になる（`docs/knowledge/db-and-framework-facts.md`）。Secret ファイルと CSV は
-  `docker cp` で入れる
-- サーバはセッションで 1 つだけ起動し、テスト間で共有する（ビルドと起動が遅いため）。
-  このサーバにデータを入れるテストは、期待値を自分が入れたデータだけから導く
-- `BASE_PATH` を付けない `/<ADMIN_PATH>/` にも応答する。前段がサブパスを剥がす場合に備えた設計
-  （`docs/spec/server.md` の「構成の規約」）であり、欠陥ではない
+- 前回の実行の片付け漏れ（ラベル `cc-e2e=1` のコンテナ・イメージ）が残っていると、テストは失敗して
+  削除コマンドを表示する。自動では消さない
 - ビルドのたびに Docker のビルドキャッシュが増える。テストは消さない（消す操作は他のイメージの
   キャッシュも巻き込む）。必要なら `docker builder prune` を手で実行する
 
@@ -173,15 +168,19 @@ cd <ルート>/project && CLAUDE_CONFIG_DIR=<ルート>/config claude   # 対話
 
 画面の見た目はブラウザが要るため自動化しない。見た目の規約は `docs/spec/dashboard-style.md`。
 
-1. `server/` で `docker compose up -d --build` を実行し、
-   `docker compose cp ../e2e/samples/cost_daily.csv server:/app/data/csv/` で見本の CSV を入れる
+開発用のイメージとボリュームを壊さないよう、compose のプロジェクト名を分ける。開発用のサーバが
+15000 番で動いていれば、先に `server/` で `docker compose stop` する。
+
+1. `server/` で `docker compose -p ccgov-manual up -d --build` を実行し、
+   `docker compose -p ccgov-manual cp ../e2e/samples/cost_daily.csv server:/app/data/csv/` で見本の CSV を入れる
 2. `http://127.0.0.1:15000/dev-admin/` を開き（パスワードは `dev.env` の `ADMIN_PASSWORD`、ユーザー名は任意）、
    「CSV を取り込む」を押す
 3. ブラウザの幅を 1280px にし、4 画面（`/dev-admin/`・`/dev-admin/policy`・`/dev-admin/effect`・
    `/dev-admin/assets`）を順に開く。合格: 開発者ツールのコンソールに error・warning が 0 件、
    コンソールで `document.documentElement.scrollWidth <= document.documentElement.clientWidth` が
    `true`、表のセルが切れていない。**スクリーンショットだけで判定しない**
-4. 終わったら `docker compose down -v` で止める（開発用のボリュームも消える）
+4. 終わったら `docker compose -p ccgov-manual down -v --rmi local` で、この確認のコンテナ・ボリューム・
+   イメージだけを消す
 
 ### 実物でも確かめられない限界
 

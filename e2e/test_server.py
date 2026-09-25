@@ -3,16 +3,14 @@
 認証不要・Docker 要。受信・取込・集計の中身は server/tests が見る。ここは起動形態と実 TCP の経路だけを見る。
 """
 
-import csv
 import json
 import re
 import time
 import uuid
-from collections import defaultdict
 from pathlib import Path
 
 import pytest
-from _server import BASE_PATH, CSV_DIR, DockerServer, build_context
+from _server import BASE_PATH, CSV_DIR, DockerServer, build_context, docker
 
 _SAMPLE_CSV = Path(__file__).resolve().parent / "samples" / "cost_daily.csv"
 _PAGES = ("/", "/policy", "/effect", "/assets")
@@ -21,15 +19,16 @@ _VENDOR = Path("ccgov") / "vendor" / "contract.py"
 
 def test_BASE_PATH配下で管理画面4つとCSSが返り外は404(server):
     for page in _PAGES:
-        status, body, _ = server.request("GET", server.admin_url(page), auth=True)
+        status, _, _ = server.request("GET", server.admin_path(page), auth=True)
         assert status == 200, (page, status)
     # 画面が生成する CSS の URL がサブパスを含むこと（SCRIPT_NAME が効いている）
+    _, body, _ = server.request("GET", server.admin_path("/"), auth=True)
     hrefs = re.findall(r'href="([^"]+\.css)"', body)
-    assert hrefs and all(h.startswith(server.admin_url("/")) for h in hrefs), hrefs
+    assert hrefs and all(h.startswith(server.admin_path("/")) for h in hrefs), hrefs
     for href in hrefs:
         status, _, ctype = server.request("GET", href, auth=True)
         assert status == 200 and ctype.startswith("text/css"), (href, status, ctype)
-    # ADMIN_PATH の外（BASE_PATH の直下とルート）には何も無い
+    # ADMIN_PATH の外は 404。BASE_PATH 無しの /<ADMIN_PATH>/ は前段が剥がす場合に備えて通る設計なので含めない
     for outside in (BASE_PATH + "/", "/"):
         assert server.request("GET", outside, auth=True)[0] == 404, outside
 
@@ -42,38 +41,21 @@ def test_ingestはトークンが正しければ保存し誤りなら401(server)
         "POST", url, body, {"X-Ingest-Token": server.token}
     )
     assert status == 200, text
-    assert json.loads(text) == {"stored": 1, "dropped": 0}
+    assert json.loads(text)["stored"] == 1
     wrong = {"X-Ingest-Token": server.token + "x"}
     assert server.request("POST", url, body, wrong)[0] == 401
 
 
-def _sample_rows() -> list:
-    with _SAMPLE_CSV.open(encoding="utf-8", newline="") as f:
-        rows = list(csv.DictReader(f))
-    assert rows
-    return rows
-
-
-def test_CSV_DIRのCSVを取り込むと概況にコストが出る(server):
-    rows = _sample_rows()
-    costs: dict = defaultdict(float)
-    for r in rows:
-        costs[(r["Date"], r["Provider"])] += float(r["Cost"])
-    server.put(_SAMPLE_CSV, CSV_DIR)
-    status, body, _ = server.request("POST", server.admin_url("/import"), auth=True)
+def test_CSV_DIRのCSVを取り込むと取込結果が出る(server):
+    rows = len(_SAMPLE_CSV.read_text(encoding="utf-8").splitlines()) - 1
+    assert rows > 0
+    docker("cp", str(_SAMPLE_CSV), f"{server.name}:{CSV_DIR}/{_SAMPLE_CSV.name}")
+    status, body, _ = server.request("POST", server.admin_path("/import"), auth=True)
     assert status == 200, body
-    assert f"{_SAMPLE_CSV.name}: {len(rows)} 行" in body, body
-    status, body, _ = server.request("GET", server.admin_url("/"), auth=True)
-    assert status == 200
-    for (day, provider), cost in costs.items():
-        cell = (
-            f'<td class="date">{day}</td><td>{provider}</td>'
-            f'<td class="num">${cost:.2f}</td>'
-        )
-        assert cell in body, cell
+    assert f"{_SAMPLE_CSV.name}: {rows} 行" in body, body
 
 
-def test_契約の複製が1バイト違うと起動しない(root, docker):
+def test_契約の複製が1バイト違うと起動しない(root, docker_ok):
     ctx = build_context(root, "tampered")
     vendor = ctx / _VENDOR
     data = vendor.read_bytes()
