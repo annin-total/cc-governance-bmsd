@@ -378,7 +378,11 @@ def _run_hook_commands(
 def check_hook_execution(
     hooks_json: Path, commands: Optional[list], plugin_dir: Path
 ) -> None:
-    real_settings = Path.home() / ".claude" / "settings.json"
+    # 利用者が CLAUDE_CONFIG_DIR を設定していれば、実際に使われているのはその下の settings.json。
+    real_config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
+    real_settings = (
+        Path(real_config_dir) if real_config_dir else Path.home() / ".claude"
+    ) / "settings.json"
     hash_before = _settings_hash(real_settings)
 
     if hooks_json.is_file():
@@ -388,9 +392,9 @@ def check_hook_execution(
 
     hash_after = _settings_hash(real_settings)
     if hash_before == hash_after:
-        ok("実 ~/.claude/settings.json は変更されていない（隔離が効いている）")
+        ok(f"実 {real_settings} は変更されていない（隔離が効いている）")
     else:
-        ng("実 ~/.claude/settings.json が変更された（隔離が効いていない・重大）")
+        ng(f"実 {real_settings} が変更された（隔離が効いていない・重大）")
 
 
 # --- 10. Python 3.9 で動く構文であること（ruff が無ければ NG）---
