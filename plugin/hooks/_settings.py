@@ -22,9 +22,8 @@ def _load(path: Path):
     # SessionStart のたびに例外が漏れ、その端末の policy イベントが届かなくなる。
     except (OSError, ValueError):
         return "parse_failed", None, None
-    try:
-        mtime_ns = path.stat().st_mtime_ns
-    except OSError:
+    mtime_ns = _stat_mtime_ns(path)
+    if mtime_ns is None:
         return "parse_failed", None, None
     try:
         data = json.loads(text)
