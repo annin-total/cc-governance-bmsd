@@ -21,10 +21,6 @@
 | ファイル | 用途 |
 | --- | --- |
 | `capture_hook_stdin.py` | 任意の hook の stdin をそのままファイルに保存する |
-| `stop_transcript_survey.py` | Stop hook の時点で transcript がどこまで書かれているかを記録する |
-| `build_notice_message.py` | `systemMessage` が何文字まで届くか・どこで切られるかを確かめる |
-| `scriptname_subpath_app.py` | `SCRIPT_NAME` によるサブパス配備での URL 生成とルーティングを確かめる最小 Flask アプリ |
-| `plugin-data-probe/marketplace/` | プラグインのデータ領域（`CLAUDE_PLUGIN_DATA` とその展開値）を採取する擬似マーケットプレイス |
 
 ### capture_hook_stdin.py を仕込むときの罠
 
@@ -39,23 +35,6 @@
 - **`PostToolUse` / `PostToolUseFailure` は `"matcher": "*"` が無いと発火しない**
 - **1 つの matcher ブロックに複数コマンドを並べると、2 番目以降は実行されない。**イベントごとにブロックを分ける
 - `settings.json` の hooks が `claude -p` で発火しないことがある。そのときはマーケットプレイスのコピーの `hooks/hooks.json` に仕込む（反映には cache の削除が要る）
-
-### その他の注意
-
-- `scriptname_subpath_app.py` は `.venv/bin/python` で動かす（システムの `python3` には Flask が無い）。サブパス無しのアクセスも素通しで `200` を返す。サブパスの境界を強制するのは前段のリバースプロキシであり、このアプリはそれを検査しない
-- `plugin-data-probe/` は `autoupdate/isolated_home_run.sh` の隔離 HOME に仕込んで使う
-
-## autoupdate/ — 配布経路が端末まで降りるかを調べる
-
-| ファイル/ディレクトリ | 用途 |
-| --- | --- |
-| `githttpd.py` | bare リポジトリを http で配る最小の git サーバ（localhost 限定）。`claude plugin marketplace add` が bare を直接指せないために使う。`python3 githttpd.py <bare の親ディレクトリ> <ポート>` |
-| `isolated_home_run.sh` | 隔離 HOME で `claude` を起動し、データ領域の作られ方を確かめる |
-| `marketplaces/au-verify/` | 擬似マーケットプレイス（プラグイン名 `audummy`。SessionStart で版を `$HOME/captured.log` に書く） |
-
-- 各擬似マーケットプレイスは、`*-bare.git` が履歴の正本で、隣のディレクトリは `.git` を持たないスナップショットである。作業コピーは bare から clone して作る
-- `home/` は実行のたびに自分で用意する作業データであり、リポジトリに含まれない
-- 隔離 HOME に擬似マーケットプレイスを置くときは、`.claude/settings.json` の `extraKnownMarketplaces` にも登録する。`settings.json` がセッション開始時に `known_marketplaces.json` へ同期されるため
 
 ## performance/ — 性能の測定を再現する
 
