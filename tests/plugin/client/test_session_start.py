@@ -5,8 +5,10 @@
 """
 
 import json
+import subprocess
 from pathlib import Path
 
+import _identity
 import _notices
 import _spool
 import policy
@@ -158,6 +160,27 @@ def test_policy_event_missing_marketplace_entry_is_skipped_missing(tmp_path):
     session_start.main()
     rows = {row["key_name"]: row["apply_result"] for row in _policy_rows(tmp_path)}
     assert rows[AUTOUPDATE_KEY] == "skipped_missing"
+
+
+def test_session_start_resolves_user_email_again(tmp_path, monkeypatch):
+    """前回のキャッシュが残っていても、git の現在の値で policy・利用ログのイベントを送る。"""
+    monkeypatch.delenv("CC_GOVERNANCE_USER_EMAIL", raising=False)
+    cache = tmp_path / "state" / "identity.json"
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text(json.dumps({"user_email": "stale@example.com"}), encoding="utf-8")
+    monkeypatch.setattr(
+        _identity.subprocess,
+        "run",
+        lambda args, **_kw: subprocess.CompletedProcess(
+            args, 0, "new@example.com\n", ""
+        ),
+    )
+
+    session_start.main()
+
+    rows = _queue_rows(tmp_path)
+    assert rows
+    assert {row["user_email"] for row in rows} == {"new@example.com"}
 
 
 # ---- お知らせの出力経路と既読を立てる順序 ----

@@ -182,3 +182,39 @@ def test_null_cache_skips_subprocess(monkeypatch):
 
     assert second is None
     assert failing_run.called is False
+
+
+def test_refresh_replaces_null_cache(monkeypatch):
+    """git 未設定で None がキャッシュされても、git を設定した後の refresh で値に直る。"""
+    monkeypatch.setattr(_identity.subprocess, "run", _fake_run(returncode=0, stdout=""))
+    _identity.get_user_email()
+    monkeypatch.setattr(
+        _identity.subprocess, "run", _fake_run(returncode=0, stdout="Bar@Example.com\n")
+    )
+
+    assert _identity.get_user_email(refresh=True) == "bar@example.com"
+    assert _identity.get_user_email() == "bar@example.com"
+
+
+def test_refresh_ignores_cache_and_updates_it(monkeypatch):
+    monkeypatch.setattr(
+        _identity.subprocess, "run", _fake_run(returncode=0, stdout="old@example.com\n")
+    )
+    _identity.get_user_email()
+    monkeypatch.setattr(
+        _identity.subprocess, "run", _fake_run(returncode=0, stdout="New@Example.com\n")
+    )
+
+    assert _identity.get_user_email(refresh=True) == "new@example.com"
+    assert _identity.get_user_email() == "new@example.com"
+
+
+def test_refresh_unresolved_overwrites_stale_cache(monkeypatch):
+    monkeypatch.setattr(
+        _identity.subprocess, "run", _fake_run(returncode=0, stdout="old@example.com\n")
+    )
+    _identity.get_user_email()
+    monkeypatch.setattr(_identity.subprocess, "run", _fake_run(returncode=1, stdout=""))
+
+    assert _identity.get_user_email(refresh=True) is None
+    assert _identity.get_user_email() is None

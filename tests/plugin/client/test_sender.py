@@ -7,6 +7,7 @@
 import http.server
 import json
 import os
+import socket
 import threading
 import time
 from typing import ClassVar
@@ -198,17 +199,74 @@ def test_connection_refused_is_silent(monkeypatch, tmp_path, unused_port):
     assert path.exists()
 
 
-def test_unresponsive_server_respects_timeout(server, monkeypatch, tmp_path):
-    srv = server(status_codes=[200], delay_sec=2)
+def test_unresponsive_server_stops_after_first_file(server, monkeypatch, tmp_path):
+    """応答しないサーバには 1 ファイルで見切りを付け、ファイル数 × timeout 粘らない。"""
+    srv = server(status_codes=[200], delay_sec=3)
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url, timeout_sec=1)
-    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
+    paths = [
+        _seed_spool_file(f"{1000 + i}-{'a' * 32}.jsonl", [{"n": i}]) for i in range(3)
+    ]
 
     started = time.monotonic()
     _sender.run()
     elapsed = time.monotonic() - started
 
-    assert path.exists()
-    assert elapsed < 5
+    assert all(p.exists() for p in paths)
+    assert elapsed < 2
+
+
+def test_unreachable_server_still_prunes(monkeypatch, tmp_path, unused_port):
+    port = unused_port()
+    _write_config(monkeypatch, tmp_path, ingest_url=f"http://127.0.0.1:{port}/ingest")
+    old = _seed_spool_file(_SPOOL_NAME, [{"n": 1}], mtime=time.time() - 30 * 86400)
+
+    _sender.run()
+
+    assert not old.exists()
+
+
+class _GarbageServer:
+    """HTTP でない応答を返して切るサーバ。受け付けた接続を数える。"""
+
+    def __init__(self):
+        self.connections = 0
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind(("127.0.0.1", 0))
+        self.sock.listen()
+        threading.Thread(target=self._serve, daemon=True).start()
+
+    def _serve(self):
+        while True:
+            try:
+                conn, _ = self.sock.accept()
+            except OSError:
+                return
+            self.connections += 1
+            with conn:
+                conn.recv(65536)
+                conn.sendall(b"garbage\r\n\r\n")
+
+    @property
+    def url(self):
+        return f"http://127.0.0.1:{self.sock.getsockname()[1]}/ingest"
+
+
+def test_malformed_response_stops_and_still_prunes(monkeypatch, tmp_path):
+    srv = _GarbageServer()
+    _write_config(monkeypatch, tmp_path, ingest_url=srv.url, timeout_sec=5)
+    old = _seed_spool_file(_SPOOL_NAME, [{"n": 0}], mtime=time.time() - 30 * 86400)
+    fresh = [
+        _seed_spool_file(f"{2000 + i}-{'b' * 32}.jsonl", [{"n": i}]) for i in range(2)
+    ]
+
+    try:
+        _sender.run()
+    finally:
+        srv.sock.close()
+
+    assert srv.connections == 1
+    assert not old.exists()
+    assert all(p.exists() for p in fresh)
 
 
 # --- 複数ファイルの処理順序・部分失敗 ---
@@ -314,10 +372,25 @@ def test_empty_ingest_url_skips_posting(server, monkeypatch, tmp_path):
     assert path.exists()
 
 
-def test_missing_config_file_is_silent(monkeypatch, tmp_path):
-    monkeypatch.setattr(_sender, "_CONFIG_PATH", tmp_path / "no-such-config.json")
+def test_empty_ingest_url_still_rotates_and_prunes(monkeypatch, tmp_path):
+    """送信先が空でも queue.jsonl を退避し、spool の上限を効かせる。"""
+    _write_config(monkeypatch, tmp_path, ingest_url="")
+    _spool.append({"n": 1})
+    old = _seed_spool_file(_SPOOL_NAME, [{"n": 0}], mtime=time.time() - 30 * 86400)
 
     _sender.run()
+
+    assert not _spool._queue_path().exists()
+    assert not old.exists()
+
+
+def test_missing_config_file_is_silent(monkeypatch, tmp_path):
+    monkeypatch.setattr(_sender, "_CONFIG_PATH", tmp_path / "no-such-config.json")
+    _spool.append({"n": 1})
+
+    _sender.run()
+
+    assert _spool._queue_path().exists()
 
 
 def test_corrupt_config_file_is_silent(monkeypatch, tmp_path):
