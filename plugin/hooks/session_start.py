@@ -21,10 +21,8 @@ import _identity
 import _notices
 import _spool
 from _settings import apply_settings
-from collect import _read_stdin_json, extract_event
+from collect import _DISABLE_ENV, _read_stdin_json, extract_event
 from contract import POLICY_COLUMNS, coerce, to_day
-
-_DISABLE_ENV = "CC_GOVERNANCE_DISABLE"
 
 _NOTICES_PATH = _notices._NOTICES_PATH
 
