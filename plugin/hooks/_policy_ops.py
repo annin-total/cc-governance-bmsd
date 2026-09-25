@@ -1,8 +1,6 @@
-"""settings.json の内容（dict）へ SET / ADD / REMOVE / ONCE を当てる。ファイルには触れない。
+"""settings.json の dict へ SET / ADD / REMOVE / ONCE を当てる。ファイルには触れない。
 
-各操作は `data` をその場で書き換え、キーごとに 1 件の結果（dict）を返す。結果の `result` は
-`pending`（書き換えた）/ `already_ok` / `skipped_missing` のいずれかで、`pending` を
-ファイルへ書けたかどうかは呼び出し元が決める。
+結果の `result` は `pending`（書き換えた）/ `already_ok` / `skipped_missing`。
 """
 
 import copy
@@ -13,8 +11,7 @@ from contract import coerce, policy_key_name, policy_text
 
 PLACEHOLDER = "${GOVERNANCE_HOME}"
 
-# この下には途中の dict を作らない。マーケットプレイスの項目は `source` が無いと無効になるため、
-# 利用者が登録済みの項目にだけ書く。
+# この下には途中の dict を作らない。`source` の無いマーケットプレイスは無効な設定になる。
 _NO_CREATE_UNDER = "extraKnownMarketplaces"
 
 
@@ -29,7 +26,7 @@ def _lookup(data: dict, segments: list) -> tuple:
 
 
 def _container(data: dict, segments: list, create: bool) -> Optional[dict]:
-    """途中の dict をたどる。無ければ作る（`create` のとき）。書けなければ None。"""
+    """途中の dict をたどり、`create` なら作る。書けなければ None。"""
     cur = data
     for seg in segments:
         if seg not in cur:
@@ -43,7 +40,7 @@ def _container(data: dict, segments: list, create: bool) -> Optional[dict]:
 
 
 def _equal_strict(a: Any, b: Any) -> bool:
-    """型まで含めて一致するときだけ真。`1 == True` を一致とみなさない。"""
+    """型まで含めて比べる（`1 == True` を一致とみなさない）。"""
     return type(a) is type(b) and a == b
 
 
@@ -52,7 +49,6 @@ def _contains(items: list, item: Any) -> bool:
 
 
 def _unique_new(items: list, existing: list) -> list:
-    """`items` のうち `existing` に無いものを、重複を除いて返す。"""
     out: list = []
     for item in items:
         if not _contains(existing, item) and not _contains(out, item):
@@ -127,7 +123,6 @@ def once_key(path: str, value: Any) -> str:
 
 
 def _substitute(value: Any, home: str) -> Any:
-    """値の中の文字列にある `PLACEHOLDER` を `home` に置き換える。"""
     if isinstance(value, str):
         return value.replace(PLACEHOLDER, home)
     if isinstance(value, dict):
@@ -150,10 +145,7 @@ def _once(data: dict, path: str, value: Any, done: set, home: str) -> dict:
 
 
 def apply_ops(data: dict, policy: Any, done: set, home: str) -> list:
-    """SET → ADD → REMOVE → ONCE の順に `data` へ当て、キーごとの結果を返す。
-
-    `done` は適用済みの ONCE のキー、`home` は `PLACEHOLDER` の置換先。
-    """
+    """SET → ADD → REMOVE → ONCE の順に当てる。`done` は適用済みの ONCE のキー。"""
     entries = [_set(data, p, v) for p, v in policy.SET.items()]
     entries += [_add(data, p, items) for p, items in policy.ADD.items()]
     entries += [_remove(data, p, items) for p, items in policy.REMOVE.items()]

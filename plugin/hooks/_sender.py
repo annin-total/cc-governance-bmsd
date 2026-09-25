@@ -1,9 +1,4 @@
-"""detach して POST する送信プロセス。標準ライブラリのみで動く。
-
-`python3 _sender.py` として独立プロセスで起動される想定。リトライループ・
-指数バックオフ・ACK は持たない。1 ファイルの失敗で後続のファイルを止めない。
-どの経路でも例外を外に出さず、終了コードは常に 0 とする。
-"""
+"""spool を POST する送信プロセス（`python3 _sender.py`）。例外を外に出さない。"""
 
 import json
 import os
@@ -28,7 +23,7 @@ _DEFAULT_CONFIG = {
 
 
 def _load_config() -> Optional[dict[str, Any]]:
-    """`config.json` を読む。読めない・壊れている・dict でない場合は None を返す。"""
+    """`config.json` を読む。読めなければ None。"""
     try:
         with open(_CONFIG_PATH, encoding="utf-8") as f:
             data = json.load(f)
@@ -40,7 +35,7 @@ def _load_config() -> Optional[dict[str, Any]]:
 
 
 def _spool_files_sorted() -> list[Path]:
-    """spool 内の `.jsonl` ファイルを、ファイル名（epoch 昇順）でソートして返す。"""
+    """spool の `.jsonl` をファイル名（epoch）の昇順で返す。"""
     spool_dir = _spool._spool_dir()
     if not spool_dir.is_dir():
         return []
@@ -48,7 +43,7 @@ def _spool_files_sorted() -> list[Path]:
 
 
 def _post_file(path: Path, config: dict[str, Any]) -> None:
-    """1 ファイルを POST する。2xx なら削除、それ以外は残す。例外は外に出さない。"""
+    """1 ファイルを POST し、2xx なら消す。"""
     try:
         body = path.read_bytes()
     except OSError:
@@ -79,12 +74,7 @@ def _post_file(path: Path, config: dict[str, Any]) -> None:
 
 
 def run() -> None:
-    """送信プロセス本体。config を読み、退避 → 古い順に POST → 破棄する。
-
-    破棄を POST の後に置くのは、単体で上限を超えたファイルにも 1 回は送信を試みるため。
-
-    hook プロセスと同様に、例外を外に出さない（想定外の例外も握り潰す）。
-    """
+    """退避 → 古い順に POST → 破棄。破棄を後に置き、上限超えのファイルにも 1 回は送る。"""
     try:
         config = _load_config()
         if config is None or not config["ingest_url"]:
@@ -98,11 +88,7 @@ def run() -> None:
 
 
 def launch() -> None:
-    """送信プロセスを detach して起動する。待たない。
-
-    `stdin` / `stdout` / `stderr` を `DEVNULL` にし、`start_new_session=True` で
-    親（hook プロセス）から切り離す。
-    """
+    """送信プロセスを detach して起動する。待たない。"""
     try:
         subprocess.Popen(
             [sys.executable, str(Path(__file__).resolve())],
