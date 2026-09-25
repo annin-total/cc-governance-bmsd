@@ -80,10 +80,12 @@ git source のマーケットプレイスとして導入し、cache への複製
 
 ```bash
 CC_E2E_KEEP=1 .venv/bin/python -m pytest e2e -k 未読   # 残したルートのパスが表示される
-CLAUDE_CONFIG_DIR=<ルート>/config claude               # 対話で起動し /login でログインする
+cd <ルート>/project && CLAUDE_CONFIG_DIR=<ルート>/config claude   # 対話で起動し /login でログインする
 ```
 
 - ログインは隔離した config ごとに 1 回要る（本人の認証は引き継がず、上書きもしない）
+- 起動はルート内の空の `project/` から行う。リポジトリ内で起動すると、そのプロジェクトの hooks や CLAUDE.md が混ざる
+- macOS ではログインするとキーチェーンに config ごとの項目ができ、ルートを消しても残る。消し方は未検証
 - `url` 付きの項目は、`<ルート>/config/plugins/cache/` 配下の installPath にある `notices.json` に足す。
   git source では hook は cache から動く（`docs/knowledge/claude-code-behavior.md`）
 - 終わったらルートを消す
