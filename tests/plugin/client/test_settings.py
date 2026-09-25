@@ -8,6 +8,7 @@ import os
 
 import _settings
 import policy
+import pytest
 
 PCT_KEY = "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 AUTOUPDATE_KEY = "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate"
@@ -38,75 +39,59 @@ def _rows_by_key(rows):
 # ---- タスク 2: 読み取りと prev_value の解決 ----
 
 
-def test_read_2_1_empty_object(tmp_path):
-    path = _write_settings(tmp_path, {})
-    rows = _rows_by_key(_apply(path))
-    assert rows[PCT_KEY][2] is None
-    assert rows[AUTOUPDATE_KEY][2] is None
+_NO_FILE = object()
 
-
-def test_read_2_2_missing_file(tmp_path):
-    path = tmp_path / "settings.json"
-    rows = _rows_by_key(_apply(path))
-    assert rows[PCT_KEY][2] is None
-    assert rows[AUTOUPDATE_KEY][2] is None
-
-
-def test_read_2_3_pct_only(tmp_path):
-    path = _write_settings(tmp_path, {"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80"}})
-    rows = _rows_by_key(_apply(path))
-    assert rows[PCT_KEY][2] == "80"
-    assert rows[AUTOUPDATE_KEY][2] is None
-
-
-def test_read_2_4_both_already_policy_values(tmp_path):
-    path = _write_settings(
-        tmp_path,
+# (settings.json の内容, PCT_KEY の prev_value, AUTOUPDATE_KEY の prev_value)。_NO_FILE は書かない。
+_READ_CASES = {
+    "empty_object": ({}, None, None),
+    "missing_file": (_NO_FILE, None, None),
+    "pct_only": ({"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80"}}, "80", None),
+    "both_already_policy_values": (
         {
             "env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"},
             "extraKnownMarketplaces": {
                 "cc-marketplace-governance-bmsd": {"autoUpdate": True}
             },
         },
-    )
-    rows = _rows_by_key(_apply(path))
-    assert rows[PCT_KEY][2] == "60"
-    assert rows[AUTOUPDATE_KEY][2] == "true"
-
-
-def test_read_2_5_false_is_not_missing(tmp_path):
-    path = _write_settings(
-        tmp_path,
+        "60",
+        "true",
+    ),
+    "false_is_not_missing": (
         {
             "extraKnownMarketplaces": {
                 "cc-marketplace-governance-bmsd": {"autoUpdate": False}
             }
         },
-    )
+        None,
+        "false",
+    ),
+    "numeric_pct": ({"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": 60}}, "60", None),
+    "env_not_dict": ({"env": "proxy"}, None, None),
+    "env_empty": ({"env": {}}, None, None),
+}
+
+
+def _assert_prev(actual, expected):
+    """期待値が None なら `is None`、それ以外は `==` で比べる。"""
+    if expected is None:
+        assert actual is None
+    else:
+        assert actual == expected
+
+
+@pytest.mark.parametrize(
+    ("content", "pct_prev", "autoupdate_prev"),
+    _READ_CASES.values(),
+    ids=_READ_CASES.keys(),
+)
+def test_read_prev_value(tmp_path, content, pct_prev, autoupdate_prev):
+    if content is _NO_FILE:
+        path = tmp_path / "settings.json"
+    else:
+        path = _write_settings(tmp_path, content)
     rows = _rows_by_key(_apply(path))
-    assert rows[PCT_KEY][2] is None
-    assert rows[AUTOUPDATE_KEY][2] == "false"
-
-
-def test_read_2_6_numeric_pct(tmp_path):
-    path = _write_settings(tmp_path, {"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": 60}})
-    rows = _rows_by_key(_apply(path))
-    assert rows[PCT_KEY][2] == "60"
-    assert rows[AUTOUPDATE_KEY][2] is None
-
-
-def test_read_2_7_env_not_dict(tmp_path):
-    path = _write_settings(tmp_path, {"env": "proxy"})
-    rows = _rows_by_key(_apply(path))
-    assert rows[PCT_KEY][2] is None
-    assert rows[AUTOUPDATE_KEY][2] is None
-
-
-def test_read_2_8_env_empty(tmp_path):
-    path = _write_settings(tmp_path, {"env": {}})
-    rows = _rows_by_key(_apply(path))
-    assert rows[PCT_KEY][2] is None
-    assert rows[AUTOUPDATE_KEY][2] is None
+    _assert_prev(rows[PCT_KEY][2], pct_prev)
+    _assert_prev(rows[AUTOUPDATE_KEY][2], autoupdate_prev)
 
 
 # ---- タスク 3: 差分がなければ書かない ----
