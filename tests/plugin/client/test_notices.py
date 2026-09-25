@@ -50,30 +50,30 @@ def _write_seen(tmp_path, ids) -> None:
 
 
 def test_notices_no_seen_file_both_unread(notices_file, unread_ids):
-    """#8-1: seen.json が存在しない -> 未読は n-001, n-002。"""
+    """seen.json が存在しない -> 未読は n-001, n-002。"""
     assert unread_ids() == {"n-001", "n-002"}
 
 
 def test_notices_partial_seen(notices_file, tmp_path, unread_ids):
-    """#8-2: seen.json = ["n-001"] -> 未読は n-002 のみ。"""
+    """seen.json = ["n-001"] -> 未読は n-002 のみ。"""
     _write_seen(tmp_path, ["n-001"])
     assert unread_ids() == {"n-002"}
 
 
 def test_notices_all_seen(notices_file, tmp_path, unread_ids):
-    """#8-3: seen.json = ["n-001","n-002"] -> 未読なし。"""
+    """seen.json = ["n-001","n-002"] -> 未読なし。"""
     _write_seen(tmp_path, ["n-001", "n-002"])
     assert unread_ids() == set()
 
 
 def test_notices_unknown_id_in_seen_is_ignored(notices_file, tmp_path, unread_ids):
-    """#8-4: seen.json に存在しない id を含む -> 未読は n-002。例外にならない。"""
+    """seen.json に存在しない id を含む -> 未読は n-002。例外にならない。"""
     _write_seen(tmp_path, ["n-001", "n-999"])
     assert unread_ids() == {"n-002"}
 
 
 def test_notices_seen_as_dict_is_treated_as_empty(notices_file, tmp_path, unread_ids):
-    """#8-5: seen.json が dict -> 空集合として扱い、未読は n-001, n-002。"""
+    """seen.json が dict -> 空集合として扱い、未読は n-001, n-002。"""
     path = _seen_file(tmp_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"seen": ["n-001"]}), encoding="utf-8")
@@ -81,7 +81,7 @@ def test_notices_seen_as_dict_is_treated_as_empty(notices_file, tmp_path, unread
 
 
 def test_notices_broken_json_is_treated_as_empty(notices_file, tmp_path, unread_ids):
-    """#8-6: seen.json が壊れた JSON -> 空集合として扱う。"""
+    """seen.json が壊れた JSON -> 空集合として扱う。"""
     path = _seen_file(tmp_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text('["n-001"', encoding="utf-8")
@@ -89,7 +89,7 @@ def test_notices_broken_json_is_treated_as_empty(notices_file, tmp_path, unread_
 
 
 def test_notices_empty_file_is_treated_as_empty(notices_file, tmp_path, unread_ids):
-    """#8-7: seen.json が空ファイル -> 空集合として扱う。"""
+    """seen.json が空ファイル -> 空集合として扱う。"""
     path = _seen_file(tmp_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("", encoding="utf-8")
@@ -97,19 +97,19 @@ def test_notices_empty_file_is_treated_as_empty(notices_file, tmp_path, unread_i
 
 
 def test_notices_empty_notices_array_no_unread(write_notices, unread_ids):
-    """#8-8: notices.json が空配列 -> 未読なし。例外にならない。"""
+    """notices.json が空配列 -> 未読なし。例外にならない。"""
     write_notices([])
     assert unread_ids() == set()
 
 
 def test_notices_missing_notices_file_no_unread(tmp_path, monkeypatch, unread_ids):
-    """#8-9: notices.json が存在しない -> 未読なし。例外にならない。"""
+    """notices.json が存在しない -> 未読なし。例外にならない。"""
     monkeypatch.setattr(_notices, "_NOTICES_PATH", tmp_path / "no-such-notices.json")
     assert unread_ids() == set()
 
 
 def test_notices_seen_sequence_does_not_matter(notices_file, tmp_path, unread_ids):
-    """#8-10: seen.json = ["n-002","n-001"]（順序が逆） -> 未読なし。"""
+    """seen.json = ["n-002","n-001"]（順序が逆） -> 未読なし。"""
     _write_seen(tmp_path, ["n-002", "n-001"])
     assert unread_ids() == set()
 
@@ -117,7 +117,7 @@ def test_notices_seen_sequence_does_not_matter(notices_file, tmp_path, unread_id
 def test_notices_non_string_body_item_is_dropped_others_survive(
     write_notices, unread_ids
 ):
-    """#8-11 (M-1): title が無く body が非文字列の項目が1件混ざっても、その項目だけを飛ばし
+    """title が無く body が非文字列の項目が1件混ざっても、その項目だけを飛ばし
     正常な項目は未読として残る（1件の欠陥が同じファイルの正常な項目まで隠さない）。
     """
     write_notices(
@@ -143,7 +143,7 @@ def test_notices_non_string_body_item_is_dropped_others_survive(
     ],
 )
 def test_valid_url_accepts_well_formed_https(url):
-    """#1: 正当な https URL（&, %, #, ?, = を含む）は受理される。"""
+    """正当な https URL（&, %, #, ?, = を含む）は受理される。"""
     assert _notices._valid_url({"url": url}) == url
 
 
@@ -182,12 +182,12 @@ def test_valid_url_accepts_well_formed_https(url):
     ],
 )
 def test_valid_url_rejects_malformed(url):
-    """#2: 不正な URL（スキーム違反・空白・制御文字・禁止文字・非ASCII・長すぎ・ホスト空）は None。"""
+    """不正な URL（スキーム違反・空白・制御文字・禁止文字・非ASCII・長すぎ・ホスト空）は None。"""
     assert _notices._valid_url({"url": url}) is None
 
 
 def test_valid_url_exactly_max_length_is_accepted():
-    """#3: 境界値 - ちょうど 2048 字の https URL は受理される。"""
+    """境界値 - ちょうど 2048 字の https URL は受理される。"""
     url = "https://example.com/" + "a" * (2048 - len("https://example.com/"))
     assert len(url) == 2048
     assert _notices._valid_url({"url": url}) == url
@@ -195,12 +195,12 @@ def test_valid_url_exactly_max_length_is_accepted():
 
 @pytest.mark.parametrize("url", [123, ["https://example.com"], None])
 def test_valid_url_rejects_non_string_types(url):
-    """#4: url が int / list / None のいずれでも None を返す（例外にならない）。"""
+    """url が int / list / None のいずれでも None を返す（例外にならない）。"""
     assert _notices._valid_url({"url": url}) is None
 
 
 def test_valid_url_missing_key_returns_none():
-    """#5: url キーが無い場合も None を返す。"""
+    """url キーが無い場合も None を返す。"""
     assert _notices._valid_url({}) is None
 
 
@@ -208,7 +208,7 @@ def test_valid_url_missing_key_returns_none():
 
 
 def test_invalid_url_item_still_shown_but_no_url_in_message():
-    """#6: url が不正な項目も表示（title/body）には残るが、本文に URL 行は付かない。"""
+    """url が不正な項目も表示（title/body）には残るが、本文に URL 行は付かない。"""
     notices = [
         {"id": "n-1", "title": "件名", "body": "本文", "url": "javascript:alert(1)"}
     ]
@@ -223,7 +223,7 @@ def test_invalid_url_item_still_shown_but_no_url_in_message():
 
 
 def test_format_message_appends_detail_line_when_body_present():
-    """#7: 本文があれば、本文の後に改行して `詳細: <url>` を付ける。"""
+    """本文があれば、本文の後に改行して `詳細: <url>` を付ける。"""
     notices = [
         {"id": "n-1", "title": "件名", "body": "本文", "url": "https://example.com"}
     ]
@@ -232,21 +232,21 @@ def test_format_message_appends_detail_line_when_body_present():
 
 
 def test_format_message_detail_line_alone_when_body_empty():
-    """#8: 本文が空なら `詳細: <url>` だけが body 部分になる。"""
+    """本文が空なら `詳細: <url>` だけが body 部分になる。"""
     notices = [{"id": "n-1", "title": "件名", "body": "", "url": "https://example.com"}]
     message = _notices._format_message(notices)
     assert message == "件名\n詳細: https://example.com"
 
 
 def test_format_message_detail_line_without_title():
-    """#9: title が無くても `詳細: <url>` は body の後に付く。"""
+    """title が無くても `詳細: <url>` は body の後に付く。"""
     notices = [{"id": "n-1", "body": "本文", "url": "https://example.com"}]
     message = _notices._format_message(notices)
     assert message == "本文\n詳細: https://example.com"
 
 
 def test_format_message_no_detail_line_when_url_missing():
-    """#10: url が無い項目には `詳細:` 行が付かない。"""
+    """url が無い項目には `詳細:` 行が付かない。"""
     notices = [{"id": "n-1", "title": "件名", "body": "本文"}]
     message = _notices._format_message(notices)
     assert "詳細:" not in message
@@ -256,7 +256,7 @@ def test_format_message_no_detail_line_when_url_missing():
 
 
 def test_first_url_skips_invalid_and_returns_first_valid():
-    """#11: 無効な url を持つ項目を飛ばし、先頭の有効な url を返す。"""
+    """無効な url を持つ項目を飛ばし、先頭の有効な url を返す。"""
     unread = [
         {"id": "n-1", "body": "b1", "url": "javascript:alert(1)"},
         {"id": "n-2", "body": "b2", "url": "not a url"},
@@ -267,7 +267,7 @@ def test_first_url_skips_invalid_and_returns_first_valid():
 
 
 def test_first_url_returns_none_when_no_valid_url():
-    """#12: 有効な url を持つ項目が無ければ None を返す。"""
+    """有効な url を持つ項目が無ければ None を返す。"""
     unread = [
         {"id": "n-1", "body": "b1"},
         {"id": "n-2", "body": "b2", "url": "javascript:alert(1)"},
@@ -276,7 +276,7 @@ def test_first_url_returns_none_when_no_valid_url():
 
 
 def test_first_url_empty_list_returns_none():
-    """#13: 未読が空リストなら None を返す。"""
+    """未読が空リストなら None を返す。"""
     assert _notices.first_url([]) is None
 
 
@@ -284,14 +284,14 @@ def test_first_url_empty_list_returns_none():
 
 
 def test_write_seen_returns_true_on_success(tmp_path, monkeypatch):
-    """#14: 状態ディレクトリへ書き込める場合、_write_seen は True を返す。"""
+    """状態ディレクトリへ書き込める場合、_write_seen は True を返す。"""
     monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "state"))
     assert _notices._write_seen({"n-1", "n-2"}) is True
     assert (tmp_path / "state" / "seen.json").exists()
 
 
 def test_write_seen_returns_false_when_state_dir_path_is_a_file(tmp_path, monkeypatch):
-    """#15: 状態ディレクトリの位置に既にファイルがあり mkdir できない場合、_write_seen は False を返す。"""
+    """状態ディレクトリの位置に既にファイルがあり mkdir できない場合、_write_seen は False を返す。"""
     blocker = tmp_path / "state-blocked"
     blocker.write_text("not a directory", encoding="utf-8")
     monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(blocker))
@@ -302,7 +302,7 @@ def test_write_seen_returns_false_when_state_dir_path_is_a_file(tmp_path, monkey
     os.name == "nt", reason="chmod によるパーミッション制御は POSIX 限定"
 )
 def test_write_seen_returns_false_when_state_dir_readonly(tmp_path, monkeypatch):
-    """#16: 状態ディレクトリが読み取り専用で書き込めない場合、_write_seen は False を返す。"""
+    """状態ディレクトリが読み取り専用で書き込めない場合、_write_seen は False を返す。"""
     state_dir = tmp_path / "state"
     state_dir.mkdir()
     state_dir.chmod(stat.S_IRUSR | stat.S_IXUSR)

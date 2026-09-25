@@ -32,8 +32,8 @@ def _run(run_collect, state_dir, extra_env=None):
 def test_契約に列が増えても収集が止まらない(hooks_dir, run_collect, tmp_path):
     """`EXTRA_COLUMNS` に列が増えたとき、その列を None で埋めて収集を続ける。
 
-    旧実装は `raw_extra[name]` で引いており、`KeyError` が `except BaseException` に
-    飲まれて rc=0 のままキューに 1 行も積まれなくなっていた（裁定 R-33）。
+    `raw_extra[name]` で引くと `KeyError` が `except BaseException` に飲まれ、
+    rc=0 のままキューに 1 行も積まれない。
     """
     contract = hooks_dir / "contract.py"
     text = contract.read_text(encoding="utf-8")
@@ -59,8 +59,7 @@ def test_git_が非UTF8を返しても収集が止まらない(run_collect, tmp_
     """`git config user.email` が非 UTF-8 を返しても、`user_email` を None にして収集を続ける。
 
     `text=True` の strict デコードが投げる `UnicodeDecodeError` は `ValueError` 派生であり、
-    `except (OSError, SubprocessError)` では捕まらない。旧実装ではこれが収集全体を無言で
-    止め、状態ディレクトリすら作られなかった。
+    `except (OSError, SubprocessError)` では捕まらず、収集全体を無言で止める。
     """
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
@@ -83,7 +82,7 @@ def test_git_が非UTF8を返しても収集が止まらない(run_collect, tmp_
 def test_import_しただけでは呼び出し元のSIGINTを殺さない():
     """`import collect` が呼び出し元プロセスの SIGINT ディスポジションを変えない。
 
-    R-42 の `SIG_IGN` はスクリプトとして起動されたときだけ立てる。モジュールとして
+    collect.py の `SIG_IGN` はスクリプトとして起動されたときだけ立てる。モジュールとして
     import した pytest 等の Ctrl-C まで殺すと、収集とは無関係の場所に実害が出る。
     """
     code = (

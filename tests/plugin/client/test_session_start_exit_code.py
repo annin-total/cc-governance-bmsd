@@ -1,9 +1,7 @@
 """session_start.py が、故意に壊した入出力・環境でも常に exit 0・標準エラー空で終わることを検証する。
 
-`plugin/hooks` 一式を一時ディレクトリへコピーして起動する。実 `plugin/config.json` は
-変更しない。標準出力に書く唯一の hook である session_start.py には、この検証が無いまま
-BrokenPipeError による exit 120 の欠陥が入り込んでいた（設計書 §3.3。`test_collect_exit_code.py`
-と同じ作法に揃える）。
+`plugin/hooks` 一式を一時ディレクトリへコピーして起動する。実 `plugin/config.json` は変更しない。
+標準出力に書く唯一の hook なので、閉じたパイプへの書き出し（BrokenPipeError で exit 120）が起きうる。
 """
 
 import json
@@ -47,11 +45,11 @@ def _assert_clean_exit(rc, stderr):
     assert stderr == b"" or stderr == ""
 
 
-# --- 標準出力のパイプが閉じている（I-1） ---
+# --- 標準出力のパイプが閉じている ---
 
 
 def test_stdout_pipe_reader_closed(hooks_dir, tmp_path):
-    """#1: 標準出力のパイプの読み口を閉じた状態で起動する。実測: 修正前は rc=120。"""
+    """標準出力のパイプの読み口を閉じた状態で起動する。"""
     env = _base_env(tmp_path)
     r, w = os.pipe()
     os.close(r)
@@ -81,7 +79,7 @@ def test_stdout_pipe_reader_closed(hooks_dir, tmp_path):
 
 
 def test_stdout_fd_closed(hooks_dir, tmp_path):
-    """#2: fd 1（標準出力）そのものを閉じた状態で起動する。"""
+    """fd 1（標準出力）そのものを閉じた状態で起動する。"""
     env = _base_env(tmp_path)
     result = subprocess.run(
         f'exec {sys.executable} "{hooks_dir}/session_start.py" SessionStart 1>&-',
@@ -120,7 +118,7 @@ def test_stdin(hooks_dir, tmp_path, make_stdin):
 
 
 def test_readonly_state_dir(hooks_dir, tmp_path):
-    """#6: 状態ディレクトリ（`seen.json` / `queue.jsonl` の置き場所）を読み取り専用にした状態。"""
+    """状態ディレクトリ（`seen.json` / `queue.jsonl` の置き場所）を読み取り専用にした状態。"""
     plugin_data = tmp_path / "plugin-data"
     plugin_data.mkdir(parents=True)
     plugin_data.chmod(stat.S_IRUSR | stat.S_IXUSR)

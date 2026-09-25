@@ -25,7 +25,7 @@ import pytest
     ],
 )
 def test_is_interactive_by_entrypoint(monkeypatch, value, expected):
-    """#1: CLAUDE_CODE_ENTRYPOINT の値ごとに is_interactive の真偽が変わる。cli だけ真。"""
+    """CLAUDE_CODE_ENTRYPOINT の値ごとに is_interactive の真偽が変わる。cli だけ真。"""
     if value is None:
         monkeypatch.delenv("CLAUDE_CODE_ENTRYPOINT", raising=False)
     else:
@@ -46,7 +46,7 @@ def test_is_interactive_by_entrypoint(monkeypatch, value, expected):
     ],
 )
 def test_is_headless_by_entrypoint(monkeypatch, value, expected):
-    """#2: CLAUDE_CODE_ENTRYPOINT の値ごとに is_headless の真偽が変わる。sdk- 接頭辞だけ真。"""
+    """CLAUDE_CODE_ENTRYPOINT の値ごとに is_headless の真偽が変わる。sdk- 接頭辞だけ真。"""
     if value is None:
         monkeypatch.delenv("CLAUDE_CODE_ENTRYPOINT", raising=False)
     else:
@@ -66,7 +66,7 @@ class _FakePopen:
 
 
 def test_open_url_darwin_uses_popen_with_detach_flags(monkeypatch):
-    """#4: darwin では Popen が ["open", url] という配列で、DEVNULL 3 つと start_new_session=True で呼ばれる。"""
+    """darwin では Popen が ["open", url] という配列で、DEVNULL 3 つと start_new_session=True で呼ばれる。"""
     monkeypatch.setattr(_browser.sys, "platform", "darwin")
     calls = []
 
@@ -89,7 +89,7 @@ def test_open_url_darwin_uses_popen_with_detach_flags(monkeypatch):
 
 
 def test_open_url_darwin_query_with_ampersand_stays_one_argument(monkeypatch):
-    """#5: `&` を含むクエリの URL が分断されず、Popen の args の要素 1 個として渡る（シェルを通さない）。"""
+    """`&` を含むクエリの URL が分断されず、Popen の args の要素 1 個として渡る（シェルを通さない）。"""
     monkeypatch.setattr(_browser.sys, "platform", "darwin")
     calls = []
     monkeypatch.setattr(
@@ -109,7 +109,7 @@ def test_open_url_darwin_query_with_ampersand_stays_one_argument(monkeypatch):
 
 
 def test_open_url_darwin_popen_oserror_does_not_raise(monkeypatch):
-    """#6: darwin で Popen が OSError を投げても open_url からは例外が漏れない。"""
+    """darwin で Popen が OSError を投げても open_url からは例外が漏れない。"""
     monkeypatch.setattr(_browser.sys, "platform", "darwin")
 
     def raiser(*_args, **_kwargs):
@@ -121,7 +121,7 @@ def test_open_url_darwin_popen_oserror_does_not_raise(monkeypatch):
 
 
 def test_open_url_darwin_popen_valueerror_does_not_raise(monkeypatch):
-    """#7: darwin で Popen が ValueError を投げても open_url からは例外が漏れない。"""
+    """darwin で Popen が ValueError を投げても open_url からは例外が漏れない。"""
     monkeypatch.setattr(_browser.sys, "platform", "darwin")
 
     def raiser(*_args, **_kwargs):
@@ -136,7 +136,7 @@ def test_open_url_darwin_popen_valueerror_does_not_raise(monkeypatch):
 
 
 def test_open_url_win32_uses_startfile_and_not_popen(monkeypatch):
-    """#8: win32 では os.startfile が URL 1 個で 1 回呼ばれ、Popen は呼ばれない。"""
+    """win32 では os.startfile が URL 1 個で 1 回呼ばれ、Popen は呼ばれない。"""
     import os
 
     monkeypatch.setattr(_browser.sys, "platform", "win32")
@@ -152,7 +152,7 @@ def test_open_url_win32_uses_startfile_and_not_popen(monkeypatch):
 
 
 def test_open_url_win32_startfile_oserror_does_not_raise(monkeypatch):
-    """#9: win32 で os.startfile が OSError を投げても open_url からは例外が漏れない。"""
+    """win32 で os.startfile が OSError を投げても open_url からは例外が漏れない。"""
     import os
 
     monkeypatch.setattr(_browser.sys, "platform", "win32")
@@ -166,7 +166,7 @@ def test_open_url_win32_startfile_oserror_does_not_raise(monkeypatch):
 
 
 def test_open_url_win32_startfile_valueerror_does_not_raise(monkeypatch):
-    """#10: win32 で os.startfile が ValueError を投げても open_url からは例外が漏れない。"""
+    """win32 で os.startfile が ValueError を投げても open_url からは例外が漏れない。"""
     import os
 
     monkeypatch.setattr(_browser.sys, "platform", "win32")
@@ -183,7 +183,7 @@ def test_open_url_win32_startfile_valueerror_does_not_raise(monkeypatch):
 
 
 def test_open_url_linux_calls_nothing(monkeypatch):
-    """#11: linux では Popen も os.startfile も呼ばれない（何もしない）。"""
+    """linux では Popen も os.startfile も呼ばれない（何もしない）。"""
     import os
 
     monkeypatch.setattr(_browser.sys, "platform", "linux")

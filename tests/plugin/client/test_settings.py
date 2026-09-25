@@ -1,7 +1,4 @@
-"""`_settings.py` の TDD。settings.json はすべて tmp_path 配下に作る。
-
-利用者本人の `~/.claude/settings.json` には一切触れない。
-"""
+"""`_settings.apply_settings` を検証する。settings.json はすべて tmp_path 配下に作る。"""
 
 import json
 import os
@@ -36,7 +33,7 @@ def _rows_by_key(rows):
     return {row[0]: row for row in rows}
 
 
-# ---- タスク 2: 読み取りと prev_value の解決 ----
+# ---- 読み取りと prev_value の解決 ----
 
 
 _NO_FILE = object()
@@ -94,7 +91,7 @@ def test_read_prev_value(tmp_path, content, pct_prev, autoupdate_prev):
     _assert_prev(rows[AUTOUPDATE_KEY][2], autoupdate_prev)
 
 
-# ---- タスク 3: 差分がなければ書かない ----
+# ---- 差分がなければ書かない ----
 
 _BASELINE_ALREADY_OK = {
     "env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"},
@@ -159,7 +156,7 @@ def test_already_ok_no_writable_diff_leaves_mtime(tmp_path):
     assert path.stat().st_mtime_ns == before
 
 
-# ---- タスク 4: 適用（既存設定の保全・入れ子への書き込み・原子的置換） ----
+# ---- 適用（既存設定の保全・入れ子への書き込み・原子的置換） ----
 
 _BASELINE_APPLY = {
     "model": "opus",
@@ -350,7 +347,7 @@ def test_apply_leaf_missing_is_not_entry_missing(tmp_path):
     assert entry["source"] == {"source": "github", "repo": "x/y"}
 
 
-# ---- タスク 5: mtime の衝突とパース失敗 ----
+# ---- mtime の衝突とパース失敗 ----
 
 _CONFLICT_INPUT = {
     "model": "opus",
@@ -459,7 +456,8 @@ def test_parse_failed_unreadable_file(tmp_path):
     assert rows[PCT_KEY][3] == "parse_failed"
 
 
-# ---- タスク 6: apply_result の 6 通りが揃うことの確認 ----
+# ---- apply_result の 6 通りが揃うことの確認 ----
+# 末尾の 2 件は上の _result_* 7 つすべてに依存する。
 
 
 def _result_applied(tmp_path):

@@ -76,18 +76,18 @@ def _event_rows(tmp_path) -> list:
     return [row for row in _queue_rows(tmp_path) if row.get("kind") == "event"]
 
 
-# ---- タスク 7: policy イベントの投入 ----
+# ---- policy イベントの投入 ----
 
 
 def test_policy_event_count_matches_policy_items(tmp_path):
-    """#7-1: 積まれる policy イベントが policy.py の項目数と同じ行数になる。"""
+    """積まれる policy イベントが policy.py の項目数と同じ行数になる。"""
     _write_settings(tmp_path, {})
     session_start.main()
     assert len(_policy_rows(tmp_path)) == POLICY_KEY_COUNT
 
 
 def test_policy_event_key_names_keep_dots(tmp_path):
-    """#7-2: SET の各行の key_name がパスそのまま（`.` を含む）。"""
+    """SET の各行の key_name がパスそのまま（`.` を含む）。"""
     _write_settings(tmp_path, {})
     session_start.main()
     assert {row["key_name"] for row in _policy_rows(tmp_path)} == {
@@ -97,7 +97,7 @@ def test_policy_event_key_names_keep_dots(tmp_path):
 
 
 def test_policy_event_plugin_version_matches_plugin_json(tmp_path):
-    """#7-3: plugin_version が plugin.json の version と一致する。"""
+    """plugin_version が plugin.json の version と一致する。"""
     manifest = (
         Path(session_start.__file__).resolve().parent.parent
         / ".claude-plugin"
@@ -110,7 +110,7 @@ def test_policy_event_plugin_version_matches_plugin_json(tmp_path):
 
 
 def test_policy_event_ids_are_distinct(tmp_path):
-    """#7-4: 2 行の event_id が互いに異なる。"""
+    """2 行の event_id が互いに異なる。"""
     _write_settings(tmp_path, {})
     session_start.main()
     ids = [row["event_id"] for row in _policy_rows(tmp_path)]
@@ -119,7 +119,7 @@ def test_policy_event_ids_are_distinct(tmp_path):
 
 
 def test_policy_event_parse_failed_events_are_queued(tmp_path):
-    """#7-5: 壊れた JSON でも parse_failed の行が 2 行積まれる（未適用の端末が画面から消えない）。"""
+    """壊れた JSON でも parse_failed の行が 2 行積まれる（未適用の端末が画面から消えない）。"""
     path = _settings_file(tmp_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("{not json", encoding="utf-8")
@@ -132,7 +132,7 @@ def test_policy_event_parse_failed_events_are_queued(tmp_path):
 
 
 def test_policy_event_write_failed_events_are_queued(tmp_path, monkeypatch):
-    """#7-6: 書き込みを失敗させても write_failed の行が積まれる（タスク 4-9 と同じ失敗）。"""
+    """書き込みを失敗させても write_failed の行が積まれる。"""
     _write_settings(tmp_path, {})
     import _settings
 
@@ -149,7 +149,7 @@ def test_policy_event_write_failed_events_are_queued(tmp_path, monkeypatch):
 
 
 def test_policy_event_queue_append_failure_does_not_leak(tmp_path, monkeypatch):
-    """#7-7: キューへの追記を例外にしても漏れない。設定ファイルには既にポリシー値が入っている。"""
+    """キューへの追記を例外にしても漏れない。設定ファイルには既にポリシー値が入っている。"""
     _write_settings(tmp_path, {})
     monkeypatch.setattr(_spool, "append", _raiser)
 
@@ -160,18 +160,18 @@ def test_policy_event_queue_append_failure_does_not_leak(tmp_path, monkeypatch):
 
 
 def test_policy_event_missing_marketplace_entry_is_skipped_missing(tmp_path):
-    """#7-8: extraKnownMarketplaces が無い状態では …autoUpdate が skipped_missing として積まれる。"""
+    """extraKnownMarketplaces が無い状態では …autoUpdate が skipped_missing として積まれる。"""
     _write_settings(tmp_path, {})
     session_start.main()
     rows = {row["key_name"]: row["apply_result"] for row in _policy_rows(tmp_path)}
     assert rows[AUTOUPDATE_KEY] == "skipped_missing"
 
 
-# ---- タスク 9: お知らせの出力経路と既読を立てる順序 ----
+# ---- お知らせの出力経路と既読を立てる順序 ----
 
 
 def test_output_stdout_is_single_json(notices_file, capsys):
-    """#9-1: 未読 2 件 -> 標準出力全体が JSON 1 個としてパースでき、余分な行が前後に無い。"""
+    """未読 2 件 -> 標準出力全体が JSON 1 個としてパースでき、余分な行が前後に無い。"""
     session_start.main()
     lines = capsys.readouterr().out.splitlines()
     assert len(lines) == 1
@@ -179,14 +179,14 @@ def test_output_stdout_is_single_json(notices_file, capsys):
 
 
 def test_output_system_message_contains_marker(notices_file, capsys):
-    """#9-2: systemMessage に ZZMARKER-NOTICE-BODY が含まれる。"""
+    """systemMessage に ZZMARKER-NOTICE-BODY が含まれる。"""
     session_start.main()
     out = json.loads(capsys.readouterr().out)
     assert MARKER in out["systemMessage"]
 
 
 def test_output_marker_not_leaked_outside_system_message(notices_file, capsys):
-    """#9-3: systemMessage を除いた残りを JSON 文字列化してもマーカーを含まない。"""
+    """systemMessage を除いた残りを JSON 文字列化してもマーカーを含まない。"""
     session_start.main()
     out = json.loads(capsys.readouterr().out)
     rest = {k: v for k, v in out.items() if k != "systemMessage"}
@@ -194,20 +194,20 @@ def test_output_marker_not_leaked_outside_system_message(notices_file, capsys):
 
 
 def test_output_no_additional_context_key(notices_file, capsys):
-    """#9-4: パース結果に additionalContext キーが存在しない。"""
+    """パース結果に additionalContext キーが存在しない。"""
     session_start.main()
     out = json.loads(capsys.readouterr().out)
     assert "additionalContext" not in out
 
 
 def test_output_stderr_is_empty(notices_file, capsys):
-    """#9-5: 標準エラーが空。main() が例外なく終わる（終了コード 0 に相当）。"""
+    """標準エラーが空。main() が例外なく終わる（終了コード 0 に相当）。"""
     session_start.main()
     assert capsys.readouterr().err == ""
 
 
 def test_output_no_unread_omits_system_message_key(notices_file, tmp_path, capsys):
-    """#9-6: 未読なし -> systemMessage キーを出力に含めない（空文字列も出さない）。"""
+    """未読なし -> systemMessage キーを出力に含めない（空文字列も出さない）。"""
     _write_seen(tmp_path, ["n-001", "n-002"])
     session_start.main()
     out = json.loads(capsys.readouterr().out)
@@ -215,7 +215,7 @@ def test_output_no_unread_omits_system_message_key(notices_file, tmp_path, capsy
 
 
 def test_output_seen_file_contains_both_ids(notices_file, tmp_path, capsys):
-    """#9-7: 未読 2 件を出力した後、seen.json が n-001 と n-002 を含む。"""
+    """未読 2 件を出力した後、seen.json が n-001 と n-002 を含む。"""
     session_start.main()
     capsys.readouterr()
     seen = json.loads(_seen_file(tmp_path).read_text(encoding="utf-8"))
@@ -225,7 +225,7 @@ def test_output_seen_file_contains_both_ids(notices_file, tmp_path, capsys):
 def test_output_write_failure_keeps_seen_unchanged(
     notices_file, tmp_path, raising_stdout
 ):
-    """#9-8: 標準出力への書き出しを例外にすると、seen.json は実行前と同じ（更新されない）ままになる。"""
+    """標準出力への書き出しを例外にすると、seen.json は実行前と同じ（更新されない）ままになる。"""
     original_stdout = session_start.sys.stdout
     session_start.sys.stdout = raising_stdout
     try:
@@ -239,7 +239,7 @@ def test_output_write_failure_keeps_seen_unchanged(
 def test_output_flush_only_failure_keeps_seen_unchanged(
     notices_file, tmp_path, flush_raising_stdout
 ):
-    """#9-8b (I-2): write は成功するが flush だけが例外を投げても、seen.json は更新されない。"""
+    """write は成功するが flush だけが例外を投げても、seen.json は更新されない。"""
     original_stdout = session_start.sys.stdout
     session_start.sys.stdout = flush_raising_stdout
     try:
@@ -251,7 +251,7 @@ def test_output_flush_only_failure_keeps_seen_unchanged(
 
 
 def test_output_retried_after_failure_shows_again(notices_file, capsys, raising_stdout):
-    """#9-9: 9-8 の失敗の後、もう一度正常に実行すると n-001, n-002 が改めて出力される。"""
+    """書き出しに失敗した後、もう一度正常に実行すると n-001, n-002 が改めて出力される。"""
     original_stdout = session_start.sys.stdout
     session_start.sys.stdout = raising_stdout
     try:
@@ -267,7 +267,7 @@ def test_output_retried_after_failure_shows_again(notices_file, capsys, raising_
 
 
 def test_output_existing_seen_entry_is_preserved(notices_file, tmp_path, capsys):
-    """#9-10: 未読 1 件・既読 1 件 -> 実行後の seen.json が 2 件を含む（既存の既読が消えない）。"""
+    """未読 1 件・既読 1 件 -> 実行後の seen.json が 2 件を含む（既存の既読が消えない）。"""
     _write_seen(tmp_path, ["n-001"])
     session_start.main()
     capsys.readouterr()
@@ -276,7 +276,7 @@ def test_output_existing_seen_entry_is_preserved(notices_file, tmp_path, capsys)
 
 
 def test_output_two_items_are_joined_by_blank_line(notices_file, capsys):
-    """#9-11: systemMessage は 1 つの文字列で、2 件が空行 1 つで区切られる。件ごとの接頭辞・目印を含まない。"""
+    """systemMessage は 1 つの文字列で、2 件が空行 1 つで区切られる。件ごとの接頭辞・目印を含まない。"""
     session_start.main()
     out = json.loads(capsys.readouterr().out)
     message = out["systemMessage"]
@@ -289,11 +289,11 @@ def test_output_two_items_are_joined_by_blank_line(notices_file, capsys):
         assert decoration not in message
 
 
-# ---- タスク 10: 実行順序 ----
+# ---- 実行順序 ----
 
 
 def test_order_normal_run_does_everything(notices_file, tmp_path, capsys):
-    """#10-1: 正常実行 -> 設定適用・お知らせ出力・policy/SessionStart イベントの収集がすべて起きる。"""
+    """正常実行 -> 設定適用・お知らせ出力・policy/SessionStart イベントの収集がすべて起きる。"""
     _write_settings(tmp_path, {})
     session_start.main()
     out = json.loads(capsys.readouterr().out)
@@ -308,7 +308,7 @@ def test_order_normal_run_does_everything(notices_file, tmp_path, capsys):
 def test_order_collect_failure_leaves_earlier_steps_done(
     notices_file, tmp_path, monkeypatch, capsys
 ):
-    """#10-2: 収集を例外にしても、設定適用とお知らせの出力は既に終わっている。終了コード0、標準エラーが空。"""
+    """収集を例外にしても、設定適用とお知らせの出力は既に終わっている。終了コード0、標準エラーが空。"""
     _write_settings(tmp_path, {})
     monkeypatch.setattr(session_start, "_collect_step", _raiser)
 
@@ -327,7 +327,7 @@ def test_order_collect_failure_leaves_earlier_steps_done(
 def test_order_notice_step_failure_still_runs_collect(
     notices_file, tmp_path, monkeypatch, capsys
 ):
-    """#10-3: お知らせの処理を例外にしても、設定適用と収集は実行される。終了コード0。"""
+    """お知らせの処理を例外にしても、設定適用と収集は実行される。終了コード0。"""
     _write_settings(tmp_path, {})
     monkeypatch.setattr(_notices, "notices_step", _raiser)
 
@@ -344,7 +344,7 @@ def test_order_notice_step_failure_still_runs_collect(
 def test_order_settings_failure_still_shows_notice_and_collects(
     notices_file, monkeypatch, capsys
 ):
-    """#10-4: 設定の適用を例外にしても、systemMessage が出力され、収集は実行される。終了コード0。"""
+    """設定の適用を例外にしても、systemMessage が出力され、収集は実行される。終了コード0。"""
     monkeypatch.setattr(session_start, "_apply_settings_step", _raiser)
 
     session_start.main()
@@ -354,7 +354,7 @@ def test_order_settings_failure_still_shows_notice_and_collects(
 
 
 def test_order_all_three_failures_still_exit_clean(notices_file, monkeypatch, capsys):
-    """#10-5: 3 つすべてを例外にしても、終了コード0、標準エラーが空、標準出力が JSON としてパースできる。"""
+    """3 つすべてを例外にしても、終了コード0、標準エラーが空、標準出力が JSON としてパースできる。"""
     monkeypatch.setattr(session_start, "_apply_settings_step", _raiser)
     monkeypatch.setattr(_notices, "notices_step", _raiser)
     monkeypatch.setattr(session_start, "_collect_step", _raiser)
@@ -367,7 +367,7 @@ def test_order_all_three_failures_still_exit_clean(notices_file, monkeypatch, ca
 
 
 def test_order_call_order_is_settings_notice_collect(notices_file, monkeypatch, capsys):
-    """#10-6: 呼び出し順を記録して正常実行すると settings -> notices -> collect の順になる。"""
+    """呼び出し順を記録して正常実行すると settings -> notices -> collect の順になる。"""
     calls = []
     original_settings = session_start._apply_settings_step
     original_notices = _notices.notices_step
@@ -398,10 +398,8 @@ def test_order_call_order_is_settings_notice_collect(notices_file, monkeypatch, 
 def test_order_stdin_read_failure_does_not_silence_settings_and_notices(
     notices_file, tmp_path, monkeypatch, capsys
 ):
-    """#10-7 (I-3): 標準入力の読み取り（深い入れ子で RecursionError）が3ステップの try の外にあると、
-    設定の適用・お知らせの表示・キューへの記録が丸ごと消え、端末が完全に無言で終わる
-    （実測で確認済み）。読み取りを `_collect_step` の中へ移すと、その失敗は収集だけに留まり、
-    設定の適用とお知らせの表示は生き残る。
+    """標準入力の読み取りの失敗（深い入れ子で RecursionError）は収集だけに留まる。
+    読み取りが 3 ステップの try の外にあると、設定の適用・お知らせ・キューへの記録が丸ごと消える。
     """
     _write_settings(tmp_path, {})
     monkeypatch.setattr(
@@ -421,11 +419,11 @@ def test_order_stdin_read_failure_does_not_silence_settings_and_notices(
     assert len(_policy_rows(tmp_path)) == POLICY_KEY_COUNT
 
 
-# ---- タスク 11: 無効化スイッチ ----
+# ---- 無効化スイッチ ----
 
 
 def test_disable_unset_runs_everything(notices_file, tmp_path, capsys):
-    """#11-1: CC_GOVERNANCE_DISABLE 未設定 -> 適用・お知らせ・収集のすべてが起きる。"""
+    """CC_GOVERNANCE_DISABLE 未設定 -> 適用・お知らせ・収集のすべてが起きる。"""
     _write_settings(tmp_path, {})
     session_start.main()
     out = json.loads(capsys.readouterr().out)
@@ -441,7 +439,7 @@ def test_disable_unset_runs_everything(notices_file, tmp_path, capsys):
 def test_disable_value_1_skips_notice_and_collect(
     notices_file, tmp_path, monkeypatch, capsys
 ):
-    """#11-2: "1" -> 適用は起きるが、systemMessage は出ず seen.json も作られず、収集も起きない。"""
+    """値が "1" なら適用は起きるが、systemMessage は出ず seen.json も作られず、収集も起きない。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
     _write_settings(tmp_path, {})
 
@@ -458,7 +456,7 @@ def test_disable_value_1_skips_notice_and_collect(
 def test_disable_value_0_still_counts_as_set(
     notices_file, tmp_path, monkeypatch, capsys
 ):
-    """#11-3: "0" も空でない値として、お知らせと収集を止める。"""
+    """値 "0" も空でない値として、お知らせと収集を止める。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "0")
     _write_settings(tmp_path, {})
 
@@ -474,7 +472,7 @@ def test_disable_value_0_still_counts_as_set(
 def test_disable_value_false_still_counts_as_set(
     notices_file, tmp_path, monkeypatch, capsys
 ):
-    """#11-4: "false" も空でない値として、お知らせと収集を止める。"""
+    """値 "false" も空でない値として、お知らせと収集を止める。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "false")
     _write_settings(tmp_path, {})
 
@@ -490,7 +488,7 @@ def test_disable_value_false_still_counts_as_set(
 def test_disable_empty_value_runs_everything(
     notices_file, tmp_path, monkeypatch, capsys
 ):
-    """#11-5: "" は空文字列であり、11-1 と同じ（止まらない）。"""
+    """値が空文字列なら未設定と同じく止まらない。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "")
     _write_settings(tmp_path, {})
 
@@ -504,7 +502,7 @@ def test_disable_empty_value_runs_everything(
 
 
 def test_disable_value_1_still_records_policy_rows(tmp_path, monkeypatch):
-    """#11-6: "1" でも policy イベントはキューに積まれる（適用の記録は止まらない）。"""
+    """値が "1" でも policy イベントはキューに積まれる（適用の記録は止まらない）。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
     _write_settings(tmp_path, {})
 
@@ -514,7 +512,7 @@ def test_disable_value_1_still_records_policy_rows(tmp_path, monkeypatch):
 
 
 def test_disable_value_1_stdout_is_still_valid_json(tmp_path, monkeypatch, capsys):
-    """#11-7: "1" でも標準出力は JSON としてパースできる。終了コード0。"""
+    """値が "1" でも標準出力は JSON としてパースできる。終了コード0。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
     _write_settings(tmp_path, {})
 
@@ -526,7 +524,7 @@ def test_disable_value_1_stdout_is_still_valid_json(tmp_path, monkeypatch, capsy
 
 
 def test_disable_value_1_still_launches_sender_once(tmp_path, monkeypatch, spy_launch):
-    """#11-8: "1" でも送信条件が真なら送信プロセスが1回起動する（送信は止まらない）。"""
+    """値が "1" でも送信条件が真なら送信プロセスが1回起動する（送信は止まらない）。"""
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
     _write_settings(tmp_path, {})
 

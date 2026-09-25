@@ -1,7 +1,7 @@
 """collect.py が、故意に壊した入力・環境でも常に exit 0・標準出力/標準エラー空で終わることを検証する。
 
 `plugin/hooks` 一式を一時ディレクトリへコピーして起動する。実 `plugin/config.json` は
-変更しない。このテストは実装の都合で緩めない（設計書 §3.3・§9.1）。
+変更しない。このテストは実装の都合で緩めない。
 """
 
 import json
@@ -24,7 +24,7 @@ def _assert_clean_exit(result):
 
 
 def _queue_line_count(plugin_data):
-    """`queue.jsonl` の行数を返す（無ければ0）。R-44: 収集自体が成立したことの主張に使う。"""
+    """`queue.jsonl` の行数を返す（無ければ0）。収集自体が成立したことの主張に使う。"""
     path = Path(plugin_data) / "queue.jsonl"
     if not path.exists():
         return 0
@@ -108,14 +108,14 @@ def test_broken_input_still_collects(setup, run_collect, hooks_dir, tmp_path):
     kwargs.setdefault("plugin_data", tmp_path / "plugin-data")
     result = run_collect(*argv, **kwargs)
     _assert_clean_exit(result)
-    assert _queue_line_count(kwargs["plugin_data"]) == 1  # R-44: 収集自体は成立する
+    assert _queue_line_count(kwargs["plugin_data"]) == 1
 
 
 # --- 状態ディレクトリ・状態ファイルの異常 ---
 
 
 def test_readonly_state_dir(run_collect, tmp_path):
-    """#14: 状態ディレクトリを読み取り専用にした状態。"""
+    """状態ディレクトリを読み取り専用にした状態。"""
     plugin_data = tmp_path / "plugin-data"
     plugin_data.mkdir(parents=True)
     plugin_data.chmod(stat.S_IRUSR | stat.S_IXUSR)
@@ -127,7 +127,7 @@ def test_readonly_state_dir(run_collect, tmp_path):
 
 
 def test_queue_path_is_directory(run_collect, tmp_path):
-    """#15: queue.jsonl をディレクトリに置き換えた状態。"""
+    """queue.jsonl をディレクトリに置き換えた状態。"""
     plugin_data = tmp_path / "plugin-data"
     (plugin_data / "queue.jsonl").mkdir(parents=True)
     result = run_collect("Stop", plugin_data=plugin_data)
@@ -138,7 +138,7 @@ def test_queue_path_is_directory(run_collect, tmp_path):
 
 
 def test_ingest_url_unresolvable_host(run_collect, tmp_path, write_config):
-    """#18: ingest_url を解決できないホストにした状態で送信条件を満たす。
+    """ingest_url を解決できないホストにした状態で送信条件を満たす。
 
     送信を起動する経路のため、検証後すぐに `queue.jsonl` が spool へ退避されうる
     （detach した送信プロセスが並行して `rotate()` する）。収集自体が成立したことの
@@ -149,18 +149,17 @@ def test_ingest_url_unresolvable_host(run_collect, tmp_path, write_config):
     _assert_clean_exit(result)
 
 
-# --- SIGINT による中断（R-42） ---
+# --- SIGINT による中断 ---
 
-# インタプリタの起動そのものにも一定の時間がかかり（本環境では実測 0.12〜0.14 秒程度）、
-# 起動中に届いた SIGINT は Python 側で捕まえられない（設計書・レビュー指摘が明記する
-# 既知の制約）。起動中の窓とこのテストが検査したい「collect.py 自身の実行中」の窓を
+# インタプリタの起動そのものにも時間がかかり、起動中に届いた SIGINT は Python 側で
+# 捕まえられない（既知の制約）。起動中の窓とこのテストが検査したい「collect.py 自身の実行中」の窓を
 # 混同しないよう、起動時間よりも十分後ろの時点だけを狙う。50MB の標準入力を与えて
 # collect.py 自身の処理時間を伸ばし、狙った時点が確実にその中に収まるようにする。
 _SIGINT_DELAYS_SEC = (0.3, 0.6, 0.9, 1.2)
 
 
 def test_sigint_during_execution_leaves_stderr_empty(hooks_dir, tmp_path):
-    """#21: hook 実行中に SIGINT を送っても標準エラーが空であることを確認する。
+    """hook 実行中に SIGINT を送っても標準エラーが空であることを確認する。
 
     実行中の複数の時点で SIGINT を送る。標準出力・標準エラーは一時ファイルへ向け、
     `stdin` には大きめの入力を与えて処理時間を延ばし、狙った時点が起動処理より
