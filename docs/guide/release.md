@@ -136,5 +136,4 @@ claude plugin update governance
 - 2026-09-25: `staging` ブランチで開発者の端末だけに先に届けて確かめる手順を加えた
 - 2026-09-25: 配布側の作業を「作業ブランチへ複製・コミット→ staging へ push → 確認 → main へ PR」の順に揃え、1 の前提が指す `main` を明記した
 - 2026-09-25: 効果測定の実験の差し替えと、配布物と正本の一致の確認を確認項目に加えた
-- 2026-09-26: `staging` の確認を、本人の実環境ではなく使い捨ての `CLAUDE_CONFIG_DIR` で行う手順に変更した。前提に `pytest e2e` を加えた
-- 2026-09-26: `staging` の確認手順を `CLAUDE_CONFIG_DIR` の前置に統一し、ref の実測メモを `docs/knowledge/claude-code-behavior.md` へ移した。`pytest e2e` の skip 条件を明確にした
+- 2026-09-26: `staging` の確認を、本人の実環境ではなく使い捨ての `CLAUDE_CONFIG_DIR` で行う手順に変更し、ref の実測メモを `docs/knowledge/claude-code-behavior.md` へ移した。前提に `pytest e2e` を加えた
