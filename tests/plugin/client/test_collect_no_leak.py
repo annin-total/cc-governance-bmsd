@@ -16,27 +16,6 @@ def _isolate_state_dir(monkeypatch, tmp_path):
     monkeypatch.setenv("CC_GOVERNANCE_USER_EMAIL", "test@example.com")
 
 
-_ALL_HOOK_EVENTS = (
-    "PostToolUse",
-    "UserPromptSubmit",
-    "Stop",
-    "SessionStart",
-    "SessionEnd",
-    "UserPromptExpansion",
-    "PostToolUseFailure",
-    "PreCompact",
-)
-
-
-def _load_all_fixtures(hook_inputs):
-    """全 hook 種別の fixture を (hook_event, raw) のリストとして返す。"""
-    rows = []
-    for ev in _ALL_HOOK_EVENTS:
-        for raw in hook_inputs(ev):
-            rows.append((ev, raw))
-    return rows
-
-
 def _stringify(value):
     """契約の VARCHAR 変換と同じ規則で文字列化する（真偽値は小文字）。"""
     if isinstance(value, bool):
@@ -59,18 +38,18 @@ def _traceable_string_values(raw, row):
     return allowed
 
 
-def test_no_sentinel_in_output_for_all_fixtures(hook_inputs):
+def test_no_sentinel_in_output_for_all_fixtures(all_hook_inputs):
     """#1: fixture 112 件の出力 JSON 文字列に SENTINEL- が現れない。"""
-    for ev, raw in _load_all_fixtures(hook_inputs):
-        row = collect.extract_event(raw, ev)
+    for raw in all_hook_inputs:
+        row = collect.extract_event(raw, raw["hook_event_name"])
         text = json.dumps(row, ensure_ascii=False)
         assert SENTINEL_PREFIX not in text
 
 
-def test_string_values_trace_to_named_keypaths(hook_inputs):
+def test_string_values_trace_to_named_keypaths(all_hook_inputs):
     """#2: 出力の文字列値はいずれも、契約が名指しするキーパスの値か EXTRA_COLUMNS の値と一致する。"""
-    for ev, raw in _load_all_fixtures(hook_inputs):
-        row = collect.extract_event(raw, ev)
+    for raw in all_hook_inputs:
+        row = collect.extract_event(raw, raw["hook_event_name"])
         allowed = _traceable_string_values(raw, row)
         for key, value in row.items():
             if key == "kind" or not isinstance(value, str):

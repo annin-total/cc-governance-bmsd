@@ -177,3 +177,21 @@ def raising_stdout():
 def flush_raising_stdout():
     """`write` は成功するが `flush` が必ず例外を投げる標準出力の代わり。"""
     return _FlushRaisingStdout()
+
+
+_ALL_HOOK_EVENTS = (
+    "PostToolUse",
+    "UserPromptSubmit",
+    "Stop",
+    "SessionStart",
+    "SessionEnd",
+    "UserPromptExpansion",
+    "PostToolUseFailure",
+    "PreCompact",
+)
+
+
+@pytest.fixture
+def all_hook_inputs(hook_inputs) -> list:
+    """全 hook 種別の fixture を、種別の順に 1 リストにまとめる。"""
+    return [raw for ev in _ALL_HOOK_EVENTS for raw in hook_inputs(ev)]

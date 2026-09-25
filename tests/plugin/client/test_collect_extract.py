@@ -24,34 +24,16 @@ def _fixed_identity(monkeypatch, tmp_path):
     yield
 
 
-def _all_fixtures(hook_inputs):
-    """全 hook 種別の fixture を 1 リストにまとめて返す。"""
-    events = (
-        "PostToolUse",
-        "UserPromptSubmit",
-        "Stop",
-        "SessionStart",
-        "SessionEnd",
-        "UserPromptExpansion",
-        "PostToolUseFailure",
-        "PreCompact",
-    )
-    rows = []
-    for ev in events:
-        rows.extend(hook_inputs(ev))
-    return rows
-
-
-def test_output_key_set_matches_contract(hook_inputs):
+def test_output_key_set_matches_contract(all_hook_inputs):
     """#1: 出力のキー集合が過不足なく一致する。"""
-    for raw in _all_fixtures(hook_inputs):
+    for raw in all_hook_inputs:
         row = collect.extract_event(raw, raw["hook_event_name"])
         assert set(row.keys()) == EXPECTED_KEYS
 
 
-def test_kind_session_id_hook_event(hook_inputs):
+def test_kind_session_id_hook_event(all_hook_inputs):
     """#2: kind / session_id / hook_event が期待どおり。"""
-    for raw in _all_fixtures(hook_inputs):
+    for raw in all_hook_inputs:
         ev = raw["hook_event_name"]
         row = collect.extract_event(raw, ev)
         assert row["kind"] == "event"
@@ -59,16 +41,16 @@ def test_kind_session_id_hook_event(hook_inputs):
         assert row["hook_event"] == ev
 
 
-def test_day_matches_to_day_of_ts(hook_inputs):
+def test_day_matches_to_day_of_ts(all_hook_inputs):
     """#3: day が契約の to_day(ts) の戻り値と一致する。"""
-    for raw in _all_fixtures(hook_inputs):
+    for raw in all_hook_inputs:
         row = collect.extract_event(raw, raw["hook_event_name"])
         assert row["day"] == to_day(row["ts"])
 
 
-def test_agent_id_always_none(hook_inputs):
+def test_agent_id_always_none(all_hook_inputs):
     """#4: サブエージェントを使わずに採取したため agent_id は常に None。"""
-    for raw in _all_fixtures(hook_inputs):
+    for raw in all_hook_inputs:
         row = collect.extract_event(raw, raw["hook_event_name"])
         assert row["agent_id"] is None
 
@@ -142,38 +124,38 @@ def test_is_interrupt_false_becomes_int_zero(hook_inputs):
         assert row["is_interrupt"] is not False
 
 
-def test_is_interrupt_none_when_absent(hook_inputs):
+def test_is_interrupt_none_when_absent(all_hook_inputs):
     """#10: is_interrupt を持たない 109 件で None。"""
-    rows = [raw for raw in _all_fixtures(hook_inputs) if "is_interrupt" not in raw]
+    rows = [raw for raw in all_hook_inputs if "is_interrupt" not in raw]
     assert len(rows) == 109
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
         assert row["is_interrupt"] is None
 
 
-def test_permission_mode_present(hook_inputs):
+def test_permission_mode_present(all_hook_inputs):
     """#11: permission_mode を持つ 94 件で値が一致する。"""
-    rows = [raw for raw in _all_fixtures(hook_inputs) if "permission_mode" in raw]
+    rows = [raw for raw in all_hook_inputs if "permission_mode" in raw]
     assert len(rows) == 94
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
         assert row["permission_mode"] == raw["permission_mode"]
 
 
-def test_permission_mode_absent(hook_inputs):
+def test_permission_mode_absent(all_hook_inputs):
     """#12: permission_mode を持たない 18 件で None。"""
-    rows = [raw for raw in _all_fixtures(hook_inputs) if "permission_mode" not in raw]
+    rows = [raw for raw in all_hook_inputs if "permission_mode" not in raw]
     assert len(rows) == 18
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
         assert row["permission_mode"] is None
 
 
-def test_effort_level_present(hook_inputs):
+def test_effort_level_present(all_hook_inputs):
     """#13: effort.level を持つ 74 件で high / medium のいずれか。"""
     rows = [
         raw
-        for raw in _all_fixtures(hook_inputs)
+        for raw in all_hook_inputs
         if isinstance(raw.get("effort"), dict) and "level" in raw["effort"]
     ]
     assert len(rows) == 74
@@ -182,13 +164,9 @@ def test_effort_level_present(hook_inputs):
         assert row["effort_level"] in ("high", "medium")
 
 
-def test_effort_level_absent(hook_inputs):
+def test_effort_level_absent(all_hook_inputs):
     """#14: effort を持たない 38 件で None。"""
-    rows = [
-        raw
-        for raw in _all_fixtures(hook_inputs)
-        if not isinstance(raw.get("effort"), dict)
-    ]
+    rows = [raw for raw in all_hook_inputs if not isinstance(raw.get("effort"), dict)]
     assert len(rows) == 38
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
@@ -205,9 +183,9 @@ def test_compact_trigger_present(hook_inputs):
     assert row["compact_trigger"] == "manual"
 
 
-def test_compact_trigger_absent(hook_inputs):
+def test_compact_trigger_absent(all_hook_inputs):
     """#16: trigger を持たない 111 件で None。"""
-    rows = [raw for raw in _all_fixtures(hook_inputs) if "trigger" not in raw]
+    rows = [raw for raw in all_hook_inputs if "trigger" not in raw]
     assert len(rows) == 111
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
@@ -223,9 +201,9 @@ def test_source_present(hook_inputs):
         assert row["source"] == raw["source"]
 
 
-def test_source_absent(hook_inputs):
+def test_source_absent(all_hook_inputs):
     """#18: source を持たない 103 件で None。"""
-    rows = [raw for raw in _all_fixtures(hook_inputs) if "source" not in raw]
+    rows = [raw for raw in all_hook_inputs if "source" not in raw]
     assert len(rows) == 103
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
@@ -242,11 +220,11 @@ def test_command_name_source_present(hook_inputs):
         assert row["command_source"] == raw["command_source"]
 
 
-def test_command_name_source_absent(hook_inputs):
+def test_command_name_source_absent(all_hook_inputs):
     """#20: UserPromptExpansion 以外の 108 件で None。"""
     rows = [
         raw
-        for raw in _all_fixtures(hook_inputs)
+        for raw in all_hook_inputs
         if raw["hook_event_name"] != "UserPromptExpansion"
     ]
     assert len(rows) == 108
@@ -256,18 +234,18 @@ def test_command_name_source_absent(hook_inputs):
         assert row["command_source"] is None
 
 
-def test_prompt_id_present(hook_inputs):
+def test_prompt_id_present(all_hook_inputs):
     """#21: prompt_id を持つ 103 件で値が一致する。"""
-    rows = [raw for raw in _all_fixtures(hook_inputs) if "prompt_id" in raw]
+    rows = [raw for raw in all_hook_inputs if "prompt_id" in raw]
     assert len(rows) == 103
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
         assert row["prompt_id"] == raw["prompt_id"]
 
 
-def test_prompt_id_absent(hook_inputs):
+def test_prompt_id_absent(all_hook_inputs):
     """#22: prompt_id を持たない 9 件で None。"""
-    rows = [raw for raw in _all_fixtures(hook_inputs) if "prompt_id" not in raw]
+    rows = [raw for raw in all_hook_inputs if "prompt_id" not in raw]
     assert len(rows) == 9
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
