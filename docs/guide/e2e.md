@@ -12,10 +12,10 @@
 | 導入 | `e2e/test_install.py` | 不要 | 不要 | 不要 |
 | 設定の配布 | `e2e/test_settings.py` | 不要 | 不要 | 不要（手動確認は要る） |
 | お知らせ | `e2e/test_notices.py` | 不要 | 不要 | 不要（手動確認は要る） |
-| 収集 | `e2e/test_collect.py` | 要 | 不要 | 不要 |
-| 送信 | `e2e/test_send.py` | 不要 | 要 | 不要 |
-| 非漏洩 | `e2e/test_leak.py` | 要 | 要（陽性対照は不要） | 不要 |
-| サーバ | `e2e/test_server.py` | 不要 | 要 | 不要（手動確認は要る） |
+| 収集 | `e2e/test_collect.py` | 必要 | 不要 | 不要 |
+| 送信 | `e2e/test_send.py` | 不要 | 必要 | 不要 |
+| 非漏洩 | `e2e/test_leak.py` | 必要 | 必要（陽性対照は不要） | 不要 |
+| サーバ | `e2e/test_server.py` | 不要 | 必要 | 不要（手動確認は要る） |
 
 ## 実行方法
 
