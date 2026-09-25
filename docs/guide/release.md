@@ -85,6 +85,9 @@ python scripts/validate.py
    合格: `governance` が `enabled` で現れ、版が上げた版と一致する（`main` の版のままなら ref が
    効いていない）
 
+   `<owner>/<repo>` の短縮形は GitHub を SSH で clone する（SSH 鍵が無いと失敗する）。社内の
+   git サーバや鍵の無い端末では `https://<host>/<owner>/<repo>.git#staging` の形で指定する
+
 4. 認証を環境変数で渡し（会社は Bedrock。渡す変数は `docs/guide/e2e.md` の「認証」の節）、空の
    ディレクトリからセッションを開いて `/plugin` の版と動作を確かめる
 
