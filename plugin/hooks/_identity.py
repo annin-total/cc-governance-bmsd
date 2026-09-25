@@ -36,9 +36,12 @@ def _load_cache() -> Optional[dict]:
 
 
 def _save_cache(user_email: Optional[str]) -> None:
-    """`user_email` の解決結果を `identity.json` に書く。失敗は無視する。"""
+    """`user_email` の解決結果を `identity.json` に書く。None なら消す。失敗は無視する。"""
     path = _identity_path()
     try:
+        if user_email is None:
+            path.unlink(missing_ok=True)
+            return
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"user_email": user_email}, f)
@@ -68,10 +71,10 @@ def _resolve_via_git() -> Optional[str]:
     return value.lower()
 
 
-def get_user_email() -> Optional[str]:
+def get_user_email(refresh: bool = False) -> Optional[str]:
     """環境変数 → キャッシュ → git の順で user_email を解決する。
 
-    環境変数はキャッシュより優先する。解決できなかった結果（None）もキャッシュする。
+    `refresh` ならキャッシュを読まずに解決し直す（SessionStart 用）。None はキャッシュしない。
     """
     env_value = os.environ.get(_ENV_USER_EMAIL)
     if env_value:
@@ -79,9 +82,10 @@ def get_user_email() -> Optional[str]:
         _save_cache(email)
         return email
 
-    cache = _load_cache()
-    if cache is not None and "user_email" in cache:
-        return cache["user_email"]
+    if not refresh:
+        cache = _load_cache()
+        if cache is not None and isinstance(cache.get("user_email"), str):
+            return cache["user_email"]
 
     email = _resolve_via_git()
     _save_cache(email)

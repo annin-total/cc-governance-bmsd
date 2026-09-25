@@ -118,6 +118,12 @@ def main() -> None:
     hook_event: Optional[str] = sys.argv[1] if len(sys.argv) > 1 else None
     disabled = bool(os.environ.get(_DISABLE_ENV))
 
+    # 以降の段はキャッシュを読む。git の設定の変更をセッションごとに拾うため、ここで解決し直す
+    try:
+        _identity.get_user_email(refresh=True)
+    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
+        pass
+
     # 設定より先に置く。設定がこのファイルを指したとき、既に在るようにするため
     try:
         _govdir.sync_statusline(_govdir.governance_dir())

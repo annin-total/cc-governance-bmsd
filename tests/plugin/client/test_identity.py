@@ -171,14 +171,48 @@ def test_fallback_path_honors_home_override_not_real_home(monkeypatch, tmp_path)
     assert real_home_path.exists() == real_home_existed_before
 
 
-def test_null_cache_skips_subprocess(monkeypatch):
+def test_unresolved_email_is_not_cached(monkeypatch):
+    """解決できなかった結果を固定しない。後から git を設定すれば次の呼び出しで拾う。"""
     monkeypatch.setattr(_identity.subprocess, "run", _fake_run(returncode=0, stdout=""))
-    first = _identity.get_user_email()
-    assert first is None
+    assert _identity.get_user_email() is None
+    assert not _identity._identity_path().exists()
 
-    failing_run = _FailingGitRun()
-    monkeypatch.setattr(_identity.subprocess, "run", failing_run)
-    second = _identity.get_user_email()
+    monkeypatch.setattr(
+        _identity.subprocess, "run", _fake_run(returncode=0, stdout="Bar@Example.com\n")
+    )
+    assert _identity.get_user_email() == "bar@example.com"
 
-    assert second is None
-    assert failing_run.called is False
+
+def test_null_cache_left_by_older_version_is_resolved(monkeypatch):
+    identity_path = _identity._identity_path()
+    identity_path.parent.mkdir(parents=True, exist_ok=True)
+    identity_path.write_text(json.dumps({"user_email": None}))
+    monkeypatch.setattr(
+        _identity.subprocess, "run", _fake_run(returncode=0, stdout="Bar@Example.com\n")
+    )
+
+    assert _identity.get_user_email() == "bar@example.com"
+
+
+def test_refresh_ignores_cache_and_updates_it(monkeypatch):
+    monkeypatch.setattr(
+        _identity.subprocess, "run", _fake_run(returncode=0, stdout="old@example.com\n")
+    )
+    _identity.get_user_email()
+    monkeypatch.setattr(
+        _identity.subprocess, "run", _fake_run(returncode=0, stdout="New@Example.com\n")
+    )
+
+    assert _identity.get_user_email(refresh=True) == "new@example.com"
+    assert _identity.get_user_email() == "new@example.com"
+
+
+def test_refresh_unresolved_drops_stale_cache(monkeypatch):
+    monkeypatch.setattr(
+        _identity.subprocess, "run", _fake_run(returncode=0, stdout="old@example.com\n")
+    )
+    _identity.get_user_email()
+    monkeypatch.setattr(_identity.subprocess, "run", _fake_run(returncode=1, stdout=""))
+
+    assert _identity.get_user_email(refresh=True) is None
+    assert not _identity._identity_path().exists()
