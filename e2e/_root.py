@@ -10,7 +10,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import pytest
 
@@ -36,6 +36,8 @@ REAL_CONFIG_DIRS = tuple(
     }
 )
 _SETTLE_SEC = 1.0
+# 許可リストの外から、テストが個別に渡してよい変数（無効化スイッチの検証用）
+_EXTRA_KEYS = ("CC_GOVERNANCE_DISABLE",)
 
 
 def _real(p) -> Path:
@@ -62,21 +64,26 @@ class E2ERoot:
         # hook のバイトコードの置き場。python3 によっては（macOS の Apple 版）ルートの外に書くため
         self.pycache = self.path / "pycache"
 
-    def env(self) -> dict:
-        """許可リストで組み直した env。`os.environ` は書き換えない。"""
+    def env(self, extra: Optional[dict] = None) -> dict:
+        """許可リストで組み直した env に `extra` を重ねる。`os.environ` は書き換えない。"""
+        extra = extra or {}
+        assert set(extra) <= set(_EXTRA_KEYS), f"渡せない変数: {sorted(extra)}"
         real = {_real(p) for p in REAL_CONFIG_DIRS}
         assert _real(self.config) not in real, f"隔離先が本物の config: {self.config}"
         env = {k: os.environ[k] for k in _PASS_KEYS if k in os.environ}
         env.update(_FIXED_ENV, CLAUDE_CONFIG_DIR=str(self.config))
         env.update({k: str(self.tmp) for k in ("TMPDIR", "TEMP", "TMP")})
         env["PYTHONPYCACHEPREFIX"] = str(self.pycache)
+        env.update(extra)
         return env
 
-    def run(self, args: list, timeout: float, cwd=None) -> subprocess.CompletedProcess:
+    def run(
+        self, args: list, timeout: float, cwd=None, extra_env: Optional[dict] = None
+    ) -> subprocess.CompletedProcess:
         """隔離 env でコマンドを起動する。終了コードは判定しない。"""
         posix = os.name == "posix"
         proc = subprocess.Popen(
-            args, cwd=cwd or self.project, env=self.env(), stdin=subprocess.DEVNULL,
+            args, cwd=cwd or self.project, env=self.env(extra_env), stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8",
             errors="replace", start_new_session=posix,
         )  # fmt: skip
@@ -92,12 +99,14 @@ class E2ERoot:
             proc.wait()
         return subprocess.CompletedProcess(args, proc.returncode, out, err)
 
-    def run_claude(self, *args: str, timeout: float) -> subprocess.CompletedProcess:
+    def run_claude(
+        self, *args: str, timeout: float, extra_env: Optional[dict] = None
+    ) -> subprocess.CompletedProcess:
         """`claude` を隔離 env で起動する。`--bare` は hook を切るので使わない。"""
         path = shutil.which("claude")
         if path is None:
             pytest.skip("claude が PATH に無い")
-        return self.run([path, *args], timeout=timeout)
+        return self.run([path, *args], timeout=timeout, extra_env=extra_env)
 
     def cleanup(self) -> None:
         """切り離された送信プロセスを待ってから消す。"""

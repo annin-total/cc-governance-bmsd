@@ -1,0 +1,110 @@
+"""モジュール 2（設定の配布）: installPath の policy.py が隔離した settings.json に当たり、本体と共存する。
+
+判定の期待値は組み立てたコピー（installPath）の policy.py から導く。すべて認証不要。
+"""
+
+import json
+import runpy
+
+from _flow import data_dir, install, install_path, ok, session
+from _market import MARKETPLACE, PLUGIN_ID, PLUGIN_SRC, publish, version
+from _root import hook_rows
+
+V1, V2 = version(1), version(2)
+_STATUSLINE = "statusline/statusline.js"
+_AUTO_UPDATE = f"extraKnownMarketplaces.{MARKETPLACE}.autoUpdate"
+
+
+def _policy(root) -> dict:
+    """installPath の policy.py の表。run_path はバイトコードを書かず、sys.modules も汚さない。"""
+    return runpy.run_path(str(install_path(root) / "hooks" / "policy.py"))
+
+
+def _key_names(pol: dict) -> set:
+    """policy イベントの key_name の集合（表ごとの接頭辞は docs/spec/plugin.md の定義）。"""
+    names = set(pol["SET"])
+    for table in ("ADD", "REMOVE", "ONCE"):
+        names |= {f"{table.lower()}:{k}" for k in pol[table]}
+    return names
+
+
+def _dig(data: dict, path: str):
+    """`.` 区切りのパスの値。無ければ None（SET の None は「キーが無い」を意味するので一致する）。"""
+    for name in path.split("."):
+        if not isinstance(data, dict) or name not in data:
+            return None
+        data = data[name]
+    return data
+
+
+def _leaves(data: dict, prefix: str = "") -> dict:
+    """入れ子の dict を `.` 区切りのパス→値に平らにする。"""
+    out = {}
+    for k, v in data.items():
+        path = f"{prefix}{k}"
+        out.update(_leaves(v, path + ".") if isinstance(v, dict) and v else {path: v})
+    return out
+
+
+def _policy_rows(root) -> dict:
+    """event_id → policy 行。"""
+    rows = hook_rows(data_dir(root))
+    return {r["event_id"]: r for r in rows if r["kind"] == "policy"}
+
+
+def test_SETが入り本体の書き込みも残る(root, gitsrv):
+    install(root, gitsrv, V1)
+    before_bytes = (root.config / "settings.json").read_bytes()
+    before = _leaves(json.loads(before_bytes))
+    # 本体（marketplace add・install）の書き込みが在ることを先に確かめる
+    assert f"extraKnownMarketplaces.{MARKETPLACE}.source.url" in before, before
+    assert before.get(f"enabledPlugins.{PLUGIN_ID}") is True, before
+    session(root)
+    after = root.json("settings.json")
+    expected = _policy(root)["SET"]
+    assert expected
+    assert {k: _dig(after, k) for k in expected} == expected
+    kept = {k: v for k, v in before.items() if k not in expected}
+    assert {k: _leaves(after).get(k) for k in kept} == kept
+    backups = list((root.config / "governance" / "backups").iterdir())
+    assert [b.read_bytes() for b in backups] == [before_bytes]
+
+
+def test_2回目は適用済みで本体に取り込まれる(root, gitsrv):
+    install(root, gitsrv, V1)
+    pol = _policy(root)
+    session(root)
+    first = _policy_rows(root)
+    assert sorted(r["key_name"] for r in first.values()) == sorted(_key_names(pol))
+    assert {r["apply_result"] for r in first.values()} == {"applied"}
+    session(root)
+    second = [r for k, r in _policy_rows(root).items() if k not in first]
+    assert sorted(r["key_name"] for r in second) == sorted(_key_names(pol))
+    assert {r["apply_result"] for r in second} == {"already_ok"}
+    # autoUpdate は settings.json が権威で、セッション開始時に本体の記録へ同期される
+    known = root.json("plugins/known_marketplaces.json")[MARKETPLACE]
+    assert known.get("autoUpdate") == pol["SET"][_AUTO_UPDATE]
+
+
+def _marked_statusline(tag: str) -> dict:
+    """開発ツリーの statusline.js に目印を足した上書き（配置元を取り違えないため）。"""
+    src = (PLUGIN_SRC / _STATUSLINE).read_bytes()
+    return {_STATUSLINE: src + f"\n// cc-e2e {tag}\n".encode()}
+
+
+def _assert_statusline(root, tag: str) -> None:
+    """governance の statusline.js が、目印 `tag` を持つ installPath の複製とバイト一致する。"""
+    shipped = (install_path(root) / _STATUSLINE).read_bytes()
+    assert f"// cc-e2e {tag}\n".encode() in shipped
+    assert (root.config / "governance" / "statusline.js").read_bytes() == shipped
+
+
+def test_statuslineはinstallPathの複製で更新に追従する(root, gitsrv):
+    install(root, gitsrv, V1, _marked_statusline(V1))
+    session(root)
+    _assert_statusline(root, V1)
+    publish(root, V2, _marked_statusline(V2))
+    ok(root, "plugin", "marketplace", "update", MARKETPLACE)
+    ok(root, "plugin", "update", PLUGIN_ID)
+    session(root)
+    _assert_statusline(root, V2)

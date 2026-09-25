@@ -6,6 +6,7 @@
 import json
 from pathlib import Path
 
+from _flow import data_dir, install, ok, session
 from _market import (
     EXCLUDE,
     MARKETPLACE,
@@ -19,22 +20,10 @@ from _root import hook_rows
 
 V1, V2 = version(1), version(2)
 _PLUGIN_JSON = ".claude-plugin/plugin.json"
-_CLI_TIMEOUT = 120
-_SESSION_TIMEOUT = 90
-
-
-def _ok(root, *args: str) -> None:
-    res = root.run_claude(*args, timeout=_CLI_TIMEOUT)
-    assert res.returncode == 0, res.stdout + res.stderr
 
 
 def _install(root, gitsrv) -> None:
-    """v1 を publish し、git source のマーケットプレイスとして追加して導入する。"""
-    publish(root, V1)
-    _ok(
-        root, "plugin", "marketplace", "add", gitsrv.url(MARKETPLACE), "--scope", "user"
-    )
-    _ok(root, "plugin", "install", PLUGIN_ID, "--scope", "user")
+    install(root, gitsrv, V1)
 
 
 def _manifest_version(plugin_dir: Path) -> str:
@@ -66,11 +55,8 @@ def _assert_installed(root, ver: str) -> Path:
 
 def _session(root) -> Path:
     """未ログインで 1 セッション起動し、プラグインの data ディレクトリを返す。"""
-    # 未ログインでは終了コード 1 で終わるが、SessionStart は発火する。終了コードは判定しない
-    root.run_claude("-p", "ok", timeout=_SESSION_TIMEOUT)
-    dirs = list((root.config / "plugins" / "data").iterdir())
-    assert len(dirs) == 1, dirs
-    return dirs[0]
+    session(root)
+    return data_dir(root)
 
 
 def _files(top: Path) -> dict:
@@ -103,13 +89,13 @@ def test_installPathはキャッシュの複製(root, gitsrv):
 def test_2段階で更新される(root, gitsrv):
     _install(root, gitsrv)
     publish(root, V2)
-    _ok(root, "plugin", "marketplace", "update", MARKETPLACE)
+    ok(root, "plugin", "marketplace", "update", MARKETPLACE)
     _assert_installed(root, V1)
     clone = Path(
         root.json("plugins/known_marketplaces.json")[MARKETPLACE]["installLocation"]
     )
     assert _manifest_version(clone / "plugins" / PLUGIN) == V2
-    _ok(root, "plugin", "update", PLUGIN_ID)
+    ok(root, "plugin", "update", PLUGIN_ID)
     _assert_installed(root, V2)
 
 
@@ -133,7 +119,7 @@ def test_uninstallでdataが消えgovernanceは残る(root, gitsrv):
     data = _session(root)
     statusline = root.config / "governance" / "statusline.js"
     assert data.is_dir() and statusline.is_file()
-    _ok(root, "plugin", "uninstall", PLUGIN_ID, "--scope", "user")
+    ok(root, "plugin", "uninstall", PLUGIN_ID, "--scope", "user")
     assert _installed(root) == ([], [])
     assert not data.exists()
     assert statusline.is_file()
