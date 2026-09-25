@@ -89,7 +89,6 @@ def test_git_が非UTF8を返しても収集が止まらない(tree, tmp_path):
     git.chmod(0o755)
 
     env = {"PATH": f"{fake_bin}{os.pathsep}{os.environ['PATH']}"}
-    env.pop("CC_GOVERNANCE_USER_EMAIL", None)
     rc, stderr, rows = _run(
         tree, tmp_path / "state", {**env, "CC_GOVERNANCE_USER_EMAIL": ""}
     )
@@ -129,7 +128,6 @@ def test_git_のtimeoutがhookのtimeoutより短い():
 
     同値だと、git が固まったときに hook ごと打ち切られ、キューに 1 行も残らない。
     """
-    sys.path.insert(0, str(_HOOKS_SRC))
     import _identity
 
     hook_timeouts = {

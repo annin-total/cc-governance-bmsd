@@ -148,7 +148,6 @@ def test_is_interrupt_none_when_absent(hook_inputs):
     assert len(rows) == 109
     for raw in rows:
         row = collect.extract_event(raw, raw["hook_event_name"])
-        assert row["permission_mode"] is None or True  # 対象外（is_interrupt のみ検査）
         assert row["is_interrupt"] is None
 
 
