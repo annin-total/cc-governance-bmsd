@@ -1,0 +1,5 @@
+# 改行を LF に統一する。契約ファイルの sha256 照合や fixture のバイト一致が Windows の autocrlf で壊れないため
+* text=auto eol=lf
+
+# verification 配下の bare リポジトリは git オブジェクト（zlib 圧縮）を含むため、改行変換の対象から外す
+verification/autoupdate/marketplaces/*/mp-bare.git/** binary
