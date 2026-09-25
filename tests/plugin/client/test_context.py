@@ -79,41 +79,34 @@ def test_null_usage_falls_back_to_earlier_line(tmp_path):
 
 
 def test_no_message_lines_return_none(tmp_path):
-    """message を持たない行だけ 100 行 → None。"""
     path = tmp_path / "t.jsonl"
     _write_jsonl(path, [json.dumps({"other": i}) for i in range(100)])
     assert context_tokens(str(path)) is None
 
 
 def test_missing_path_returns_none(tmp_path):
-    """存在しないパス → None。"""
     assert context_tokens(str(tmp_path / "no-such-file.jsonl")) is None
 
 
 def test_none_path_returns_none():
-    """パスが None → None。"""
     assert context_tokens(None) is None
 
 
 def test_empty_path_returns_none():
-    """パスが空文字 → None。"""
     assert context_tokens("") is None
 
 
 def test_zero_byte_file_returns_none(tmp_path):
-    """0 バイトのファイル → None。"""
     path = tmp_path / "empty.jsonl"
     path.write_bytes(b"")
     assert context_tokens(str(path)) is None
 
 
 def test_directory_path_returns_none(tmp_path):
-    """ディレクトリのパス → None。"""
     assert context_tokens(str(tmp_path)) is None
 
 
 def test_unreadable_file_returns_none(tmp_path):
-    """読み取り権限を外したファイル → None。"""
     path = tmp_path / "secret.jsonl"
     _write_jsonl(path, [_usage_line(input_tokens=1)])
     os.chmod(path, 0)
@@ -165,7 +158,6 @@ def test_truncated_first_line_at_tail_boundary_is_skipped(tmp_path):
 
 
 def test_blank_lines_are_skipped(tmp_path):
-    """行全体が空（改行のみ）が多数混ざる → usage の合計値。"""
     path = tmp_path / "t.jsonl"
     lines = [""] * 20 + [_usage_line(input_tokens=8)] + [""] * 20
     _write_jsonl(path, lines)
@@ -173,21 +165,18 @@ def test_blank_lines_are_skipped(tmp_path):
 
 
 def test_usage_value_as_string_returns_none(tmp_path):
-    """usage の値が文字列（"100"）→ None（例外を投げない）。"""
     path = tmp_path / "t.jsonl"
     _write_jsonl(path, [json.dumps({"message": {"usage": {"input_tokens": "100"}}})])
     assert context_tokens(str(path)) is None
 
 
 def test_usage_as_list_returns_none(tmp_path):
-    """usage が list → None（例外を投げない）。"""
     path = tmp_path / "t.jsonl"
     _write_jsonl(path, [json.dumps({"message": {"usage": [1, 2, 3]}})])
     assert context_tokens(str(path)) is None
 
 
 def test_non_json_text_returns_none(tmp_path):
-    """JSON でないテキスト 1MB → None。"""
     path = tmp_path / "t.txt"
     path.write_text("not json at all. " * 60000, encoding="utf-8")
     assert context_tokens(str(path)) is None

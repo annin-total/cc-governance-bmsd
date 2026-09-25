@@ -7,7 +7,6 @@ import pytest
 
 
 def test_ddl_returns_three_statements_for_three_tables():
-    """返る文は 3 つで、events / policy_state / cost_daily を対象とする。"""
     statements = contract.ddl()
     assert len(statements) == 3
     joined = " ".join(statements)
@@ -17,13 +16,11 @@ def test_ddl_returns_three_statements_for_three_tables():
 
 
 def test_ddl_statements_start_with_create_table_if_not_exists():
-    """3 文はいずれも CREATE TABLE IF NOT EXISTS で始まる。"""
     for statement in contract.ddl():
         assert statement.startswith("CREATE TABLE IF NOT EXISTS")
 
 
 def test_ddl_has_no_constraints():
-    """主キー・外部キー・NOT NULL・DEFAULT を一切含まない。"""
     joined = " ".join(contract.ddl())
     for forbidden in (
         "PRIMARY KEY",
@@ -43,7 +40,6 @@ def _table_columns(conn, table_name):
 
 
 def test_events_columns_are_extra_columns_then_hook_fields():
-    """events の列名が EXTRA_COLUMNS + HOOK_FIELDS の順と一致する。"""
     conn = sqlite3.connect(":memory:")
     for statement in contract.ddl():
         conn.execute(statement)
@@ -71,7 +67,6 @@ def test_events_columns_are_extra_columns_then_hook_fields():
 
 
 def test_policy_state_columns_match_policy_columns():
-    """policy_state の列名が POLICY_COLUMNS の順と一致する。"""
     conn = sqlite3.connect(":memory:")
     for statement in contract.ddl():
         conn.execute(statement)
@@ -90,7 +85,6 @@ def test_policy_state_columns_match_policy_columns():
 
 
 def test_cost_daily_columns_match_csv_columns():
-    """cost_daily の列名が CSV_COLUMNS の DB 列名の順と一致する。"""
     conn = sqlite3.connect(":memory:")
     for statement in contract.ddl():
         conn.execute(statement)
@@ -112,7 +106,6 @@ def test_cost_daily_columns_match_csv_columns():
 
 
 def test_ddl_raises_on_duplicate_column_name(monkeypatch):
-    """HOOK_FIELDS と EXTRA_COLUMNS の列名が重複すると例外を投げる。"""
     monkeypatch.setattr(
         contract,
         "EXTRA_COLUMNS",

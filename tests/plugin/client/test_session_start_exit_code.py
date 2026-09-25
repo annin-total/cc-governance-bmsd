@@ -40,7 +40,6 @@ def _run(hooks_dir, env, stdin):
 
 
 def _assert_clean_exit(rc, stderr):
-    """終了コード0・標準エラーが空であることを確認する。"""
     assert rc == 0
     assert stderr == b"" or stderr == ""
 
@@ -49,7 +48,6 @@ def _assert_clean_exit(rc, stderr):
 
 
 def test_stdout_pipe_reader_closed(hooks_dir, tmp_path):
-    """標準出力のパイプの読み口を閉じた状態で起動する。"""
     env = _base_env(tmp_path)
     r, w = os.pipe()
     os.close(r)
@@ -79,7 +77,6 @@ def test_stdout_pipe_reader_closed(hooks_dir, tmp_path):
 
 
 def test_stdout_fd_closed(hooks_dir, tmp_path):
-    """fd 1（標準出力）そのものを閉じた状態で起動する。"""
     env = _base_env(tmp_path)
     result = subprocess.run(
         f'exec {sys.executable} "{hooks_dir}/session_start.py" SessionStart 1>&-',
@@ -108,7 +105,6 @@ _BROKEN_STDIN = {
 
 @pytest.mark.parametrize("make_stdin", _BROKEN_STDIN.values(), ids=_BROKEN_STDIN.keys())
 def test_stdin(hooks_dir, tmp_path, make_stdin):
-    """壊れた JSON・空・10MB の JSON 1 行。"""
     env = _base_env(tmp_path)
     result = _run(hooks_dir, env, make_stdin())
     _assert_clean_exit(result.returncode, result.stderr)

@@ -25,14 +25,12 @@ def _fixed_identity(monkeypatch, tmp_path):
 
 
 def test_output_key_set_matches_contract(all_hook_inputs):
-    """出力のキー集合が過不足なく一致する。"""
     for raw in all_hook_inputs:
         row = collect.extract_event(raw, raw["hook_event_name"])
         assert set(row.keys()) == EXPECTED_KEYS
 
 
 def test_kind_session_id_hook_event(all_hook_inputs):
-    """kind / session_id / hook_event が期待どおり。"""
     for raw in all_hook_inputs:
         ev = raw["hook_event_name"]
         row = collect.extract_event(raw, ev)
@@ -42,7 +40,6 @@ def test_kind_session_id_hook_event(all_hook_inputs):
 
 
 def test_day_matches_to_day_of_ts(all_hook_inputs):
-    """day が契約の to_day(ts) の戻り値と一致する。"""
     for raw in all_hook_inputs:
         row = collect.extract_event(raw, raw["hook_event_name"])
         assert row["day"] == to_day(row["ts"])
@@ -219,7 +216,6 @@ def test_command_name_source_present(hook_inputs):
 
 
 def test_context_tokens_called_for_stop(hook_inputs, monkeypatch):
-    """hook_event=Stop で context_tokens の算出が 1 回呼ばれる。"""
     raw = next(iter(hook_inputs("Stop")))
     called = []
     monkeypatch.setattr(
@@ -231,7 +227,6 @@ def test_context_tokens_called_for_stop(hook_inputs, monkeypatch):
 
 
 def test_context_tokens_called_for_precompact(hook_inputs, monkeypatch):
-    """hook_event=PreCompact で context_tokens の算出が 1 回呼ばれる。"""
     raw = next(iter(hook_inputs("PreCompact")))
     called = []
     monkeypatch.setattr(
@@ -280,7 +275,6 @@ def test_non_dict_input_all_hook_fields_none():
 
 
 def test_unknown_keys_only_input_matches_key_set():
-    """契約に無いキーだけを持つ入力でも契約どおりのキー集合を返す。"""
     row = collect.extract_event({"foo": "bar", "baz": {"qux": 1}}, "PostToolUse")
     assert set(row.keys()) == EXPECTED_KEYS
 

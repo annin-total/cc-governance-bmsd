@@ -12,7 +12,6 @@ AUTOUPDATE_KEY = "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpda
 
 
 def _write_settings(tmp_path, content):
-    """`content` を settings.json として書き、パスを返す。"""
     path = tmp_path / "settings.json"
     path.write_text(json.dumps(content), encoding="utf-8")
     return path

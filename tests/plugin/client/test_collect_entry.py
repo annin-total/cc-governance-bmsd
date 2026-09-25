@@ -36,7 +36,6 @@ def _spool_has_file(plugin_data) -> bool:
 
 @pytest.mark.parametrize("value", ["1", "0", "false"])
 def test_disable_nonempty_value_skips_collection(run_collect, tmp_path, value):
-    """CC_GOVERNANCE_DISABLE が空でない値 -> exit 0。queue.jsonl を作らない。"""
     plugin_data = tmp_path / "plugin-data"
     result = run_collect(
         "Stop", plugin_data=plugin_data, env={"CC_GOVERNANCE_DISABLE": value}
@@ -46,7 +45,6 @@ def test_disable_nonempty_value_skips_collection(run_collect, tmp_path, value):
 
 
 def test_disable_empty_value_collects(run_collect, tmp_path):
-    """CC_GOVERNANCE_DISABLE が空文字 -> 収集する。queue.jsonl が1行。"""
     plugin_data = tmp_path / "plugin-data"
     result = run_collect(
         "PostToolUse", plugin_data=plugin_data, env={"CC_GOVERNANCE_DISABLE": ""}
@@ -57,7 +55,6 @@ def test_disable_empty_value_collects(run_collect, tmp_path):
 
 
 def test_disable_unset_collects(run_collect, tmp_path):
-    """CC_GOVERNANCE_DISABLE 未設定 -> 収集する。queue.jsonl が1行。"""
     plugin_data = tmp_path / "plugin-data"
     result = run_collect("PostToolUse", plugin_data=plugin_data)
     assert result.returncode == 0
@@ -68,7 +65,6 @@ def test_disable_unset_collects(run_collect, tmp_path):
 def test_disable_blocks_launch_even_if_send_condition_met(
     run_collect, tmp_path, write_config, unused_port
 ):
-    """無効化スイッチが立っている状態で送信条件を満たしても、送信プロセスを起動しない。"""
     plugin_data = tmp_path / "plugin-data"
     plugin_data.mkdir(parents=True)
     (plugin_data / "queue.jsonl").write_text('{"n": 1}\n', encoding="utf-8")
@@ -89,7 +85,6 @@ def test_disable_blocks_launch_even_if_send_condition_met(
 
 
 def test_hook_event_field_matches_arg(run_collect, tmp_path):
-    """引数に PostToolUse を渡す -> 行の hook_event = "PostToolUse"。"""
     plugin_data = tmp_path / "plugin-data"
     result = run_collect("PostToolUse", plugin_data=plugin_data)
     assert result.returncode == 0
@@ -100,7 +95,6 @@ def test_hook_event_field_matches_arg(run_collect, tmp_path):
 
 
 def test_missing_argv_exits_zero(run_collect, tmp_path):
-    """引数を渡さない -> exit 0。例外を出さない（標準エラーが空）。"""
     plugin_data = tmp_path / "plugin-data"
     result = run_collect(plugin_data=plugin_data)
     assert result.returncode == 0
@@ -108,7 +102,6 @@ def test_missing_argv_exits_zero(run_collect, tmp_path):
 
 
 def test_two_runs_append_two_distinct_events(run_collect, tmp_path):
-    """2回続けて実行 -> queue.jsonl が2行。event_id が相異なる。"""
     plugin_data = tmp_path / "plugin-data"
     run_collect("PostToolUse", plugin_data=plugin_data)
     run_collect("PostToolUse", plugin_data=plugin_data)
@@ -124,7 +117,6 @@ def test_two_runs_append_two_distinct_events(run_collect, tmp_path):
 def test_send_condition_false_stop_does_not_launch(
     run_collect, tmp_path, write_config, unused_port
 ):
-    """送信条件が偽、引数 Stop -> 送信プロセスを起動しない。"""
     plugin_data = tmp_path / "plugin-data"
     sent_at = plugin_data / "sent_at"
     _touch_now(sent_at)
@@ -142,7 +134,6 @@ def test_send_condition_false_stop_does_not_launch(
 def test_send_condition_true_stop_launches_and_marks_sent(
     run_collect, tmp_path, write_config, unused_port
 ):
-    """送信条件が真、引数 Stop -> 送信プロセスを起動する。sent_at の mtime が更新される。"""
     plugin_data = tmp_path / "plugin-data"
     write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
@@ -158,7 +149,6 @@ def test_send_condition_true_stop_launches_and_marks_sent(
 def test_send_condition_true_session_start_launches(
     run_collect, tmp_path, write_config, unused_port
 ):
-    """送信条件が真、引数 SessionStart -> 送信プロセスを起動する。"""
     plugin_data = tmp_path / "plugin-data"
     write_config(ingest_url=f"http://127.0.0.1:{unused_port()}/ingest")
 
@@ -186,7 +176,6 @@ def test_other_hook_events_never_launch(
 
 
 def test_normal_input_produces_empty_stdout(run_collect, tmp_path):
-    """正常な入力 -> 標準出力が空。"""
     plugin_data = tmp_path / "plugin-data"
     result = run_collect(
         "PostToolUse", plugin_data=plugin_data, stdin=json.dumps({"session_id": "abc"})

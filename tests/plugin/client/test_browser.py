@@ -109,7 +109,6 @@ def test_open_url_darwin_query_with_ampersand_stays_one_argument(monkeypatch):
 
 
 def test_open_url_darwin_popen_oserror_does_not_raise(monkeypatch):
-    """darwin で Popen が OSError を投げても open_url からは例外が漏れない。"""
     monkeypatch.setattr(_browser.sys, "platform", "darwin")
 
     def raiser(*_args, **_kwargs):
@@ -121,7 +120,6 @@ def test_open_url_darwin_popen_oserror_does_not_raise(monkeypatch):
 
 
 def test_open_url_darwin_popen_valueerror_does_not_raise(monkeypatch):
-    """darwin で Popen が ValueError を投げても open_url からは例外が漏れない。"""
     monkeypatch.setattr(_browser.sys, "platform", "darwin")
 
     def raiser(*_args, **_kwargs):
@@ -136,7 +134,6 @@ def test_open_url_darwin_popen_valueerror_does_not_raise(monkeypatch):
 
 
 def test_open_url_win32_uses_startfile_and_not_popen(monkeypatch):
-    """win32 では os.startfile が URL 1 個で 1 回呼ばれ、Popen は呼ばれない。"""
     import os
 
     monkeypatch.setattr(_browser.sys, "platform", "win32")
@@ -152,7 +149,6 @@ def test_open_url_win32_uses_startfile_and_not_popen(monkeypatch):
 
 
 def test_open_url_win32_startfile_oserror_does_not_raise(monkeypatch):
-    """win32 で os.startfile が OSError を投げても open_url からは例外が漏れない。"""
     import os
 
     monkeypatch.setattr(_browser.sys, "platform", "win32")
@@ -166,7 +162,6 @@ def test_open_url_win32_startfile_oserror_does_not_raise(monkeypatch):
 
 
 def test_open_url_win32_startfile_valueerror_does_not_raise(monkeypatch):
-    """win32 で os.startfile が ValueError を投げても open_url からは例外が漏れない。"""
     import os
 
     monkeypatch.setattr(_browser.sys, "platform", "win32")
@@ -183,7 +178,6 @@ def test_open_url_win32_startfile_valueerror_does_not_raise(monkeypatch):
 
 
 def test_open_url_linux_calls_nothing(monkeypatch):
-    """linux では Popen も os.startfile も呼ばれない（何もしない）。"""
     import os
 
     monkeypatch.setattr(_browser.sys, "platform", "linux")

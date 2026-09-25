@@ -17,7 +17,6 @@ import pytest
 
 
 def _assert_clean_exit(result):
-    """終了コード0・標準出力/標準エラーが空であることを確認する。"""
     assert result.returncode == 0
     assert result.stdout == b"" or result.stdout == ""
     assert result.stderr == b"" or result.stderr == ""
@@ -115,7 +114,6 @@ def test_broken_input_still_collects(setup, run_collect, hooks_dir, tmp_path):
 
 
 def test_readonly_state_dir(run_collect, tmp_path):
-    """状態ディレクトリを読み取り専用にした状態。"""
     plugin_data = tmp_path / "plugin-data"
     plugin_data.mkdir(parents=True)
     plugin_data.chmod(stat.S_IRUSR | stat.S_IXUSR)
@@ -127,7 +125,6 @@ def test_readonly_state_dir(run_collect, tmp_path):
 
 
 def test_queue_path_is_directory(run_collect, tmp_path):
-    """queue.jsonl をディレクトリに置き換えた状態。"""
     plugin_data = tmp_path / "plugin-data"
     (plugin_data / "queue.jsonl").mkdir(parents=True)
     result = run_collect("Stop", plugin_data=plugin_data)

@@ -28,7 +28,6 @@ pytestmark = pytest.mark.usefixtures("session_start_env", "spy_launch")
 
 @pytest.fixture(autouse=True)
 def _empty_settings(session_start_env):
-    """設定ディレクトリに空の settings.json を置く。"""
     (session_start_env / "config").mkdir(parents=True, exist_ok=True)
     (session_start_env / "config" / "settings.json").write_text("{}", encoding="utf-8")
 
@@ -76,7 +75,6 @@ def _set_entrypoint(monkeypatch, value):
 def test_cli_opens_only_first_valid_url_once(
     notices_file, monkeypatch, capsys, _open_spy
 ):
-    """cli では先頭の有効な URL（n-001 の URL_1）だけが 1 回開かれる。"""
     _set_entrypoint(monkeypatch, "cli")
     session_start.main()
     capsys.readouterr()
@@ -86,7 +84,6 @@ def test_cli_opens_only_first_valid_url_once(
 def test_cli_marks_all_unread_ids_as_seen(
     notices_file, tmp_path, monkeypatch, capsys, _open_spy
 ):
-    """cli 実行後、seen.json に未読だった全 id（n-001, n-002, n-003）が入る。"""
     _set_entrypoint(monkeypatch, "cli")
     session_start.main()
     capsys.readouterr()
@@ -97,7 +94,6 @@ def test_cli_marks_all_unread_ids_as_seen(
 def test_cli_system_message_contains_detail_line(
     notices_file, monkeypatch, capsys, _open_spy
 ):
-    """systemMessage に `詳細: <url>` が含まれる。"""
     _set_entrypoint(monkeypatch, "cli")
     session_start.main()
     out = json.loads(capsys.readouterr().out)
@@ -122,7 +118,6 @@ def test_cli_second_run_does_not_open_again(
 def test_cli_no_url_items_do_not_open(
     notices_file_no_url, monkeypatch, capsys, _open_spy
 ):
-    """url なしの項目だけなら、cli でも開かない。"""
     _set_entrypoint(monkeypatch, "cli")
     session_start.main()
     capsys.readouterr()
@@ -153,7 +148,6 @@ def test_cli_unparsable_url_does_not_hide_other_notices(
 
 
 def test_headless_sdk_does_not_open(notices_file, monkeypatch, capsys, _open_spy):
-    """sdk-cli では開かない。"""
     _set_entrypoint(monkeypatch, "sdk-cli")
     session_start.main()
     capsys.readouterr()
@@ -163,7 +157,6 @@ def test_headless_sdk_does_not_open(notices_file, monkeypatch, capsys, _open_spy
 def test_headless_sdk_does_not_create_seen_file(
     notices_file, tmp_path, monkeypatch, capsys, _open_spy
 ):
-    """sdk-cli では seen.json を作らない（既読にしない）。"""
     _set_entrypoint(monkeypatch, "sdk-cli")
     session_start.main()
     capsys.readouterr()
@@ -173,7 +166,6 @@ def test_headless_sdk_does_not_create_seen_file(
 def test_headless_sdk_does_not_update_existing_seen_file(
     notices_file, tmp_path, monkeypatch, capsys, _open_spy
 ):
-    """既に seen.json がある状態で sdk-cli を実行しても、既読は更新されない。"""
     seen_path = _seen_file(tmp_path)
     seen_path.parent.mkdir(parents=True, exist_ok=True)
     seen_path.write_text(json.dumps(["n-001"]), encoding="utf-8")
@@ -189,7 +181,6 @@ def test_headless_sdk_does_not_update_existing_seen_file(
 def test_headless_sdk_still_emits_system_message(
     notices_file, monkeypatch, capsys, _open_spy
 ):
-    """sdk-cli でも systemMessage 自体は出力される（テキストは出す）。"""
     _set_entrypoint(monkeypatch, "sdk-cli")
     session_start.main()
     out = json.loads(capsys.readouterr().out)
@@ -240,7 +231,6 @@ def test_disabled_does_not_open(notices_file, monkeypatch, capsys, _open_spy):
 def test_seen_write_failure_does_not_open(
     notices_file, tmp_path, monkeypatch, capsys, _open_spy
 ):
-    """状態ディレクトリの位置をファイルで塞ぎ、seen を書けなくすると、cli でも開かない。"""
     state_path = tmp_path / "state"
     if state_path.exists():
         shutil.rmtree(state_path)
@@ -259,7 +249,6 @@ def test_seen_write_failure_does_not_open(
 def test_seen_write_readonly_dir_does_not_open(
     notices_file, tmp_path, monkeypatch, capsys, _open_spy
 ):
-    """状態ディレクトリを読み取り専用にして seen を書けなくすると、cli でも開かない。"""
     state_dir = tmp_path / "state"
     state_dir.mkdir(parents=True, exist_ok=True)
     state_dir.chmod(stat.S_IRUSR | stat.S_IXUSR)
@@ -309,7 +298,6 @@ def test_stdout_flush_failure_does_not_open(
 def test_open_url_exception_does_not_break_output_or_collection(
     notices_file, monkeypatch, capsys, spy_launch
 ):
-    """open_url が例外を投げても、標準出力は JSON 1 個、標準エラーは空、収集ステップも走る。"""
     _set_entrypoint(monkeypatch, "cli")
 
     def _raiser(_url):
