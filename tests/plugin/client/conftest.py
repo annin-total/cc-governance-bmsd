@@ -193,9 +193,9 @@ _ALL_HOOK_EVENTS = (
 
 @pytest.fixture
 def all_hook_inputs(hook_inputs) -> list:
-    """全 hook 種別の fixture を、種別の順に 1 リストにまとめる。
+    """全 hook 種別の fixture を種別の順に 1 リストにまとめる。
 
-    空だと、これを回すテストが空ループを素通りして緑になるため、空でないことを確かめる。
+    空だと回すテストが空ループを素通りして緑になるため、空でないことを確かめる。
     """
     inputs = [raw for ev in _ALL_HOOK_EVENTS for raw in hook_inputs(ev)]
     assert inputs, "hook 入力の fixture が 1 件も読めない"
