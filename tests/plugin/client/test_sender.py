@@ -125,16 +125,6 @@ def _seed_spool_file(name, rows, mtime=None):
     return path
 
 
-def _seed_spool_bytes(name, size_bytes, mtime):
-    """指定サイズの spool ファイルを置く（破棄の検査用）。"""
-    spool_dir = _spool._spool_dir()
-    spool_dir.mkdir(parents=True, exist_ok=True)
-    path = spool_dir / name
-    path.write_bytes(b"x" * size_bytes)
-    os.utime(path, (mtime, mtime))
-    return path
-
-
 # --- POST の基本動作 ---
 
 
@@ -297,14 +287,14 @@ def test_nothing_to_send_does_not_post(server, monkeypatch, tmp_path):
     assert srv.requests == []
 
 
-def test_prune_runs_after_posting(server, monkeypatch, tmp_path):
+def test_prune_runs_after_posting(server, monkeypatch, tmp_path, seed_spool_bytes):
     """#15: spool 合計が 6MB（1MB x 6）、サーバが 500 -> 6 ファイルとも POST され、その後に古い 1 ファイルが破棄される。"""
     srv = server(status_codes=[500] * 6)
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
     now = time.time()
     one_mb = 1024 * 1024
     paths = [
-        _seed_spool_bytes(f"{4000 + i}-{'d' * 32}.jsonl", one_mb, now - i * 60)
+        seed_spool_bytes(f"{4000 + i}-{'d' * 32}.jsonl", one_mb, now - i * 60)
         for i in range(6)
     ]
 

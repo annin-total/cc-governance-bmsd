@@ -221,15 +221,7 @@ def test_mark_sent_updates_mtime_to_now():
 # --- 破棄 ---
 
 
-def _make_spool_file(spool_dir, name, size_bytes, mtime):
-    spool_dir.mkdir(parents=True, exist_ok=True)
-    path = spool_dir / name
-    path.write_bytes(b"x" * size_bytes)
-    os.utime(path, (mtime, mtime))
-    return path
-
-
-def test_prune_under_limits_deletes_nothing():
+def test_prune_under_limits_deletes_nothing(seed_spool_bytes):
     """#17: spool 合計 4.9MB、いずれも 1 日前 -> 1 件も削除しない。"""
     spool_dir = _spool._spool_dir()
     now = time.time()
@@ -237,16 +229,14 @@ def test_prune_under_limits_deletes_nothing():
     total = int(4.9 * 1024 * 1024)
     per_file = total // 5
     for i in range(5):
-        _make_spool_file(
-            spool_dir, f"{1000 + i}-{'a' * 32}.jsonl", per_file, one_day_ago
-        )
+        seed_spool_bytes(f"{1000 + i}-{'a' * 32}.jsonl", per_file, one_day_ago)
 
     _spool.prune()
 
     assert len(list(spool_dir.iterdir())) == 5
 
 
-def test_prune_over_size_deletes_oldest_first():
+def test_prune_over_size_deletes_oldest_first(seed_spool_bytes):
     """#18: 1MB x 6 件（mtime が 1 分ずつ古い） -> 合計 5MB 以下になるまで古い順に削除。
     残るのは新しい 5 件。"""
     spool_dir = _spool._spool_dir()
@@ -257,7 +247,7 @@ def test_prune_over_size_deletes_oldest_first():
         mtime = now - i * 60
         name = f"{2000 + i}-{'b' * 32}.jsonl"
         names.append((name, mtime))
-        _make_spool_file(spool_dir, name, one_mb, mtime)
+        seed_spool_bytes(name, one_mb, mtime)
 
     _spool.prune()
 
@@ -269,22 +259,21 @@ def test_prune_over_size_deletes_oldest_first():
     assert total_size <= 5 * 1024 * 1024
 
 
-def test_prune_deletes_file_older_than_max_days():
+def test_prune_deletes_file_older_than_max_days(seed_spool_bytes):
     """#19: mtime が 7 日 1 秒前の 1 件、合計 1KB -> 削除する。"""
     spool_dir = _spool._spool_dir()
     mtime = time.time() - (7 * 86400 + 1)
-    _make_spool_file(spool_dir, f"{3000}-{'c' * 32}.jsonl", 1024, mtime)
+    seed_spool_bytes(f"{3000}-{'c' * 32}.jsonl", 1024, mtime)
 
     _spool.prune()
 
     assert list(spool_dir.iterdir()) == []
 
 
-def test_prune_keeps_file_within_max_days():
+def test_prune_keeps_file_within_max_days(seed_spool_bytes):
     """#20: mtime が 6 日前の 1 件 -> 残す。"""
-    spool_dir = _spool._spool_dir()
     mtime = time.time() - 6 * 86400
-    path = _make_spool_file(spool_dir, f"{4000}-{'d' * 32}.jsonl", 1024, mtime)
+    path = seed_spool_bytes(f"{4000}-{'d' * 32}.jsonl", 1024, mtime)
 
     _spool.prune()
 

@@ -195,3 +195,19 @@ _ALL_HOOK_EVENTS = (
 def all_hook_inputs(hook_inputs) -> list:
     """全 hook 種別の fixture を、種別の順に 1 リストにまとめる。"""
     return [raw for ev in _ALL_HOOK_EVENTS for raw in hook_inputs(ev)]
+
+
+@pytest.fixture
+def seed_spool_bytes():
+    """spool/ に指定サイズ・mtime のファイルを置く関数を返す（破棄の検査用）。"""
+    import _spool
+
+    def _seed(name, size_bytes, mtime) -> Path:
+        spool_dir = _spool._spool_dir()
+        spool_dir.mkdir(parents=True, exist_ok=True)
+        path = spool_dir / name
+        path.write_bytes(b"x" * size_bytes)
+        os.utime(path, (mtime, mtime))
+        return path
+
+    return _seed
