@@ -51,7 +51,6 @@
 | --- | --- |
 | `githttpd.py` | bare リポジトリを http で配る最小の git サーバ（localhost 限定）。`claude plugin marketplace add` が bare を直接指せないために使う。`python3 githttpd.py <bare の親ディレクトリ> <ポート>` |
 | `run.sh` | 隔離 HOME（`home-<n>/`）で `claude` を起動する |
-| `hold.py` / `hold.sh` | 隔離 HOME で対話セッションを pty 上に起動し、指定秒数だけ保持してログを取る |
 | `snap.sh` | 隔離 HOME で自動更新がどこまで進んだかを一覧表示する |
 | `isolated_home_run.sh` | 隔離 HOME で `claude` を起動し、データ領域の作られ方を確かめる |
 | `marketplaces/au-verify/` | 擬似マーケットプレイス（プラグイン名 `audummy`。SessionStart で版を `$HOME/captured.log` に書く） |
