@@ -6,6 +6,7 @@
 import json
 from pathlib import Path
 
+from _flow import data_dir, install, ok, session
 from _market import (
     EXCLUDE,
     MARKETPLACE,
@@ -19,22 +20,6 @@ from _root import hook_rows
 
 V1, V2 = version(1), version(2)
 _PLUGIN_JSON = ".claude-plugin/plugin.json"
-_CLI_TIMEOUT = 120
-_SESSION_TIMEOUT = 90
-
-
-def _ok(root, *args: str) -> None:
-    res = root.run_claude(*args, timeout=_CLI_TIMEOUT)
-    assert res.returncode == 0, res.stdout + res.stderr
-
-
-def _install(root, gitsrv) -> None:
-    """v1 を publish し、git source のマーケットプレイスとして追加して導入する。"""
-    publish(root, V1)
-    _ok(
-        root, "plugin", "marketplace", "add", gitsrv.url(MARKETPLACE), "--scope", "user"
-    )
-    _ok(root, "plugin", "install", PLUGIN_ID, "--scope", "user")
 
 
 def _manifest_version(plugin_dir: Path) -> str:
@@ -64,15 +49,6 @@ def _assert_installed(root, ver: str) -> Path:
     return path
 
 
-def _session(root) -> Path:
-    """未ログインで 1 セッション起動し、プラグインの data ディレクトリを返す。"""
-    # 未ログインでは終了コード 1 で終わるが、SessionStart は発火する。終了コードは判定しない
-    root.run_claude("-p", "ok", timeout=_SESSION_TIMEOUT)
-    dirs = list((root.config / "plugins" / "data").iterdir())
-    assert len(dirs) == 1, dirs
-    return dirs[0]
-
-
 def _files(top: Path) -> dict:
     return {
         p.relative_to(top).as_posix(): p.read_bytes()
@@ -82,7 +58,7 @@ def _files(top: Path) -> dict:
 
 
 def test_git_sourceで導入できる(root, gitsrv):
-    _install(root, gitsrv)
+    install(root, gitsrv, V1)
     _assert_installed(root, V1)
     known = root.json("plugins/known_marketplaces.json")[MARKETPLACE]
     assert known["source"] == {"source": "git", "url": gitsrv.url(MARKETPLACE)}
@@ -92,7 +68,7 @@ def test_git_sourceで導入できる(root, gitsrv):
 
 
 def test_installPathはキャッシュの複製(root, gitsrv):
-    _install(root, gitsrv)
+    install(root, gitsrv, V1)
     path = _assert_installed(root, V1).resolve()
     assert (root.config / "plugins" / "cache").resolve() in path.parents
     src, got = _files(PLUGIN_SRC), _files(path)
@@ -101,22 +77,23 @@ def test_installPathはキャッシュの複製(root, gitsrv):
 
 
 def test_2段階で更新される(root, gitsrv):
-    _install(root, gitsrv)
+    install(root, gitsrv, V1)
     publish(root, V2)
-    _ok(root, "plugin", "marketplace", "update", MARKETPLACE)
+    ok(root, "plugin", "marketplace", "update", MARKETPLACE)
     _assert_installed(root, V1)
     clone = Path(
         root.json("plugins/known_marketplaces.json")[MARKETPLACE]["installLocation"]
     )
     assert _manifest_version(clone / "plugins" / PLUGIN) == V2
-    _ok(root, "plugin", "update", PLUGIN_ID)
+    ok(root, "plugin", "update", PLUGIN_ID)
     _assert_installed(root, V2)
 
 
 def test_SessionStartがinstallPathから動く(root, gitsrv):
-    _install(root, gitsrv)
+    install(root, gitsrv, V1)
     path = _assert_installed(root, V1)
-    rows = hook_rows(_session(root))
+    session(root)
+    rows = hook_rows(data_dir(root))
     assert any(
         r["kind"] == "event" and r["hook_event"] == "SessionStart" for r in rows
     ), rows
@@ -129,11 +106,12 @@ def test_SessionStartがinstallPathから動く(root, gitsrv):
 
 
 def test_uninstallでdataが消えgovernanceは残る(root, gitsrv):
-    _install(root, gitsrv)
-    data = _session(root)
+    install(root, gitsrv, V1)
+    session(root)
+    data = data_dir(root)
     statusline = root.config / "governance" / "statusline.js"
     assert data.is_dir() and statusline.is_file()
-    _ok(root, "plugin", "uninstall", PLUGIN_ID, "--scope", "user")
+    ok(root, "plugin", "uninstall", PLUGIN_ID, "--scope", "user")
     assert _installed(root) == ([], [])
     assert not data.exists()
     assert statusline.is_file()
