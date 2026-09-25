@@ -1,15 +1,16 @@
-"""SessionStart hook のエントリ。設定の適用 -> お知らせの表示 -> イベントの収集の順に実行する。
+"""SessionStart hook のエントリ。statusline.js の同期 -> 設定の適用 -> お知らせの表示 ->
+イベントの収集の順に実行する。
 
 お知らせは、非対話起動（`claude -p` など）では既読にしない。URL 付きの未読があれば、
 既読の記録に成功した対話セッションに限り、先頭 1 件だけを既定ブラウザで開く。
 
-3 つはそれぞれ個別に例外から守り、1 つの失敗が残りを巻き添えにしない。無効化スイッチ
+4 つはそれぞれ個別に例外から守り、1 つの失敗が残りを巻き添えにしない。無効化スイッチ
 （`CC_GOVERNANCE_DISABLE`）が止めるのは、お知らせの表示と利用ログの収集だけである。
-設定の適用・その policy イベントの記録・送信条件の判定はスイッチの外側で行う。
+statusline.js の同期・設定の適用・その policy イベントの記録・送信条件の判定はスイッチの外側で行う。
 """
 
 if __name__ == "__main__":
-    # collect.py と同じ理由（R-42）で、スクリプト起動時だけ SIGINT を無視する。
+    # collect.py と同じ理由（import 中の SIGINT でトレースバックが漏れる）で、スクリプト起動時だけ SIGINT を無視する。
     import _signal
 
     _signal.signal(_signal.SIGINT, _signal.SIG_IGN)
@@ -18,29 +19,20 @@ import json
 import os
 import sys
 import time
-from pathlib import Path
 from typing import Any, Optional
 
 import _browser
+import _govdir
 import _identity
 import _notices
 import _spool
 from _settings import apply_settings
 from collect import _read_stdin_json, extract_event
-from contract import POLICY, POLICY_COLUMNS, coerce, to_day
+from contract import POLICY_COLUMNS, coerce, to_day
 
 _DISABLE_ENV = "CC_GOVERNANCE_DISABLE"
-_CONFIG_DIR_ENV = "CLAUDE_CONFIG_DIR"
-_SETTINGS_FILENAME = "settings.json"
 
 _NOTICES_PATH = _notices._NOTICES_PATH
-
-
-def _settings_path() -> Path:
-    """`settings.json` のパスを解決する。`CLAUDE_CONFIG_DIR` が無ければ `~/.claude` の下。"""
-    config_dir = os.environ.get(_CONFIG_DIR_ENV)
-    base = Path(config_dir) if config_dir else Path.home() / ".claude"
-    return base / _SETTINGS_FILENAME
 
 
 def _policy_row(
@@ -74,10 +66,13 @@ def _apply_settings_step() -> None:
     """設定を適用し、結果を policy イベントとしてキューに積む。無効化スイッチの影響を受けない。
 
     `plugin_version` の取得もこの中で行う。ここより外に置くと、その失敗がお知らせの表示と
-    収集まで巻き添えにする（設計書 §3.3 が守る「hook は無言で消えない」に反する）。
+    収集まで巻き添えにする（「hook は無言で消えない」という原則に反する）。
+    `policy` の import も同じ理由でここに置く（配った定義の誤りを設定の適用だけに閉じ込める）。
     """
+    import policy
+
     plugin_version = _identity.get_plugin_version()
-    rows = apply_settings(_settings_path(), POLICY)
+    rows = apply_settings(_govdir.settings_path(), policy, _govdir.governance_dir())
     ts = int(time.time())
     for key_name, value, prev_value, apply_result in rows:
         _spool.append(
@@ -146,9 +141,15 @@ def _collect_step(hook_event: Optional[str], disabled: bool) -> None:
 
 
 def main() -> None:
-    """設定の適用 -> お知らせの表示 -> イベントの収集の順に実行する。"""
+    """statusline.js の同期 -> 設定の適用 -> お知らせの表示 -> イベントの収集の順に実行する。"""
     hook_event: Optional[str] = sys.argv[1] if len(sys.argv) > 1 else None
     disabled = bool(os.environ.get(_DISABLE_ENV))
+
+    # 設定より先に置く。設定がこのファイルを指したとき、既に在るようにするため
+    try:
+        _govdir.sync_statusline(_govdir.governance_dir())
+    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
+        pass
 
     try:
         _apply_settings_step()

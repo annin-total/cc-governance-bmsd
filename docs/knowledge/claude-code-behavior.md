@@ -11,8 +11,10 @@
 | `hooks.json` を読むのは **Claude Code 本体**であり、変更は**セッションを開き直すまで効かない**。一方、プラグインの hook が実行時に読むファイルは**次のツール実行から即時に効く** | プラグインの変更が端末に効くタイミングの見積もり。hook の追加・削除だけは利用者の再起動を待つ |
 | `directory`（ローカルパス）ソースのマーケットプレイスでは、`CLAUDE_PLUGIN_ROOT` が **`cache/` の複製ではなく元のディレクトリ**を指す。cache 側を編集しても何も起きない | ローカル開発で「直したのに反映されない」と迷ったとき。git リモート由来では `cache/` 配下を指すと見られる（**推測・未検証**） |
 | 初回導入は、`settings.json` に `extraKnownMarketplaces` / `enabledPlugins` を書いて起動を繰り返すだけでは完了しない場合がある（`temp_git_…_clone` が残って進まない状態を隔離環境で 2 例）。`claude plugin marketplace add` と `claude plugin install` の明示実行で完了した | 導入手順を書くとき。**導入が完了したことを確認する手段**を手順に含める必要がある |
-| 自動更新でマーケットプレイスの clone が新版に進むまで、実環境で **15 分 23 秒**かかった（観測 1 回）。固定値か初回だけかは**未検証** | 展開の所要時間を見積もるとき |
+| 自動更新でマーケットプレイスの clone が新版に進むまで、隔離環境（git source + 自前の HTTP サーバ）で **15 分 23 秒**かかった（観測 1 回）。同条件の別の隔離環境では約 26 分・セッション 3 回待っても一度も進まなかった。固定値かどうか、条件差の原因は**未検証** | 展開の所要時間を見積もるとき |
 | 隔離 HOME（未ログイン）では、35 分放置しても自動の更新チェックが 1 度も走らなかった（git サーバのアクセスログにフェッチ 0 件）。実環境（ログイン済み）では走った。**未ログインだと走らない**という説明は素直だが**未検証** | **隔離 HOME では背景ジョブに依存する検証ができない。** 自動更新まわりは実環境でしか確かめられない |
+| マーケットプレイスの `autoUpdate` は `settings.json` の `extraKnownMarketplaces.<name>.autoUpdate` が権威であり、セッション開始時に `plugins/known_marketplaces.json` へ上書き同期される。社外のマーケットプレイスは既定で無効（git リモートから導入した直後、どちらのファイルにもキーが無い）（2026-09 確認。版は記録なし） | 自動更新を有効にしたいとき。`known_marketplaces.json` を書き換えても次の起動で戻る |
+| 手動更新は 2 段階である。`claude plugin marketplace update` はカタログだけを更新し、導入済みプラグインの版は `claude plugin update` で上がる。更新が降りても反映は次に起動したセッションから。`source` に到達できなくても端末の複製で動き続け、止まるのは更新だけ（2026-09 確認。版は記録なし） | 更新手順を書くとき。版が上がらないと迷ったとき |
 | `managed-settings.json`（管理者が配る層）の設定は、利用者の `settings.json` より優先される | 端末側の設定が上位の設定に負けて効かないことがある |
 | `env.FORCE_AUTOUPDATE_PLUGINS` は hook プロセスまで値が届く。ただし**本体の入れ替えを起こす効果は観測できていない** | 本体の自動更新を抑止している端末で、プラグインの更新だけを生かせるかを考えるとき |
 | 外部から `export CLAUDE_PLUGIN_DATA=...` しても **Claude Code は無視する**。実際のプラグインのデータ領域は、Claude Code が自前で計算する `$CLAUDE_CONFIG_DIR/plugins/data/<plugin>-<marketplace>/` に固定される | hook を手動実行するときと `claude` に実行させるときとで、状態ディレクトリが別物になりうる。検証手順は実際に使われるパスを毎回計算し直す |
@@ -31,6 +33,7 @@
 | `CLAUDE_CODE_ENTRYPOINT` は対話起動で `cli`、`claude -p` で `sdk-cli`（`--output-format stream-json` でも同じ）。親プロセスから `cli` を継承した状態で `claude -p` を起動しても `sdk-cli` に上書きされる。**未文書化**（`hooks` / `env-vars` の公式ページに記載が無い）。公式ドキュメント（monitoring-usage）の OTEL 属性 `app.entrypoint` の例には `cli` / `sdk-cli` / `sdk-ts` / `sdk-py` / `claude-vscode` などが挙がる（2.1.281 実測 + 公式ドキュメント） | 起動形態を hook 側で判定するとき。未文書化のため名前・値は上流の都合で変わりうる |
 | `CLAUDE_CODE_SESSION_ATTENDED` は対話起動で `1`、`claude -p` で `0`。**未文書化**（2.1.281） | 対話判定の代替候補として検討するとき |
 | `claude -p` では `SessionStart` の `systemMessage` が、プレーン出力にも `--output-format json` の標準出力にも現れない。`--output-format stream-json --verbose` では `type:"system"`・`subtype:"hook_response"` の `output` に入る（2.1.281、ログイン済みで実測） | 非対話の出力を機械処理するスクリプトへの影響を見積もるとき。お知らせが毎回出ても、プレーンと `json` の出力は汚れない |
+| 対話起動では `SessionStart` の `systemMessage` が `SessionStart:<source> says: ` の接頭辞つきで表示され、複数行でも接頭辞は 1 行目だけに付く。長い文面はファイルへ退避され、先頭のプレビューとパスだけが表示される。退避の境界は日本語で約 680 字、ASCII で約 2,000 字（日本語 614 字は退避されない）（2026-09 に隔離環境で文字数を変えて目視。版は記録なし） | hook から人に見せる文面の長さを決めるとき |
 | 未ログインでも `SessionStart` hook（プラグインの hook を含む）は発火し、その後に `Login expired` で終了する（2.1.281） | hook の挙動だけを確かめたいとき。ログインしなくても観測できる |
 | `/login` は OAuth の認可 URL を、`PATH` 上の `open` で開く（2.1.281、macOS） | `PATH` に偽の `open` を置いて hook のブラウザ起動を数えるとき。ログインの分も記録されるので、URL で区別する |
 | `SessionStart` の標準入力には `-p` かどうかを示すキーが無く、`source` は対話・`-p` のどちらも `startup` になる。hook の標準入出力は対話起動でも端末に接続されていない（`isatty` では対話かどうかを判別できない）（2.1.281） | stdin の内容や `isatty` で対話起動を判定しようとしたとき。どちらも根拠にならない |

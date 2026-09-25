@@ -2,7 +2,7 @@
 """validate_plugin.py — プラグインの「差し込み前」形式検証。
 
 検証するのは Claude Code プラグインとしての「形式」に加えて、このプラグインの
-設計（docs/SPEC-plugin.md・CLAUDE.md）が定める根幹の不変条件である。不変条件とは
+設計（docs/spec/plugin.md・CLAUDE.md）が定める根幹の不変条件である。不変条件とは
 「契約の正本が在ること」「標準ライブラリだけで動くこと」「hook が exit 0 で
 静かに終わること」「py39 構文であること」を指し、実装の詳細が変わっても残る。
 
@@ -45,7 +45,6 @@ OS_NOISE_NAMES = frozenset({".DS_Store", "Thumbs.db"})
 CONTRACT_REQUIRED_NAMES = (
     "HOOK_FIELDS",
     "EXTRA_COLUMNS",
-    "POLICY",
     "POLICY_COLUMNS",
     "CSV_COLUMNS",
     "dig",

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""sync_contract.py — 契約の正本をサーバ側の複製へ同期する。
+"""sync_contract.py — 端末とサーバが共有する定義の正本を、サーバ側の複製へ同期する。
 
-正本: `plugin/hooks/contract.py`（配布物。端末に同梱される）
-複製: `server/contract.py`（submodule `cc-governance-monitor` の中。このスクリプトの生成物。直接編集しない）
-記録: `server/contract.sha256`（正本のハッシュ。複製と一緒にコミットする）
+対象は契約（`contract.py`）と標準設定（`policy.py`）の 2 つで、扱いは同じである。
+正本: `plugin/hooks/<name>`（配布物。端末に同梱される）
+複製: `server/ccgov/vendor/<name>`（submodule の中。このスクリプトの生成物。直接編集しない）
+記録: `server/ccgov/vendor/<name の拡張子を .sha256 にしたもの>`（正本のハッシュ。複製と一緒にコミットする）
 
-複製は固定の生成物ヘッダ（`_REPLICA_HEADER`）＋正本のバイト列そのもの、という構成を取る。
+複製は固定の生成物ヘッダ（`_header`）＋正本のバイト列そのもの、という構成を取る。
 これにより、複製ファイル単体（正本が手元に無い場所）でも、ヘッダの既知の長さを引いた残りを
 ハッシュ化すれば正本のハッシュと比較でき、複製が直接編集されていないかを検査できる
 （`server/entry.sh` がこの方式でサーバ起動時に検査する）。
@@ -21,35 +22,48 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MASTER = ROOT / "plugin" / "hooks" / "contract.py"
-SERVER_DIR = ROOT / "server"
-REPLICA = SERVER_DIR / "contract.py"
-HASH_FILE = SERVER_DIR / "contract.sha256"
-
-# 複製ファイルの先頭に必ず置く固定ヘッダ。バイト列を変えると、正本を持たない
-# 場所（entry.sh）での「ヘッダを除いた残りが正本のハッシュと一致するか」という
-# 検査が壊れるため、変更する場合は entry.sh 側の同じ定数も揃えて直すこと。
-_REPLICA_HEADER = (
-    '"""server/contract.py — 生成物。直接編集しない。\n'
-    "\n"
-    "正本: plugin/hooks/contract.py\n"
-    "`scripts/sync_contract.py` が正本から生成する。\n"
-    "`scripts/sync_contract.py --check` で正本との一致を検証できる。\n"
-    '"""\n'
-    "\n"
-)
+MASTER_DIR = ROOT / "plugin" / "hooks"
+VENDOR_DIR = ROOT / "server" / "ccgov" / "vendor"
+NAMES = ("contract.py", "policy.py")
 
 
-def _read_master_bytes() -> bytes:
+def _header(name: str) -> str:
+    """複製ファイルの先頭に必ず置く固定ヘッダ。
+
+    バイト列を変えると、正本を持たない場所（entry.sh）での「ヘッダを除いた残りが
+    正本のハッシュと一致するか」という検査が壊れるため、変更する場合は entry.sh 側の
+    同じ定数も揃えて直すこと。
+    """
+    return (
+        f'"""server/ccgov/vendor/{name} — 生成物。直接編集しない。\n'
+        "\n"
+        f"正本: plugin/hooks/{name}\n"
+        "`scripts/sync_contract.py` が正本から生成する。\n"
+        "`scripts/sync_contract.py --check` で正本との一致を検証できる。\n"
+        '"""\n'
+        "\n"
+    )
+
+
+def _paths(name: str) -> tuple:
+    """(正本, 複製, ハッシュ記録) のパス。"""
+    return (
+        MASTER_DIR / name,
+        VENDOR_DIR / name,
+        (VENDOR_DIR / name).with_suffix(".sha256"),
+    )
+
+
+def _read_master_bytes(master: Path) -> bytes:
     """正本のバイト列を読む。正本が無ければ例外で落ちる（検査対象0件で緑にしない）。"""
-    if not MASTER.is_file():
-        raise FileNotFoundError(f"正本が見つからない: {MASTER}")
-    return MASTER.read_bytes()
+    if not master.is_file():
+        raise FileNotFoundError(f"正本が見つからない: {master}")
+    return master.read_bytes()
 
 
-def _expected_replica_bytes(master_bytes: bytes) -> bytes:
+def _expected_replica_bytes(name: str, master_bytes: bytes) -> bytes:
     """正本のバイト列から、あるべき複製ファイルのバイト列を組み立てる。"""
-    return _REPLICA_HEADER.encode("utf-8") + master_bytes
+    return _header(name).encode("utf-8") + master_bytes
 
 
 def _master_hash(master_bytes: bytes) -> str:
@@ -59,41 +73,46 @@ def _master_hash(master_bytes: bytes) -> str:
 
 def sync() -> None:
     """正本から複製とハッシュ記録を書き出す。"""
-    master_bytes = _read_master_bytes()
-    REPLICA.write_bytes(_expected_replica_bytes(master_bytes))
-    HASH_FILE.write_text(_master_hash(master_bytes) + "\n", encoding="utf-8")
+    for name in NAMES:
+        master, replica, hash_file = _paths(name)
+        master_bytes = _read_master_bytes(master)
+        replica.write_bytes(_expected_replica_bytes(name, master_bytes))
+        hash_file.write_text(_master_hash(master_bytes) + "\n", encoding="utf-8")
 
 
-def check() -> list:
-    """正本・複製・ハッシュ記録のずれを列挙する。ずれが無ければ空リスト。"""
+def _check_one(name: str) -> list:
+    """1 組の正本・複製・ハッシュ記録のずれを列挙する。"""
     errors = []
-    master_bytes = _read_master_bytes()
+    master, replica, hash_file = _paths(name)
+    master_bytes = _read_master_bytes(master)
     expected_hash = _master_hash(master_bytes)
 
-    if not HASH_FILE.is_file():
-        errors.append(f"ハッシュ記録が見つからない: {HASH_FILE}")
+    if not hash_file.is_file():
+        errors.append(f"ハッシュ記録が見つからない: {hash_file}")
     else:
-        recorded_hash = HASH_FILE.read_text(encoding="utf-8").strip()
+        recorded_hash = hash_file.read_text(encoding="utf-8").strip()
         if recorded_hash != expected_hash:
             errors.append(
-                "contract.sha256 が正本の現在のハッシュと一致しない"
+                f"{hash_file.name} が正本の現在のハッシュと一致しない"
                 f"（記録={recorded_hash} 正本の実際={expected_hash}）。"
                 "正本を変更したら sync_contract.py を実行して同期すること"
             )
 
-    if not REPLICA.is_file():
-        errors.append(f"複製が見つからない: {REPLICA}")
-    else:
-        actual_replica_bytes = REPLICA.read_bytes()
-        expected_replica_bytes = _expected_replica_bytes(master_bytes)
-        if actual_replica_bytes != expected_replica_bytes:
-            errors.append(
-                f"{REPLICA} が正本と一致しない"
-                "（複製を直接編集したか、正本を変更して同期し忘れた可能性がある）。"
-                "sync_contract.py を実行して再生成すること"
-            )
+    if not replica.is_file():
+        errors.append(f"複製が見つからない: {replica}")
+    elif replica.read_bytes() != _expected_replica_bytes(name, master_bytes):
+        errors.append(
+            f"{replica} が正本と一致しない"
+            "（複製を直接編集したか、正本を変更して同期し忘れた可能性がある）。"
+            "sync_contract.py を実行して再生成すること"
+        )
 
     return errors
+
+
+def check() -> list:
+    """すべての組の正本・複製・ハッシュ記録のずれを列挙する。ずれが無ければ空リスト。"""
+    return [e for name in NAMES for e in _check_one(name)]
 
 
 def main() -> int:
@@ -111,12 +130,12 @@ def main() -> int:
             for message in errors:
                 print(f"ERROR: {message}", file=sys.stderr)
             return 1
-        print(f"OK: {REPLICA} は正本と一致している")
+        print(f"OK: {', '.join(NAMES)} は正本と一致している")
         return 0
 
     sync()
-    print(f"synced: {REPLICA}")
-    print(f"synced: {HASH_FILE}")
+    for name in NAMES:
+        print(f"synced: {', '.join(str(p) for p in _paths(name)[1:])}")
     return 0
 
 

@@ -31,7 +31,7 @@ venv/
 .coverage
 htmlcov/
 
-# --- ローカル DB（cc-governance-server の SQLite 起動用） ---
+# --- ローカル DB ---
 *.db
 *.sqlite3
 

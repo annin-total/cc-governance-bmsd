@@ -23,7 +23,6 @@ _CONFIG_SRC = _REPO_ROOT / "plugin" / "config.json"
 _DEFAULT_CONFIG = {
     "ingest_url": "",
     "ingest_token": "",
-    "flush_interval_sec": 600,
     "timeout_sec": 5,
     "spool_max_bytes": 5242880,
     "spool_max_days": 7,

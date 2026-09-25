@@ -190,6 +190,13 @@ def test_should_send_true_past_threshold():
     assert _spool.should_send() is True
 
 
+def test_should_send_true_when_sent_at_in_future():
+    """sent_at が 1 時間後（時計のズレ・手動改変） -> 真（経過が負でも送信を止めない）。"""
+    _spool.append({"a": 1})
+    _touch_sent_at_seconds_ago(-3600)
+    assert _spool.should_send() is True
+
+
 def test_should_send_true_when_sent_at_missing():
     """#14: sent_at が無い -> 真。"""
     _spool.append({"a": 1})

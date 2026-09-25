@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""設計書 §3.4 の context_tokens() をそのまま使い、Stop 時点の値と周辺情報を記録する。"""
+"""`plugin/hooks/_context.py` の context_tokens() と同じ処理で、Stop 時点の値と周辺情報を記録する。"""
 
 import json
 import os

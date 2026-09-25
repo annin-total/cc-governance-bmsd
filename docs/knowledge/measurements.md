@@ -75,6 +75,15 @@ SQLite は統計情報なしに skip-scan の可否を判断できない。
 8.0 系の挙動は**未確認**（`sql_require_primary_key` と `CREATE INDEX IF NOT EXISTS` は同じと見られるが**推測**）。
 クエリ性能も未測定で、InnoDB の skip-scan の可否も `ANALYZE TABLE` の要否も SQLite とは別問題である。
 
+## `/` 画面の応答時間
+
+測定条件: 実機、`events` 約 31 万件。
+
+| 画面 | 応答時間 |
+| --- | ---: |
+| `/`（概況） | 約 0.8 秒 |
+| その他の画面 | 0.5 秒未満 |
+
 ## hook の実行
 
 | 測ったもの | 値 | 測定条件 |
