@@ -14,7 +14,7 @@ Claude Code に同梱される実行環境を使う形にする。どちらも�
 **分母から除いた事実を画面に出す。**黙って除くと準拠率が実態より良く見える。
 `python3` が解決できない端末は、適用状況画面の未導入者一覧に現れる。
 
-### Windows でのお知らせのブラウザ起動
+### Windows 端末
 
 開発機に Windows 端末が無い。
 
@@ -23,6 +23,7 @@ Claude Code に同梱される実行環境を使う形にする。どちらも�
 | `CLAUDE_CODE_ENTRYPOINT` の値 | 対話起動・`claude -p` それぞれで macOS と同じ `cli` / `sdk-cli` になるか |
 | `os.startfile` | 既定ブラウザが実際に開くか。コンソール窓が一瞬でも出ないか |
 | 起動時間 | hook の応答を体感できるほど遅らせないか |
+| 収集と送信 | 並列の hook の追記で `queue.jsonl` の行が欠けないか。切り離した送信プロセスが Claude Code の終了後も送り切るか（`start_new_session` は POSIX でしか効かない） |
 
 ## 実データが溜まってから測ること
 
@@ -44,7 +45,7 @@ Claude Code に同梱される実行環境を使う形にする。どちらも�
 | 事項 | 現況 |
 | --- | --- |
 | サブエージェント由来の識別子の実値 | 手元の採取では値が出ていない。抽出は契約のキーパスを回すだけなので、値が来れば同じ経路で列に入る |
-| VS Code 拡張・デスクトップアプリ・JetBrains・Agent SDK での `CLAUDE_CODE_ENTRYPOINT` | `cli` と `sdk-cli` 以外は未確認。許可リストに載るまで、これらの起動形態ではお知らせのブラウザは開かない（既読には加わる） |
+| VS Code 拡張・デスクトップアプリ・JetBrains・Agent SDK での `CLAUDE_CODE_ENTRYPOINT` | `cli` と `sdk-cli` 以外は未確認。許可リストに載るまで、これらの起動形態ではお知らせのブラウザは開かない（既読には加わる）。`systemMessage` がこれらの画面に表示されるかも未確認で、表示されなければお知らせは読まれないまま既読になる |
 
 ## ローカルの隔離環境で再現すれば白黒が付くこと
 
@@ -52,5 +53,4 @@ Claude Code に同梱される実行環境を使う形にする。どちらも�
 | --- | --- |
 | `effort.level` | `claude -p` では現れないことを確認済み。**対話モードでは未検証**（自動操作が初回オンボーディングを突破できない） |
 | `PostToolUse` / `PostToolUseFailure` / `PreCompact` / `UserPromptExpansion` の実 stdin | 列の充足は確認済み。契約に無い追加キー（`agent_type` / `duration_ms` / `tool_use_id` / `error` など）を契約に採るかが未決 |
-| git source マーケットプレイスでの `CLAUDE_PLUGIN_ROOT` の解決先 | `directory` source ではソースツリーを直接指す。git source（実運用の形態）では未検証 |
 | detach した送信プロセスが確実に走るか | 手動で `_sender.py` を叩くと即座に送信される一方、`claude -p` 終了後に queue が残留する現象を独立した 2 回の検証で観測した。**条件が未特定。**連続実行の間隔・並列度を変えて切り分ける |

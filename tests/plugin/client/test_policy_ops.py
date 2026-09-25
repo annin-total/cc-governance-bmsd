@@ -6,6 +6,7 @@ settings.json はすべて tmp_path 配下に作る。
 """
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import _settings
@@ -107,22 +108,24 @@ def _policy(tables: dict) -> SimpleNamespace:
     )
 
 
-def _run(tmp_path, tables: dict, before: dict):
+def _write(tmp_path, before: dict) -> Path:
     path = tmp_path / "settings.json"
-    if not path.exists():
-        path.write_text(json.dumps(before), encoding="utf-8")
-    rows = _settings.apply_settings(path, _policy(tables), tmp_path / "governance")
-    return path, {key: (result, value) for key, value, _prev, result in rows}
+    path.write_text(json.dumps(before), encoding="utf-8")
+    return path
+
+
+def _apply(path: Path, tables: dict) -> dict:
+    rows = _settings.apply_settings(path, _policy(tables), path.parent / "governance")
+    return {key: (result, value) for key, value, _prev, result in rows}
 
 
 @pytest.mark.parametrize(("tables", "before", "after", "expected"),
                          [c[1:] for c in CASES], ids=[c[0] for c in CASES])  # fmt: skip
 def test_操作の結果(tmp_path, tables, before, after, expected):
-    path = tmp_path / "settings.json"
-    path.write_text(json.dumps(before), encoding="utf-8")
+    path = _write(tmp_path, before)
     raw_before = path.read_bytes()
 
-    _path, rows = _run(tmp_path, tables, before)
+    rows = _apply(path, tables)
 
     assert rows == expected
     assert json.loads(path.read_text(encoding="utf-8")) == after
@@ -134,11 +137,12 @@ def test_操作の結果(tmp_path, tables, before, after, expected):
                          ids=[c[0] for c in CASES])  # fmt: skip
 def test_2回目は何も変えない(tmp_path, tables, before):
     """冪等性。2 回目は書き込み対象が無く、ファイルもバックアップも増えない。"""
-    path, _ = _run(tmp_path, tables, before)
+    path = _write(tmp_path, before)
+    _apply(path, tables)
     raw = path.read_bytes()
     backups = sorted((tmp_path / "governance").glob("backups/*"))
 
-    _path, rows = _run(tmp_path, tables, before)
+    rows = _apply(path, tables)
 
     assert {r for r, _v in rows.values()} <= {"already_ok", "skipped_missing"}
     assert path.read_bytes() == raw

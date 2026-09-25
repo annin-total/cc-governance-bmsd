@@ -8,14 +8,12 @@ import contract
 
 
 def test_hook_fields_and_extra_columns_have_disjoint_names():
-    """HOOK_FIELDS と EXTRA_COLUMNS の列名集合の積は空集合である。"""
     hook_names = {name for name, _, _ in contract.HOOK_FIELDS}
     extra_names = {name for name, _ in contract.EXTRA_COLUMNS}
     assert hook_names & extra_names == set()
 
 
 def test_events_column_order():
-    """EXTRA_COLUMNS + HOOK_FIELDS の列名の並びが events の列順である。"""
     extra_names = [name for name, _ in contract.EXTRA_COLUMNS]
     hook_names = [name for name, _, _ in contract.HOOK_FIELDS]
     assert extra_names + hook_names == [
@@ -42,7 +40,6 @@ def test_events_column_order():
 
 
 def test_policy_columns_order():
-    """POLICY_COLUMNS の列名の並びが policy_state の列順である。"""
     names = [name for name, _ in contract.POLICY_COLUMNS]
     assert names == [
         "event_id",
@@ -59,7 +56,6 @@ def test_policy_columns_order():
 
 
 def test_csv_columns_db_name_order():
-    """CSV_COLUMNS の DB 列名の並びが cost_daily の列順である。"""
     names = [db_name for _, db_name, _ in contract.CSV_COLUMNS]
     assert names == [
         "day",
@@ -79,7 +75,6 @@ def test_csv_columns_db_name_order():
 
 
 def test_csv_columns_none_header_is_source_file_only():
-    """CSV_COLUMNS のうちヘッダ名が None の要素は source_file の 1 つだけである。"""
     none_header = [
         db_name for header, db_name, _ in contract.CSV_COLUMNS if header is None
     ]
@@ -101,7 +96,6 @@ def test_type_tokens_are_subset_of_known_types():
 
 
 def test_contract_imports_only_standard_library():
-    """contract.py がサードパーティを import していない。"""
     stdlib_names = (
         set(sys.stdlib_module_names) if hasattr(sys, "stdlib_module_names") else None
     )

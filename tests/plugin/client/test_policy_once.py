@@ -83,7 +83,7 @@ def test_書けなかった組は適用済みにしない(monkeypatch):
     def _raise(*_args, **_kwargs):
         raise OSError("boom")
 
-    # monkeypatch.undo() は使わない。CLAUDE_CONFIG_DIR の隔離まで外れ、実 config を書く
+    # monkeypatch.undo() は使わない。_config_dir の CLAUDE_CONFIG_DIR まで外れる
     original = _settings.os.replace
     monkeypatch.setattr(_settings.os, "replace", _raise)
     assert _apply({"statusLine": STATUS}) == {"once:statusLine": "write_failed"}

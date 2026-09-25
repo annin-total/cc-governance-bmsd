@@ -16,10 +16,11 @@ import _sender
 import _spool
 import pytest
 
+_SPOOL_NAME = f"{1000}-{'a' * 32}.jsonl"
+
 
 @pytest.fixture(autouse=True)
 def _isolate_state_dir(monkeypatch, tmp_path):
-    """CLAUDE_PLUGIN_DATA を一時ディレクトリに向ける。"""
     monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "plugin-data"))
     return tmp_path
 
@@ -98,15 +99,6 @@ def server():
         srv.close()
 
 
-def _free_unused_port():
-    """接続できないポートを 1 つ確保する（bind 直後に close する）。"""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(("127.0.0.1", 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    return port
-
-
 def _write_config(monkeypatch, tmp_path, **overrides):
     """config.json を一時ファイルに書き、`_sender._CONFIG_PATH` をそこへ向ける。"""
     config = {
@@ -135,35 +127,47 @@ def _seed_spool_file(name, rows, mtime=None):
     return path
 
 
-def _seed_spool_bytes(name, size_bytes, mtime):
-    """指定サイズの spool ファイルを置く（破棄の検査用）。"""
-    spool_dir = _spool._spool_dir()
-    spool_dir.mkdir(parents=True, exist_ok=True)
-    path = spool_dir / name
-    path.write_bytes(b"x" * size_bytes)
-    os.utime(path, (mtime, mtime))
-    return path
-
-
 # --- POST の基本動作 ---
 
 
-def test_post_success_deletes_file(server, monkeypatch, tmp_path):
-    """#1: spool に 1 ファイル、サーバが 200 -> ファイルが削除される。"""
-    srv = server()
+@pytest.mark.parametrize("status", [200, 201])
+def test_2xx_deletes_file(server, monkeypatch, tmp_path, status):
+    """サーバが 200 / 201 -> ファイルが削除される（2xx はすべて成功）。"""
+    srv = server(status_codes=[status])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
     assert not path.exists()
 
 
+_HEADER_CASES = {
+    # (config.json に足す値, 記録したヘッダ, 期待値)
+    "content_type": ({}, "content_type", "application/x-ndjson"),
+    "token": ({"ingest_token": "secret-token"}, "token", "secret-token"),
+}
+
+
+@pytest.mark.parametrize(
+    ("overrides", "header", "expected"),
+    _HEADER_CASES.values(),
+    ids=_HEADER_CASES.keys(),
+)
+def test_post_header(server, monkeypatch, tmp_path, overrides, header, expected):
+    srv = server()
+    _write_config(monkeypatch, tmp_path, ingest_url=srv.url, **overrides)
+    _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
+
+    _sender.run()
+
+    assert srv.requests[0][header] == expected
+
+
 def test_post_body_matches_spool_bytes(server, monkeypatch, tmp_path):
-    """#2: サーバが受け取ったボディが spool の内容とバイト単位で一致する。"""
     srv = server()
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}, {"n": 2}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}, {"n": 2}])
     expected = path.read_bytes()
 
     _sender.run()
@@ -171,47 +175,11 @@ def test_post_body_matches_spool_bytes(server, monkeypatch, tmp_path):
     assert srv.requests[0]["body"] == expected
 
 
-def test_post_content_type_header(server, monkeypatch, tmp_path):
-    """#3: Content-Type が application/x-ndjson。"""
-    srv = server()
-    _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
-
-    _sender.run()
-
-    assert srv.requests[0]["content_type"] == "application/x-ndjson"
-
-
-def test_post_token_header_matches_config(server, monkeypatch, tmp_path):
-    """#4: X-Ingest-Token が config.json の値と一致する。"""
-    srv = server()
-    _write_config(
-        monkeypatch, tmp_path, ingest_url=srv.url, ingest_token="secret-token"
-    )
-    _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
-
-    _sender.run()
-
-    assert srv.requests[0]["token"] == "secret-token"
-
-
-def test_201_is_treated_as_success(server, monkeypatch, tmp_path):
-    """#5: サーバが 201 -> ファイルが削除される（2xx はすべて成功）。"""
-    srv = server(status_codes=[201])
-    _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
-
-    _sender.run()
-
-    assert not path.exists()
-
-
 @pytest.mark.parametrize("status", [401, 500, 404])
 def test_non_2xx_keeps_file(server, monkeypatch, tmp_path, status):
-    """#6-#8: サーバが 401 / 500 / 404 -> ファイルが残る。"""
     srv = server(status_codes=[status])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
@@ -221,40 +189,94 @@ def test_non_2xx_keeps_file(server, monkeypatch, tmp_path, status):
 # --- 到達できない・応答しないサーバ ---
 
 
-def test_connection_refused_is_silent(monkeypatch, tmp_path):
-    """#9: 接続できないポート -> 例外なし。ファイルが残る。終了コード 0（例外が上がらない）。"""
-    port = _free_unused_port()
+def test_connection_refused_is_silent(monkeypatch, tmp_path, unused_port):
+    port = unused_port()
     _write_config(monkeypatch, tmp_path, ingest_url=f"http://127.0.0.1:{port}/ingest")
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
     assert path.exists()
 
 
-def test_unresponsive_server_respects_timeout(server, monkeypatch, tmp_path):
-    """#10: 応答しないサーバ、timeout_sec=1 -> 例外なし。ファイルが残る。実行時間が 5 秒未満。"""
-    srv = server(status_codes=[200], delay_sec=2)
+def test_unresponsive_server_stops_after_first_file(server, monkeypatch, tmp_path):
+    """応答しないサーバには 1 ファイルで見切りを付け、ファイル数 × timeout 粘らない。"""
+    srv = server(status_codes=[200], delay_sec=3)
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url, timeout_sec=1)
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    paths = [
+        _seed_spool_file(f"{1000 + i}-{'a' * 32}.jsonl", [{"n": i}]) for i in range(3)
+    ]
 
     started = time.monotonic()
     _sender.run()
     elapsed = time.monotonic() - started
 
-    assert path.exists()
-    assert elapsed < 5
+    assert all(p.exists() for p in paths)
+    assert elapsed < 2
+
+
+def test_unreachable_server_still_prunes(monkeypatch, tmp_path, unused_port):
+    port = unused_port()
+    _write_config(monkeypatch, tmp_path, ingest_url=f"http://127.0.0.1:{port}/ingest")
+    old = _seed_spool_file(_SPOOL_NAME, [{"n": 1}], mtime=time.time() - 30 * 86400)
+
+    _sender.run()
+
+    assert not old.exists()
+
+
+class _GarbageServer:
+    """HTTP でない応答を返して切るサーバ。受け付けた接続を数える。"""
+
+    def __init__(self):
+        self.connections = 0
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind(("127.0.0.1", 0))
+        self.sock.listen()
+        threading.Thread(target=self._serve, daemon=True).start()
+
+    def _serve(self):
+        while True:
+            try:
+                conn, _ = self.sock.accept()
+            except OSError:
+                return
+            self.connections += 1
+            with conn:
+                conn.recv(65536)
+                conn.sendall(b"garbage\r\n\r\n")
+
+    @property
+    def url(self):
+        return f"http://127.0.0.1:{self.sock.getsockname()[1]}/ingest"
+
+
+def test_malformed_response_stops_and_still_prunes(monkeypatch, tmp_path):
+    srv = _GarbageServer()
+    _write_config(monkeypatch, tmp_path, ingest_url=srv.url, timeout_sec=5)
+    old = _seed_spool_file(_SPOOL_NAME, [{"n": 0}], mtime=time.time() - 30 * 86400)
+    fresh = [
+        _seed_spool_file(f"{2000 + i}-{'b' * 32}.jsonl", [{"n": i}]) for i in range(2)
+    ]
+
+    try:
+        _sender.run()
+    finally:
+        srv.sock.close()
+
+    assert srv.connections == 1
+    assert not old.exists()
+    assert all(p.exists() for p in fresh)
 
 
 # --- 複数ファイルの処理順序・部分失敗 ---
 
 
 def test_multiple_files_posted_in_epoch_order(server, monkeypatch, tmp_path):
-    """#11: spool に 3 ファイル、サーバが 200 -> ファイル名の epoch 昇順に POST される。"""
     srv = server(status_codes=[200, 200, 200])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
     _seed_spool_file(f"{3000}-{'c' * 32}.jsonl", [{"n": 3}])
-    _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
     _seed_spool_file(f"{2000}-{'b' * 32}.jsonl", [{"n": 2}])
 
     _sender.run()
@@ -264,10 +286,9 @@ def test_multiple_files_posted_in_epoch_order(server, monkeypatch, tmp_path):
 
 
 def test_middle_file_failure_keeps_only_that_file(server, monkeypatch, tmp_path):
-    """#12: spool に 3 ファイル、2 番目だけ 500 -> 1・3 番目は削除、2 番目は残る。"""
     srv = server(status_codes=[200, 500, 200])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
-    p1 = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    p1 = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
     p2 = _seed_spool_file(f"{2000}-{'b' * 32}.jsonl", [{"n": 2}])
     p3 = _seed_spool_file(f"{3000}-{'c' * 32}.jsonl", [{"n": 3}])
 
@@ -282,7 +303,6 @@ def test_middle_file_failure_keeps_only_that_file(server, monkeypatch, tmp_path)
 
 
 def test_queue_is_rotated_before_posting(server, monkeypatch, tmp_path):
-    """#13: 実行前に queue.jsonl が 2 行ある -> 退避されてから POST される。POST 後に queue.jsonl が無い。"""
     srv = server(status_codes=[200])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
     _spool.append({"n": 1})
@@ -298,7 +318,6 @@ def test_queue_is_rotated_before_posting(server, monkeypatch, tmp_path):
 
 
 def test_nothing_to_send_does_not_post(server, monkeypatch, tmp_path):
-    """#14: spool が空、queue.jsonl も無い -> POST を行わない。終了コード 0。"""
     srv = server(status_codes=[200])
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
 
@@ -307,14 +326,14 @@ def test_nothing_to_send_does_not_post(server, monkeypatch, tmp_path):
     assert srv.requests == []
 
 
-def test_prune_runs_after_posting(server, monkeypatch, tmp_path):
-    """#15: spool 合計が 6MB（1MB x 6）、サーバが 500 -> 6 ファイルとも POST され、その後に古い 1 ファイルが破棄される。"""
+def test_prune_runs_after_posting(server, monkeypatch, tmp_path, seed_spool_bytes):
+    """spool 合計が 6MB（1MB x 6）、サーバが 500 -> 6 ファイルとも POST され、その後に古い 1 ファイルが破棄される。"""
     srv = server(status_codes=[500] * 6)
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
     now = time.time()
     one_mb = 1024 * 1024
     paths = [
-        _seed_spool_bytes(f"{4000 + i}-{'d' * 32}.jsonl", one_mb, now - i * 60)
+        seed_spool_bytes(f"{4000 + i}-{'d' * 32}.jsonl", one_mb, now - i * 60)
         for i in range(6)
     ]
 
@@ -343,10 +362,9 @@ def test_oversized_queue_is_posted_once_before_prune(
 
 
 def test_empty_ingest_url_skips_posting(server, monkeypatch, tmp_path):
-    """#16: ingest_url が空文字 -> POST を行わない。終了コード 0。spool は残る。"""
     srv = server(status_codes=[200])
     _write_config(monkeypatch, tmp_path, ingest_url="")
-    path = _seed_spool_file(f"{1000}-{'a' * 32}.jsonl", [{"n": 1}])
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
 
     _sender.run()
 
@@ -354,15 +372,28 @@ def test_empty_ingest_url_skips_posting(server, monkeypatch, tmp_path):
     assert path.exists()
 
 
-def test_missing_config_file_is_silent(monkeypatch, tmp_path):
-    """#17: config.json が無い -> 例外なし。終了コード 0。"""
-    monkeypatch.setattr(_sender, "_CONFIG_PATH", tmp_path / "no-such-config.json")
+def test_empty_ingest_url_still_rotates_and_prunes(monkeypatch, tmp_path):
+    """送信先が空でも queue.jsonl を退避し、spool の上限を効かせる。"""
+    _write_config(monkeypatch, tmp_path, ingest_url="")
+    _spool.append({"n": 1})
+    old = _seed_spool_file(_SPOOL_NAME, [{"n": 0}], mtime=time.time() - 30 * 86400)
 
     _sender.run()
 
+    assert not _spool._queue_path().exists()
+    assert not old.exists()
+
+
+def test_missing_config_file_is_silent(monkeypatch, tmp_path):
+    monkeypatch.setattr(_sender, "_CONFIG_PATH", tmp_path / "no-such-config.json")
+    _spool.append({"n": 1})
+
+    _sender.run()
+
+    assert _spool._queue_path().exists()
+
 
 def test_corrupt_config_file_is_silent(monkeypatch, tmp_path):
-    """#18: config.json が壊れた JSON -> 例外なし。終了コード 0。"""
     path = tmp_path / "config.json"
     path.write_text("{not valid json", encoding="utf-8")
     monkeypatch.setattr(_sender, "_CONFIG_PATH", path)
@@ -385,7 +416,6 @@ class _FakePopen:
 
 
 def test_launch_uses_detach_flags(monkeypatch):
-    """#19: 起動関数を呼ぶ -> Popen に start_new_session=True と 3 つの DEVNULL が渡る。"""
     import subprocess
 
     calls = []
@@ -407,7 +437,6 @@ def test_launch_uses_detach_flags(monkeypatch):
 
 
 def test_launch_does_not_wait_for_child(monkeypatch):
-    """#20: 3 秒かかる子プロセスに対して起動関数を呼ぶ -> 起動関数の戻りが 1 秒未満（待たない）。"""
     import subprocess
 
     monkeypatch.setattr(subprocess, "Popen", _FakePopen)

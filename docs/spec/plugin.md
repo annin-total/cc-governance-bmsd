@@ -38,7 +38,9 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 される。
 
 - `user_email` は突合キーである。環境変数 `CC_GOVERNANCE_USER_EMAIL` →
-  `git config --global user.email` → NULL の順に解決してキャッシュし、小文字化だけ行う
+  `git config --global user.email` → NULL の順に解決してキャッシュし、小文字化だけ行う。
+  `SessionStart` ではキャッシュを読まずに解決し直すので、git や環境変数を直せば次のセッションから
+  反映される。ほかの hook はキャッシュを読む
 - `event_id` はイベントごとの UUID であり、一意性は保証しない（重複の扱いは `server.md`）
 - `context_tokens` は `PreCompact` と `Stop` のときだけ、transcript の末尾から取った絶対値を送る
 - 列名が `compact_trigger` なのは、`trigger` が MySQL の予約語だからである
@@ -54,6 +56,9 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 60 秒）し、2xx のものだけ消し、最後に上限を超えた分を破棄する。値は `plugin/config.json` にある。
 
 - リトライループ・指数バックオフ・ACK は持たない。失敗分は次回まとめて再送される
+- サーバに届かなかったら（接続・タイムアウト・壊れた応答）、残りのファイルは送らずにその回を
+  打ち切る。HTTP のエラー応答なら次のファイルへ進む
+- 送信先が空でも、退避と破棄は行う（`queue.jsonl` を上限なしに増やさない）
 - 上限は `spool/` 全体で 5MB または 7 日。超えたら古いものから破棄する。単体で上限を超えるファイルも破棄の前に 1 回は送られる
 - 再送で同じイベントが二重に届きうる。件数はサーバが `event_id` で一意化して数える
 - **オフライン・spool 上限超過・hook 失敗による取りこぼしは仕様として受け入れる**
@@ -126,3 +131,4 @@ JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポー�
 - 2026-09-25: 設定の定義を `policy.py` に分け、`SET` / `ADD` / `REMOVE` / `ONCE`・バックアップ・
   statusline.js の同期・`/governance:reapply` を加えた。途中の dict を作れるのを `env` だけに
   限っていた規則を、`extraKnownMarketplaces` の下だけ作らない規則にした
+- 2026-09-25: `user_email` を `SessionStart` ごとに解決し直すようにし、送信の打ち切りと送信先が空のときの退避・破棄を書いた

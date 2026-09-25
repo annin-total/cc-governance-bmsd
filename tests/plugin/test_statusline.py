@@ -50,7 +50,6 @@ def test_non_git_dir_prints_only_one_line():
 
 
 def test_git_dir_prints_branch_line():
-    """git 管理下のディレクトリでは 2 行目にブランチ名を出す。"""
     payload = {
         "model": {"display_name": "Sonnet"},
         "workspace": {"current_dir": str(REPO_ROOT)},
@@ -64,7 +63,6 @@ def test_git_dir_prints_branch_line():
 
 
 def test_broken_json_exits_zero_without_crash():
-    """壊れた JSON / 空入力でも例外で落ちず exit 0 する。"""
     for broken_input in ["{not json", "", "null", "[]"]:
         result = _run(broken_input)
         assert result.returncode == 0

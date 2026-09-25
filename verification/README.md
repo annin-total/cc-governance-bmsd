@@ -50,15 +50,11 @@
 | ファイル/ディレクトリ | 用途 |
 | --- | --- |
 | `githttpd.py` | bare リポジトリを http で配る最小の git サーバ（localhost 限定）。`claude plugin marketplace add` が bare を直接指せないために使う。`python3 githttpd.py <bare の親ディレクトリ> <ポート>` |
-| `run.sh` | 隔離 HOME（`home-<n>/`）で `claude` を起動する |
-| `hold.py` / `hold.sh` | 隔離 HOME で対話セッションを pty 上に起動し、指定秒数だけ保持してログを取る |
-| `snap.sh` | 隔離 HOME で自動更新がどこまで進んだかを一覧表示する |
 | `isolated_home_run.sh` | 隔離 HOME で `claude` を起動し、データ領域の作られ方を確かめる |
-| `marketplaces/dummy-verify/` | 擬似マーケットプレイス（プラグイン名 `dummy`） |
 | `marketplaces/au-verify/` | 擬似マーケットプレイス（プラグイン名 `audummy`。SessionStart で版を `$HOME/captured.log` に書く） |
 
 - 各擬似マーケットプレイスは、`*-bare.git` が履歴の正本で、隣のディレクトリは `.git` を持たないスナップショットである。作業コピーは bare から clone して作る
-- `home-<n>/` は実行のたびに自分で用意する作業データであり、リポジトリに含まれない
+- `home/` は実行のたびに自分で用意する作業データであり、リポジトリに含まれない
 - 隔離 HOME に擬似マーケットプレイスを置くときは、`.claude/settings.json` の `extraKnownMarketplaces` にも登録する。`settings.json` がセッション開始時に `known_marketplaces.json` へ同期されるため
 
 ## performance/ — 性能の測定を再現する
