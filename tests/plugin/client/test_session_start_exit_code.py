@@ -12,6 +12,8 @@ import stat
 import subprocess
 import sys
 
+import pytest
+
 
 def _base_env(tmp_path, plugin_data=None, config_dir=None):
     """`CC_GOVERNANCE_DISABLE` を外し、状態ディレクトリ・設定ディレクトリを隔離した環境変数を返す。"""
@@ -97,25 +99,20 @@ def test_stdout_fd_closed(hooks_dir, tmp_path):
 # --- 壊れた標準入力 ---
 
 
-def test_stdin_broken_json(hooks_dir, tmp_path):
-    """#3: 標準入力が壊れた JSON。"""
+_BROKEN_STDIN = {
+    "broken_json": lambda: "{not json",
+    "empty": lambda: "",
+    "10mb_single_line": lambda: json.dumps(
+        {"session_id": "x" * (10 * 1024 * 1024), "source": "startup"}
+    ),
+}
+
+
+@pytest.mark.parametrize("make_stdin", _BROKEN_STDIN.values(), ids=_BROKEN_STDIN.keys())
+def test_stdin(hooks_dir, tmp_path, make_stdin):
+    """壊れた JSON・空・10MB の JSON 1 行。"""
     env = _base_env(tmp_path)
-    result = _run(hooks_dir, env, "{not json")
-    _assert_clean_exit(result.returncode, result.stderr)
-
-
-def test_stdin_empty(hooks_dir, tmp_path):
-    """#4: 標準入力が空。"""
-    env = _base_env(tmp_path)
-    result = _run(hooks_dir, env, "")
-    _assert_clean_exit(result.returncode, result.stderr)
-
-
-def test_stdin_10mb_single_line(hooks_dir, tmp_path):
-    """#5: 標準入力が 10MB の JSON 1 行。"""
-    env = _base_env(tmp_path)
-    huge = json.dumps({"session_id": "x" * (10 * 1024 * 1024), "source": "startup"})
-    result = _run(hooks_dir, env, huge)
+    result = _run(hooks_dir, env, make_stdin())
     _assert_clean_exit(result.returncode, result.stderr)
 
 
