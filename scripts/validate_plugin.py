@@ -393,7 +393,7 @@ def check_hook_execution(
         ng("実 ~/.claude/settings.json が変更された（隔離が効いていない・重大）")
 
 
-# --- 10. Python 3.9 で動く構文であること（ruff が使える場合のみ）---
+# --- 10. Python 3.9 で動く構文であること（ruff が無ければ NG）---
 def _find_ruff(repo_root: Path) -> Optional[str]:
     """ruff を PATH とリポジトリの仮想環境から探す。"""
     found = shutil.which("ruff")
@@ -414,7 +414,7 @@ def _find_ruff(repo_root: Path) -> Optional[str]:
 def check_ruff(repo_root: Path, plugin_name: str) -> None:
     ruff = _find_ruff(repo_root)
     if ruff is None:
-        skip("ruff check: ruff が見つからない")
+        ng("ruff check: ruff が見つからない（検査できない）")
         return
     result = subprocess.run(
         [ruff, "check", plugin_name],
