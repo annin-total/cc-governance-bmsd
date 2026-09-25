@@ -83,8 +83,9 @@ def _put(data: dict, segments: list, value: Any) -> str:
 
 
 def _set(data: dict, path: str, value: Any) -> dict:
-    prev = _lookup(data, path.split("."))[1]
-    result = _put(data, path.split("."), value)
+    segments = path.split(".")
+    prev = _lookup(data, segments)[1]
+    result = _put(data, segments, value)
     return _entry("set", path, policy_text(value), prev, result)
 
 
@@ -133,12 +134,13 @@ def _substitute(value: Any, home: str) -> Any:
 
 
 def _once(data: dict, path: str, value: Any, done: set, home: str) -> dict:
-    prev = _lookup(data, path.split("."))[1]
+    segments = path.split(".")
+    prev = _lookup(data, segments)[1]
     key = once_key(path, value)
     if key in done:
         result = "already_ok"
     else:
-        result = _put(data, path.split("."), _substitute(value, home))
+        result = _put(data, segments, _substitute(value, home))
     entry = _entry("once", path, policy_text(value), prev, result)
     entry["once_key"] = key
     return entry
