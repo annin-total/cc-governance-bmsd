@@ -10,7 +10,7 @@ Claude Code が届ける収集項目・hook・環境変数のうち、**実在�
 
 | キーパス | 実測値 | 何が分かるか | 付随する事実 |
 | --- | --- | --- | --- |
-| `context_tokens` | `45689` | 再開時点の文脈トークン数（素データ。加工不要） | transcript 末尾から算出した値と同一セッションで誤差 0.8% |
+| `context_tokens` | `45689` | 再開時点のコンテキストトークン数（素データ。加工不要） | transcript 末尾から算出した値と同一セッションで誤差 0.8% |
 | `prompt_cache_likely_expired` | 真偽 | Claude Code 自身の「キャッシュが切れた可能性が高い」判定 | **公式ドキュメント未記載** |
 | `estimated_cache_write_usd` | `0.4569` | その再開が生むキャッシュ書込の USD 見積（上流が算出） | — |
 | `seconds_since_last_response` | 秒 | 前回応答からの経過時間 | **公式ドキュメント未記載** |
@@ -21,7 +21,7 @@ Claude Code が届ける収集項目・hook・環境変数のうち、**実在�
 | --- | --- | --- | --- | --- |
 | `agent_type` | サブエージェント内のツール呼出 | `"Explore"` | どの種類のサブエージェントが動いたか | 親子の分離だけなら `agent_id` の有無で付く |
 | `tool_input.subagent_type` | `PostToolUse`（`tool_name=="Agent"`） | `"Explore"` | どのサブエージェントが何回呼ばれたか | — |
-| `model` | `SessionStart` のみ | `claude-opus-5[1m]` | セッション開始時点のモデル＝窓サイズの区別 | `claude -p` では `SessionStart` にも無い。途中のモデル切替は追えない |
+| `model` | `SessionStart` のみ | `claude-opus-5[1m]` | セッション開始時点のモデル＝コンテキストウィンドウのサイズの区別 | `claude -p` では `SessionStart` にも無い。途中のモデル切替は追えない |
 | `duration_ms` | `PostToolUse` | `1846` / `387` | ツール 1 回の実行時間 | タスク遂行の速さではない |
 | `tool_response.commandName` / `.success` | `PostToolUse`（Skill） | `tool_input.skill` と同じ値 / `true` | スキル呼出の成否 | — |
 | `mcp_server`（トップレベル dict） | `PostToolUseFailure` | `{"name":..., "source":"user"}` | MCP サーバ名と**出自**（配布か個人設定か） | 2.1.274 で入った。**成功時にも付くかは未確認**。サーバ名は `tool_name`（`mcp__<server>__<tool>`）からも分解できる |
@@ -46,7 +46,7 @@ output_tokens  output_tokens_details  server_tool_use  service_tier
 cache_creation  inference_geo  iterations  speed
 ```
 
-前の 3 つが文脈量を表す値である。`output_tokens` は応答側のトークン数であり、文脈量ではない。
+前の 3 つがコンテキストトークン数を表す値である。`output_tokens` は応答側のトークン数であり、コンテキストトークン数ではない。
 `cache_creation`（dict）と `cache_creation_input_tokens` の関係は**未確認**。
 
 ## 4. hook プロセスに渡る環境変数
@@ -71,10 +71,10 @@ hook から環境変数をセッションへ戻す経路である。
 | `SessionEnd` | セッション終了時（低頻度） | `reason`（`"prompt_input_exit"` / `"other"`） | 異常終了でも発火するかは**未検証**（発火しないと見られるが**推測**） |
 | `StopFailure` | ターンが失敗で終わったとき（中頻度） | `error_type` | `error_type` の値は自由文に近い |
 | `SubagentStart` / `SubagentStop` | サブエージェントの開始・終了 | サブエージェントの区切り | `agent_id` / `agent_type` は `PostToolUse` にも付く |
-| `PostCompact` | 自動圧縮の**後**（低頻度） | 圧縮**後**のコンテキスト量＝「圧縮の効き目」 | **キー構成が未確認**（`transcript_path` が届くかも未確認） |
+| `PostCompact` | 自動圧縮の**後**（低頻度） | 圧縮**後**のコンテキストトークン数＝「圧縮の効き目」 | **キー構成が未確認**（`transcript_path` が届くかも未確認） |
 | `PreModelSwitch` / `PostModelSwitch` | モデル切替時 | 切替の発生と前後のモデル | — |
 
-`SessionEnd` の文脈量は `Stop` の最終値と同じで、`UserPromptSubmit` の文脈量は
+`SessionEnd` のコンテキストトークン数は `Stop` の最終値と同じで、`UserPromptSubmit` のコンテキストトークン数は
 前ターンの `Stop` の値と同じである。
 
 ## 6. hook の頻度帯

@@ -24,7 +24,7 @@
 | 事項 | 確かめること |
 | --- | --- |
 | `CLAUDE_CODE_ENTRYPOINT` の値 | 対話起動・`claude -p` それぞれで macOS と同じ `cli` / `sdk-cli` になるか |
-| `os.startfile` | 既定ブラウザが実際に開くか。コンソール窓が一瞬でも出ないか |
+| `os.startfile` | 既定ブラウザが実際に開くか。コンソールウィンドウが一瞬でも出ないか |
 | 起動時間 | hook の応答を体感できるほど遅らせないか |
 | 収集と送信 | 並列の hook の追記で `queue.jsonl` の行が欠けないか。切り離した送信プロセスが Claude Code の終了後も送り切るか（`start_new_session` は POSIX でしか効かない） |
 | E2E | `pytest e2e` が通るか。通らなければ、つまずいた点を `../guide/e2e.md` に反映する |

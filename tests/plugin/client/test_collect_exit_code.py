@@ -179,7 +179,7 @@ def test_unexpected_exception_is_swallowed(run_collect, tmp_path):
 # --- SIGINT による中断 ---
 
 # インタプリタの起動そのものにも時間がかかり、起動中に届いた SIGINT は Python 側で
-# 捕まえられない（既知の制約）。起動中の窓とこのテストが検査したい「collect.py 自身の実行中」の窓を
+# 捕まえられない（既知の制約）。起動中の時間帯とこのテストが検査したい「collect.py 自身の実行中」の時間帯を
 # 混同しないよう、起動時間よりも十分後ろの時点だけを狙う。50MB の標準入力を与えて
 # collect.py 自身の処理時間を伸ばし、狙った時点が確実にその中に収まるようにする。
 _SIGINT_DELAYS_SEC = (0.3, 0.6, 0.9, 1.2)

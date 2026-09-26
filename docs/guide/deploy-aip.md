@@ -87,11 +87,11 @@ Secret ファイルに `KEY=VALUE` 形式で書く。`entry.sh` が起動時に�
       curl -s -o /dev/null -w '%{http_code}\n' -u admin:<ADMIN_PASSWORD> https://<取得したURL>/<ADMIN_PATH>/   # => 200
       curl -s -o /dev/null -w '%{http_code}\n' https://<取得したURL>/   # => 404
       ```
-   4. 受信の口にトークン無しで POST し、`401` が返ることを確認する
+   4. 受信エンドポイント（`/ingest`）にトークン無しで POST し、`401` が返ることを確認する
       ```bash
       curl -s -o /dev/null -w '%{http_code}\n' -X POST https://<取得したURL>/ingest   # => 401
       ```
-   5. 端末が送りうる最大サイズの本文を POST し、`413` が返らないことを確認する（前段の `client_max_body_size` を確かめる）
+   5. 端末が送りうる最大サイズの本文を POST し、`413` が返らないことを確認する（前段のリバースプロキシの `client_max_body_size` を確かめる）
    6. `CSV_DIR` に CSV を 1 本置いて画面のボタンから取り込み、同じファイルをもう一度取り込んでコストが二重計上されないことを確認する
    7. 1 台の端末で `claude` を動かし、イベントが `events` に入ること、送信後に端末の spool が消えることを確認する
 5. コード更新時は「restart」ボタンで再起動
@@ -102,7 +102,7 @@ push だけでは反映されない。ソースの更新も Secret の変更も�
 
 - **初回デプロイ時、Secret ファイル未作成による起動失敗は想定内**: `entry.sh` は Secret ファイルが無いと起動を中止する。Open Terminal は Function の作成後にしか開けないため、手順「新規Function作成」の直後は必ず一度失敗する。手順「Secretを設定する」の Secret 作成 → restart で解消する
 - **Public Access が HTTPS かどうかは未検証**: 平文の HTTP なら、Basic 認証のパスワードと `ADMIN_PATH` が VPN の中を平文で流れる
-- **前段が `Authorization` ヘッダをアプリに渡すかどうかは未検証**: 渡さなければ、正しいパスワードでも画面は常に `401` になる
+- **前段のリバースプロキシが `Authorization` ヘッダをアプリに渡すかどうかは未検証**: 渡さなければ、正しいパスワードでも画面は常に `401` になる
 - **submodule の取得は未検証**: AIP が clone 時に submodule `server/` を取得するか、取得元に到達できるかを確かめていない。取得できなければ `server/entry.sh` が存在せず起動しない
 - `sh-centos-science` は公式ドキュメント上 alpha 版扱いのため、AIP 側の仕様変更・非推奨化のリスクが残る
 - Git Repository Url は SSH 接続のみ有効。HTTP は使えない

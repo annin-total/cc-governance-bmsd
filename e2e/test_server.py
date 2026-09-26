@@ -28,7 +28,7 @@ def test_BASE_PATH配下で管理画面4つとCSSが返り外は404(server):
     for href in hrefs:
         status, _, ctype = server.request("GET", href, auth=True)
         assert status == 200 and ctype.startswith("text/css"), (href, status, ctype)
-    # ADMIN_PATH の外は 404。BASE_PATH 無しの /<ADMIN_PATH>/ は前段が剥がす場合に備えて通る設計なので含めない
+    # ADMIN_PATH の外は 404。BASE_PATH 無しの /<ADMIN_PATH>/ は前段のリバースプロキシが除く場合に備えて通る設計なので含めない
     for outside in (BASE_PATH + "/", "/"):
         assert server.request("GET", outside, auth=True)[0] == 404, outside
 
