@@ -92,7 +92,7 @@ git source のマーケットプレイスとして導入し、cache への複製
 ```bash
 CC_E2E_KEEP=1 .venv/bin/python -m pytest e2e -k 未読 -s   # 残したルートのパスが表示される（-s が無いと出ない）
 cd <ルート>/project
-env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<ルート>/config <認証の変数> claude   # 対話で起動し /login でログインする
+env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<ルート>/config <認証の変数> claude   # 対話で起動する（認証は環境変数で渡し、/login しない）
 ```
 
 - ログインは隔離した config ごとに 1 回要る（本人の認証は引き継がず、上書きもしない）
@@ -140,6 +140,8 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 `installPath` の `notices.json` が `SessionStart` の `systemMessage` として Claude Code に渡り、
 `claude -p` では既読にならず、無効化スイッチ（`CC_GOVERNANCE_DISABLE`）が hook まで届くことを確かめる。
 本物の `notices.json` の中身に左右されないよう、`e2e/samples/notices.json` を組み立てたコピーに重ねる。
+そのため、本物の `notices.json` の文面を変えたときは、この自動の確認は変えた文面を通らない。変えた文面を隔離ルートの
+導入先に写して、手動確認で見る。
 
 ```bash
 .venv/bin/python -m pytest e2e -k notices
