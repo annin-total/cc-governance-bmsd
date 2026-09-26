@@ -15,7 +15,7 @@ macOS での実測。確かめた版は各行に添える。版の無い行は�
 | 隔離 HOME（未ログイン）では、35 分放置しても自動の更新チェックが 1 度も走らなかった（git サーバのアクセスログにフェッチ 0 件）。実環境（ログイン済み）では走った。**未ログインだと走らない**という説明は素直だが**未検証** | **隔離 HOME では背景ジョブに依存する検証ができない。** 自動更新まわりは実環境でしか確かめられない |
 | `claude plugin marketplace add <url> --scope user` は利用者の `settings.json` に `extraKnownMarketplaces.<name>.source` を書き、`claude plugin install <id> --scope user` は `enabledPlugins.<id>: true` を書く（2.1.282・隔離環境で観測） | `extraKnownMarketplaces` の項目が在る前提で設定を書くとき |
 | マーケットプレイスの `autoUpdate` は `settings.json` の `extraKnownMarketplaces.<name>.autoUpdate` が権威であり、セッション開始時に `plugins/known_marketplaces.json` へ上書き同期される。社外のマーケットプレイスは既定で無効（git リモートから導入した直後、どちらのファイルにもキーが無い）（2026-09 確認。2.1.282 の隔離環境では、`SessionStart` hook が `settings.json` に書いた値は、そのセッションの終了後の `known_marketplaces.json` には無く、次のセッション開始後に現れた） | 自動更新を有効にしたいとき。`known_marketplaces.json` を書き換えても次の起動で戻る |
-| 手動更新は 2 段階である。`claude plugin marketplace update` はカタログだけを更新し、導入済みプラグインの版は `claude plugin update` で上がる。更新が降りても反映は次に起動したセッションから。`source` に到達できなくても端末の複製で動き続け、止まるのは更新だけ | 更新手順を書くとき。版が上がらないと迷ったとき |
+| 手動更新は 2 段階である。`claude plugin marketplace update` はカタログだけを更新し、導入済みプラグインの版は `claude plugin update` で上がる。更新を取り込んでも、反映は次に起動したセッションから。`source` に到達できなくても端末の複製で動き続け、止まるのは更新だけ | 更新手順を書くとき。版が上がらないと迷ったとき |
 | `env` ブロックも普通のキーとして設定の優先順位（managed > `--settings` > プロジェクトの local > プロジェクトの共有 > 利用者）に従う。シェルで export した値は settings の `env` に負ける。hook プロセスの環境変数には合成後の実効値が入る（2.1.282 実測 + 公式ドキュメント settings / env-vars） | 利用者の `settings.json` の値は実効値とは限らない。上位の層の上書きはその値に現れない |
 | `env.FORCE_AUTOUPDATE_PLUGINS` は hook プロセスまで値が届く。ただし**本体の入れ替えを起こす効果は観測できていない** | 本体の自動更新を抑止している端末で、プラグインの更新だけを生かせるかを考えるとき |
 | `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` は公開された環境変数で、自動圧縮が走る点を auto-compact window に対する 1〜100 の割合で指定する。低いほど早く圧縮し、既定より高い値は無視される（閾値を上げる向きには使えない）。auto-compact window はモデルで異なるため、発火する絶対トークン数もモデルで異なる。効くのはコンテキストの上限に達する前に圧縮するセッションだけ（公式ドキュメント env-vars / model-config、2026-09 確認。実測ではない） | 自動圧縮を早める設定の効き目を見積もるとき |
@@ -52,6 +52,6 @@ macOS での実測。確かめた版は各行に添える。版の無い行は�
 
 | 事実 | いつ効くか |
 | --- | --- |
-| 公式ドキュメント（hooks の Common input fields）は、transcript は非同期に書かれ、hook の発火時点では現在のターンの最新のメッセージを含まないことがある、と書く。`claude -p` の `Stop` では最新の応答まで書かれていた（実測） | 対話セッションで `Stop` の文脈量を読むとき。1 ターン遅れうる |
-| `message.usage` の 3 値がすべて 0 の行が実在する（`isApiErrorMessage: true` の `assistant` 行） | 合計 0 を値として扱うと、API エラー応答が文脈量に混ざる |
+| 公式ドキュメント（hooks の Common input fields）は、transcript は非同期に書かれ、hook の発火時点では現在のターンの最新のメッセージを含まないことがある、と書く。`claude -p` の `Stop` では最新の応答まで書かれていた（実測） | 対話セッションで `Stop` のコンテキストトークン数を読むとき。1 ターン遅れうる |
+| `message.usage` の 3 値がすべて 0 の行が実在する（`isApiErrorMessage: true` の `assistant` 行） | 合計 0 を値として扱うと、API エラー応答がコンテキストトークン数に混ざる |
 | `claude -p` のプロンプトとツールの入出力は、config ディレクトリの中では `projects/<cwd を変換した名前>/` の transcript にだけ現れた（2.1.282、隔離した config で全ファイルを走査） | 本文が残る場所を調べるとき。transcript の置き場は本体の管理下にある |

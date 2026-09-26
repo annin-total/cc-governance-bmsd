@@ -145,7 +145,7 @@ def test_policy_event_write_failed_events_are_queued(tmp_path, monkeypatch):
 
 
 def test_policy_event_queue_append_failure_does_not_leak(tmp_path, monkeypatch):
-    """キューへの追記を例外にしても漏れない。設定ファイルには既にポリシー値が入っている。"""
+    """キューへの追記を例外にしても漏れない。設定ファイルには既に施策値が入っている。"""
     _write_settings(tmp_path, {})
     monkeypatch.setattr(_spool, "append", _raiser)
 
