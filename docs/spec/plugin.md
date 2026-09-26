@@ -37,7 +37,7 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
   キャッシュ → `git config --global user.email` → NULL の順に解決してキャッシュする。小文字化だけ行う。
   `SessionStart` ではキャッシュを読まずに解決し直すので、git や環境変数を直せば次のセッションから
   反映される。ほかの hook はキャッシュを読む
-- `event_id` はイベントごとの UUID であり、一意性は保証しない（重複の扱いは `server.md`）
+- `event_id` はイベントごとの UUID であり、一意性は保証しない（重複の扱いは `../decisions/server.md`）
 - `context_tokens` は `PreCompact` と `Stop` のときだけ、transcript の末尾から取った絶対値を送る
 
 環境変数 `CC_GOVERNANCE_DISABLE` が空でないとき、**利用ログの収集とお知らせの表示**
@@ -129,3 +129,4 @@ JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポー�
 - 2026-09-25: `user_email` を `SessionStart` ごとに解決し直すようにし、送信の打ち切りと送信先が空のときの退避・破棄を書いた
 - 2026-09-26: hook の失敗（error 行）を加えた
 - 2026-09-26: 無効化スイッチの範囲と送信の条件を実装にそろえ、理由・上流の仕様・運用の値を `decisions/`・`knowledge/`・`guide/` へ移した
+- 2026-09-26: 重複の扱いの参照先を `decisions/server.md` にした

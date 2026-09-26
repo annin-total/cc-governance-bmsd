@@ -21,7 +21,7 @@ Secret ファイルに `KEY=VALUE` 形式で書く。`entry.sh` が起動時に�
 | 項目 | 説明 | 例 |
 | --- | --- | --- |
 | `BASE_PATH` | 公開サブパス。AIP は `/<workspace_id>/<ingress_path>` に公開する。末尾に `/` を付けない | `/<workspace_id>/cc-governance-server` |
-| `DB_DSN` | DB の接続先 | `sqlite:////mnt/data/cc-governance-server/governance.db` |
+| `DB_DSN` | DB の接続先。未設定なら起動しない | `sqlite:////mnt/data/cc-governance-server/governance.db` |
 | `INGEST_TOKEN` | 受信用のトークン。プラグインの `config.json` の `ingest_token` と文字列として完全に一致させる。未設定・空なら起動しない | `dummy-ingest-token` |
 | `ADMIN_PATH` | 管理画面を置くパス。推測しにくいランダムな文字列にする。`/` を含めない。未設定なら起動しない | `dummy-admin-path` |
 | `ADMIN_PASSWORD` | 管理画面の Basic 認証の共有パスワード（ユーザー名は問わない）。未設定なら起動しない | `dummy-admin-password` |
@@ -114,4 +114,11 @@ push だけでは反映されない。ソースの更新も Secret の変更も�
 アプリケーションはバックアップ機構を持たない。永続領域の複製を運用手順として行う。
 
 - DB ファイルと `CSV_DIR` を、CSV 取込と同じ日次の操作として永続領域の外へ複製する
-- 復旧できるのは最後の複製時点までである。`policy_state` は原理的に再現できない
+- 復旧できるのは最後の複製時点までである。複製より後に失ったものは、テーブルごとに次のとおり
+
+| テーブル | 失ったとき |
+| --- | --- |
+| `cost_daily` | CSV から再取込できる |
+| `events` | 再現できない。端末は受信済み（2xx）の分を spool から消すため、再送されない |
+| `policy_state` | 再現できない。準拠開始日は過去の観測にしか存在しない |
+| `errors` | `events` と同じ |
