@@ -13,12 +13,8 @@ Claude Code が hook に渡す stdin を採取し直し、無害化して `tests
   "command": "CAPTURE_DIR=\"<repo>/scripts/captured\" python3 \"<repo>/scripts/capture_hook_stdin.py\" PreCompact" } ] } ] } }
 ```
 
-仕込むときの罠:
-
-- **`CAPTURE_DIR` は `command` 文字列の中に書く。**hook エントリに `"env"` を付けると、そのエントリが無音で無効になる。空白を含むパスは壊れる
-- **`PostToolUse` / `PostToolUseFailure` は `"matcher": "*"` が無いと発火しない**
-- **1 つの matcher ブロックに複数コマンドを並べると、2 番目以降は実行されない。**イベントごとにブロックを分ける
-- `settings.json` の hooks が `claude -p` で発火しないことがある。そのときはマーケットプレイスのコピーの `hooks/hooks.json` に仕込む（反映には cache の削除が要る）
+**`CAPTURE_DIR` は `command` 文字列の中に書く。**hook エントリの `"env"` は hook の項目に無く、エラーも出ずに無視される
+（Claude Code 2.1.283 で確認）。そのときは `claude` の作業ディレクトリに保存される。
 
 ## 2. 無害化して fixture を作り直す
 
