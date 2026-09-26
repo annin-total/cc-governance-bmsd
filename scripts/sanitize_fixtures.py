@@ -19,7 +19,8 @@ DST_DIR は実行のたびに空にしてから SRC_DIR の全件をコピーし
 既存ファイルと混ざって混成コーパスになることはない。件数一致と SENTINEL の
 一意性、無害化後にホームパスが残っていないことを、コピーのたびに assert で確かめる。
 
-使い方: python3 scripts/sanitize_fixtures.py <採取先ディレクトリ>（手順は docs/guide/fixtures.md）
+使い方: python3 scripts/sanitize_fixtures.py scripts/captured（capture_hook_stdin.py の保存先）
+書き込み先は変えられず毎回空にするため、採取先を間違えると既存のフィクスチャが消える。
 """
 
 import json
