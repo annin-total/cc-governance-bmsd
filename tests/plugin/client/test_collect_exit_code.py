@@ -30,6 +30,19 @@ def _queue_line_count(plugin_data):
     return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line)
 
 
+def _error_rows(plugin_data):
+    """`queue.jsonl` の error 行を (stage, error_type, hook_event) の並びで返す。"""
+    path = Path(plugin_data) / "queue.jsonl"
+    if not path.exists():
+        return []
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    return [
+        (r["stage"], r["error_type"], r["hook_event"])
+        for r in rows
+        if r.get("kind") == "error"
+    ]
+
+
 def _transcript_dir(tmp_path, _hooks_dir):
     a_dir = tmp_path / "a-directory"
     a_dir.mkdir()
@@ -158,6 +171,9 @@ def test_unexpected_exception_is_swallowed(run_collect, tmp_path):
         "Stop", plugin_data=tmp_path / "plugin-data", stdin="[" * 100_000
     )
     _assert_clean_exit(result)
+    assert _error_rows(tmp_path / "plugin-data") == [
+        ("collect", "RecursionError", "Stop")
+    ]
 
 
 # --- SIGINT による中断 ---
