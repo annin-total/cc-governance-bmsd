@@ -43,7 +43,7 @@ docker compose up                                    # http://localhost:15000/ �
 ## Scope
 
 - **機能の追加・変更（増やす）と、リファクタリング・文書の見直し（減らす）を 1 つの作業に混ぜない**
-- 作業中に確認した依頼外の課題は直さず、`.claude/templates/issues.md` の形で `.local/<作業名>/issues.md` に記録し、完了報告で移し先を提案する
+- 作業中に確認した依頼範囲外の課題は直さず、`.claude/templates/issues.md` の形で `.local/<作業名>/issues.md` に記録し、完了報告で移し先を提案する（移したら記録を更新する）
 - `.local/` は一時領域。コード・`docs/`・コミット・PR から参照せず、残す事実は `docs/` か PR 本文に書く
 - 減らす作業は `.claude/skills/refactor/SKILL.md`、文書・docstring・コメントの見直しは `.claude/skills/revise-docs/SKILL.md` に従う
 
