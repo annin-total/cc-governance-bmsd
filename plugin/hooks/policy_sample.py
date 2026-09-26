@@ -1,7 +1,6 @@
 """`policy.py` の書き方の見本。hook はこのファイルを読まない。
 
 `policy.py` へ写すときは、各項目の上に「なぜ配るか」を書く。
-値の文字列中の `${GOVERNANCE_HOME}` は、書き込み時に `<config_dir>/governance` の絶対パスになる。
 """
 
 from typing import Any

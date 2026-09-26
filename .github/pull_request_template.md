@@ -1,6 +1,7 @@
 <!--
 PRタイトル例: feat: ユーザー検索APIにページネーションを追加
 Conventional Commits 形式（feat / fix / docs / refactor / test / chore など）推奨
+見出しとチェックリストの項目は消さず、書き換えない。独自の見出しは「## 補足」の下に「###」で足す
 -->
 
 ## 概要
