@@ -6,7 +6,8 @@
 *.pem
 *.key
 /local/
-/.local/
+/.local/*
+!/.local/.gitkeep
 
 # --- Python ---
 __pycache__/
