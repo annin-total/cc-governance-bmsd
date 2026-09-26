@@ -202,7 +202,7 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 ### 前提と罠
 
-- 送信は前回から 10 分以上経ったときだけ起動する（`docs/spec/plugin.md` の「蓄積と送信」）。
+- 送信は前回から一定の間隔（`plugin/hooks/_spool.py` の `DEFAULT_FLUSH_INTERVAL_SEC`）が経ったときだけ起動する。
   テストは `sent_at` を消して次の送信を起こす。送信先は installPath の `config.json` を直接直す
 - queue が空になることは送信完了の判定に使えない。未ログインでも `SessionStart` の後に発火する hook が
   退避の後に積む（`docs/knowledge/claude-code-behavior.md`）
