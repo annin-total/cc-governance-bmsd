@@ -99,6 +99,7 @@ def test_SessionStartがinstallPathから動く(root, gitsrv):
     ), rows
     # event 行は版を持たない。版は同じ SessionStart が積む policy 行で確かめる
     assert any(r["kind"] == "policy" and r["plugin_version"] == V1 for r in rows), rows
+    assert [r for r in rows if r["kind"] == "error"] == []
     # バイトコードは import した .py の場所に対応して書かれる。どこから動いたかの証拠になる
     assert list(root.pycache_of(path / "hooks").glob("*.pyc")) != []
     assert not root.pycache_of(root.config / "plugins" / "marketplaces").exists()

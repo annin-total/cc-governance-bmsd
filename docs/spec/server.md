@@ -52,7 +52,7 @@ AIP の HTTP Access Mode は Public Access であり、サーバには社内 VPN
 
 行ごとに検査し、壊れた行は捨てて残りを 1 トランザクションで保存する（リクエスト全体は
 失敗させない。DB への書き込み失敗だけが 5xx になる）。検査するのは、JSON の dict であること・
-`kind` が `event` / `policy` であること・`event_id` と `ts` があることだけである。各列は契約の
+`kind` が `event` / `policy` / `error` であること・`event_id` と `ts` があることだけである。各列は契約の
 `coerce` を通し、知らないキーは捨て、来ないキーは NULL にする。値の語彙は検査しない。`day` は
 サーバが `ts` から計算し直す。
 
@@ -79,7 +79,7 @@ AIP の HTTP Access Mode は Public Access であり、サーバには社内 VPN
 ## データモデル
 
 テーブルは `events`（端末の利用ログ）・`policy_state`（適用した設定値の時系列）・
-`cost_daily`（AI Gateway CSV）の 3 つ。列は契約から、インデックスは `db.py` から決まる。
+`errors`（hook の失敗）・`cost_daily`（AI Gateway CSV）の 4 つ。列は契約から、インデックスは `db.py` から決まる。
 すべて append-only で、サロゲートキーも外部キーも持たず、行を個別に参照しない。
 
 - **`event_id` は主キーにも UNIQUE にもしない。**端末の再送で重複しうるため、件数も率の分子・
@@ -106,6 +106,7 @@ SQLite と MySQL の両対応は、抽象レイヤではなく**方言が出る�
 | `cost_daily` | CSV から再取込できる |
 | `events` | 端末の spool は 5MB / 7 日で破棄されるため、それより前は再現できない |
 | `policy_state` | 再現できない。準拠開始日は過去の観測にしか存在しない |
+| `errors` | `events` と同じ |
 
 アプリケーションはバックアップ機構を持たない。複製の手順は `../guide/deploy-aip.md` にある。
 
@@ -132,7 +133,9 @@ SQLite と MySQL の両対応は、抽象レイヤではなく**方言が出る�
 - **`/assets` 配布物の利用状況 — 「配ったものは使われているか」**。スキル別・コマンド別の
   利用とサブエージェントの利用割合。値の分類辞書は持たず、`command_source` の生値で並べる
 - **`/` 概況 — 「全体でいくらかかり、誰が使っているか」**。日次コスト（provider 別）、利用者数・
-  セッション数、`permission_mode` などの分布（生値）、健全性の 1 行（読み方は `system.md`）
+  セッション数、`permission_mode` などの分布（生値）、健全性の 1 行（読み方は `system.md`）、
+  hook の失敗の表（直近 7 日の `stage` × `error_type` ごとの件数・端末数・最新の `plugin_version`。
+  端末は `user_email` と `host` の組）
 
 `cost_daily` を数える窓（突合率・準拠率の分母・未導入者）は、今日ではなく取り込んだ CSV の最終日で
 終わる。取込は 1〜2 週に 1 回程度なので、今日で終わる窓には CSV がほとんど入らない。
@@ -147,3 +150,4 @@ SQLite と MySQL の両対応は、抽象レイヤではなく**方言が出る�
 
 - 2026-09-25: 列の追加を `ALTER TABLE ... ADD COLUMN` にした。CSV の取込先の検査・メールの小文字化を加え、
   `/effect` の比較を定数の実験に固定し、処理トークンと前後差の読み方を書いた。`cost_daily` を数える窓を CSV の最終日に合わせた
+- 2026-09-26: hook の失敗（error 行・`errors`・概況の失敗の表）を加えた

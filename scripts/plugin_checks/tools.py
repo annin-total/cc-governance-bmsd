@@ -14,6 +14,7 @@ CONTRACT_REQUIRED_NAMES = (
     "HOOK_FIELDS",
     "EXTRA_COLUMNS",
     "POLICY_COLUMNS",
+    "ERROR_COLUMNS",
     "CSV_COLUMNS",
     "dig",
     "coerce",

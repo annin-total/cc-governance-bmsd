@@ -110,6 +110,20 @@ def test_stdin(hooks_dir, tmp_path, make_stdin):
     _assert_clean_exit(result.returncode, result.stderr)
 
 
+def test_collect_step_failure_queues_error_row(hooks_dir, tmp_path):
+    """深い入れ子の標準入力（RecursionError）で収集の段が失敗しても clean exit で、error 行が 1 つ積まれる。"""
+    env = _base_env(tmp_path)
+    result = _run(hooks_dir, env, "[" * 100_000)
+    _assert_clean_exit(result.returncode, result.stderr)
+    lines = (tmp_path / "state" / "queue.jsonl").read_text(encoding="utf-8")
+    errors = [
+        (r["stage"], r["error_type"], r["hook_event"])
+        for r in map(json.loads, lines.splitlines())
+        if r["kind"] == "error"
+    ]
+    assert errors == [("collect", "RecursionError", "SessionStart")]
+
+
 # --- 状態ディレクトリが書けない ---
 
 

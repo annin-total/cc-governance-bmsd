@@ -60,6 +60,7 @@
 ## 契約（端末とサーバで共有する定義）
 
 収集項目（`HOOK_FIELDS` / `EXTRA_COLUMNS`）・policy イベントの列（`POLICY_COLUMNS`）・
+hook の失敗（error 行）の列（`ERROR_COLUMNS`）・
 CSV 列（`CSV_COLUMNS`）の定義は、**`plugin/hooks/contract.py` ただ 1 ファイルが正本である。**
 端末の抽出処理、サーバの DDL・INSERT・受信時の検査・起動時の列の突き合わせは、すべて
 ここから導出する。配る設定値（標準設定）は変わりやすいため `plugin/hooks/policy.py` に分け、
@@ -93,6 +94,7 @@ CSV 列（`CSV_COLUMNS`）の定義は、**`plugin/hooks/contract.py` ただ 1 �
 欠測は管理画面の概況にある「健全性」の行で気づく。イベント件数の急落は収集の停止、特定列の
 NULL 率（その列が来るはずのイベントの中で数える）が 100% に跳ねるのはキーの改名・消滅、
 突合率の低下は `user_email` と CSV の不一致、古い `plugin_version` の残留は配布の未達を示す。
+hook の失敗の表に出る行は、端末の段が例外で止まったか、送信が HTTP エラー応答・SSL の失敗で届かなかったことを示す。
 
 **画面から気づけないものがある。**設定キー名・環境変数名の変化と、上位の設定（プロジェクトの
 `.claude/settings*.json`・`--settings`・managed settings）による施策値の上書きは、準拠率に
@@ -107,3 +109,4 @@ NULL 率（その列が来るはずのイベントの中で数える）が 100% 
 
 - 2026-09-25: 配る設定値を `contract.py` から `policy.py` に分けた
 - 2026-09-25: 準拠率で気づけると書いていた上位設定の上書きとキー名の変化を、気づけないものに改めた
+- 2026-09-26: hook の失敗（error 行・`errors`・概況の失敗の表）を加えた

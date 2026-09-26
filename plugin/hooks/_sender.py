@@ -3,6 +3,7 @@
 import http.client
 import json
 import os
+import ssl
 import subprocess
 import sys
 import urllib.error
@@ -11,6 +12,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import _spool
+from collect import append_error
 
 _CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
 
@@ -21,6 +23,7 @@ _DEFAULT_CONFIG = {
     "spool_max_bytes": _spool.DEFAULT_SPOOL_MAX_BYTES,
     "spool_max_days": _spool.DEFAULT_SPOOL_MAX_DAYS,
 }
+_STAGE = "send"
 
 
 def _load_config() -> Optional[dict[str, Any]]:
@@ -64,8 +67,14 @@ def _post_file(path: Path, config: dict[str, Any]) -> bool:
             status = response.status
     except urllib.error.HTTPError as err:
         status = err.code
+        append_error(_STAGE, f"HTTP {status}", None)
+    # 接続不可・タイムアウトは記録しない。SSL の失敗だけは設定か証明書の誤りなので記録する
+    except urllib.error.URLError as err:
+        if isinstance(err.reason, ssl.SSLError):
+            append_error(_STAGE, type(err.reason).__name__, None)
+        return False
     # 応答が壊れていると OSError 派生でない HTTPException が出る。逃がすと prune が飛ぶ
-    except (urllib.error.URLError, OSError, http.client.HTTPException):
+    except (OSError, http.client.HTTPException):
         return False
 
     if 200 <= status < 300:
@@ -90,8 +99,8 @@ def run() -> None:
             if not _post_file(path, config):
                 break
         _spool.prune(config["spool_max_bytes"], config["spool_max_days"])
-    except Exception:  # noqa: BLE001, S110 (送信プロセスは例外を外に出さない)
-        pass
+    except Exception as e:  # noqa: BLE001 (送信プロセスは例外を外に出さない)
+        append_error(_STAGE, type(e).__name__, None)
 
 
 def launch() -> None:

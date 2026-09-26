@@ -115,6 +115,19 @@ def _write_config(monkeypatch, tmp_path, **overrides):
     return path
 
 
+def _error_rows():
+    """`queue.jsonl` の error 行を (stage, error_type, hook_event) の並びで返す。"""
+    path = _spool._queue_path()
+    if not path.exists():
+        return []
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    return [
+        (r["stage"], r["error_type"], r["hook_event"])
+        for r in rows
+        if r.get("kind") == "error"
+    ]
+
+
 def _seed_spool_file(name, rows, mtime=None):
     """spool/ に、渡した行から作った `.jsonl` ファイルを 1 つ置く。"""
     spool_dir = _spool._spool_dir()
@@ -140,6 +153,7 @@ def test_2xx_deletes_file(server, monkeypatch, tmp_path, status):
     _sender.run()
 
     assert not path.exists()
+    assert _error_rows() == []
 
 
 _HEADER_CASES = {
@@ -184,6 +198,36 @@ def test_non_2xx_keeps_file(server, monkeypatch, tmp_path, status):
     _sender.run()
 
     assert path.exists()
+    assert _error_rows() == [("send", f"HTTP {status}", None)]
+
+
+def test_ssl_error_queues_error_row(server, monkeypatch, tmp_path):
+    """平文の HTTP サーバへ https で繋ぐ（TLS のハンドシェイクが失敗する）。"""
+    srv = server()
+    url = srv.url.replace("http://", "https://")
+    _write_config(monkeypatch, tmp_path, ingest_url=url, timeout_sec=5)
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
+
+    _sender.run()
+
+    assert path.exists()
+    assert _error_rows() == [("send", "SSLError", None)]
+
+
+def test_run_failure_queues_error_row(monkeypatch, tmp_path):
+    class _InjectedError(Exception):
+        pass
+
+    def _raiser():
+        raise _InjectedError("ZZMARKER")
+
+    _write_config(monkeypatch, tmp_path, ingest_url="")
+    monkeypatch.setattr(_spool, "rotate", _raiser)
+
+    _sender.run()
+
+    assert _error_rows() == [("send", "_InjectedError", None)]
+    assert "ZZMARKER" not in _spool._queue_path().read_text(encoding="utf-8")
 
 
 # --- 到達できない・応答しないサーバ ---
@@ -197,6 +241,7 @@ def test_connection_refused_is_silent(monkeypatch, tmp_path, unused_port):
     _sender.run()
 
     assert path.exists()
+    assert _error_rows() == []
 
 
 def test_unresponsive_server_stops_after_first_file(server, monkeypatch, tmp_path):
@@ -213,6 +258,7 @@ def test_unresponsive_server_stops_after_first_file(server, monkeypatch, tmp_pat
 
     assert all(p.exists() for p in paths)
     assert elapsed < 2
+    assert _error_rows() == []
 
 
 def test_unreachable_server_still_prunes(monkeypatch, tmp_path, unused_port):

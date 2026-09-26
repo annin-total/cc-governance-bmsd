@@ -39,7 +39,9 @@ def test_全hookが発火し契約の全キーパスが埋まる(root, gitsrv):
     registered = set(json.loads((hooks / "hooks.json").read_text("utf-8"))["hooks"])
     fields = runpy.run_path(str(hooks / "contract.py"))["HOOK_FIELDS"]
     assert registered and fields
-    rows = [r for r in hook_rows(data_dir(root)) if r["kind"] == "event"]
+    all_rows = hook_rows(data_dir(root))
+    assert [r for r in all_rows if r["kind"] == "error"] == []
+    rows = [r for r in all_rows if r["kind"] == "event"]
     assert {r["hook_event"] for r in rows} == registered
     empty = [name for name, _, _ in fields if all(r[name] is None for r in rows)]
     assert empty == []
