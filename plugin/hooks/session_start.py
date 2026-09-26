@@ -21,7 +21,13 @@ import _identity
 import _notices
 import _spool
 from _settings import apply_settings
-from collect import _DISABLE_ENV, _read_stdin_json, extract_event, send_if_due
+from collect import (
+    _DISABLE_ENV,
+    _read_stdin_json,
+    append_error,
+    extract_event,
+    send_if_due,
+)
 from contract import POLICY_COLUMNS, coerce, to_day
 
 
@@ -121,36 +127,37 @@ def main() -> None:
     # 以降の段はキャッシュを読む。git の設定の変更をセッションごとに拾うため、ここで解決し直す
     try:
         _identity.get_user_email(refresh=True)
-    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
-        pass
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error("identity", type(e).__name__, hook_event)
 
     # 設定より先に置く。設定がこのファイルを指したとき、既に在るようにするため
     try:
         _govdir.sync_statusline(_govdir.governance_dir())
-    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
-        pass
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error("statusline", type(e).__name__, hook_event)
 
     try:
         _apply_settings_step()
-    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
-        pass
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error("apply_settings", type(e).__name__, hook_event)
 
     try:
         output, unread, seen = _notices.notices_step(disabled, _notices._NOTICES_PATH)
-    except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
         output, unread, seen = {}, [], set()
+        append_error("notices", type(e).__name__, hook_event)
 
     # 出力は必ず 1 回だけ行う。ここより上で何が失敗しても、少なくとも空の JSON を出す。
     if _emit_output(output) and unread:
         try:
             _mark_seen_and_open(unread, seen)
-        except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
-            pass
+        except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+            append_error("mark_seen", type(e).__name__, hook_event)
 
     try:
         _collect_step(hook_event, disabled)
-    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
-        pass
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error("collect", type(e).__name__, hook_event)
 
 
 if __name__ == "__main__":

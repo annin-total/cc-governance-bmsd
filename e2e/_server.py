@@ -27,7 +27,7 @@ _DB = f"{DATA_DIR}/e2e.db"
 _EVENT_IDS = (
     "import json,sqlite3,sys;c=sqlite3.connect(sys.argv[1]);"
     "print(json.dumps([r[0] for r in c.execute('SELECT event_id FROM events '"
-    "'UNION SELECT event_id FROM policy_state')]))"
+    "'UNION SELECT event_id FROM policy_state UNION SELECT event_id FROM errors')]))"
 )
 # AIP の公開サブパス `/<workspace_id>/<ingress_path>` と同じ 2 段にする
 BASE_PATH = "/e2e-ws/cc-governance-server"
@@ -158,7 +158,7 @@ class DockerServer:
             )
 
     def event_ids(self) -> set:
-        """events と policy_state に入っている event_id の全体。"""
+        """events・policy_state・errors に入っている event_id の全体。"""
         res = docker("exec", self.name, "python3", "-c", _EVENT_IDS, _DB)
         return set(json.loads(res.stdout))
 
