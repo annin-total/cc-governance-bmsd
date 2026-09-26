@@ -14,29 +14,46 @@ import sqlite3
 import sys
 import time
 import uuid
+from pathlib import Path
+
+# 表とインデックスはサーバの定義をそのまま使う（写しを持つと黙ってずれる）
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "server"))
+from ccgov.store.db import _INDEXES, _index_name
+from ccgov.vendor.contract import ddl
 
 DB = sys.argv[1]
 DAYS = int(sys.argv[2])
 PER_DAY = int(sys.argv[3])
 DAY0 = 20300
 
-DDL = """
-CREATE TABLE events (
-  event_id VARCHAR(36), ts INTEGER, day INTEGER,
-  user_email VARCHAR(255), host VARCHAR(255), hook_event VARCHAR(64),
-  session_id VARCHAR(255), prompt_id VARCHAR(255), tool_name VARCHAR(255),
-  source VARCHAR(255), compact_trigger VARCHAR(255), command_name VARCHAR(255),
-  command_source VARCHAR(255), skill_name VARCHAR(255), effort_level VARCHAR(255),
-  permission_mode VARCHAR(255), agent_id VARCHAR(255),
-  is_interrupt INTEGER, context_tokens INTEGER
-);
-"""
+DDL = next(sql for sql in ddl() if sql.startswith("CREATE TABLE IF NOT EXISTS events "))
 IDX = [
-    "CREATE INDEX ix1 ON events(day, user_email, event_id)",
-    "CREATE INDEX ix2 ON events(skill_name, day, user_email, event_id)",
-    "CREATE INDEX ix3 ON events(tool_name, day, user_email, event_id)",
-    "CREATE INDEX ix4 ON events(day, hook_event, context_tokens)",
+    f"CREATE INDEX {_index_name(table, cols)} ON {table} ({', '.join(cols)})"
+    for table, cols in _INDEXES
+    if table == "events"
 ]
+# rows の値の並び。契約の列順とは違うので INSERT で列名を明示する
+COLUMNS = (
+    "event_id",
+    "ts",
+    "day",
+    "user_email",
+    "host",
+    "hook_event",
+    "session_id",
+    "prompt_id",
+    "tool_name",
+    "source",
+    "compact_trigger",
+    "command_name",
+    "command_source",
+    "skill_name",
+    "effort_level",
+    "permission_mode",
+    "agent_id",
+    "is_interrupt",
+    "context_tokens",
+)
 
 USERS = [f"user{i:03d}@example.co.jp" for i in range(140)]
 HOOKS = [
@@ -58,7 +75,7 @@ def build(db):
         os.remove(db)
     c = sqlite3.connect(db)
     c.executescript("PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF;")
-    c.executescript(DDL)
+    c.execute(DDL)
     rnd = random.Random(42)
     t0 = time.time()
     for d in range(DAYS):
@@ -93,7 +110,10 @@ def build(db):
                     else None,
                 )
             )
-        c.executemany("INSERT INTO events VALUES (" + ",".join(["?"] * 19) + ")", rows)
+        c.executemany(
+            f"INSERT INTO events ({', '.join(COLUMNS)}) VALUES ({', '.join('?' * len(COLUMNS))})",
+            rows,
+        )
     c.commit()
     print(
         f"build: {DAYS * PER_DAY:,} 行 / {time.time() - t0:.1f}s / {os.path.getsize(db) / 2**20:.0f}MiB"
