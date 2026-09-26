@@ -191,6 +191,8 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 切り離された送信プロセスが `claude` の終了後に実サーバ（モジュール 7 と同じ Docker の集計サーバ）へ
 届けること、届かなかった分（誤トークンの 401・閉じたポート）が spool に残り、送信先を直した次の
 セッションで届くことを確かめる。共有 DB なので判定は自分の `event_id` だけで行う。
+誤トークンの 401 は error 行（`stage` が `send`）になって同じ経路で届き、概況の「hook の失敗」の表に出ることも見る。
+ほかの段の error 行は起こさない（ほかのモジュールは error 行が 0 件であることだけを見る）。
 
 ```bash
 .venv/bin/python -m pytest e2e -k send
