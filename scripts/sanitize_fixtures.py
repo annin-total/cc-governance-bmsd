@@ -1,25 +1,7 @@
 #!/usr/bin/env python3
-"""hook 入力の実サンプルを無害化して tests/fixtures/hook_inputs/ にコピーする使い捨てスクリプト。
+"""hook stdin の採取データを無害化し、tests/fixtures/hook_inputs/ を作り直す。
 
-置換規則:
-  - 自由文の可能性があるキー（トップレベル）:
-      prompt / tool_response / message / last_assistant_message /
-      custom_instructions / error / command_args
-    -> キーが存在すれば、値が null でもセンチネル文字列に置換する。
-       値が dict / list ならその中の文字列だけをすべてセンチネルに置換し、構造は保つ。
-  - tool_input.command / tool_input.description / tool_input.query
-    -> キーが存在すれば同様にセンチネル文字列に置換する。
-  - cwd / transcript_path / scratchpad_dir
-    -> ホームディレクトリ部分（実行環境の `Path.home()` の値とその URL エンコード的な
-       ダッシュ表記）を "/home/u" / "-home-u-" に置換する。
-
-センチネルは "SENTINEL-<連番>" とし、置換のたびにグローバルなカウンタを進める。
-DST_DIR は実行のたびに空にしてから SRC_DIR の全件をコピーし直す（採取コーパスを
-丸ごと入れ替える）ため、部分再採取（採取し直した一部のファイルだけを渡すこと）が
-既存ファイルと混ざって混成コーパスになることはない。件数一致と SENTINEL の
-一意性、無害化後にホームパスが残っていないことを、コピーのたびに assert で確かめる。
-
-使い方: python3 scripts/sanitize_fixtures.py scripts/captured（capture_hook_stdin.py の保存先）
+使い方: python3 scripts/sanitize_fixtures.py [採取先]（既定: scripts/raw。capture_hook_stdin.py の CAPTURE_DIR を渡す）
 書き込み先は変えられず毎回空にするため、採取先を間違えると既存のフィクスチャが消える。
 """
 
@@ -28,9 +10,6 @@ import re
 import sys
 from pathlib import Path
 
-# SRC_DIR: hook stdin を再採取するたびに、採取先ディレクトリを第1引数で渡す
-# （生の採取データは git に入れないため、リポジトリにはデフォルト値を持たない）。
-# DST_DIR: 常にこのリポジトリの tests/fixtures/hook_inputs/ を指す。
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 SRC_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else SCRIPT_DIR / "raw"
@@ -48,7 +27,6 @@ FREE_TEXT_TOP_KEYS = (
 TOOL_INPUT_FREE_KEYS = ("command", "description", "query")
 PATH_KEYS = ("cwd", "transcript_path", "scratchpad_dir")
 
-# 実行環境の実ホームパスから導出する（開発者ごとに異なるため固定値にしない）。
 HOME_PLAIN = str(Path.home())
 HOME_PLAIN_TO = "/home/u"
 HOME_DASH = "-" + HOME_PLAIN.strip("/").replace("/", "-") + "-"
@@ -64,7 +42,6 @@ def _sentinel() -> str:
 
 
 def _replace_strings(value):
-    """文字列の葉だけをセンチネルに置換し、構造と非文字列の値は保つ。"""
     if value is None:
         return None
     if isinstance(value, str):
@@ -77,7 +54,6 @@ def _replace_strings(value):
 
 
 def _sanitize_free_text_value(value):
-    """トップレベルの自由文キーの値を無害化する（null でもセンチネルにする）。"""
     if value is None:
         return _sentinel()
     return _replace_strings(value)
@@ -111,9 +87,7 @@ def main():
         f"{SRC_DIR} に *.json が無い（採取先を第1引数で指定したか確認する）"
     )
 
-    # 採取コーパスを丸ごと入れ替える: 先に DST_DIR の *.json を空にしてからコピーし直す。
-    # 部分再採取（一部ファイルだけの再採取）を渡しても、既存ファイルと混ざった
-    # 混成コーパスになることを構造的に防ぐ。
+    # 一部だけ再採取した入力が既存のフィクスチャと混ざらないよう、全件消してから書き直す。
     DST_DIR.mkdir(parents=True, exist_ok=True)
     for old in DST_DIR.glob("*.json"):
         old.unlink()
