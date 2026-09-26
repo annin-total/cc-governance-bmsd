@@ -43,12 +43,10 @@ docker compose up                                    # http://localhost:15000/ �
 ## Scope
 
 - **機能の追加・変更（増やす）と、リファクタリング・文書の見直し（減らす）を 1 つの作業に混ぜない**
-- 作業中に見つけた依頼外の問題（矛盾・重複・不具合など）は直さず、`local/<作業名>/` に優先度と根拠を付けて記録する
-  完了報告で `docs/remaining/` に移すものを提案する（完了条件が書ける重要なものだけ。些細なものは記録にとどめる）
-- `local/` は一時領域である。中のファイルを、コード・`docs/`・コミットメッセージ・PR 本文から参照しない。
-  残すべき事実は `docs/` か PR 本文に書く（スキルが作業場所として `local/<作業名>/` を指すのはよい）
-- 減らす作業では、着手前に `.claude/skills/refactor/SKILL.md` を読んで従う
-- 文書・docstring・コメントの見直しは `.claude/skills/revise-docs/SKILL.md` に従う
+- 作業中に確認した依頼外の課題（矛盾・重複・不具合など）は直さず、`local/<作業名>/` に優先度と根拠を付けて記録する。
+  完了報告で、記録から `docs/remaining/` に移すものを提案する（完了条件が書ける重要な課題のみ。それ以外は報告のみ）
+- `local/` は一時領域。コード・`docs/`・コミット・PR から参照せず、残す事実は `docs/` か PR 本文に書く
+- 減らす作業は `.claude/skills/refactor/SKILL.md`、文書・docstring・コメントの見直しは `.claude/skills/revise-docs/SKILL.md` に従う
 
 ## Design
 
@@ -61,5 +59,5 @@ docker compose up                                    # http://localhost:15000/ �
 
 ## Git
 
-- PR の本文は `.github/pull_request_template.md` に従う。見出しとチェックリストの項目を消さず、書き換えない。
-  チェックリストは 1 項目ずつ検証してから付ける。書き方はテンプレートのコメントに従う
+- PR の本文は `.github/pull_request_template.md` の見出しとチェック項目を消さず、書き換えずに使う。
+  チェックは 1 項目ずつ検証してから付ける（書き方はテンプレートのコメント）
