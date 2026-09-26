@@ -117,7 +117,7 @@ SQLite と MySQL の両対応は、抽象レイヤではなく**方言が出る�
 
 - **`/effect` 効果測定 — 「窓の強制はコストを下げたか」**。利用者ごとの準拠開始日を 0 日目とした
   イベントスタディ（1 人あたり日次コスト・処理トークン = 入力 + Cache Read + Cache Write）、
-  `PreCompact` / `Stop` 時の `context_tokens` の分布、準拠者数の推移。比較する施策項目と値
+  `PreCompact` / `Stop` 時の `context_tokens` の分布、相対日ごとの分母人数。比較する施策項目と値
   （`REFERENCE_KEY` / `REFERENCE_VALUE`）と対象 provider（`EFFECT_PROVIDER`）は `constants.py` に
   1 つの実験として固定し、`policy.py` の値を変えても比較は変わらない。
   利用の無い日はコスト 0 で埋め、分母はその相対日に在籍する準拠者数とする。相対日 0 は比較から除く。
