@@ -18,6 +18,10 @@ DST_DIR は実行のたびに空にしてから SRC_DIR の全件をコピーし
 丸ごと入れ替える）ため、部分再採取（採取し直した一部のファイルだけを渡すこと）が
 既存ファイルと混ざって混成コーパスになることはない。件数一致と SENTINEL の
 一意性、無害化後にホームパスが残っていないことを、コピーのたびに assert で確かめる。
+
+使い方: python3 scripts/sanitize_fixtures.py <採取先ディレクトリ>
+書き込み先は引数で変えられない。採取先を間違えると既存のフィクスチャが消えるため、
+実行前に採取先に採取済みの stdin が揃っていることを確かめる。
 """
 
 import json
@@ -29,7 +33,7 @@ from pathlib import Path
 # （生の採取データは git に入れないため、リポジトリにはデフォルト値を持たない）。
 # DST_DIR: 常にこのリポジトリの tests/fixtures/hook_inputs/ を指す。
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parents[1]
+REPO_ROOT = SCRIPT_DIR.parent
 SRC_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else SCRIPT_DIR / "raw"
 DST_DIR = REPO_ROOT / "tests" / "fixtures" / "hook_inputs"
 
