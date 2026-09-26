@@ -19,7 +19,7 @@
 種類（例）: 不具合・食い違い・テストの穴・未決の判断・未検証・肥大化・手順
 確度: 事実（実物で確かめた）/ 未検証 / 推測
 移し先: remaining/known-issues.md / remaining/unverified.md / 別作業（plan-implement・refactor）/ 記録のみ
-        remaining/ へは完了条件が書ける重要なものだけ
+       remaining/ へは完了条件が書ける重要なものだけ
 -->
 
 ## 補足
