@@ -44,7 +44,7 @@ docker compose up                                    # http://localhost:15000/ �
 
 - **機能の追加・変更（増やす）と、リファクタリング・文書の見直し（減らす）を 1 つの作業に混ぜない。**
   増やす作業の途中で 200 行超え・重複・肥大化に気づいても、その場で直さず、減らす作業として提案する
-- 減らす作業では、着手前に `.claude/skills/refactor/SKILL.md` を読んで従う
+- 減らす作業では、着手前に `.claude/skills/refactor/SKILL.md` を読んで従う。文書・docstring・コメントの見直しは `.claude/skills/revise-docs/SKILL.md` に従う
 
 ## Design
 
