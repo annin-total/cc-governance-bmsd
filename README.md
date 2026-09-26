@@ -23,8 +23,7 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 | `docs/` | 仕様・設計判断・手順書 |
 | `tests/` | プラグインと契約のテスト、統合テスト |
 | `e2e/` | 実機検証（`pytest e2e`） |
-| `scripts/` | 契約の同期、プラグインの検証 |
-| `verification/` | 調査・計測・fixture 再生成の道具 |
+| `scripts/` | 契約の同期、プラグインの検証、fixture の再生成、hook stdin の採取、性能計測 |
 
 ## 技術スタック
 

@@ -8,4 +8,4 @@ ignore = ["FA100"]
 [lint.per-file-ignores]
 # hook は利用者の作業を妨げないため、意図的に例外を握り潰して必ず exit 0 で終える設計。
 # 採取用スクリプトも同じ思想で書いているため、bare except / bare except-pass を許容する。
-"verification/hook-behavior/*.py" = ["BLE001", "S112"]
+"scripts/capture_hook_stdin.py" = ["BLE001", "S112"]

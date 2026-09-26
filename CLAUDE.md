@@ -37,7 +37,7 @@ docker compose up                                    # http://localhost:15000/ �
 - コメントは、込み入ったロジックか、コードから読めず失うと事故になる理由にだけ書く。作業の経緯や検証番号（`# K-1` など）を書かない
 - 値のハードコードは避けて定数に分離する。ただし過剰にはしない
 - 内部関数・内部メソッドは識別子を付与して区別する
-- `tests/fixtures/hook_inputs/` を書き換えない。実採取した hook stdin の記録であり、一括置換は改竄になる
+- `tests/fixtures/hook_inputs/` を書き換えない。実採取した hook stdin の記録であり、一括置換は改竄になる。作り直すときは `scripts/sanitize_fixtures.py` を使う
 
 ## Scope
 

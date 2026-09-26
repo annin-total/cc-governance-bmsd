@@ -27,5 +27,3 @@
 | `remaining/unverified.md` | 確かめれば白黒が付く未検証事項と、採否が未決のこと |
 | `remaining/deploy.md` | 実行基盤に到達しないとできない確認 |
 | `remaining/distribution.md` | 社内リポジトリに到達しないとできない配布の確認と初回の作業 |
-
-検証の道具のカタログは `../verification/README.md` にある。

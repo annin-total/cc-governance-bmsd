@@ -49,6 +49,6 @@ Thumbs.db
 # --- その他 ---
 .superpowers/
 
-# --- verification/ の実採取データ（実行のたびに用意する作業ディレクトリ。生データは追跡しない） ---
-/verification/fixture-sanitization/raw/
-/verification/hook-behavior/captured/
+# --- scripts/ の実採取データ（実行のたびに用意する作業ディレクトリ。生データは追跡しない） ---
+/scripts/raw/
+/scripts/captured/

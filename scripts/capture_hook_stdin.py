@@ -6,6 +6,8 @@ settings.json の hooks に `python3 capture_hook_stdin.py <hook名>` として�
 差し替えて使う。argv[1]: hook名（保存ファイル名の接頭辞になるだけで挙動は変えない）。
 環境変数 CAPTURE_DIR: 保存先ディレクトリ。
 副作用としてファイル保存のみを行い、hook を止めないよう必ず exit 0 する。
+CAPTURE_DIR は command 文字列の中に書く（`CAPTURE_DIR="<repo>/scripts/captured" python3 ...`）。
+hook エントリの "env" は無言で無視され、claude の作業ディレクトリに保存される（2.1.283 で確認）。
 """
 
 import os
