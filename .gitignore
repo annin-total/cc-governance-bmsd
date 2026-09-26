@@ -26,7 +26,6 @@ Thumbs.db
 .vscode/
 .idea/
 
-
 # --- scripts/ の実採取データ（実行のたびに用意する作業ディレクトリ。生データは追跡しない） ---
 /scripts/raw/
 /scripts/captured/
