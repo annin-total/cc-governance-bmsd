@@ -22,7 +22,7 @@ macOS での実測。確かめた版は各行に添える。版の無い行は�
 | 外部から `export CLAUDE_PLUGIN_DATA=...` しても **Claude Code は無視する**。実際のプラグインのデータ領域は、Claude Code が自前で計算する `$CLAUDE_CONFIG_DIR/plugins/data/<plugin>-<marketplace>/` に固定される | hook を手動実行するときと `claude` に実行させるときとで、状態ディレクトリが別物になりうる。検証手順は実際に使われるパスを毎回計算し直す |
 | macOS で `HOME` を差し替えて `claude` を起動すると、`Login successful` の直後に `Not logged in` が出て認証が壊れる。macOS の Security フレームワークが login Keychain を `$HOME/Library/Keychains/login.keychain-db` で解決するため、`HOME` を差し替えると認証情報が入った本来の Keychain に届かない | 隔離環境を作るとき |
 | macOS で `CLAUDE_CONFIG_DIR` を設定してログインすると、キーチェーンに `Claude Code-credentials-<8 桁>` の項目ができる。8 桁は `CLAUDE_CONFIG_DIR` に渡した文字列そのものの SHA-256 の先頭 8 桁で、パスを正規化しない（`/var/...` と `/private/var/...` は別の項目になる）。config ディレクトリを消しても項目は残り、`security delete-generic-password -s` で消せる（Claude Code 2.1.283・macOS） | 隔離環境を片付けるとき |
-| `claude plugin marketplace add` は bare リポジトリを直接指すと失敗するが、http(s) の git URL なら通る | ローカルの git リポジトリをマーケットプレイスとして登録するとき |
+| `claude plugin marketplace add` は bare リポジトリを直接指すと失敗するが、http(s) の git URL なら通る。http の git URL は末尾に `.git` が要り、無いと marketplace.json の URL と解釈して 404 になる（2.1.282） | ローカルの git リポジトリをマーケットプレイスとして登録するとき |
 | マーケットプレイスを remove してから add し直すと `plugins/data/` が空になり、プラグインが置いた状態が消える | 登録をやり直す手順を書くとき。データを残したいなら remove を避ける |
 | マーケットプレイスを `#<ref>` 付きで登録すると `settings.json` の `source.ref` に入り、`ref` を付けている間は 2 段階の更新（`claude plugin marketplace update` → `claude plugin update`）が `ref` の先端の版を入れる。既定ブランチの版は拾わない（2.1.282） | ref 付きで導入した環境の版の見積もりをするとき |
 | `claude plugin update` は版が下がる向きにも入れ替える（2.1.282） | ref を外す・切り替えるときに、端末の版が意図せず下がりうることを見積もるとき |

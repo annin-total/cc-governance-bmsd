@@ -11,6 +11,12 @@
 **不合格だったとき** — 報告し、`../decisions/plugin.md` の「起動コマンドは `python3` のままにする」
 判断を見直すかを決める。
 
+### Bedrock での E2E
+
+**確かめること** — 会社 PC で Bedrock の認証を渡し、`pytest e2e` が要認証のモジュールを skip せずに通ること。
+
+**完了条件** — 通ること。通らなければ、つまずいた点を `../guide/e2e.md` の「認証」に反映する。
+
 ### Windows 端末
 
 開発機に Windows 端末が無い。
@@ -21,6 +27,7 @@
 | `os.startfile` | 既定ブラウザが実際に開くか。コンソール窓が一瞬でも出ないか |
 | 起動時間 | hook の応答を体感できるほど遅らせないか |
 | 収集と送信 | 並列の hook の追記で `queue.jsonl` の行が欠けないか。切り離した送信プロセスが Claude Code の終了後も送り切るか（`start_new_session` は POSIX でしか効かない） |
+| E2E | `pytest e2e` が通るか。通らなければ、つまずいた点を `../guide/e2e.md` に反映する |
 
 **完了条件** — 結果を `../knowledge/claude-code-behavior.md` に記録すること。不合格なら報告する。
 
