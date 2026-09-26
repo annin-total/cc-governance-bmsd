@@ -56,7 +56,7 @@ description: 中程度の「増やす作業」を、ざっと把握→不明点�
 
 ### 4. 進捗記録を作る
 
-`references/progress-template.md` を読み、`local/<作業名>/` に作る（`local/` はリポジトリのルート。無ければ作る。git 管理外）。
+`references/progress-template.md` を読み、`.local/<作業名>/` に作る（`.local/` はリポジトリのルート。無ければ作る。git 管理外）。
 PR が 1 本なら `progress.md` だけ。2 本以上なら全体の `progress.md` と、PR ごとの記録を**着手時に**作る。
 記録は**いつ消してもよい一時文書**である。コード・`docs/`・コミット・PR 本文から参照しない。残すべき事実は `docs/` か PR 本文に書く。
 
