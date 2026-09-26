@@ -22,7 +22,7 @@
 | `guide/e2e.md` | 実機検証（`pytest e2e`）の正本。モジュールごとの目的・実行方法・罠 |
 | `knowledge/upstream-features.md` | Claude Code に実在する hook・キー・環境変数の目録 |
 | `knowledge/claude-code-behavior.md` | Claude Code の振る舞い（プラグインの更新・hook の実行環境・transcript） |
-| `knowledge/measurements.md` | 実測値（SQLite・MySQL の性能と挙動、hook の起動時間、transcript の分布） |
+| `knowledge/measurements.md` | 実測値（SQLite・MySQL の性能と挙動、hook と Claude Code の挙動、transcript の分布） |
 | `knowledge/db-and-framework-facts.md` | DB とフレームワークの仕様として決まっていること |
 | `remaining/unverified.md` | 確かめれば白黒が付く未検証事項 |
 | `remaining/known-issues.md` | 既知の課題（修正か判断によって完了するもの） |

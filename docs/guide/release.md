@@ -49,6 +49,8 @@ python scripts/validate.py
 - 効果測定の対象の施策（`server/ccgov/constants.py` の `REFERENCE_KEY` / `REFERENCE_VALUE`）の値を変えたら、同じリリースでこの 2 つを差し替えた。差し替えると以前の実験は画面から消える（データは残る）
 - 配布リポジトリの作業ブランチで `diff -r -x __pycache__ -x .DS_Store plugin/ ../cc-marketplace-governance-bmsd/plugins/governance/` が差分なしで終わる（このリポジトリから実行する）
 - `notices.json` の `url` は `https://` で始まり、意図したページを指している
+- `notices.json` を変えたら、「staging で確かめる」の 4 でお知らせが表示されることを見る（`pytest e2e` は見本の
+  `notices.json` を使うため本物の文面を通らず、壊れた JSON は黙って空になる）
 - `notices.json` のお知らせは 1 件を日本語で 600 字程度までに収めた（長い文面はファイルへ退避され、先頭しか表示されない。境界は `../knowledge/measurements.md`）
 - `config.json` の送信先 URL が `https://` で始まり、デプロイ済みのサーバの URL と一致している（スキームは検査されない。理由は `../decisions/plugin.md` の「受け入れている限界」）
 - `config.json` の受信トークンが、サーバの Secret ファイルの `INGEST_TOKEN` と一致している。**一致していなければ全端末の送信が 401 で跳ね返り続ける。**端末は spool を保持するのでイベントは失われないが、誰も気づかないまま溜まる
@@ -145,3 +147,4 @@ claude plugin update governance
 - 2026-09-26: `staging` の確認を、本人の実環境ではなく使い捨ての `CLAUDE_CONFIG_DIR` で行う手順に変更し、ref の実測メモを `docs/knowledge/claude-code-behavior.md` へ移した。前提に `pytest e2e` を加えた
 - 2026-09-26: お知らせの長さと送信先の `https://` を確認項目に加えた
 - 2026-09-26: 列を足すときのサーバ側の手順を `ALTER TABLE ... ADD COLUMN` で書き、版の分布を見る場所を直した
+- 2026-09-27: `notices.json` を変えたときの手動確認を確認項目に戻した
