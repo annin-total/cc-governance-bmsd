@@ -101,8 +101,8 @@ python scripts/validate.py
    rm -rf "$STAGING"
    ```
 
-   macOS でログインした場合、キーチェーンに config ごとの項目が残る（消し方は未検証。
-   `docs/guide/e2e.md` の「手動確認の準備」）
+   macOS でログインした場合、キーチェーンに config ごとの項目が残る。消し方は
+   `docs/guide/e2e.md` の「手動確認の準備」にある
 
 6. 「PR を作りマージする」へ進む
 

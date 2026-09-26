@@ -84,7 +84,7 @@
     既読にならず同じお知らせが出続ける。接頭辞一致なのは `sdk-ts` などの増加を個別列挙せずに拾うため。
 - **ブラウザで開くのは未読の先頭 1 件だけ。** 初回導入時は過去のお知らせがまとめて未読になり、タブが一斉に開く。
 - **macOS は `open` を detach 起動し、`webbrowser.open` を使わない。** `webbrowser.open` は
-  osascript の完了を約 1.4 秒待つ（`../knowledge/claude-code-behavior.md`）。
+  osascript の完了を約 1.4 秒待つ（`../knowledge/measurements.md`）。
   macOS と Windows 以外では何もしない（利用者端末はこの 2 OS に限られ、未検証の起動方法を持ち込まない）。
 
 ---
