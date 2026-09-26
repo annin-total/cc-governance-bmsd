@@ -1,4 +1,4 @@
-"""ddl() による 3 テーブルの CREATE TABLE 文の組み立てを検証する。"""
+"""ddl() による 4 テーブルの CREATE TABLE 文の組み立てを検証する。"""
 
 import sqlite3
 
@@ -6,13 +6,14 @@ import contract
 import pytest
 
 
-def test_ddl_returns_three_statements_for_three_tables():
+def test_ddl_returns_four_statements_for_four_tables():
     statements = contract.ddl()
-    assert len(statements) == 3
+    assert len(statements) == 4
     joined = " ".join(statements)
     assert "events" in joined
     assert "policy_state" in joined
     assert "cost_daily" in joined
+    assert "errors" in joined
 
 
 def test_ddl_statements_start_with_create_table_if_not_exists():
@@ -81,6 +82,23 @@ def test_policy_state_columns_match_policy_columns():
         "prev_value",
         "apply_result",
         "plugin_version",
+    ]
+
+
+def test_errors_columns_match_error_columns():
+    conn = sqlite3.connect(":memory:")
+    for statement in contract.ddl():
+        conn.execute(statement)
+    assert _table_columns(conn, "errors") == [
+        "event_id",
+        "ts",
+        "day",
+        "user_email",
+        "host",
+        "hook_event",
+        "plugin_version",
+        "stage",
+        "error_type",
     ]
 
 

@@ -90,6 +90,8 @@ def test_type_tokens_are_subset_of_known_types():
         tokens.add(type_str.split("(")[0])
     for _, type_str in contract.POLICY_COLUMNS:
         tokens.add(type_str.split("(")[0])
+    for _, type_str in contract.ERROR_COLUMNS:
+        tokens.add(type_str.split("(")[0])
     for _, _, type_str in contract.CSV_COLUMNS:
         tokens.add(type_str.split("(")[0])
     assert tokens <= {"VARCHAR", "INTEGER", "BIGINT", "DOUBLE"}
