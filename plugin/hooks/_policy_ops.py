@@ -1,7 +1,4 @@
-"""settings.json の dict へ SET / ADD / REMOVE / ONCE を当てる。ファイルには触れない。
-
-結果の `result` は `pending`（書き換えた）/ `already_ok` / `skipped_missing`。
-"""
+"""settings.json の dict へ SET / ADD / REMOVE / ONCE を当てる。ファイルには触れない。"""
 
 import copy
 import json

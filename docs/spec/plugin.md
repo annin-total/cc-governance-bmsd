@@ -14,19 +14,15 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 
 ## 規約
 
-- 標準ライブラリだけで書く。配布先に `pip install` を求めない
 - hook は常に `exit 0` し、標準エラーには何も出力しない。標準出力に書くのは
   `session_start.py` の hook JSON 出力 1 回だけである
 - `tool_input` は `skill` キーだけを名指しで読む。`prompt` / `tool_response` / `message`
   には触れない
-- ファイル名を標準ライブラリのモジュール名と衝突させない（`plugin/hooks/` は `sys.path` の
-  先頭に来うる）
 
-`hooks.json` に登録するコマンドは `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/collect.py" <hook名>`
-の形の 1 行とし、`${...}` を二重引用符で囲む。パイプ・`;`・`&&`・リダイレクトを含めず、
-条件分岐・後処理・無効化スイッチの判定はすべて Python 側に置く。1 行 100 文字未満に収める。
-
-登録する hook は `hooks.json` にある 7 種にとどめ、網羅登録はしない。
+`hooks.json` に登録するコマンドは `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/<入口>.py" <hook名>`
+（入口は `collect.py` か `session_start.py`）の形の 1 行とし、`${...}` を二重引用符で囲む。
+パイプ・`;`・`&&`・リダイレクトを含めず、条件分岐・後処理・無効化スイッチの判定はすべて Python 側に
+置く。1 行 100 文字未満に収める。
 
 ## 収集
 
@@ -37,39 +33,39 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 `command_source` は利用者が自由に命名できる文字列であり、255 文字までそのまま送信・永続化
 される。
 
-- `user_email` は突合キーである。環境変数 `CC_GOVERNANCE_USER_EMAIL` →
-  `git config --global user.email` → NULL の順に解決してキャッシュし、小文字化だけ行う。
+- `user_email` は突合キーである。環境変数 `CC_GOVERNANCE_USER_EMAIL` があればそれを使い、無ければ
+  キャッシュ → `git config --global user.email` → NULL の順に解決してキャッシュする。小文字化だけ行う。
   `SessionStart` ではキャッシュを読まずに解決し直すので、git や環境変数を直せば次のセッションから
   反映される。ほかの hook はキャッシュを読む
 - `event_id` はイベントごとの UUID であり、一意性は保証しない（重複の扱いは `server.md`）
 - `context_tokens` は `PreCompact` と `Stop` のときだけ、transcript の末尾から取った絶対値を送る
-- 列名が `compact_trigger` なのは、`trigger` が MySQL の予約語だからである
 
 環境変数 `CC_GOVERNANCE_DISABLE` が空でないとき、**利用ログの収集とお知らせの表示**
-（ブラウザの起動を含む）を止める。設定の適用・その policy イベントの記録・送信は止めない。
+（ブラウザの起動を含む）を止める。設定の適用と policy イベントの記録・送信（`SessionStart` での
+送信判定）は続ける。`Stop` では送信しない。
 
 ## 蓄積と送信
 
 イベントは状態ディレクトリの `queue.jsonl` に 1 行ずつ追記する。`SessionStart` と `Stop` の
-末尾で、前回送信から 10 分以上経っていれば送信プロセスを切り離して起動し、hook 自身は待たずに
-終わる。送信プロセスはキューを `spool/` へ退避し、古い順に `POST /ingest`（タイムアウト
-60 秒）し、2xx のものだけ消し、最後に上限を超えた分を破棄する。値は `plugin/config.json` にある。
+末尾で、`queue.jsonl` があり、前回送信から一定の間隔が経っていれば送信プロセスを切り離して起動し、
+hook 自身は待たずに終わる。送信プロセスはキューを `spool/` へ退避し、古い順に `POST /ingest` し、
+2xx のものだけ消し、最後に上限を超えた分を破棄する。値は `plugin/config.json`（タイムアウト・上限）と
+`_spool.py` の定数（間隔）にある。
 
 - リトライループ・指数バックオフ・ACK は持たない。失敗分は次回まとめて再送される
 - サーバに届かなかったら（接続・タイムアウト・壊れた応答）、残りのファイルは送らずにその回を
   打ち切る。HTTP のエラー応答なら次のファイルへ進む
 - 送信先が空でも、退避と破棄は行う（`queue.jsonl` を上限なしに増やさない）
-- 上限は `spool/` 全体で 5MB または 7 日。超えたら古いものから破棄する。単体で上限を超えるファイルも破棄の前に 1 回は送られる
+- 上限（`spool/` 全体の容量と日数）を超えたら古いものから破棄する。送信先に届く回なら、単体で上限を
+  超えるファイルも破棄の前に 1 回は送られる
 - 再送で同じイベントが二重に届きうる。件数はサーバが `event_id` で一意化して数える
 - **オフライン・spool 上限超過・hook 失敗による取りこぼしは仕様として受け入れる。**hook 失敗は
-  後述の error 行で気づけるが、失ったイベントは戻らない
+  error 行で気づけるが、失ったイベントは戻らない
 - `session_start.py` の各段・`collect.py` の入口・送信プロセスの失敗は、`kind: "error"` の行
   （契約の `ERROR_COLUMNS`）としてキューに積み、イベントと同じ経路で送る。持つのは固定値の段名
   `stage` と例外クラス名 `error_type`（送信の HTTP エラー応答は `HTTP 401` の形）だけで、
   例外メッセージは持たない。送信の接続不可・タイムアウトと、段の内部で値を空にして続行した失敗は
-  記録しない。送信の失敗の行は、送信が回復するまでサーバに届かない
-- 送信先 URL のスキームは検査しない。`http://` にすると受信トークン（共有秘密）・
-  `user_email`・`host` が平文で流れるため、`ingest_url` には `https://` を設定する運用で防ぐ
+  記録しない（SSL の失敗は記録する）。送信の失敗の行は、送信が回復するまでサーバに届かない
 
 ## 設定の自動適用
 
@@ -93,11 +89,12 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 - 差分が無ければ書かない。読んでから書くまでに mtime が変わっていたら今回は諦め、
   パースに失敗したら何もしない。書き込みは一時ファイル + `os.replace` で原子的に行う
 - 書き換える直前に、元のファイルを丸ごと `<config_dir>/governance/backups/` に日時付きで保存し、
-  直近 10 世代を残す。保存に失敗したら書かない
+  新しい一定の世代数だけを残す。保存に失敗したら書かない
 - 結果はキーごとに policy イベントとして記録する。`key_name` は `SET` ならパスそのまま、ほかは
   `add:` / `remove:` / `once:` を前に付ける。`value` は `SET` / `ONCE` なら配る値（dict・list は
   JSON 文字列）、`ADD` / `REMOVE` なら今回足した・消した要素の JSON 配列（無ければ NULL）。
-  `prev_value` は書き込み前の値で、スカラ以外は NULL にする。サーバは `SET` の `prev_value` で準拠を判定する
+  `prev_value` は `SET` / `ONCE` の書き込み前の値で（`ADD` / `REMOVE` は NULL）、スカラ以外は NULL に
+  する。サーバは `SET` の `prev_value` で準拠を判定する
 - `/governance:reapply` は `ONCE` の記録を消して全体を今すぐ適用し直し、結果を利用者に見せる。
   policy イベントは積まない
 
@@ -107,13 +104,6 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 `<config_dir>/governance/` には、バックアップ・`ONCE` の記録（`once.json`）・`statusline.js` を置く。
 `statusline.js` は同梱の `plugin/statusline/statusline.js` を毎セッション、内容が違うときだけ複製する。
 この同期の失敗はほかの工程に波及させない。**このディレクトリはアンインストールしても残る。**
-利用者の設定から参照されうるため、プラグインの状態ディレクトリには置かない。
-
-`~/.claude/settings.json` が権威である（同期の挙動は `../knowledge/claude-code-behavior.md`）。
-
-`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` は公開された環境変数で、1〜100 の割合で指定し、低いほど
-早く圧縮が走る。既定より高い値は無視され、発火する絶対トークン数はモデルによって異なる。
-この施策が効くのは、上限に達する前に圧縮するセッションだけである。
 
 ## お知らせの配信
 
@@ -130,7 +120,6 @@ JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポー�
   表示はするが既読にしない
 
 表示の接頭辞と長文の退避の挙動は `../knowledge/claude-code-behavior.md` にある。
-**お知らせ 1 件は日本語で 600 字程度までに収める。**
 
 ## 改訂履歴
 
@@ -138,4 +127,5 @@ JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポー�
   statusline.js の同期・`/governance:reapply` を加えた。途中の dict を作れるのを `env` だけに
   限っていた規則を、`extraKnownMarketplaces` の下だけ作らない規則にした
 - 2026-09-25: `user_email` を `SessionStart` ごとに解決し直すようにし、送信の打ち切りと送信先が空のときの退避・破棄を書いた
-- 2026-09-26: hook の失敗（error 行・`errors`・概況の失敗の表）を加えた
+- 2026-09-26: hook の失敗（error 行）を加えた
+- 2026-09-26: 無効化スイッチの範囲と送信の条件を実装にそろえ、理由・上流の仕様・運用の値を `decisions/`・`knowledge/`・`guide/` へ移した
