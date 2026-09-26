@@ -41,9 +41,6 @@
 | ファイル | 用途 |
 | --- | --- |
 | `sqlite_bench.py` | `events` の `COUNT(DISTINCT event_id)` を被覆インデックスあり/なしで計測する（SQLite）。`python3 sqlite_bench.py <db> <日数> <1日の行数>` |
-| `mysql_schema.sql` | サーバのテーブル定義の MySQL 版。型・制約が通るかを確かめる |
-| `mysql_indexes.sql` | 上のテーブルに対する被覆インデックス |
 
 **`ANALYZE` を省くと、インデックスありの方が無しより遅くなることがある。**`sqlite_bench.py` は
-`ANALYZE` を呼ばないので、インデックスの効果を見るときは計測前に手で実行する。MySQL は
-`mysql_schema.sql` → データ投入 → `mysql_indexes.sql` → `ANALYZE TABLE` の順に流す。
+`ANALYZE` を呼ばないので、インデックスの効果を見るときは計測前に手で実行する。
