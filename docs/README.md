@@ -25,6 +25,6 @@
 | `knowledge/measurements.md` | 実測値（SQLite・MySQL の性能と挙動、hook の起動時間、transcript の分布） |
 | `knowledge/db-and-framework-facts.md` | DB とフレームワークの仕様として決まっていること |
 | `remaining/unverified.md` | 確かめれば白黒が付く未検証事項 |
-| `remaining/known-issues.md` | 分かっていて片付いていないこと（直すか決めれば終わる） |
+| `remaining/known-issues.md` | 既知の課題（修正か判断によって完了するもの） |
 | `remaining/deploy.md` | 実行基盤に到達しないとできない確認 |
 | `remaining/distribution.md` | 社内リポジトリに到達しないとできない配布の確認と初回の作業 |
