@@ -39,7 +39,6 @@ def _policy_row(
     ts: int,
     plugin_version: Optional[str],
 ) -> dict:
-    """1 件の適用結果を policy イベント（キューの 1 行）にする。"""
     raw = {
         "event_id": _identity.new_event_id(),
         "ts": ts,
@@ -75,10 +74,7 @@ def _apply_settings_step() -> None:
 
 
 def _mark_seen_and_open(unread: list, seen: set) -> None:
-    """未読を既読にし、対話セッションなら先頭の URL を開く。非対話起動では既読にしない。
-
-    開くのは既読を書けた後だけ（書けない端末で毎回開かないため）。
-    """
+    """非対話起動では何もしない。それ以外は未読を既読にし、先頭の URL を開く（既読を書けた後だけ。書けない端末で毎回開かないため）。"""
     if _browser.is_headless():
         return
     if not _notices._write_seen(seen | {n["id"] for n in unread}):
@@ -92,8 +88,7 @@ def _mark_seen_and_open(unread: list, seen: set) -> None:
 def _emit_output(output: dict) -> bool:
     """hook の JSON 出力を標準出力へ 1 個だけ書く。書けたら真。
 
-    失敗時は fd 1 を `/dev/null` に差し替える。内部バッファに残ったデータが終了時の flush で
-    再び失敗し、標準エラーに漏れて exit 120 になるため（`sys.stdout` の差し替えでは防げない）。
+    失敗時は fd 1 を `/dev/null` に差し替える。残ったバッファの flush が終了時に標準エラーへ漏れ exit 120 になるため（`sys.stdout` の差し替えでは防げない）。
     """
     try:
         sys.stdout.write(json.dumps(output, ensure_ascii=False))

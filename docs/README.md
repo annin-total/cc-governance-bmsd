@@ -24,7 +24,6 @@
 | `knowledge/claude-code-behavior.md` | Claude Code の振る舞い（プラグインの更新・hook の実行環境・transcript） |
 | `knowledge/measurements.md` | 実測値（SQLite・MySQL の性能と挙動、hook の起動時間、transcript の分布） |
 | `knowledge/db-and-framework-facts.md` | DB とフレームワークの仕様として決まっていること |
-| `remaining/known-issues.md` | 原因を特定済みで未修正の不具合 |
-| `remaining/unverified.md` | 確かめれば白黒が付く未検証事項 |
+| `remaining/unverified.md` | 確かめれば白黒が付く未検証事項と、採否が未決のこと |
 | `remaining/deploy.md` | 実行基盤に到達しないとできない確認 |
-| `remaining/distribution.md` | 社内リポジトリに到達しないとできない配布の確認 |
+| `remaining/distribution.md` | 社内リポジトリに到達しないとできない配布の確認と初回の作業 |

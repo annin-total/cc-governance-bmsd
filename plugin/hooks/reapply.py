@@ -1,7 +1,6 @@
 """`/governance:reapply` のエントリ。ONCE の適用済みの記録を消し、標準設定を今すぐ適用し直す。
 
-hook ではないので例外は隠さない。結果はキーごとに `<apply_result>\t<key_name>` を 1 行ずつ出す。
-policy イベントは積まない（次の SessionStart がその時点の状態を記録する）。
+hook ではないので例外は隠さない。policy イベントは積まない（次の SessionStart がその時点の状態を記録する）。
 """
 
 import sys
