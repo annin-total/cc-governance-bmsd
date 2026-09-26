@@ -97,7 +97,10 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 - ログインは隔離した config ごとに 1 回要る（本人の認証は引き継がず、上書きもしない）
 - 起動はルート内の空の `project/` から行う。リポジトリ内で起動すると、そのプロジェクトの hooks や CLAUDE.md が混ざる
-- macOS ではログインするとキーチェーンに config ごとの項目ができ、ルートを消しても残る。消し方は未検証
+- ログインは避け、認証は環境変数で渡す（「認証」の節）。macOS で `/login` すると、キーチェーンに config ごとの項目
+  `Claude Code-credentials-<8 桁>` ができ、ルートを消しても残る。消すときは、末尾の 8 桁が消した config の項目だけを
+  `security delete-generic-password -s 'Claude Code-credentials-<8 桁>'` で消す（8 桁の求め方は
+  `docs/knowledge/claude-code-behavior.md`）。末尾の無い `Claude Code-credentials` は本人の認証なので消さない
 - `url` 付きの項目は、`<ルート>/config/plugins/cache/` 配下の installPath にある `notices.json` に足す。
   git source では hook は cache から動く（`docs/knowledge/claude-code-behavior.md`）
 - **この `claude` を、別の Claude Code セッションの中（Bash 等）から起動しない。**起動形態を示す環境変数
