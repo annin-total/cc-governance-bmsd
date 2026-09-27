@@ -10,7 +10,8 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 （statusline.js の同期 → 設定適用 → お知らせ表示 → 収集）の 2 つだけであり、`_` 始まりの
 ファイルは内部モジュールである。ほかに利用者が呼ぶ `/governance:reapply`（入口は
 `reapply.py`）がある。端末の状態（識別子のキャッシュ・既読・送信待ち）は `${CLAUDE_PLUGIN_DATA}`
-（無ければ `~/.claude/cc-governance/`）に置く。
+（無ければ `~/.claude/cc-governance/`）に置く。アンインストールすると `${CLAUDE_PLUGIN_DATA}` は消え、既読と
+未送信分（`queue.jsonl`・`spool/`）も失われる（上流の挙動は `../knowledge/claude-code-behavior.md`）。
 
 ## 規約
 
@@ -39,6 +40,10 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
   反映される。ほかの hook はキャッシュを読む
 - `event_id` はイベントごとの UUID であり、一意性は保証しない（重複の扱いは `../decisions/server.md`）
 - `context_tokens` は `PreCompact` と `Stop` のときだけ、transcript の末尾から取った絶対値を送る
+
+**本文（プロンプト・応答・メッセージ）は送らない。**利用者に由来する値で送るのは、`SET` / `ONCE` の
+書き込み前の値（`prev_value`。スカラだけ。「設定の自動適用」）、スキル名とコマンド名（`skill_name`・
+`command_name`・`command_source`）、端末のホスト名（`host`）、`user_email` だけである。
 
 環境変数 `CC_GOVERNANCE_DISABLE` が空でないとき、**利用ログの収集とお知らせの表示**
 （ブラウザの起動を含む）を止める。設定の適用と policy イベントの記録・送信（`SessionStart` での
@@ -85,14 +90,18 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
 | `SET` | 値で上書きする。dict・list も丸ごと置き換える。値 `None` はキーを消す |
 | `ADD` | 配列に無い要素だけ末尾に足す。要素は型まで含めて等値で比べる（dict も可） |
 | `REMOVE` | 配列にある要素だけ消す |
-| `ONCE` | (パス, 値) の組ごとに 1 回だけ `SET` と同じく書く。以後は利用者が変えても戻さない。値を変えて配れば再度 1 回書く。値の文字列中の `${GOVERNANCE_HOME}` は書き込み時に `<config_dir>/governance` の絶対パス（`/` 区切り）になる |
+| `ONCE` | (パス, 値) の組ごとに 1 回だけ `SET` と同じく書く。以後は利用者が変えても戻さない。値を変えて配れば再度 1 回書く。記録は今配っている組だけを持つので、前の値へ戻して配っても再び 1 回書く。値の文字列中の `${GOVERNANCE_HOME}` は書き込み時に `<config_dir>/governance` の絶対パス（`/` 区切り）になる |
 
 - 途中の dict は無ければ作る。ただし `extraKnownMarketplaces` の下には作らず、利用者が登録済みの
   項目にだけ書く。途中が dict でないとき、対象が配列でないとき（`ADD` / `REMOVE`）は書かない
 - 差分が無ければ書かない。読んでから書くまでに mtime が変わっていたら今回は諦め、
   パースに失敗したら何もしない。書き込みは一時ファイル + `os.replace` で原子的に行う
+- **Claude Code 本体が読めない `settings.json` では、プラグインが起動しない。**本体は検証を通らない箇所が
+  1 つでもあるとファイル全体を無視して `enabledPlugins` も読まないので、hook が 1 本も動かず、適用も
+  policy・error 行の記録も起きない。本体が読めてプラグインが読めないとき（BOM 付き・非 UTF-8 など）は
+  hook が動き、適用を飛ばして全項目を `parse_failed` として記録する。気づき方と復旧の順は `../guide/release.md`
 - 書き換える直前に、元のファイルを丸ごと `<config_dir>/governance/backups/` に日時付きで保存し、
-  新しい一定の世代数だけを残す。保存に失敗したら書かない
+  新しい一定の世代数だけを残す。最新の世代と同じ内容なら保存しない。保存に失敗したら書かない
 - 結果はキーごとに policy イベントとして記録する。`key_name` は `SET` ならパスそのまま、ほかは
   `add:` / `remove:` / `once:` を前に付ける。`value` は `SET` / `ONCE` なら配る値（dict・list は
   JSON 文字列）、`ADD` / `REMOVE` なら今回足した・消した要素の JSON 配列（無ければ NULL）。
@@ -134,3 +143,4 @@ JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポー�
 - 2026-09-26: 無効化スイッチの範囲と送信の条件を実装にそろえ、理由・上流の仕様・運用の値を `decisions/`・`knowledge/`・`guide/` へ移した
 - 2026-09-26: 重複の扱いの参照先を `decisions/server.md` にした
 - 2026-09-28: HTTP のエラー応答での送信の打ち切りと、error 行の状態コードごとの集約を書いた
+- 2026-09-28: 本体が読めない settings.json・アンインストールで消える状態・ONCE の記録の範囲・送る値・同じ内容のバックアップを取らないことを書いた
