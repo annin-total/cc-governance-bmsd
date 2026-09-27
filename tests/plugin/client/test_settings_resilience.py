@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 
 import _settings
-import policy
 import pytest
 
 _PCT_KEY = "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
@@ -20,7 +19,7 @@ def _results(rows):
     return {key: result for key, _value, _prev, result in rows}
 
 
-def test_非UTF8のファイルで例外が漏れない(tmp_path):
+def test_非UTF8のファイルで例外が漏れない(tmp_path, fixed_policy):
     """非 UTF-8 のバイト列を含む settings.json で `parse_failed` を返し、ファイルを触らない。
 
     `UnicodeDecodeError` は `ValueError` 派生で `OSError` ではない。捕まえ損ねると
@@ -32,14 +31,14 @@ def test_非UTF8のファイルで例外が漏れない(tmp_path):
     path.write_bytes(raw)
     before = path.stat().st_mtime_ns
 
-    rows = _settings.apply_settings(str(path), policy, tmp_path / "governance")
+    rows = _settings.apply_settings(str(path), fixed_policy, tmp_path / "governance")
 
     assert set(_results(rows).values()) == {"parse_failed"}
     assert path.read_bytes() == raw
     assert path.stat().st_mtime_ns == before
 
 
-def test_深い入れ子のJSONで例外が漏れない(tmp_path):
+def test_深い入れ子のJSONで例外が漏れない(tmp_path, fixed_policy):
     """再帰上限を超える入れ子の JSON で `parse_failed` を返す（`RecursionError` は ValueError 派生ではない）。"""
     path = tmp_path / "settings.json"
     # トップレベルが dict になる形にする。list にすると `isinstance(data, dict)` の
@@ -48,14 +47,14 @@ def test_深い入れ子のJSONで例外が漏れない(tmp_path):
     raw = ('{"a":' * depth) + "1" + ("}" * depth)
     path.write_text(raw, encoding="utf-8")
 
-    rows = _settings.apply_settings(str(path), policy, tmp_path / "governance")
+    rows = _settings.apply_settings(str(path), fixed_policy, tmp_path / "governance")
 
     assert set(_results(rows).values()) == {"parse_failed"}
     assert path.read_text(encoding="utf-8") == raw
 
 
 @pytest.mark.skipif(os.name == "nt", reason="symlink の作成に特権が要る")
-def test_シンボリックリンクを壊さず実体に書く(tmp_path):
+def test_シンボリックリンクを壊さず実体に書く(tmp_path, fixed_policy):
     """settings.json がシンボリックリンクでも、リンクのまま実体側が書き換わる。
 
     `os.replace` はリンクそのものを置き換える。解決しないと dotfiles 管理下の端末で
@@ -67,7 +66,7 @@ def test_シンボリックリンクを壊さず実体に書く(tmp_path):
     link = tmp_path / "settings.json"
     link.symlink_to(real)
 
-    rows = _settings.apply_settings(str(link), policy, tmp_path / "governance")
+    rows = _settings.apply_settings(str(link), fixed_policy, tmp_path / "governance")
 
     assert _results(rows)[_PCT_KEY] == "applied"
     assert link.is_symlink(), "リンクが普通のファイルに置き換わった"
@@ -79,7 +78,9 @@ def test_シンボリックリンクを壊さず実体に書く(tmp_path):
     ), "実体側に書かれていない"
 
 
-def test_一時ファイルを対象と同じディレクトリに作る(tmp_path, monkeypatch):
+def test_一時ファイルを対象と同じディレクトリに作る(
+    tmp_path, monkeypatch, fixed_policy
+):
     """一時ファイルを対象ファイルと同じディレクトリに作る。
 
     別ディレクトリ（`$TMPDIR` 等）に作ると、ホームが別ファイルシステムの端末で
@@ -97,13 +98,13 @@ def test_一時ファイルを対象と同じディレクトリに作る(tmp_pat
         return real_mkstemp(*args, **kwargs)
 
     monkeypatch.setattr(_settings.tempfile, "mkstemp", _spy)
-    _settings.apply_settings(str(path), policy, tmp_path / "governance")
+    _settings.apply_settings(str(path), fixed_policy, tmp_path / "governance")
 
     assert seen, "一時ファイルが作られていない"
     assert [Path(d).resolve() for d in seen] == [path.parent.resolve()] * len(seen)
 
 
-def test_envがdictでないときファイルを触らない(tmp_path):
+def test_envがdictでないときファイルを触らない(tmp_path, fixed_policy):
     """`{"env":"proxy"}` で 2 キーとも `skipped_missing` になり、ファイルが不変である。
 
     戻り値だけを縛ると、途中の型検査を落としても通る。ここでファイル不変まで縛る。
@@ -113,7 +114,7 @@ def test_envがdictでないときファイルを触らない(tmp_path):
     path.write_text(raw, encoding="utf-8")
     before = path.stat().st_mtime_ns
 
-    rows = _settings.apply_settings(str(path), policy, tmp_path / "governance")
+    rows = _settings.apply_settings(str(path), fixed_policy, tmp_path / "governance")
 
     assert set(_results(rows).values()) == {"skipped_missing"}
     assert path.read_text(encoding="utf-8") == raw
@@ -121,7 +122,7 @@ def test_envがdictでないときファイルを触らない(tmp_path):
     assert len(list(path.parent.iterdir())) == 1
 
 
-def test_真偽値と整数を同一視しない(tmp_path):
+def test_真偽値と整数を同一視しない(tmp_path, fixed_policy):
     """`autoUpdate` が `1`（整数）のとき、`True` と等価でも `applied` にする。
 
     Python では `1 == True` が真である。素の `==` で比べると、整数の 1 が入った端末を
@@ -139,8 +140,8 @@ def test_真偽値と整数を同一視しない(tmp_path):
         encoding="utf-8",
     )
 
-    rows = _settings.apply_settings(str(path), policy, tmp_path / "governance")
-    auto_key = next(k for k in policy.SET if k.endswith("autoUpdate"))
+    rows = _settings.apply_settings(str(path), fixed_policy, tmp_path / "governance")
+    auto_key = next(k for k in fixed_policy.SET if k.endswith("autoUpdate"))
 
     assert _results(rows)[auto_key] == "applied"
     written = json.loads(path.read_text(encoding="utf-8"))

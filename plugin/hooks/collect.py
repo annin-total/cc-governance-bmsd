@@ -12,14 +12,14 @@ import json
 import os
 import sys
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import _context
 import _identity
 import _spool
 from contract import ERROR_COLUMNS, EXTRA_COLUMNS, HOOK_FIELDS, coerce, dig, to_day
 
-_CONTEXT_TOKEN_HOOK_EVENTS = ("PreCompact", "Stop")
+_TRANSCRIPT_HOOK_EVENTS = ("PreCompact", "Stop")
 _SEND_CHECK_HOOK_EVENTS = ("SessionStart", "Stop")
 _DISABLE_ENV = "CC_GOVERNANCE_DISABLE"
 
@@ -36,7 +36,10 @@ def extract_event(raw_input: Any, hook_event: Optional[str]) -> dict[str, Any]:
         "user_email": _identity.get_user_email(),
         "host": _identity.get_host(),
         "hook_event": hook_event,
-        "context_tokens": _resolve_context_tokens(obj, hook_event),
+        "context_tokens": _from_transcript(_context.context_tokens, obj, hook_event),
+        "claude_code_version": _from_transcript(
+            _context.claude_code_version, obj, hook_event
+        ),
     }
 
     row: dict[str, Any] = {"kind": "event"}
@@ -76,10 +79,11 @@ def append_error(stage: str, error_type: str, hook_event: Optional[str]) -> None
         pass
 
 
-def _resolve_context_tokens(obj: dict, hook_event: Optional[str]):
-    if hook_event not in _CONTEXT_TOKEN_HOOK_EVENTS:
+def _from_transcript(read: Callable[[Any], Any], obj: dict, hook_event: Optional[str]):
+    """transcript を読む hook でだけ `read(transcript_path)` を呼ぶ。"""
+    if hook_event not in _TRANSCRIPT_HOOK_EVENTS:
         return None
-    return _context.context_tokens(dig(obj, ("transcript_path",)))
+    return read(dig(obj, ("transcript_path",)))
 
 
 def _read_stdin_json() -> Any:

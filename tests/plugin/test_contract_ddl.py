@@ -52,6 +52,7 @@ def test_events_columns_are_extra_columns_then_hook_fields():
         "host",
         "hook_event",
         "context_tokens",
+        "claude_code_version",
         "session_id",
         "prompt_id",
         "tool_name",

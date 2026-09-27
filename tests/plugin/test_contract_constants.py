@@ -24,6 +24,7 @@ def test_events_column_order():
         "host",
         "hook_event",
         "context_tokens",
+        "claude_code_version",
         "session_id",
         "prompt_id",
         "tool_name",
