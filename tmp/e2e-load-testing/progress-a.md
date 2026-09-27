@@ -7,6 +7,6 @@
 | 13 | 済 | 本体が捨てる settings.json（壊れた JSON・トップが配列・`env` が文字列・2 MiB 超など）では enabledPlugins も効かず hook が無言で全停止、行が届かず未使用と区別不能。`_settings.py` にバックアップの先取り（置換失敗で毎回増える）・0444 を 0600 で上書きのバグ候補 |
 | 12 | 済 | 例外 4 種で適用だけが止まり、お知らせ・収集・送信は継続、error 行はサーバの表まで到達（enabled は true のまま、直した版で追いつく）。JSON に書けない値で `.settings-*.tmp` が残るバグ（`_settings.py:68-82`）、`SystemExit` は全段を無言で止める |
 | 14 | 未着手 | |
-| 60 | 未着手 | |
+| 60 | 済 | uninstall が消すのは `enabledPlugins` の項目と data（既読・未送信の queue/spool を黙って失う。`--keep-data` で残る）。`statusLine`・配った値・`governance/` は残りステータスラインは動き続ける。再導入でお知らせ再表示、`governance/` を消してからだと ONCE が利用者値を上書き |
 | 41 | 未着手 | |
 | 24 | 未着手 | |
