@@ -64,27 +64,29 @@ def _write(config_path: Path, data: dict, expected_mtime_ns, gov_dir: Path) -> s
         return "write_failed"
 
     tmp_path = Path(tmp_name)
+    replaced = False
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(json.dumps(data, ensure_ascii=False, indent=2))
             f.write("\n")
 
         if _stat_mtime_ns(config_path) != expected_mtime_ns:
-            os.remove(tmp_path)
             return "skipped_conflict"
 
         if expected_mtime_ns is not None and not _govdir.backup(config_path, gov_dir):
-            os.remove(tmp_path)
             return "write_failed"
 
         os.replace(tmp_path, config_path)
+        replaced = True
         return "applied"
     except OSError:
-        try:
-            os.remove(tmp_path)
-        except OSError:
-            pass
         return "write_failed"
+    finally:
+        if not replaced:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
 
 
 def _row(entry: dict) -> Row:

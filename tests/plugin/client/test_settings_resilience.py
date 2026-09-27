@@ -7,6 +7,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import _settings
 import policy
@@ -101,6 +102,19 @@ def test_一時ファイルを対象と同じディレクトリに作る(tmp_pat
 
     assert seen, "一時ファイルが作られていない"
     assert [Path(d).resolve() for d in seen] == [path.parent.resolve()] * len(seen)
+
+
+def test_OSError以外の例外でも一時ファイルを残さない(tmp_path):
+    """JSON にできない値で `TypeError` が出ても、一時ファイルを消し、元のファイルを触らない。"""
+    path = tmp_path / "settings.json"
+    path.write_text("{}", encoding="utf-8")
+    bad = SimpleNamespace(SET={"x": object()}, ADD={}, REMOVE={}, ONCE={})
+
+    with pytest.raises(TypeError):
+        _settings.apply_settings(str(path), bad, tmp_path / "governance")
+
+    assert [p.name for p in tmp_path.iterdir()] == ["settings.json"]
+    assert path.read_text(encoding="utf-8") == "{}"
 
 
 def test_envがdictでないときファイルを触らない(tmp_path):
