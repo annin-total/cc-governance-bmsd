@@ -31,6 +31,9 @@ _FIXED_ENV = {
     "GIT_CONFIG_GLOBAL": os.devnull,
     "GIT_CONFIG_NOSYSTEM": "1",
 }
+# 本体の自動更新を止める。プラグインは利用者の settings.json の env で DISABLE_AUTOUPDATER を "0" にし、
+# それは上の env に勝つ。native 版の更新先は HOME の下（隔離の外）なので、より上位の --settings で真にする
+_NO_UPDATE_SETTINGS = json.dumps({"env": {"DISABLE_AUTOUPDATER": "1"}})
 # 起動時点の本物の config。import 時に控える（以後 os.environ を信用しない）
 REAL_CONFIG_DIRS = tuple(
     {
@@ -114,7 +117,8 @@ class E2ERoot:
         path = shutil.which("claude")
         if path is None:
             pytest.skip("claude が PATH に無い")
-        return self.run([path, *args], timeout=timeout, extra_env=extra_env, auth=auth)
+        argv = [path, "--settings", _NO_UPDATE_SETTINGS, *args]
+        return self.run(argv, timeout=timeout, extra_env=extra_env, auth=auth)
 
     def cleanup(self) -> None:
         """切り離された送信プロセスを待ってから消す。待ちきれなければ消さずに失敗する。"""
