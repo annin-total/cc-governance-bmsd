@@ -24,6 +24,8 @@
 python scripts/validate_plugin.py
 ```
 
+マニフェストの形式は `claude plugin validate --strict` で見るため、`claude` が PATH に要る（無ければ `[NG]`）。
+
 `[NG]` が 1 つでも出たら、差し込む前に `plugin/` を直す。このスクリプトは `config.json` の値や `policy.py` の中身を見ない。それらは「確認項目」で人が確かめる。
 
 ## 4. 配布リポジトリの作業ブランチへ複製してコミットする
@@ -46,6 +48,7 @@ python scripts/validate.py
 - **`version` を上げた**
 - **`policy.py` から項目を黙って削除していない**（理由は「誤った設定値を配ってしまったとき」）
 - `policy.py` を変えたら `scripts/sync_contract.py` を実行し、サーバ側の複製も同じリリースで更新した
+- `python scripts/check_settings_schema.py` が `[OK]` で終わる。`[NG]` なら `--write` で取り直し、`pytest -q tests` を流す（`policy.py` の検証に使う settings.json のスキーマが、上流の最新版より古くなっていないか）
 - 効果測定の対象の施策（`server/ccgov/constants.py` の `REFERENCE_KEY` / `REFERENCE_VALUE`）の値を変えたら、同じリリースでこの 2 つを差し替えた。差し替えると以前の実験は画面から消える（データは残る）
 - 配布リポジトリの作業ブランチで `diff -r -x __pycache__ -x .DS_Store plugin/ ../cc-marketplace-governance-bmsd/plugins/governance/` が差分なしで終わる（このリポジトリから実行する）
 - `notices.json` の `url` は `https://` で始まり、意図したページを指している
