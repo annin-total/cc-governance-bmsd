@@ -39,6 +39,8 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
   反映される。ほかの hook はキャッシュを読む
 - `event_id` はイベントごとの UUID であり、一意性は保証しない（重複の扱いは `../decisions/server.md`）
 - `context_tokens` は `PreCompact` と `Stop` のときだけ、transcript の末尾から取った絶対値を送る
+- `claude_code_version`（Claude Code 本体の版）も `PreCompact` と `Stop` のときだけ、transcript の末尾側で
+  最も新しい文字列の `version` を送る。取れなければ NULL
 
 環境変数 `CC_GOVERNANCE_DISABLE` が空でないとき、**利用ログの収集とお知らせの表示**
 （ブラウザの起動を含む）を止める。設定の適用と policy イベントの記録・送信（`SessionStart` での
@@ -98,6 +100,9 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
 - `/governance:reapply` は `ONCE` の記録を消して全体を今すぐ適用し直し、結果を利用者に見せる。
   policy イベントは積まない
 
+標準設定には、Claude Code 本体の自動更新を強制する項目（`autoUpdatesChannel` と更新系の `env`）を含む。
+理由は `../decisions/plugin.md`。
+
 **責務は標準設定を利用者の `settings.json` に書き戻すところまでである。**プロジェクトの設定や
 セッション中の変更による上書きは追わない。
 
@@ -130,3 +135,4 @@ JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポー�
 - 2026-09-26: hook の失敗（error 行）を加えた
 - 2026-09-26: 無効化スイッチの範囲と送信の条件を実装にそろえ、理由・上流の仕様・運用の値を `decisions/`・`knowledge/`・`guide/` へ移した
 - 2026-09-26: 重複の扱いの参照先を `decisions/server.md` にした
+- 2026-09-28: Claude Code 本体の版（`claude_code_version`）の収集と、本体の自動更新を強制する設定を加えた

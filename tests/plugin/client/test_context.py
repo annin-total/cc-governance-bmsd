@@ -1,4 +1,4 @@
-"""_context.py の context_tokens（transcript 末尾からの usage 合計取得）のテスト。"""
+"""_context.py の transcript 末尾からの取得（context_tokens と Claude Code の版）のテスト。"""
 
 import json
 import os
@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 import pytest
-from _context import context_tokens
+from _context import claude_code_version, context_tokens
 
 _HOOKS_DIR = Path(__file__).resolve().parents[3] / "plugin" / "hooks"
 
@@ -274,3 +274,55 @@ def test_non_str_transcript_path_does_not_raise_or_corrupt_stdout(path_literal):
     assert proc.returncode == 0, (
         f"path={path_literal}: exit={proc.returncode} stderr={proc.stderr!r}"
     )
+
+
+def _version_line(version, **extra):
+    """`version` を持つ transcript の 1 行分の JSON 文字列を作る。"""
+    return json.dumps({"type": "user", "version": version, **extra})
+
+
+def test_version_picks_line_nearest_to_tail(tmp_path):
+    """`version` を持つ行が 2 つ。末尾に近い方を採る。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(path, [_version_line("2.1.281"), _version_line("2.1.283")])
+    assert claude_code_version(str(path)) == "2.1.283"
+
+
+def test_version_skips_lines_without_string_version(tmp_path):
+    """末尾側の `version` 欠落・非文字列・壊れた行を飛ばして、文字列の `version` を採る。"""
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(
+        path,
+        [
+            _version_line("2.1.283"),
+            json.dumps({"type": "queue-operation"}),
+            _version_line(2),
+            _version_line(None),
+            "{broken",
+            json.dumps(["version"]),
+        ],
+    )
+    assert claude_code_version(str(path)) == "2.1.283"
+
+
+def test_version_absent_returns_none(tmp_path):
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(path, [_usage_line(input_tokens=1)])
+    assert claude_code_version(str(path)) is None
+
+
+@pytest.mark.parametrize("path", [None, "", 1.5, True])
+def test_version_unusable_path_returns_none(path):
+    assert claude_code_version(path) is None
+
+
+def test_version_missing_file_returns_none(tmp_path):
+    assert claude_code_version(str(tmp_path / "no-such-file.jsonl")) is None
+
+
+def test_version_outside_tail_window_returns_none(tmp_path):
+    """末尾 `tail` バイトの外にだけ `version` がある → None。"""
+    path = tmp_path / "t.jsonl"
+    lines = [_version_line("2.1.283")] + [json.dumps({"f": "x" * 100})] * 50
+    _write_jsonl(path, lines)
+    assert claude_code_version(str(path), tail=1024) is None
