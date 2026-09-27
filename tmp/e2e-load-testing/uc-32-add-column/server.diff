@@ -1,0 +1,17 @@
+diff -ru server.old/ccgov/vendor/contract.py server/ccgov/vendor/contract.py
+--- server.old/ccgov/vendor/contract.py	2026-09-27 21:47:33
++++ server/ccgov/vendor/contract.py	2026-09-27 21:49:16
+@@ -29,6 +29,7 @@
+     ("permission_mode", ("permission_mode",), "VARCHAR(255)"),
+     ("agent_id", ("agent_id",), "VARCHAR(255)"),  # サブエージェントのツール呼出
+     ("is_interrupt", ("is_interrupt",), "INTEGER"),  # PostToolUseFailure
++    ("duration_ms", ("duration_ms",), "INTEGER"),  # PostToolUse / PostToolUseFailure
+ )
+ 
+ EXTRA_COLUMNS = (
+diff -ru server.old/ccgov/vendor/contract.sha256 server/ccgov/vendor/contract.sha256
+--- server.old/ccgov/vendor/contract.sha256	2026-09-27 21:47:33
++++ server/ccgov/vendor/contract.sha256	2026-09-27 21:49:16
+@@ -1 +1 @@
+-4c066bac3f1453c7afaf674c64b250147388066a355fcdecb499440e7da8cfbc
++f6327b4235226fa23612821577aa06e0935169d3b61e98662f939deaa318fb9a
