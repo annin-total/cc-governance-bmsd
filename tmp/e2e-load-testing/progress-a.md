@@ -8,5 +8,5 @@
 | 12 | 済 | 例外 4 種で適用だけが止まり、お知らせ・収集・送信は継続、error 行はサーバの表まで到達（enabled は true のまま、直した版で追いつく）。JSON に書けない値で `.settings-*.tmp` が残るバグ（`_settings.py:68-82`）、`SystemExit` は全段を無言で止める |
 | 14 | 未着手 | |
 | 60 | 済 | uninstall が消すのは `enabledPlugins` の項目と data（既読・未送信の queue/spool を黙って失う。`--keep-data` で残る）。`statusLine`・配った値・`governance/` は残りステータスラインは動き続ける。再導入でお知らせ再表示、`governance/` を消してからだと ONCE が利用者値を上書き |
-| 41 | 未着手 | |
+| 41 | 済 | 無効化中は event 行を一切積まないので再開後に漏れない。policy 適用・statusline 同期は継続。`"0"` も無効化扱い（空でなければ無効。文書どおりだが利用者向けには罠）。settings.json の env に直書きしても hook に届き、policy に書き消されない。バグなし |
 | 24 | 未着手 | |
