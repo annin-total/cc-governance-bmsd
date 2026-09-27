@@ -20,11 +20,11 @@ Claude Code が届ける収集項目・hook・環境変数のうち、**実在�
 | --- | --- | --- | --- | --- |
 | `agent_type` | サブエージェント内のツール呼出 | `"Explore"` | どの種類のサブエージェントが動いたか | 親子の分離だけなら `agent_id` の有無で付く |
 | `tool_input.subagent_type` | `PostToolUse`（`tool_name=="Agent"`） | `"Explore"` | どのサブエージェントが何回呼ばれたか | — |
-| `model` | `SessionStart` のみ | `claude-opus-5[1m]` | セッション開始時点のモデル＝コンテキストウィンドウのサイズの区別 | `claude -p` では `SessionStart` にも無い。途中のモデル切替は追えない |
+| `model` | `SessionStart` のみ | `claude-opus-5[1m]` | セッション開始時点のモデル＝コンテキストウィンドウのサイズの区別 | `claude -p` では `SessionStart` にも無い。`model` のキーだけでは途中のモデル切替は追えない（切替は `PostModelSwitch` で届く。公式のみ・実測なし） |
 | `duration_ms` | `PostToolUse` | `1846` / `387` | ツール 1 回の実行時間 | タスク遂行の速さではない |
 | `tool_response.commandName` / `.success` | `PostToolUse`（Skill） | `tool_input.skill` と同じ値 / `true` | スキル呼出の成否 | — |
 | `mcp_server`（トップレベル dict） | MCP ツールの `PreToolUse`・`PermissionRequest`・`PermissionDenied`・`PostToolUse`・`PostToolUseFailure`（公式 hooks、2026-09-28 取得。2.1.274 以降）。実測は `PostToolUseFailure` だけ | `{"name":..., "source":"user"}` | MCP サーバ名と**出自**（配布か個人設定か） | サーバ名は `tool_name`（`mcp__<server>__<tool>`）からも分解できる |
-| `error` | `StopFailure` | — | ターン失敗の種別 | 値は `rate_limit`・`overloaded`・`authentication_failed`・`oauth_org_not_allowed`・`account_on_hold`・`billing_error`・`invalid_request`・`model_not_found`・`server_error`・`max_output_tokens`・`cloud_credential_error`・`unknown` の列挙（公式 hooks、2026-09-28 取得）。実測なし |
+| `error` | `StopFailure` | — | ターン失敗の種別 | 値は `rate_limit`・`overloaded`・`authentication_failed`・`oauth_org_not_allowed`・`account_on_hold`・`billing_error`・`invalid_request`・`model_not_found`・`server_error`・`max_output_tokens`・`cloud_credential_error`・`unknown` の列挙。公式のみ・実測なし（hooks、2026-09-28 取得） |
 | `reason` | `SessionEnd` | `"prompt_input_exit"` / `"other"` | セッションの閉じ方 | 公式（hooks、2026-09-28 取得）の値は `clear`・`resume`・`logout`・`prompt_input_exit`・`other`。実測したのは 2 値だけ |
 | `tool_use_id` | ツール系 hook | `toolu_01…` | 呼出の一意識別 | — |
 | `expansion_type` | `UserPromptExpansion` | `"slash_command"` | コマンド以外の展開との区別 | `command_source` と同じことが分かる |
@@ -70,10 +70,10 @@ hook から環境変数をセッションへ戻す経路である。
 | --- | --- | --- | --- |
 | `PreToolUse` | ツール呼出の**前**（最高頻度帯） | `tool_name` / `tool_input` / `permission_mode` / `effort` はすべて `PostToolUse` にも届く。権限で拒否された呼出が `PreToolUse` にだけ現れるかは**未検証** | `PostToolUse` は加えて成否と `duration_ms` を持つ |
 | `SessionEnd` | セッション終了時（低頻度） | `reason`（値は上表） | 異常終了でも発火するかは**未検証**（発火しないと見られるが**推測**） |
-| `StopFailure` | ターンが失敗で終わったとき（中頻度） | `error`（値は上表） | — |
+| `StopFailure` | ターンが失敗で終わったとき（中頻度） | `error`（値は上表） | 公式のみ・実測なし |
 | `SubagentStart` / `SubagentStop` | サブエージェントの開始・終了 | サブエージェントの区切り | `agent_id` / `agent_type` は `PostToolUse` にも付く |
-| `PostCompact` | 圧縮の**後**（低頻度） | 圧縮の契機（`trigger`: `manual`/`auto`）と要約（`compact_summary`） | 入力は共通入力に加えてこの 2 つ（公式 hooks、2026-09-28 取得。実測なし）。圧縮後のコンテキストトークン数は入力に無く、transcript から読めるかは**未検証** |
-| `PreModelSwitch` / `PostModelSwitch` | モデル切替時 | `from_model` / `to_model` | 公式（hooks、2026-09-28 取得）のみ。実測なし |
+| `PostCompact` | 圧縮の**後**（低頻度） | 圧縮の契機（`trigger`: `manual`/`auto`）と要約（`compact_summary`） | 入力は共通入力に加えてこの 2 つ。公式のみ・実測なし（hooks、2026-09-28 取得）。圧縮後のコンテキストトークン数は入力に無く、transcript から読めるかは**未検証** |
+| `PreModelSwitch` / `PostModelSwitch` | モデル切替時 | `from_model` / `to_model` | 公式のみ・実測なし（hooks、2026-09-28 取得） |
 
 `SessionEnd` のコンテキストトークン数は `Stop` の最終値と同じで、`UserPromptSubmit` のコンテキストトークン数は
 前ターンの `Stop` の値と同じである。
