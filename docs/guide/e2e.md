@@ -128,7 +128,7 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 準備は「手動確認の準備」。`url` 付きの項目を足し、この順に行う（後の確認で既読になるため）。
 
-1. **`-p` では開かない**: 「手動確認の準備」と同じ起動のしかた（`env -i`・空の `project/`）で、`claude` に `-p ok` を付けて実行する。
+1. **`-p` では開かない**: 「手動確認の準備」と同じ起動のしかた（`env -i`・`--settings`・空の `project/`）で、`claude` に `-p ok` を付けて実行する。
    合格: ブラウザが開かず、`<ルート>/config/plugins/data/` 配下に `seen.json` が無い
 2. **対話での見え方**: 対話で起動する。合格: 題名・本文・`詳細: <url>` がそろって表示される
    （表示の接頭辞と長文の退避は `docs/knowledge/claude-code-behavior.md`）

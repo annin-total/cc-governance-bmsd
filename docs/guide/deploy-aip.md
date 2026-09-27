@@ -97,7 +97,7 @@ Secret ファイルに `KEY=VALUE` 形式で書く。`entry.sh` が起動時に�
       ```bash
       curl -s -o /dev/null -w '%{http_code}\n' -X POST https://<取得したURL>/ingest   # => 401
       ```
-   5. `plugin/config.json` の `spool_max_bytes` を端末が送りうる本文の上限とみなし、その大きさの本文を POST し、`413` が返らないことを確認する（前段のリバースプロキシの `client_max_body_size` を確かめる）
+   5. `plugin/config.json` の `spool_max_bytes` を端末が送りうる本文の大きさの目安とし、その大きさの本文を POST し、`413` が返らないことを確認する（前段のリバースプロキシの `client_max_body_size` を確かめる）
    6. `CSV_DIR` に CSV を 1 本置いて画面のボタンから取り込み、同じファイルをもう一度取り込んでコストが二重計上されないことを確認する
    7. 1 台の端末で `claude` を動かし、イベントが `events` に入ること、送信後に端末の spool が消えることを確認する
 5. コード更新時は「restart」ボタンで再起動
@@ -126,8 +126,9 @@ CSV は任意の補強であり、置かなくてもサーバは動く。置く�
 
 契約に列を足すリリースでは、`release.md` の「列や行の種類を足したとき」の ALTER を、サーバを止めずに行う（実機では未検証）。
 
-1. 新しいコードをデプロイ対象のブランチに push する（restart までは反映されない）
-2. Function の詳細画面の「Open Terminal」で、稼働中のまま ALTER を実行し、列と型を確かめる
+1. Function の詳細画面の「Open Terminal」で、稼働中のまま ALTER を実行し、列と型を確かめる。
+   起動時の検査は足りない列だけを見るので、列を先に足しても古いコードは動き続ける
+2. 新しいコードをデプロイ対象のブランチに push する
 3. Function を「restart」する
 
 ### バックアップ

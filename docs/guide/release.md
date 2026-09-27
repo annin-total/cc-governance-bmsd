@@ -152,7 +152,7 @@ claude plugin update governance
 
 ## 11. 列や行の種類を足したとき
 
-契約（`plugin/hooks/contract.py`）に列を足すリリースでは、サーバ側で列の追加を先に済ませる。稼働中のサーバの DB に `ALTER TABLE <t> ADD COLUMN <列> <型>` を手で実行し、その後サーバを再起動して新しいサーバを起動する（テーブルは作り直さない。理由は `../decisions/server.md`。AIP での実行場所と再起動は `deploy-aip.md` の「列を足すとき」。実機では未検証）。既存の行の新しい列は NULL になる。
+契約（`plugin/hooks/contract.py`）に列を足すリリースでは、サーバ側で列の追加を先に済ませる。稼働中のサーバの DB に `ALTER TABLE <t> ADD COLUMN <列> <型>` を手で実行し、その後、新しいコードでサーバを再起動する（テーブルは作り直さない。理由は `../decisions/server.md`。AIP での実行場所と再起動は `deploy-aip.md` の「列を足すとき」。実機では未検証）。既存の行の新しい列は NULL になる。
 
 - `<型>` は `contract.py` に書いた型と同じにする。起動時の検査は列名しか見ないので、型を誤っても起動する。SQLite では値が誤った型で入り、比較や `max` が無言で誤る
 - サーバの環境に `sqlite3` CLI があるとは限らない（`server/Dockerfile` の基底イメージには無い）。サーバが使う Python の標準モジュールで実行し、実行後に `PRAGMA table_info(<t>)` で列と型を確かめる
