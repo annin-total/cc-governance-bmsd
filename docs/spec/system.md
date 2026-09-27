@@ -35,7 +35,7 @@
 | マーケットプレイス | `cc-marketplace-governance-bmsd`（別リポジトリ） | 完成したプラグインを差し込む配布用の箱 |
 
 このリポジトリ（`cc-governance-bmsd`）は統合開発環境であり、プラグインのソース・統合テスト・
-横断ドキュメント・契約の正本を持つ。サーバの実行環境の制約は `../guide/deploy-aip.md` と `server/CLAUDE.md` にある。
+横断ドキュメント・契約の正本を持つ。サーバの実行環境の制約は `../guide/deploy-aip.md` と `server/CLAUDE.md`、基盤が求める待受のポートは `../decisions/server.md` にある。
 
 ```
 [管理者] ─ git push（設定値・お知らせ・配布物）
