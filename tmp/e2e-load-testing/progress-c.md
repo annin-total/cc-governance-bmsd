@@ -2,8 +2,8 @@
 
 | UC | 状態 | 結果の 1 行 |
 | --- | --- | --- |
-| 31 | 実行中 | |
-| 55 | 未着手 | |
+| 31 | 済 | `-k collect` は hook 追加・キー改名・`json.py` の隠蔽をすべて落とす。`json.py`/`uuid.py` は exit 0・行 0 の完全な無言で、validate_plugin.py は合格にする。PermissionDenied は `-p` で発火せず（PermissionRequest は発火）。概況の NULL 率は 4 列だけで多くの消滅が見えない |
+| 55 | 実行中 | |
 | 38 | 未着手 | |
 | 43 | 未着手 | |
 | 35 | 済 | 同梱は `governance:名前`・`command_source=plugin`、利用者は素の名前・`userSettings`で区別可。組み込み `/compact` は command_name に残らない（2.1.283） |
