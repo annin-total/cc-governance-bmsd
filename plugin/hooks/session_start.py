@@ -74,7 +74,7 @@ def _apply_settings_step() -> None:
 
 
 def _mark_seen_and_open(unread: list, seen: set) -> None:
-    """非対話起動では何もしない。それ以外は未読を既読にし、先頭の URL を開く（既読を書けた後だけ。書けない端末で毎回開かないため）。"""
+    """`CLAUDE_CODE_ENTRYPOINT` が `sdk-` 始まりの起動では何もしない。それ以外は未読を既読にし、書けたら対話起動（`cli`）に限り先頭の URL を開く（書けない端末で毎回開かないため）。"""
     if _browser.is_headless():
         return
     if not _notices._write_seen(seen | {n["id"] for n in unread}):

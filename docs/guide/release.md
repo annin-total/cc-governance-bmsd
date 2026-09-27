@@ -47,7 +47,7 @@ python scripts/validate.py
 
 - **`version` を上げた**
 - **`policy.py` から項目を黙って削除していない**（理由は「誤った設定値を配ってしまったとき」）
-- `policy.py` を変えたら `scripts/sync_contract.py` を実行し、サーバ側の複製も同じリリースで更新した
+- `contract.py` か `policy.py` を変えたら `scripts/sync_contract.py` を実行し、サーバ側の複製も同じリリースで更新した。`python scripts/sync_contract.py --check` が `OK` で終わる（`../spec/server.md` の「契約の複製」）
 - `python scripts/check_settings_schema.py` が `[OK]` で終わる。`[NG]` なら `--write` で取り直し、`pytest -q tests` を流す（`policy.py` の検証に使う settings.json のスキーマが、上流の最新版より古くなっていないか）
 - 効果測定の対象の施策（`server/ccgov/constants.py` の `REFERENCE_KEY` / `REFERENCE_VALUE`）の値を変えたら、同じリリースでこの 2 つを差し替えた。差し替えると以前の実験は画面から消える（データは残る）
 - 配布リポジトリの作業ブランチで `diff -r -x __pycache__ -x .DS_Store plugin/ ../cc-marketplace-governance-bmsd/plugins/governance/` が差分なしで終わる（このリポジトリから実行する）
@@ -139,11 +139,11 @@ claude plugin update governance
 
 ## 10. 誤った設定値を配ってしまったとき
 
-- `policy.py` に正しい値を書く。施策をやめる場合は `SET` の値を `None`（キーを消す）か Claude Code の既定値にし、`ADD` で配った要素は `REMOVE` に移す
+- `policy.py` に正しい値を書く。施策をやめる場合は `SET` の値を `None`（キーを消す）か Claude Code の既定値にし、`ADD` で配った要素は `REMOVE` に移す。**移すときは `ADD` から消す。**同じ要素が両方にあると、端末は起動のたびに `settings.json` を書き直してバックアップを 1 世代ずつ使い、撤回前のバックアップが押し出される
 - `version` を上げて配り直す
 - 即時の撤回手段は無い。全端末に行き渡るまで数日かかる
 
-**`policy.py` から項目を消すだけでは撤回にならない。**消した項目は以後何もされず、既に書き込まれた値が全端末に残り続ける。`ONCE` で配った値も同じで、戻すには値を変えて配り直す。端末ごとに書き換える直前の `settings.json` は `<config_dir>/governance/backups/` に残っている（世代数は `plugin/hooks/_govdir.py` の `_BACKUP_KEEP`）。
+**`policy.py` から項目を消すだけでは撤回にならない。**消した項目は以後何もされず、既に書き込まれた値が全端末に残り続ける。`ONCE` で配った値も同じで、戻すには値を変えて配り直す。**前の版の中身を配り直しても（版を下げても）元には戻らない。**`ADD` で足した要素は残り、`ONCE` の値は前の値へ戻した時点で再び 1 回書かれ、利用者が変えた値を上書きする（`ONCE` の記録は今の `policy.py` の組だけを持つ）。端末ごとに書き換える直前の `settings.json` は `<config_dir>/governance/backups/` に残っている（世代数は `plugin/hooks/_govdir.py` の `_BACKUP_KEEP`）。
 
 **本体の検証で捨てられる値（型違いなど）を配ると、配り直しでは戻らない。**本体は `settings.json` に検証を通らない箇所が 1 つでもあるとファイル全体を読まず、`enabledPlugins` も読まれないので hook が 1 本も起動しない。直した版を配っても端末では動かず、行も届かないので概況からは気づけない。端末で気づく手がかりは、`claude doctor` の `Invalid settings` と、`claude plugin list` でプラグインが無効（`enabled: false`）に見えることである（2.1.283 の `-p` で確認。対話での表示は未確認）。復旧は次の順に行う（逆にすると、古い版の hook が同じ値を書き直す。推定）。
 
@@ -154,7 +154,17 @@ claude plugin update governance
 
 ## 11. 列や行の種類を足したとき
 
-契約（`plugin/hooks/contract.py`）に列を足すリリースでは、サーバ側で列の追加を先に済ませる。サーバを止め、`ALTER TABLE <t> ADD COLUMN <列> <型>` を手で実行してから起動する（テーブルは作り直さない。理由は `../decisions/server.md`）。既存の行の新しい列は NULL になる。**順序を誤るとサーバが起動しない**（起動時の検査は `../spec/server.md`）。
+契約（`plugin/hooks/contract.py`）に列を足すリリースでは、サーバ側で列の追加を先に済ませる。サーバを止め、`ALTER TABLE <t> ADD COLUMN <列> <型>` を手で実行してから起動する（テーブルは作り直さない。理由は `../decisions/server.md`）。既存の行の新しい列は NULL になる。
+
+- `<型>` は `contract.py` に書いた型と同じにする。起動時の検査は列名しか見ないので、型を誤っても起動する。SQLite では値が誤った型で入り、比較や `max` が無言で誤る
+- サーバの環境に `sqlite3` CLI があるとは限らない（`server/Dockerfile` の基底イメージには無い）。サーバが使う Python の標準モジュールで実行し、実行後に `PRAGMA table_info(<t>)` で列と型を確かめる
+
+  ```
+  python3 -c "import sqlite3; c = sqlite3.connect('<DB ファイル>'); c.execute('ALTER TABLE <t> ADD COLUMN <列> <型>'); c.commit()"
+  ```
+
+- **ALTER を忘れて新しいサーバを起動すると、起動しない**（欠けた列名をログに出す。起動時の検査は `../spec/server.md`）
+- 端末を先に配ると、ALTER までに届いた新しい列の値は古いサーバが捨て、後から取り戻せない
 
 行の種類（`kind`）を足すリリースでも、サーバを先にデプロイする。古いサーバは知らない種類の行を捨てて 200 を返すので、端末は送れたものとして spool から消す。
 
@@ -169,3 +179,4 @@ claude plugin update governance
 - 2026-09-26: 列を足すときのサーバ側の手順を `ALTER TABLE ... ADD COLUMN` で書き、版の分布を見る場所を直した
 - 2026-09-27: `notices.json` を変えたときの手動確認を確認項目に戻した
 - 2026-09-28: staging で行が届いたことの確認と、本体が捨てる値を配ったときの復旧の順序を加えた
+- 2026-09-28: `ADD` と `REMOVE` の重なりとロールバックで戻らないもの、列を足すときの型・実行手段・端末を先に配ったときの欠損を加え、同期の確認項目に `contract.py` を加えた
