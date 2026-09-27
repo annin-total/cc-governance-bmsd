@@ -68,7 +68,7 @@ R3 の当初の期待（skipped_missing）が実際に落ちたことも、判�
    対照: `cleanupPeriodDays: 31`・`env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE: 60`（int）では有効のまま。stderr・終了コードに差は出ない（未ログインの `-p` で観測）。
    - その結果、`_policy_ops` の `skipped_missing`（途中が dict でない）の経路は、少なくとも `env` では実物で到達しない
    - **管理者が SET / ONCE で型違いの値を配ると、全端末で収集ごと止まり、直した版を配っても自力では戻れない**（R4）。hook が動かないので、policy 行も error 行も届かない。サーバからは「policy イベントが途絶えた端末」としてしか見えない
-   - 推測（未検証）: ファイル全体が無視されている可能性が高い（`enabledPlugins` が効いていない）。env など他のキーが効いているかは確かめていない
+   - 原因は Claude Code 本体の設定検証によるファイル全体の読み捨て（「型違いで enabled: false になる原因の切り分け」の節）
 2. `once.json` を失うと、ONCE は利用者が変えた値を書き戻す（R2）。仕様（記録が読めなければ空、`/governance:reapply` も記録を消す）どおりだが、行の上は「once a / user / applied」としか残らない
 3. 利用者が同じ値を別の型（int 60）で持つと上書きされ、行は value 60 / prev 60 / applied になる（R1 s2）。サーバの準拠判定（prev_value = "60"）では準拠に数えられる。int のまま効くかは未検証
 
@@ -80,13 +80,70 @@ R3 の当初の期待（skipped_missing）が実際に落ちたことも、判�
   既存 E2E の `test_settings.py::test_2回目は適用済みで本体に取り込まれる` は 2 回目のセッションの行を見るので、実際の `policy.py` に型違いがあれば落ちるはず（コードからの推定。壊した `policy.py` で落ちることは未確認）。ただし E2E を流さないリリースでは素通りする
 - **`e2e/`**: 更新をまたぐ経路（旧値が入った端末 → `plugin update` → セッション）を 1 本足す候補。R1 を縮めた「SET の旧値が prev_value に出て新値が書かれる」だけで足りる。ONCE・型違いの組み合わせは `tests/` に任せる
 - **`e2e/`（小）**: `_flow.session` と同じ `claude -p` の起動を一時スクリプトから使うとき、`E2ERoot` の置き場を変えられない（`tempfile.tempdir` の差し替えで回避した）。`CC_E2E_RUN` を接頭辞に入れると並行時の片付けが追いやすい
-- **`docs/knowledge/`**: 「settings.json の 1 キーでも型が違うと、プラグインが無効（`enabled: false`）になり hook が動かない。`plugin update` は成功する」（claude 2.1.283、未ログインの `-p` で確認）
+- **`docs/knowledge/`**: 「settings.json の 1 キーでも型が違うと、プラグインが無効（`enabled: false`）になり hook が動かない。`plugin update` は成功する」（claude 2.1.283、未ログインの `-p` で確認）。原因と `claude doctor` での見え方は「型違いで enabled: false になる原因の切り分け」の節
 - **`docs/spec/plugin.md` / 運用**: ONCE の記録喪失で利用者の値を戻すこと、`skipped_missing` が `env` では実質起きないことの扱いを検討（直すかは判断が要る）
 - **UC 13（壊れた settings.json）へ**: 利用者の型違いで収集が無言で止まる件は UC 13 の範囲と重なる。そちらで利用者側の症状を詰める
+
+## 型違いで enabled: false になる原因の切り分け
+
+`probe2.py`（`plugin` と `bare` の 2 部）。`claude --version` は 2.1.283 (Claude Code)、未ログインの `-p`。
+結果の記録は `.local/e2e-load-testing/uc-01-policy-update/probe2.json` と `debug-*.log`（`--debug-file` の出力）。
+本体が検証に通らない settings.json をファイルごと黙って無視する機構は UC 13（`../uc-13-broken-settings/notes.md`）で観察済みで、ここではそれと同じ機構かを区別した。
+
+### 1. enabled: false を書いたのは誰か
+
+事実:
+- 誰もファイルに書いていない。**`enabled: false` は `plugin list` の表示上の状態で、ファイル上の変化ではない**
+- 比べ方: 導入とセッション 1 回の後、`cleanupPeriodDays: "30"` を書き、その前後と、`claude -p` の後・`plugin list` の後に config 配下の全ファイル（`plugins/cache`・`plugins/marketplaces` の中身を除く）のハッシュを取った
+  - 変わったのは、利用者の編集による `settings.json` だけ。`claude -p` の後に増えたのは `projects/<...>/<session>.jsonl`（会話ログ）だけ、`plugin list` の後は変化なし
+  - `settings.json`・`plugins/installed_plugins.json`・`plugins/known_marketplaces.json` の本文は、本体の起動の前後で 1 バイトも変わらない。`enabledPlugins` は `true` のまま残っている
+- 型違いの間、うちの hook は起動されていない（policy 行・event 行・error 行が 0 件）。hook が書いた可能性は無い
+- R4 の「直した版でも戻らない」も同じ理由で説明できる。版を上げても settings.json は読み捨てられたままで、直すはずの hook が動かない
+
+### 2. プラグインを入れていない素の config での振る舞い
+
+新しい隔離 config の settings.json に、`env.GOV_PROBE_ENV` と、その値をファイルに書く SessionStart の command hook を置いた。そこに型違いのキーを 1 つ足して比べた。
+
+| settings.json | settings の hook | settings の env | `claude -p` | `claude doctor` |
+| --- | --- | --- | --- | --- |
+| 正しい（`cleanupPeriodDays: 30`） | 動いた（`env=from-settings`） | 効いた（debug: `settingsEnv keys: GOV_PROBE_ENV`） | 普通に起動（未ログインのため rc=1。stderr 空） | Invalid settings の項なし |
+| `cleanupPeriodDays: "30"` | **動かない** | **効かない**（debug: `settingsEnv keys: none`） | 同上。警告なし | `Invalid settings` に `settings.json › cleanupPeriodDays: Expected number, but received undefined` |
+| `env: "broken"` | **動かない** | （env 自体が壊れている） | 同上。警告なし | `settings.json › env: Expected record, but received undefined` |
+
+事実:
+- 型違いのキー 1 つで、同じファイルの**正しいキー（hook・env）も含めてファイル全体が読み捨てられる**。本体はファイルを書き換えない。`-p` の stderr・stream-json・終了コードには何も出ず、`--debug-file` にも検証エラーの行は出なかった
+- `claude doctor`（非対話・rc=0）は、どのファイルのどのキーが不正かを出す。文言が「received undefined」なのは本体の表示のまま（実際の値は文字列）
+- 以上から、UC 01 の `enabled: false` は UC 13 と同じ機構（本体の設定検証による読み捨て）である。推測: `enabledPlugins` が読まれないため、`plugin list` は導入済み・無効として表示する
+
+### 3. 気づく手段と戻し方
+
+気づく手段:
+- 利用者（事実）: `claude doctor` の `Invalid settings` が最も直接の手がかり。`claude plugin list` の `enabled: false` も手がかりだが、理由は出ない。`-p` の出力・終了コードには出ない。対話起動での表示は未検証（UC 13 と同じ）
+- 管理者（推測・未検証）: 端末からは policy 行も error 行も届かない。hook が動かないので、うちの側から原因を送る手段は無い。サーバの `/policy` の「policy イベントが途絶えた端末」に現れるはず（仕様 `docs/spec/server.md` から。本 UC ではサーバを使っていない）
+- 仕組み上の限界（事実からの推論）: 次の版の hook で検知・修復する案は成り立たない。hook 自体が読み込まれないため
+
+戻し方（導入済みの端末で実際に戻して確かめた。事実）:
+
+| 操作（利用者の `<config>/settings.json`） | `plugin list` | 次のセッションの policy 行 |
+| --- | --- | --- |
+| `cleanupPeriodDays: "30"` のまま | `enabled: false` | 0 件 |
+| `cleanupPeriodDays` を数値 30 に戻す | `enabled: true` | 2 件（already_ok）。すぐ再開 |
+| `env` を文字列 "broken" にする | `enabled: false` | 0 件 |
+| `env` キーごと消す | — | 2 件。hook が `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` を書き直す（prev None / applied） |
+
+- 戻すのは、`doctor` が名指ししたキーの型だけでよい（キーを消しても戻る）。`installed_plugins.json` などほかのファイルは触る必要が無い
+- R4 のように**うちの配布値が原因なら、利用者の手当ての前に、直した版を出しておく**必要がある。旧版の値のまま型だけ直すと、hook が再開して次のセッションで同じ値を書き直し、再び無効になる（推論。未確認）
+- 推測（未検証）: hook が書く直前のバックアップ `<config>/governance/backups/settings-*.json` の最新を戻しても直る（型違いの値を書く前の内容のため）
+
+### この節の結論
+
+- 原因は Claude Code 本体の設定検証（事実）。うちの hook が型違いの値を配ると、この検証に掛かって自分自身を止める
+- 防げるのは配る前だけ。`policy.py` の値を上流のスキーマで検査するテストを `tests/` に足す案を、「課題と改善案」の最優先に置く（変更なし）
+- `docs/knowledge/` の候補（UC 13 の事実に足す分）: 「`claude doctor` は無視された settings.json と不正なキーを `Invalid settings` に出す（-p には出ない）」「型違いのキー 1 つで同じファイルの hook・env も含めて全体が読み捨てられる」（2.1.283）
 
 ## 片付けたもの・残したもの
 
 - 片付けた: 各経路の隔離ルート（`$TMPDIR/cc-e2e-a-01-*`）と git 配信サーバ。`pgrep` で本 UC のプロセスが無いことを確認
 - 本物の `~/.claude` の settings.json・installed_plugins.json・known_marketplaces.json に `cc-e2e` の痕跡が無いことを確認
-- 残した: `run.py`・`probe.py`・この `notes.md`。行の記録は `.local/e2e-load-testing/uc-01-policy-update/`（R1〜R4.json、probe.json）
+- 残した: `run.py`・`probe.py`・`probe2.py`・この `notes.md`。行の記録は `.local/e2e-load-testing/uc-01-policy-update/`（R1〜R4.json、probe.json、probe2.json、debug-*.log）
 - `$TMPDIR` に `cc-e2e-hh7_zc0n`・`cc-e2e-ljx85tjw`・`cc-e2e-a-06-*`・`cc-e2e-a-13-*` があるが、本 UC のものではない（中身に本 UC の目印 `GOV_E2E_ONCE` が無い）。触っていない
