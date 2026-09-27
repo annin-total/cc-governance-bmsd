@@ -142,7 +142,7 @@ claude plugin update governance
 
 **`policy.py` から項目を消すだけでは撤回にならない。**消した項目は以後何もされず、既に書き込まれた値が全端末に残り続ける。`ONCE` で配った値も同じで、戻すには値を変えて配り直す。端末ごとに書き換える直前の `settings.json` は `<config_dir>/governance/backups/` に残っている（世代数は `plugin/hooks/_govdir.py` の `_BACKUP_KEEP`）。
 
-**本体の検証で捨てられる値（型違いなど）を配ると、配り直しでは戻らない。**本体は `settings.json` に検証を通らない箇所が 1 つでもあるとファイル全体を読まず、`enabledPlugins` も読まれないので hook が 1 本も起動しない。直した版を配っても端末では動かず、行も届かないので概況からは気づけない。本体の出力で気づく手段は `claude doctor` の `Invalid settings` だけである。復旧は次の順に行う（逆にすると、古い版の hook が同じ値を書き直す。推定）。
+**本体の検証で捨てられる値（型違いなど）を配ると、配り直しでは戻らない。**本体は `settings.json` に検証を通らない箇所が 1 つでもあるとファイル全体を読まず、`enabledPlugins` も読まれないので hook が 1 本も起動しない。直した版を配っても端末では動かず、行も届かないので概況からは気づけない。端末で気づく手がかりは、`claude doctor` の `Invalid settings` と、`claude plugin list` でプラグインが無効（`enabled: false`）に見えることである（2.1.283 の `-p` で確認。対話での表示は未確認）。復旧は次の順に行う（逆にすると、古い版の hook が同じ値を書き直す。推定）。
 
 1. 直した版を先に配る
 2. 利用者が `claude doctor` の `Invalid settings` で名指しされたキーを直すか消す
