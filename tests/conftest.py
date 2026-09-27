@@ -1,10 +1,13 @@
 """pytest の共通設定。端末プラグインのモジュールを import 可能にする。"""
 
+import http.server
 import json
 import os
 import shutil
 import sys
 import tempfile
+import threading
+import time
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -88,3 +91,39 @@ def pytest_sessionfinish(session, exitstatus):
             f"(settings.json の mtime, governance/ 配下) {_REAL_STATE_AT_START} -> {after}\n"
         )
         session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
+class _IngestReceiver:
+    """POST の件数だけを数えるローカルの受け口。送信先を埋めた状態の代わりに使う。"""
+
+    def __init__(self) -> None:
+        posts: list = []
+
+        class _Handler(http.server.BaseHTTPRequestHandler):
+            def do_POST(self) -> None:
+                posts.append(self.path)
+                self.send_response(200)
+                self.end_headers()
+
+            def log_message(self, *_args) -> None:
+                pass
+
+        self.posts = posts
+        self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+        self.url = f"http://127.0.0.1:{self.httpd.server_port}/ingest"
+
+    def received(self, within: float) -> int:
+        """送信プロセスは detach して動くので、`within` 秒まで待って届いた件数を返す。"""
+        deadline = time.monotonic() + within
+        while not self.posts and time.monotonic() < deadline:
+            time.sleep(0.05)
+        return len(self.posts)
+
+
+@pytest.fixture
+def ingest_receiver() -> Iterator[_IngestReceiver]:
+    receiver = _IngestReceiver()
+    yield receiver
+    receiver.httpd.shutdown()
+    receiver.httpd.server_close()

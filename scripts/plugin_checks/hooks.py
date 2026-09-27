@@ -16,6 +16,8 @@ from plugin_checks.report import ng, ok, run, skip
 PLUGIN_ROOT_VAR_PATTERN = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\s\"]+)")
 HOOK_TIMEOUT_SECONDS = 5
 ISOLATED_USER_EMAIL = "validate-plugin-py@example.invalid"
+# plugin/hooks/_spool.py の _SENT_AT_FILENAME と同じ名前
+SENT_AT_FILENAME = "sent_at"
 
 
 def _walk_hook_commands(node: object, out: list) -> None:
@@ -92,6 +94,9 @@ def _run_hook_commands(
         isolated_config_dir = Path(isolation_dir) / "config-dir"
         isolated_plugin_data.mkdir(parents=True, exist_ok=True)
         isolated_config_dir.mkdir(parents=True, exist_ok=True)
+        # 送信先は開発ツリーの config.json（本番の値）なので、送信済みの印を今の時刻で置き、
+        # 送信プロセスを起動させない（_spool.should_send）。
+        (isolated_plugin_data / SENT_AT_FILENAME).touch()
 
         env = os.environ.copy()
         env["CLAUDE_PLUGIN_ROOT"] = str(plugin_dir)

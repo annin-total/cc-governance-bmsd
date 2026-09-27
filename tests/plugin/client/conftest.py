@@ -22,13 +22,26 @@ _DEFAULT_CONFIG = {
 
 
 @pytest.fixture
-def hooks_dir(tmp_path) -> Path:
-    """`plugin/hooks` と `config.json` を一時ディレクトリへ複製し、hooks ディレクトリを返す。"""
+def plugin_src() -> Path:
+    """`hooks_dir` の複製元。テストモジュールで上書きできる。"""
+    return _PLUGIN_SRC
+
+
+@pytest.fixture
+def hooks_dir(tmp_path, plugin_src) -> Path:
+    """`plugin/hooks` と `config.json` を一時ディレクトリへ複製し、hooks ディレクトリを返す。
+
+    開発ツリーの `config.json` は本番の送信先を持ちうるので、送信先だけを空にして書く。
+    """
     hooks_dst = tmp_path / "plugin" / "hooks"
     shutil.copytree(
-        _PLUGIN_SRC / "hooks", hooks_dst, ignore=shutil.ignore_patterns("__pycache__")
+        plugin_src / "hooks", hooks_dst, ignore=shutil.ignore_patterns("__pycache__")
     )
-    shutil.copy(_PLUGIN_SRC / "config.json", tmp_path / "plugin" / "config.json")
+    config = json.loads((plugin_src / "config.json").read_text(encoding="utf-8"))
+    config.update(ingest_url="", ingest_token="")
+    (tmp_path / "plugin" / "config.json").write_text(
+        json.dumps(config), encoding="utf-8"
+    )
     return hooks_dst
 
 
