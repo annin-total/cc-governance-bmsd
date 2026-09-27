@@ -7,6 +7,7 @@
 
 import base64
 import json
+import os
 import secrets
 import shutil
 import subprocess
@@ -33,7 +34,8 @@ _EVENT_IDS = (
 BASE_PATH = "/e2e-ws/cc-governance-server"
 _SECRET_REL = Path("data") / "secrets" / "cc-governance-server.env"
 _PORT = "5000/tcp"
-LABEL = "cc-e2e=1"
+# 同じ Docker で E2E を並行させるときは、実行ごとに CC_E2E_RUN を変える（片付け漏れの検査は自分の値だけを見る）
+LABEL = f"cc-e2e={os.environ.get('CC_E2E_RUN', '1')}"
 # コピーを軽くするだけ。何をイメージに入れるかは server/.dockerignore が決める
 _IGNORE = (".git", ".venv", "venv", "__pycache__", "*_cache", ".DS_Store", "*.db")
 _BUILD_TIMEOUT = 600
