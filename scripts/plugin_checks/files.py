@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 
-from plugin_checks.report import ng, ok, skip
+from plugin_checks.report import ng, ok
 
 DEV_ARTIFACT_NAMES = frozenset(
     {
@@ -96,8 +96,9 @@ def check_no_dev_artifacts(plugin_dir: Path) -> None:
 def check_stdlib_only(plugin_dir: Path) -> None:
     stdlib_names = getattr(sys, "stdlib_module_names", None)
     if stdlib_names is None:
-        skip(
-            "標準ライブラリ判定: この python に sys.stdlib_module_names が無い（3.10 未満）"
+        ng(
+            "標準ライブラリ判定: この python に sys.stdlib_module_names が無い。"
+            "3.10 以上の python で実行する"
         )
         return
 
@@ -105,6 +106,12 @@ def check_stdlib_only(plugin_dir: Path) -> None:
     local_modules = {f.stem for f in py_files}
 
     failed = False
+    # 同名の自モジュールは hook のディレクトリで標準ライブラリを覆い隠し、hook が無言で壊れる。
+    for f in py_files:
+        if f.stem in stdlib_names:
+            ng(f"標準ライブラリと同じ名前のモジュール: {f}")
+            failed = True
+
     for f in py_files:
         try:
             with f.open(encoding="utf-8") as fh:

@@ -25,6 +25,7 @@ python scripts/validate_plugin.py
 ```
 
 マニフェストの形式は `claude plugin validate --strict` で見るため、`claude` が PATH に要る（無ければ `[NG]`）。
+3.10 以上の python で実行する（標準ライブラリの一覧を持たない 3.10 未満では `[NG]`）。
 
 `[NG]` が 1 つでも出たら、差し込む前に `plugin/` を直す。このスクリプトは `config.json` の値や `policy.py` の中身を見ない。それらは「確認項目」で人が確かめる。
 
