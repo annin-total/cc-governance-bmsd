@@ -52,6 +52,21 @@ def test_バックアップは本人だけが読める権限で作る():
     assert [p.stat().st_mode & 0o777 for p in _backups()] == [0o600]
 
 
+def test_直前のバックアップと同じ内容なら保存しない():
+    """最新の 1 件とだけ比べる。同じ内容で世代を埋めると、戻したい本物の世代が押し出される。"""
+    settings, gov = _govdir.settings_path(), _govdir.governance_dir()
+    settings.write_text('{"n": 0}', encoding="utf-8")
+    assert _govdir.backup(settings, gov)
+    assert _govdir.backup(settings, gov)
+    assert len(_backups()) == 1
+    settings.write_text('{"n": 1}', encoding="utf-8")
+    assert _govdir.backup(settings, gov)
+    settings.write_text('{"n": 0}', encoding="utf-8")
+    assert _govdir.backup(settings, gov)
+    kept = [json.loads(p.read_text(encoding="utf-8"))["n"] for p in _backups()]
+    assert kept == [0, 1, 0]
+
+
 def test_差分が無ければ保存しない():
     _govdir.settings_path().write_text('{"n": 1}', encoding="utf-8")
     assert _apply(1) == "already_ok"

@@ -39,6 +39,7 @@ def governance_dir() -> Path:
 def backup(settings: Path, gov_dir: Path) -> bool:
     """settings.json を日時付きで保存し、直近 `_BACKUP_KEEP` 世代だけ残す。保存できれば真。
 
+    最新の世代と同じ内容なら保存せず真を返す（同じ内容で世代を埋めない）。
     時計の粒度が粗い OS でも衝突しないよう連番を付け、O_EXCL で既存を上書きしない。
     """
     backup_dir = gov_dir / _BACKUP_DIRNAME
@@ -46,6 +47,9 @@ def backup(settings: Path, gov_dir: Path) -> bool:
     try:
         content = settings.read_bytes()
         backup_dir.mkdir(parents=True, exist_ok=True)
+        existing = sorted(backup_dir.glob("settings-*.json"))
+        if existing and existing[-1].read_bytes() == content:
+            return True
         for n in range(_BACKUP_KEEP):
             try:
                 name = backup_dir / f"settings-{stamp}-{n:02d}.json"
