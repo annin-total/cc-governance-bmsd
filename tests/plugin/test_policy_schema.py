@@ -1,7 +1,8 @@
 """policy.py と policy_sample.py を適用した結果が、settings.json のスキーマに通ることを検証する。
 
-スキーマは https://json.schemastore.org/claude-code-settings.json を 2026-09-25 に取得した
-`tests/fixtures/claude-code-settings.schema.json`（ネットに依存しない）。上流が更新されたら取り直す。
+スキーマは https://json.schemastore.org/claude-code-settings.json を保存した
+`tests/fixtures/claude-code-settings.schema.json`（ネットに依存しない）。最新版との照合と取り直しは
+`scripts/check_settings_schema.py` で行う。
 """
 
 import json
