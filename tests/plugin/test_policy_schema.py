@@ -83,9 +83,15 @@ def test_サンプルのONCEがステータスラインを絶対パスで書く(
 
 @pytest.mark.parametrize("module_name", MODULES)
 def test_定義の形(module_name):
-    """パスに空の段が無く、ADD / REMOVE の値が list である（文字列だと 1 文字ずつ足される）。"""
+    """パスに空の段が無く、ADD / REMOVE の値が list で、同じパスの同じ要素を両方に書かない。
+
+    文字列だと 1 文字ずつ足される。両方に書くと足して消すたびに書き込みが起き、毎回バックアップが増える。
+    """
     module = MODULES[module_name]
     for table in (module.SET, module.ADD, module.REMOVE, module.ONCE):
         assert all(all(key.split(".")) for key in table)
     for table in (module.ADD, module.REMOVE):
         assert all(isinstance(items, list) for items in table.values())
+    for key in module.ADD.keys() & module.REMOVE.keys():
+        both = [item for item in module.ADD[key] if item in module.REMOVE[key]]
+        assert both == [], f"{key} の同じ要素が ADD と REMOVE の両方にある"
