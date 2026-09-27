@@ -1,6 +1,6 @@
 target-version = "py39"
-# server/ は submodule（別リポジトリ）であり、lint はそちらの責務。
-extend-exclude = ["docs/", "server/"]
+# server/ は submodule（別リポジトリ）であり、lint はそちらの責務。tmp/ は使い捨ての検証の記録。
+extend-exclude = ["docs/", "server/", "tmp/"]
 
 [lint]
 ignore = ["FA100"]
