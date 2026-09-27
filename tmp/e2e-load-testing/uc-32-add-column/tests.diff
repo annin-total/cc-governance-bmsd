@@ -1,0 +1,20 @@
+--- tests/plugin/test_contract_constants.py.orig	2026-09-27 21:49:17
++++ tests/plugin/test_contract_constants.py	2026-09-27 21:49:17
+@@ -36,6 +36,7 @@
+         "permission_mode",
+         "agent_id",
+         "is_interrupt",
++        "duration_ms",
+     ]
+ 
+ 
+--- tests/plugin/test_contract_ddl.py.orig	2026-09-27 21:49:17
++++ tests/plugin/test_contract_ddl.py	2026-09-27 21:49:17
+@@ -64,6 +64,7 @@
+         "permission_mode",
+         "agent_id",
+         "is_interrupt",
++        "duration_ms",
+     ]
+ 
+ 
