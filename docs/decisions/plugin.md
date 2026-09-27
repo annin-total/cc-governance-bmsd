@@ -79,6 +79,16 @@
 - **バックアップ・`ONCE` の記録・`statusline.js` は `<config_dir>/governance/` に置く。**
   `settings.json` から参照されるファイルがプラグインの削除で消えると、利用者のステータスラインが
   壊れる。バックアップも削除後に要る。バックアップに失敗したら書かない（戻せない書き込みをしない）。
+- **Claude Code 本体の版は、自動更新を強制する設定の配布でそろえる。**
+  - `claude update` を hook から実行しない。本体の書き換えを利用者の作業中に割り込ませることになり、
+    自動更新を有効にしておけば本体が自ら取りに行くため、別の更新経路を持つ理由が無い。
+  - managed settings では配らない。プラグインが書けるのは利用者の `settings.json` までであり、
+    managed settings の配置は管理者権限の作業になる（再検討の条件は下の表）。
+  - `DISABLE_AUTOUPDATER`・`DISABLE_UPDATES` はキーを消さずに `"0"` で上書きする。消すと利用者がシェルで
+    export した値が生き残るが、settings の `env` は export に勝ち、`"0"` は無効化しないと読まれる
+    （`../knowledge/claude-code-behavior.md`）。
+  - 受け入れる限界: プロジェクトの settings の `env` は利用者の `env` に勝つので、プロジェクトで更新を無効化されると
+    打ち消せない（優先順位は `../knowledge/claude-code-behavior.md`）。
 - **`policy` は `session_start.py` の設定の適用の中で import する。** 配った定義の誤り（import 時の
   例外）を設定の適用だけに閉じ込め、お知らせと収集を巻き添えにしない。
 - **`hooks.json` の起動コマンドは `python3` のままにする。** Windows の python.org 版には
@@ -211,4 +221,5 @@
 - 2026-09-26: 再開時のコンテキストトークン数を採らない理由に、`Stop` で取れることを加えた
 - 2026-09-26: 列を増やしたときのサーバ側の作業を `ALTER TABLE ... ADD COLUMN` と書いた
 - 2026-09-28: `plugin/config.json` の送信先を空のまま置く判断を、開発ツリーに本番の値を置き検証で差し替える判断に改めた
+- 2026-09-28: Claude Code 本体の版を設定の配布でそろえる判断を加えた
 - 2026-09-28: 送信の error 行の集約と打ち切りの判断を加え、hook のタイムアウトを設定の名前で指した
