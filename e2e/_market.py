@@ -44,6 +44,7 @@ def publish(root: E2ERoot, ver: str, overrides: Optional[dict] = None) -> None:
         _git(root, root.srv, "init", "-q", "--bare", f"{MARKETPLACE}.git")
     shutil.rmtree(dest, ignore_errors=True)
     shutil.copytree(PLUGIN_SRC, dest, ignore=shutil.ignore_patterns(*EXCLUDE))
+    _clear_ingest(dest / "config.json")
     for rel, data in (overrides or {}).items():
         (dest / rel).parent.mkdir(parents=True, exist_ok=True)
         (dest / rel).write_bytes(data)
@@ -68,6 +69,13 @@ def publish(root: E2ERoot, ver: str, overrides: Optional[dict] = None) -> None:
     _git(
         root, mp, "push", "-q", "-f", str(root.srv / f"{MARKETPLACE}.git"), "HEAD:main"
     )
+
+
+def _clear_ingest(path: Path) -> None:
+    """送信先だけを空にする。開発ツリーの config.json は本番の値を持つ（overrides が上書きしうる）。"""
+    config = json.loads(path.read_text(encoding="utf-8"))
+    config.update(ingest_url="", ingest_token="")
+    _write_json(path, config)
 
 
 def _check_ingest_url(path: Path) -> None:

@@ -73,7 +73,9 @@ def test_installPathはキャッシュの複製(root, gitsrv):
     assert (root.config / "plugins" / "cache").resolve() in path.parents
     src, got = _files(PLUGIN_SRC), _files(path)
     assert src.keys() == got.keys()
-    assert [rel for rel in src if rel != _PLUGIN_JSON and src[rel] != got[rel]] == []
+    # plugin.json は版を、config.json は送信先を publish が書き換える
+    rewritten = (_PLUGIN_JSON, "config.json")
+    assert [rel for rel in src if rel not in rewritten and src[rel] != got[rel]] == []
 
 
 def test_2段階で更新される(root, gitsrv):

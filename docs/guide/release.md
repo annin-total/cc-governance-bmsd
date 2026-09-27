@@ -101,7 +101,17 @@ python scripts/validate.py
    cd "$(mktemp -d)" && CLAUDE_CONFIG_DIR="$STAGING" claude
    ```
 
-5. 確認後、`STAGING` のディレクトリを消す
+5. 行が本番の受信先に届いたことを確かめる。staging で配る `config.json` は本番の送信先を持つので、
+   この端末（開発者本人）の行は本番の DB に入る。これは許容する
+
+   合格: 概況の版の分布に上げた版が出る（行が届いた証拠）
+
+   出なければ、`$STAGING/plugins/data/governance-cc-marketplace-governance-bmsd/` の `queue.jsonl`・`spool/`
+   にある error 行のうち、`stage` が `send` のものの `error_type`（`HTTP 401` など）で原因を見る。
+   **401 の間は error 行も届かないので、概況に失敗が無いことは合格の証拠にならない。**接続できない・
+   名前解決に失敗したときは error 行も残らず、`spool/` にファイルが残るだけである
+
+6. 確認後、`STAGING` のディレクトリを消す
 
    ```
    rm -rf "$STAGING"
@@ -110,7 +120,7 @@ python scripts/validate.py
    macOS でログインした場合、キーチェーンに config ごとの項目が残る。消し方は
    `docs/guide/e2e.md` の「手動確認の準備」にある
 
-6. 「PR を作りマージする」へ進む
+7. 「PR を作りマージする」へ進む
 
 ## 8. PR を作りマージする
 
@@ -135,6 +145,13 @@ claude plugin update governance
 
 **`policy.py` から項目を消すだけでは撤回にならない。**消した項目は以後何もされず、既に書き込まれた値が全端末に残り続ける。`ONCE` で配った値も同じで、戻すには値を変えて配り直す。端末ごとに書き換える直前の `settings.json` は `<config_dir>/governance/backups/` に残っている（世代数は `plugin/hooks/_govdir.py` の `_BACKUP_KEEP`）。
 
+**本体の検証で捨てられる値（型違いなど）を配ると、配り直しでは戻らない。**本体は `settings.json` に検証を通らない箇所が 1 つでもあるとファイル全体を読まず、`enabledPlugins` も読まれないので hook が 1 本も起動しない。直した版を配っても端末では動かず、行も届かないので概況からは気づけない。端末で気づく手がかりは、`claude doctor` の `Invalid settings` と、`claude plugin list` でプラグインが無効（`enabled: false`）に見えることである（2.1.283 の `-p` で確認。対話での表示は未確認）。復旧は次の順に行う（逆にすると、古い版の hook が同じ値を書き直す。推定）。
+
+1. 直した版を先に配る
+2. 利用者が `claude doctor` の `Invalid settings` で名指しされたキーを直すか消す
+
+配る前は `tests/plugin/test_policy_schema.py` が、`policy.py` を適用した結果を上流のスキーマで検証して止める。スキーマが通して本体が捨てる値と、上流が後から厳しくした値は止まらない。
+
 ## 11. 列や行の種類を足したとき
 
 契約（`plugin/hooks/contract.py`）に列を足すリリースでは、サーバ側で列の追加を先に済ませる。サーバを止め、`ALTER TABLE <t> ADD COLUMN <列> <型>` を手で実行してから起動する（テーブルは作り直さない。理由は `../decisions/server.md`）。既存の行の新しい列は NULL になる。**順序を誤るとサーバが起動しない**（起動時の検査は `../spec/server.md`）。
@@ -151,3 +168,4 @@ claude plugin update governance
 - 2026-09-26: お知らせの長さと送信先の `https://` を確認項目に加えた
 - 2026-09-26: 列を足すときのサーバ側の手順を `ALTER TABLE ... ADD COLUMN` で書き、版の分布を見る場所を直した
 - 2026-09-27: `notices.json` を変えたときの手動確認を確認項目に戻した
+- 2026-09-28: staging で行が届いたことの確認と、本体が捨てる値を配ったときの復旧の順序を加えた
