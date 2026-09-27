@@ -6,11 +6,10 @@
 
 ## 1. 前提
 
-- 変更がこのリポジトリの `main` にマージ済みであること（配布リポジトリの `main` は 8 でマージする）
+- 変更がこのリポジトリの `main` にマージ済みであること（配布リポジトリの `main` へは「PR を作りマージする」で入れる）
 - `pytest -q tests` が通っていること
-- `pytest e2e` が通っていること。`claude` が PATH に無いと全件 skip になり、Docker・認証の無い環境では
-  該当モジュールだけが skip になる。skip が出たら何が未確認のまま残っているかを意識する（`docs/guide/e2e.md`）
-- **初回リリースの前に、`plugin/config.json` の `ingest_url` と `ingest_token` を埋める。**空のまま配ると、端末は 1 件も送信しないまま「導入済み」に見える。検証スクリプトはこれを見ない
+- `pytest e2e` が通っていること。skip はそのモジュールを確かめていないことを意味する（何が skip になるかは `e2e.md`）
+- **初回リリースの前に、`plugin/config.json` の `ingest_url` と `ingest_token` を埋める。**空のまま配ると、端末は 1 件も送信しないまま「導入済み」に見える。`ingest_token` の値は `deploy-aip.md` の「Secretを設定する」で作る
 
 ## 2. `version` を上げる
 
@@ -21,7 +20,7 @@
 ## 3. プラグインを検証する（このリポジトリ）
 
 ```
-python scripts/validate_plugin.py
+.venv/bin/python scripts/validate_plugin.py
 ```
 
 マニフェストの形式は `claude plugin validate --strict` で見るため、`claude` が PATH に要る（無ければ `[NG]`）。
@@ -48,12 +47,12 @@ python scripts/validate.py
 
 - **`version` を上げた**
 - **`policy.py` から項目を黙って削除していない**（理由は「誤った設定値を配ってしまったとき」）
-- `contract.py` か `policy.py` を変えたら `scripts/sync_contract.py` を実行し、サーバ側の複製も同じリリースで更新した。`python scripts/sync_contract.py --check` が `OK` で終わる（`../spec/server.md` の「契約の複製」）
-- `python scripts/check_settings_schema.py` が `[OK]` で終わる。`[NG]` なら `--write` で取り直し、`pytest -q tests` を流す（`policy.py` の検証に使う settings.json のスキーマが、上流の最新版より古くなっていないか）
-- 効果測定の対象の施策（`server/ccgov/constants.py` の `REFERENCE_KEY` / `REFERENCE_VALUE`）の値を変えたら、同じリリースでこの 2 つを差し替えた。差し替えると以前の実験は画面から消える（データは残る）
+- `contract.py` か `policy.py` を変えたら `scripts/sync_contract.py` を実行し、サーバ側の複製も同じリリースで更新した。`.venv/bin/python scripts/sync_contract.py --check` が `OK` で終わる（`../spec/server.md` の「契約の複製」）
+- `.venv/bin/python scripts/check_settings_schema.py` が `[OK]` で終わる（`[NG]` のときの対処はスクリプトの冒頭）
+- 効果測定の対象の施策（`server/ccgov/constants.py` の `REFERENCE_KEY` / `REFERENCE_VALUE`）の値を変えたら、同じリリースでこの 2 つを差し替えた。差し替えると以前の実験は画面から消える（データは残る）。ほかの影響は `server/ccgov/constants.py` のコメントにある
 - 配布リポジトリの作業ブランチで `diff -r -x __pycache__ -x .DS_Store plugin/ ../cc-marketplace-governance-bmsd/plugins/governance/` が差分なしで終わる（このリポジトリから実行する）
 - `notices.json` の `url` は `https://` で始まり、意図したページを指している
-- `notices.json` を変えたら、「staging で確かめる」の 4 でお知らせが表示されることを見る（`pytest e2e` は見本の
+- `notices.json` を変えたら、「staging で確かめる」の対話の確認でお知らせが表示されることを見る（`pytest e2e` は見本の
   `notices.json` を使うため本物の文面を通らず、壊れた JSON は黙って空になる）
 - `notices.json` のお知らせは 1 件を日本語で 600 字程度までに収めた（長い文面はファイルへ退避され、先頭しか表示されない。境界は `../knowledge/measurements.md`）
 - `config.json` の送信先 URL が `https://` で始まり、デプロイ済みのサーバの URL と一致している（スキームは検査されない。理由は `../decisions/plugin.md` の「受け入れている限界」）
@@ -63,7 +62,7 @@ python scripts/validate.py
 
 ## 7. staging で確かめる
 
-配布リポジトリの `main` へ入れる前に、4 で作った作業ブランチを `staging` ブランチへ反映し、
+配布リポジトリの `main` へ入れる前に、「配布リポジトリの作業ブランチへ複製してコミットする」で作った作業ブランチを `staging` ブランチへ反映し、
 使い捨ての隔離環境（`CLAUDE_CONFIG_DIR`）に ref 付きで導入して確かめる。本人の実環境には触れない。
 
 1. 配布リポジトリで、作業ブランチを `staging` へ反映する
@@ -95,15 +94,13 @@ python scripts/validate.py
    `<owner>/<repo>` の短縮形は GitHub を SSH で clone する（SSH 鍵が無いと失敗する）。社内の
    git サーバや鍵の無い端末では `https://<host>/<owner>/<repo>.git#staging` の形で指定する
 
-4. 認証を環境変数で渡し（会社は Bedrock。渡す変数は `docs/guide/e2e.md` の「認証」の節）、空の
-   ディレクトリからセッションを開いて `/plugin` の版と動作を確かめる
-
-   ```
-   cd "$(mktemp -d)" && CLAUDE_CONFIG_DIR="$STAGING" claude
-   ```
+4. 認証を環境変数で渡し（会社は Bedrock。渡す変数は `e2e.md` の「認証」の節）、空の
+   ディレクトリからセッションを開いて `/plugin` の版と動作を確かめる。起動のしかたは `e2e.md` の
+   「手動確認の準備」と同じにし（`env -i` で親の変数を断ち、`--settings` で本体の自動更新を止める）、
+   `CLAUDE_CONFIG_DIR` には `$STAGING` を渡す
 
 5. 行が本番の受信先に届いたことを確かめる。staging で配る `config.json` は本番の送信先を持つので、
-   この端末（開発者本人）の行は本番の DB に入る。これは許容する
+   この端末（開発者本人）の行は本番の DB に入る。これは許容する（理由は `../decisions/plugin.md` の「配布と検証」）
 
    合格: 概況の版の分布に上げた版が出る（行が届いた証拠）
 
@@ -119,19 +116,19 @@ python scripts/validate.py
    ```
 
    macOS でログインした場合、キーチェーンに config ごとの項目が残る。消し方は
-   `docs/guide/e2e.md` の「手動確認の準備」にある
+   `e2e.md` の「手動確認の準備」にある
 
 7. 「PR を作りマージする」へ進む
 
 ## 8. PR を作りマージする
 
-配布リポジトリで、4 の作業ブランチから `main` へ PR を作る。マージされた時点で配布される。
+配布リポジトリで、「配布リポジトリの作業ブランチへ複製してコミットする」で作った作業ブランチから `main` へ PR を作る。マージされた時点で配布される。
 
 ## 9. 届いたことを確認する
 
 数日後に概況画面の `plugin_version` の分布を見る。この列はセッションを開始した時点の版であり、長く開いたままのセッションは古い版を報告し続ける。更新の直後に新旧が混じるのは正常で、**古い版が何日も残り続けることが、配布の届いていない端末の印である。**
 
-15 分待っても版が上がらない端末では、手動更新の 2 段階を両方行う（1 段目はカタログを更新するだけで、本体の版は上がらない）。
+版が上がらない端末では（自動更新の所要は一定しない。`../knowledge/claude-code-behavior.md`）、手動更新の 2 段階を両方行う（1 段目はカタログを更新するだけで、本体の版は上がらない）。
 
 ```
 claude plugin marketplace update cc-marketplace-governance-bmsd
@@ -146,7 +143,7 @@ claude plugin update governance
 
 **`policy.py` から項目を消すだけでは撤回にならない。**消した項目は以後何もされず、既に書き込まれた値が全端末に残り続ける。`ONCE` で配った値も同じで、戻すには値を変えて配り直す。**前の版の中身を配り直しても（版を下げても）元には戻らない。**`ADD` で足した要素は残り、`ONCE` の値は前の値へ戻した時点で再び 1 回書かれ、利用者が変えた値を上書きする（`ONCE` の記録の範囲は `../spec/plugin.md` の「設定の自動適用」）。端末ごとに書き換える直前の `settings.json` は `<config_dir>/governance/backups/` に残っている（世代数は `plugin/hooks/_govdir.py` の `_BACKUP_KEEP`）。
 
-**本体の検証で捨てられる値（型違いなど）を配ると、配り直しでは戻らない。**本体は `settings.json` に検証を通らない箇所が 1 つでもあるとファイル全体を読まず、`enabledPlugins` も読まれないので hook が 1 本も起動しない。直した版を配っても端末では動かず、行も届かないので概況からは気づけない。端末で気づく手がかりは、`claude doctor` の `Invalid settings` と、`claude plugin list` でプラグインが無効（`enabled: false`）に見えることである（2.1.283 の `-p` で確認。対話での表示は未確認）。復旧は次の順に行う（逆にすると、古い版の hook が同じ値を書き直す。推定）。
+**本体の検証で捨てられる値（型違いなど）を配ると、配り直しでは戻らない。**本体が `settings.json` を丸ごと無視して hook も動かず（`../knowledge/claude-code-behavior.md` の「settings.json の読み込み」）、直した版を配っても端末では動かない。行も届かないので概況からは気づけない。端末では `claude doctor` の `Invalid settings` と、`claude plugin list` でプラグインが無効（`enabled: false`）に見えることで気づく（`claude plugin list` の表示は 2.1.283 で確認）。復旧は次の順に行う（逆にすると、古い版の hook が同じ値を書き直す。推定）。
 
 1. 直した版を先に配る
 2. 利用者が `claude doctor` の `Invalid settings` で名指しされたキーを直すか消す
@@ -155,7 +152,7 @@ claude plugin update governance
 
 ## 11. 列や行の種類を足したとき
 
-契約（`plugin/hooks/contract.py`）に列を足すリリースでは、サーバ側で列の追加を先に済ませる。サーバを止め、`ALTER TABLE <t> ADD COLUMN <列> <型>` を手で実行してから起動する（テーブルは作り直さない。理由は `../decisions/server.md`）。既存の行の新しい列は NULL になる。
+契約（`plugin/hooks/contract.py`）に列を足すリリースでは、サーバ側で列の追加を先に済ませる。稼働中のサーバの DB に `ALTER TABLE <t> ADD COLUMN <列> <型>` を手で実行し、その後サーバを再起動して新しいサーバを起動する（テーブルは作り直さない。理由は `../decisions/server.md`。AIP での実行場所と再起動は `deploy-aip.md` の「列を足すとき」。実機では未検証）。既存の行の新しい列は NULL になる。
 
 - `<型>` は `contract.py` に書いた型と同じにする。起動時の検査は列名しか見ないので、型を誤っても起動する。SQLite では値が誤った型で入り、比較や `max` が無言で誤る
 - サーバの環境に `sqlite3` CLI があるとは限らない（`server/Dockerfile` の基底イメージには無い）。サーバが使う Python の標準モジュールで実行し、実行後に `PRAGMA table_info(<t>)` で列と型を確かめる
@@ -182,3 +179,4 @@ claude plugin update governance
 - 2026-09-28: staging で行が届いたことの確認と、本体が捨てる値を配ったときの復旧の順序を加えた
 - 2026-09-28: 401 が続く間も spool の上限を超えた分は失われることを書いた
 - 2026-09-28: ロールバックで戻らないもの、列を足すときの型・実行手段・端末を先に配ったときの欠損を加え、同期の確認項目に `contract.py` を加えた
+- 2026-09-28: 章番号での参照を見出し名に替え、staging の対話起動を `e2e.md` の手動確認に寄せ、列の追加を稼働中の ALTER と再起動の順にし、knowledge・スクリプトと重なる記述を参照に縮めた
