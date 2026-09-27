@@ -5,7 +5,7 @@
 | 01 | 済 | 更新の経路は正常（prev_value・ONCE の差し替え・新 installPath）。型違いの値（例 `cleanupPeriodDays: "30"`）は本体が settings.json ごと黙って読み捨て（UC 13 と同じ機構）、プラグインが `enabled: false` 表示・hook 全停止、直した版も届かない。気づけるのは `claude doctor` だけ。キーの型を戻せば再開 |
 | 06 | 済 | REMOVE・SET の None は仕様どおり（利用者の要素は残る）。既存 E2E は撤回を全く判定していない（壊した実装で PASS・正しい実装で偽の赤）。ADD と REMOVE の重なりで毎回書き込み・バックアップ押し出しの不具合候補、ロールバックで ONCE の利用者値を上書き |
 | 13 | 済 | 本体が捨てる settings.json（壊れた JSON・トップが配列・`env` が文字列・2 MiB 超など）では enabledPlugins も効かず hook が無言で全停止、行が届かず未使用と区別不能。`_settings.py` にバックアップの先取り（置換失敗で毎回増える）・0444 を 0600 で上書きのバグ候補 |
-| 12 | 未着手 | |
+| 12 | 済 | 例外 4 種で適用だけが止まり、お知らせ・収集・送信は継続、error 行はサーバの表まで到達（enabled は true のまま、直した版で追いつく）。JSON に書けない値で `.settings-*.tmp` が残るバグ（`_settings.py:68-82`）、`SystemExit` は全段を無言で止める |
 | 14 | 未着手 | |
 | 60 | 未着手 | |
 | 41 | 未着手 | |
