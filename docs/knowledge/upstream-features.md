@@ -1,19 +1,18 @@
 # 上流に実在する項目と hook
 
-Claude Code が届ける収集項目・hook・環境変数のうち、**実在を確認できたもの**の目録。
-実在が確認できていないものは載せない。網羅ではない。
-断りのない限り Claude Code 2.1.278 / macOS での実測。
+Claude Code が届ける収集項目・hook・環境変数のうち、**実在を確認できたもの**の目録。網羅ではない。
+断りのない限り Claude Code 2.1.278 / macOS での実測。公式ドキュメントにだけ拠る行は「公式のみ・実測なし」と書く。
 
-## 1. `SessionStart`（`source="resume"`）でしか届かないキー
+## 1. `SessionStart` の再開（`source` が `resume`・`fork`）でだけ届くキー
 
-セッションを再開したときだけ付く。
+公式（hooks、2026-09-28 取得）は、`source` が `resume` か `fork` で、transcript に Claude の応答が 1 回以上あるときに次の 4 つが届くと書く（2.1.251 以降）。実測値は `resume` で得たもの。
 
 | キーパス | 実測値 | 何が分かるか | 付随する事実 |
 | --- | --- | --- | --- |
 | `context_tokens` | `45689` | 再開時点のコンテキストトークン数（素データ。加工不要） | transcript 末尾から算出した値と同一セッションで誤差 0.8% |
-| `prompt_cache_likely_expired` | 真偽 | Claude Code 自身の「キャッシュが切れた可能性が高い」判定 | **公式ドキュメント未記載** |
+| `prompt_cache_likely_expired` | 真偽 | Claude Code 自身の「キャッシュが切れた可能性が高い」判定 | — |
 | `estimated_cache_write_usd` | `0.4569` | その再開が生むキャッシュ書込の USD 見積（上流が算出） | — |
-| `seconds_since_last_response` | 秒 | 前回応答からの経過時間 | **公式ドキュメント未記載** |
+| `seconds_since_last_response` | 秒 | 前回応答からの経過時間 | — |
 
 ## 2. hook stdin に届くキー
 
@@ -24,9 +23,9 @@ Claude Code が届ける収集項目・hook・環境変数のうち、**実在�
 | `model` | `SessionStart` のみ | `claude-opus-5[1m]` | セッション開始時点のモデル＝コンテキストウィンドウのサイズの区別 | `claude -p` では `SessionStart` にも無い。途中のモデル切替は追えない |
 | `duration_ms` | `PostToolUse` | `1846` / `387` | ツール 1 回の実行時間 | タスク遂行の速さではない |
 | `tool_response.commandName` / `.success` | `PostToolUse`（Skill） | `tool_input.skill` と同じ値 / `true` | スキル呼出の成否 | — |
-| `mcp_server`（トップレベル dict） | `PostToolUseFailure` | `{"name":..., "source":"user"}` | MCP サーバ名と**出自**（配布か個人設定か） | 2.1.274 で入った。**成功時にも付くかは未確認**。サーバ名は `tool_name`（`mcp__<server>__<tool>`）からも分解できる |
-| `error_type` | `StopFailure` | — | ターン失敗の種別 | 値は自由文に近い |
-| `reason` | `SessionEnd` | `"prompt_input_exit"` / `"other"` | セッションの閉じ方 | — |
+| `mcp_server`（トップレベル dict） | MCP ツールの `PreToolUse`・`PermissionRequest`・`PermissionDenied`・`PostToolUse`・`PostToolUseFailure`（公式 hooks、2026-09-28 取得。2.1.274 以降）。実測は `PostToolUseFailure` だけ | `{"name":..., "source":"user"}` | MCP サーバ名と**出自**（配布か個人設定か） | サーバ名は `tool_name`（`mcp__<server>__<tool>`）からも分解できる |
+| `error` | `StopFailure` | — | ターン失敗の種別 | 値は `rate_limit`・`overloaded`・`authentication_failed`・`oauth_org_not_allowed`・`account_on_hold`・`billing_error`・`invalid_request`・`model_not_found`・`server_error`・`max_output_tokens`・`cloud_credential_error`・`unknown` の列挙（公式 hooks、2026-09-28 取得）。実測なし |
+| `reason` | `SessionEnd` | `"prompt_input_exit"` / `"other"` | セッションの閉じ方 | 公式（hooks、2026-09-28 取得）の値は `clear`・`resume`・`logout`・`prompt_input_exit`・`other`。実測したのは 2 値だけ |
 | `tool_use_id` | ツール系 hook | `toolu_01…` | 呼出の一意識別 | — |
 | `expansion_type` | `UserPromptExpansion` | `"slash_command"` | コマンド以外の展開との区別 | `command_source` と同じことが分かる |
 | `command_source` | `UserPromptExpansion` | `"userSettings"` / `"plugin"` | コマンドの出どころ | 2.1.283。観測したのは利用者のコマンドとプラグイン同梱のコマンドの 2 つだけで、プロジェクト・managed の値は未確認 |
@@ -36,7 +35,7 @@ Claude Code が届ける収集項目・hook・環境変数のうち、**実在�
 | `stop_hook_active` | `Stop` | — | hook 再入防止フラグ | Claude Code 内部の状態 |
 
 **自由文・本文を含むキー**: `prompt` / `tool_response.stdout` / `tool_response.stderr` /
-`last_assistant_message` / `error` / `custom_instructions`（`PreCompact`）/ `command_args` / `cwd`（絶対パス）。
+`last_assistant_message` / `error`（`PostToolUseFailure`）/ `custom_instructions`（`PreCompact`）/ `command_args` / `cwd`（絶対パス）。
 
 ## 3. transcript の `message.usage` にあるキー
 
@@ -65,16 +64,16 @@ hook から環境変数をセッションへ戻す経路である。
 
 ## 5. hook が届けるもの
 
-公式の hook は全 31 種ある。このうち実在が確認できているものの性質。
+公式の hook のうち、次のものの性質。
 
 | hook | いつ発火するか | そこでしか取れないもの | 付随する事実 |
 | --- | --- | --- | --- |
-| `PreToolUse` | ツール呼出の**前**（最高頻度帯） | 無い。`tool_name` / `tool_input` / `permission_mode` / `effort` はすべて `PostToolUse` にも届く | `PostToolUse` は加えて成否と `duration_ms` を持つ |
-| `SessionEnd` | セッション終了時（低頻度） | `reason`（`"prompt_input_exit"` / `"other"`） | 異常終了でも発火するかは**未検証**（発火しないと見られるが**推測**） |
-| `StopFailure` | ターンが失敗で終わったとき（中頻度） | `error_type` | `error_type` の値は自由文に近い |
+| `PreToolUse` | ツール呼出の**前**（最高頻度帯） | `tool_name` / `tool_input` / `permission_mode` / `effort` はすべて `PostToolUse` にも届く。権限で拒否された呼出が `PreToolUse` にだけ現れるかは**未検証** | `PostToolUse` は加えて成否と `duration_ms` を持つ |
+| `SessionEnd` | セッション終了時（低頻度） | `reason`（値は上表） | 異常終了でも発火するかは**未検証**（発火しないと見られるが**推測**） |
+| `StopFailure` | ターンが失敗で終わったとき（中頻度） | `error`（値は上表） | — |
 | `SubagentStart` / `SubagentStop` | サブエージェントの開始・終了 | サブエージェントの区切り | `agent_id` / `agent_type` は `PostToolUse` にも付く |
-| `PostCompact` | 自動圧縮の**後**（低頻度） | 圧縮**後**のコンテキストトークン数＝「圧縮の効き目」 | **キー構成が未確認**（`transcript_path` が届くかも未確認） |
-| `PreModelSwitch` / `PostModelSwitch` | モデル切替時 | 切替の発生と前後のモデル | — |
+| `PostCompact` | 圧縮の**後**（低頻度） | 圧縮の契機（`trigger`: `manual`/`auto`）と要約（`compact_summary`） | 入力は共通入力に加えてこの 2 つ（公式 hooks、2026-09-28 取得。実測なし）。圧縮後のコンテキストトークン数は入力に無く、transcript から読めるかは**未検証** |
+| `PreModelSwitch` / `PostModelSwitch` | モデル切替時 | `from_model` / `to_model` | 公式（hooks、2026-09-28 取得）のみ。実測なし |
 
 `SessionEnd` のコンテキストトークン数は `Stop` の最終値と同じで、`UserPromptSubmit` のコンテキストトークン数は
 前ターンの `Stop` の値と同じである。
