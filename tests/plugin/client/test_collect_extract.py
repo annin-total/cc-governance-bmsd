@@ -286,3 +286,42 @@ def test_unregistered_hook_event_still_extracts(hook_inputs):
     for raw in rows:
         row = collect.extract_event(raw, "SessionEnd")
         assert set(row.keys()) == EXPECTED_KEYS
+
+
+@pytest.mark.parametrize("hook_event", ["Stop", "PreCompact"])
+def test_claude_code_version_filled_from_transcript(tmp_path, hook_event):
+    """transcript を読む hook では、末尾側の最新の `version` が入る。"""
+    transcript = tmp_path / "t.jsonl"
+    transcript.write_text(
+        '{"type":"user","version":"2.1.281"}\n'
+        '{"type":"assistant","version":"2.1.283"}\n'
+        '{"type":"last-prompt"}\n',
+        encoding="utf-8",
+    )
+    raw = {"session_id": "s", "transcript_path": str(transcript)}
+    row = collect.extract_event(raw, hook_event)
+    assert row["claude_code_version"] == "2.1.283"
+
+
+def test_claude_code_version_none_without_version(tmp_path):
+    """transcript に `version` が無ければ、例外を出さず None。"""
+    transcript = tmp_path / "t.jsonl"
+    transcript.write_text('{"type":"last-prompt"}\n', encoding="utf-8")
+    raw = {"session_id": "s", "transcript_path": str(transcript)}
+    assert collect.extract_event(raw, "Stop")["claude_code_version"] is None
+    missing = {"session_id": "s", "transcript_path": str(tmp_path / "none.jsonl")}
+    assert collect.extract_event(missing, "Stop")["claude_code_version"] is None
+
+
+def test_claude_code_version_not_read_otherwise(hook_inputs, monkeypatch):
+    """transcript を読まない hook では呼ばれず None。"""
+    called = []
+    monkeypatch.setattr(
+        collect._context,
+        "claude_code_version",
+        lambda path: called.append(path) or "9.9.9",
+    )
+    for hook_event in ("PostToolUse", "SessionStart", "UserPromptSubmit"):
+        raw = next(iter(hook_inputs(hook_event)))
+        assert collect.extract_event(raw, hook_event)["claude_code_version"] is None
+    assert called == []

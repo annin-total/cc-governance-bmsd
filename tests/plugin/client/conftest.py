@@ -7,6 +7,7 @@ import socket
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -19,6 +20,23 @@ _DEFAULT_CONFIG = {
     "spool_max_bytes": 5242880,
     "spool_max_days": 7,
 }
+
+
+_FIXED_POLICY_SET = {
+    "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60",
+    "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate": True,
+}
+
+
+@pytest.fixture
+def fixed_policy(monkeypatch) -> SimpleNamespace:
+    """書き込みの仕組みを確かめるための 2 キーの policy。以後の `import policy` もこれを返す。
+
+    実物の `policy.py` は配る値に合わせて変わるため、その中身の検査は `test_policy_schema.py` が持つ。
+    """
+    fixed = SimpleNamespace(SET=dict(_FIXED_POLICY_SET), ADD={}, REMOVE={}, ONCE={})
+    monkeypatch.setitem(sys.modules, "policy", fixed)
+    return fixed
 
 
 @pytest.fixture
