@@ -9,4 +9,4 @@
 | 14 | 未着手 | |
 | 60 | 済 | uninstall が消すのは `enabledPlugins` の項目と data（既読・未送信の queue/spool を黙って失う。`--keep-data` で残る）。`statusLine`・配った値・`governance/` は残りステータスラインは動き続ける。再導入でお知らせ再表示、`governance/` を消してからだと ONCE が利用者値を上書き |
 | 41 | 済 | 無効化中は event 行を一切積まないので再開後に漏れない。policy 適用・statusline 同期は継続。`"0"` も無効化扱い（空でなければ無効。文書どおりだが利用者向けには罠）。settings.json の env に直書きしても hook に届き、policy に書き消されない。バグなし |
-| 24 | 未着手 | |
+| 24 | 済 | `-p`・SDK 相当は `sdk-cli`（`sdk-*` はそのまま）で既読・ブラウザとも起きない。ただし `-p` が書き換えるのは `cli` と空文字だけで、親から `claude-vscode`・未知の値を継いだ `-p` は人が見ずに既読にする（`session_start.py:75`・`_browser.py:18-20`）。ブラウザは偽 `open` で 0 回 |
