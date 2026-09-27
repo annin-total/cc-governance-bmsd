@@ -16,7 +16,8 @@ macOS での実測。確かめた版は各行に添える。版の無い行は�
 | `claude plugin marketplace add <url> --scope user` は利用者の `settings.json` に `extraKnownMarketplaces.<name>.source` を書き、`claude plugin install <id> --scope user` は `enabledPlugins.<id>: true` を書く（2.1.282・隔離環境で観測） | `extraKnownMarketplaces` の項目が在る前提で設定を書くとき |
 | マーケットプレイスの `autoUpdate` は `settings.json` の `extraKnownMarketplaces.<name>.autoUpdate` が権威であり、セッション開始時に `plugins/known_marketplaces.json` へ上書き同期される。社外のマーケットプレイスは既定で無効（git リモートから導入した直後、どちらのファイルにもキーが無い）（2026-09 確認。2.1.282 の隔離環境では、`SessionStart` hook が `settings.json` に書いた値は、そのセッションの終了後の `known_marketplaces.json` には無く、次のセッション開始後に現れた） | 自動更新を有効にしたいとき。`known_marketplaces.json` を書き換えても次の起動で戻る |
 | 手動更新は 2 段階である。`claude plugin marketplace update` はカタログだけを更新し、導入済みプラグインの版は `claude plugin update` で上がる。更新を取り込んでも、反映は次に起動したセッションから。`source` に到達できなくても端末の複製で動き続け、止まるのは更新だけ | 更新手順を書くとき。版が上がらないと迷ったとき |
-| `env` ブロックも普通のキーとして設定の優先順位（managed > `--settings` > プロジェクトの local > プロジェクトの共有 > 利用者）に従う。シェルで export した値は settings の `env` に負ける。hook プロセスの環境変数には合成後の実効値が入る（2.1.282 実測 + 公式ドキュメント settings / env-vars） | 利用者の `settings.json` の値は実効値とは限らない。上位の層の上書きはその値に現れない |
+| `env` ブロックも普通のキーとして設定の優先順位（managed > `--settings` > プロジェクトの local > プロジェクトの共有 > 利用者）に従う。シェルで export した値は settings の `env` に負ける（2.1.283 でも `DISABLE_AUTOUPDATER` で確認）。hook プロセスの環境変数には合成後の実効値が入る（2.1.282 実測 + 公式ドキュメント settings / env-vars） | 利用者の `settings.json` の値は実効値とは限らない。上位の層の上書きはその値に現れない |
+| `DISABLE_AUTOUPDATER` は `1`・`true`・`yes`・`on` のときだけ自動更新を無効にし、`0`・`false` は無効化しないと読まれる（`claude doctor` の `Auto-updates:` の表示とバイナリ内の判定で確認）。`DISABLE_UPDATES` も `0`・`false` では無効化しない（表示で確認。判定の実装は未特定）。settings の `env` で与えても環境変数で与えても同じ（2.1.283・native） | 自動更新の無効化を打ち消したいとき。キーを消さずに `"0"` で上書きできる |
 | `env.FORCE_AUTOUPDATE_PLUGINS` は hook プロセスまで値が届く。ただし**本体の入れ替えを起こす効果は観測できていない** | 本体の自動更新を抑止している端末で、プラグインの更新だけを生かせるかを考えるとき |
 | `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` は公開された環境変数で、自動圧縮が走る点を auto-compact window に対する 1〜100 の割合で指定する。低いほど早く圧縮し、既定より高い値は無視される（閾値を上げる向きには使えない）。auto-compact window はモデルで異なるため、発火する絶対トークン数もモデルで異なる。効くのはコンテキストの上限に達する前に圧縮するセッションだけ（公式ドキュメント env-vars / model-config、2026-09 確認。実測ではない） | 自動圧縮を早める設定の効き目を見積もるとき |
 | 外部から `export CLAUDE_PLUGIN_DATA=...` しても **Claude Code は無視する**。実際のプラグインのデータ領域は、Claude Code が自前で計算する `$CLAUDE_CONFIG_DIR/plugins/data/<plugin>-<marketplace>/` に固定される | hook を手動実行するときと `claude` に実行させるときとで、状態ディレクトリが別物になりうる。検証手順は実際に使われるパスを毎回計算し直す |
@@ -25,6 +26,7 @@ macOS での実測。確かめた版は各行に添える。版の無い行は�
 | `claude plugin marketplace add` は bare リポジトリを直接指すと失敗するが、http(s) の git URL なら通る。http の git URL は末尾に `.git` が要り、無いと marketplace.json の URL と解釈して 404 になる（2.1.282） | ローカルの git リポジトリをマーケットプレイスとして登録するとき |
 | マーケットプレイスを remove してから add し直すと `plugins/data/` が空になり、プラグインが置いた状態が消える。`claude plugin marketplace remove` は `settings.json` の `extraKnownMarketplaces.<name>` を、後から足されたキー（`autoUpdate` など）ごと消す。`add` し直すと `source` だけの項目ができる（2.1.283） | 登録をやり直す手順を書くとき。データを残したいなら remove を避ける |
 | マーケットプレイスを `#<ref>` 付きで登録すると `settings.json` の `source.ref` に入り、`ref` を付けている間は 2 段階の更新（`claude plugin marketplace update` → `claude plugin update`）が `ref` の先端の版を入れる。既定ブランチの版は拾わない（2.1.282） | ref 付きで導入した環境の版の見積もりをするとき |
+| プラグインを更新した後、新しいプロセスで `claude -p --resume <session_id>` を実行すると、同じ session_id のまま hook が新しい版の `installPath` から動く（2.1.283。対話の `/resume` と、プロセス外の自動更新で入れ替わった場合は未確認） | 更新がいつ効くかを見積もるとき。反映の単位はセッションではなくプロセスの起動 |
 | `claude plugin update` は `plugin.json` の `version` だけを比べる。版が下がる向きにも入れ替え（2.1.282・2.1.283）、版が同じなら中身が変わっていても `already at the latest version` と答えて入れ替えない。`uninstall` → `install` なら同じ版でも入れ直す（2.1.283） | ref を外す・切り替えるときに、端末の版が意図せず下がりうることを見積もるとき。版を上げずに中身だけ変えても端末に届かない |
 | 無人の対話起動（pty 越し）は、初回起動時の対話 3 段（テーマ選択・フォルダ信頼・API キー確認）で止まる。`.claude.json` に `hasCompletedOnboarding` / `theme` / `projects["<cwd>"].hasTrustDialogAccepted`（`<cwd>` は realpath で書く。macOS の `/tmp` は `/private/tmp` に解決される）を事前投入すると前の 2 段は越えられるが、API キー確認の段は pty へのキー送信が要り、事前投入だけでは越えられない。`claude -p` は対話起動ではないため、この 3 段自体を踏まず事前投入なしで動く | 無人でセッションを起動する検証を組むとき。越えられる段と越えられない段を混同しない |
 
@@ -32,7 +34,7 @@ macOS での実測。確かめた版は各行に添える。版の無い行は�
 
 | 事実 | いつ効くか |
 | --- | --- |
-| 本体は、次の `settings.json` をファイルごと黙って無視する: JSON として壊れている・空・トップが配列か `null`・スキーマ違反のキーが 1 つでもある（`env` が文字列、`cleanupPeriodDays` が文字列など）・約 2 MiB を超える（2,097,142 バイトは読み、2,097,162 バイトは読まない）。同じファイルの正しいキー（`enabledPlugins`・`hooks`・`env`）も効かないので、そこで有効化したプラグインは読み込まれず hook も動かない。`claude -p` の stderr・stream-json・終了コードには何も出ず、`claude doctor` の `Invalid settings` にだけファイルとキーが名指しで出る。無視したファイルを本体は書き換えない（2.1.283、隔離環境の `claude -p`。対話起動での表示は未検証） | `settings.json` に値を書くとき。型を 1 つ誤ると、そのファイルに依る設定とプラグインが全部止まる |
+| 本体は、次の `settings.json` をファイルごと黙って無視する: JSON として壊れている・空・トップが配列か `null`・スキーマ違反のキーが 1 つでもある（`env` が文字列、`cleanupPeriodDays` が文字列、`autoUpdatesChannel` が `latest`・`stable`・`rc` 以外、`minimumVersion` の型違いなど。ただし `hooks` の型違いではファイルは無視されなかった）・約 2 MiB を超える（2,097,142 バイトは読み、2,097,162 バイトは読まない）。同じファイルの正しいキー（`enabledPlugins`・`hooks`・`env`）も効かないので、そこで有効化したプラグインは読み込まれず hook も動かない。`claude -p` の stderr・stream-json・終了コードには何も出ず、`claude doctor` の `Invalid settings` にだけファイルとキーが名指しで出る。無視したファイルを本体は書き換えない（2.1.283、隔離環境の `claude -p`。対話起動での表示は未検証） | `settings.json` に値を書くとき。型や列挙値を 1 つ誤ると、そのファイルに依る設定とプラグインが全部止まる。止まるかはキーによる |
 | 本体は BOM 付き・非 UTF-8（Latin-1）の `settings.json` を読む。`extraKnownMarketplaces` が配列でも読む（2.1.283） | 同じファイルを厳格な JSON パーサで読むと、本体と解釈が食い違う |
 | schemastore の Claude Code の settings のスキーマと、本体の検証は一致しない。`env` の値に整数（`60`）を置くと、本体は受け付け（ファイルは無視されない）、schemastore のスキーマは拒否する（2.1.283、スキーマは 2026-09-25 取得。逆向き（schemastore が通し本体が捨てる値）は未確認） | schemastore のスキーマで本体の検証を代用するとき |
 
@@ -64,4 +66,5 @@ macOS での実測。確かめた版は各行に添える。版の無い行は�
 | --- | --- |
 | 公式ドキュメント（hooks の Common input fields）は、transcript は非同期に書かれ、hook の発火時点では現在のターンの最新のメッセージを含まないことがある、と書く。`claude -p` の `Stop` では最新の応答まで書かれていた（実測） | 対話セッションで `Stop` のコンテキストトークン数を読むとき。1 ターン遅れうる |
 | `message.usage` の 3 値がすべて 0 の行が実在する（`isApiErrorMessage: true` の `assistant` 行） | 合計 0 を値として扱うと、API エラー応答がコンテキストトークン数に混ざる |
+| transcript の `user`・`assistant`・`attachment`・`system` の行には、本体の版を示す文字列の `version`（例 `"2.1.283"`）が付く。`queue-operation`・`last-prompt` などの行には無い。hook の標準入力（`SessionStart`・`UserPromptSubmit`・`Stop`）と hook の環境変数には版を示すものが無い（2.1.283、`claude -p`） | hook から本体の版を得たいとき。transcript の形は公式の契約ではない |
 | `claude -p` のプロンプトとツールの入出力は、config ディレクトリの中では `projects/<cwd を変換した名前>/` の transcript にだけ現れた（2.1.282、隔離した config で全ファイルを走査） | 本文が残る場所を調べるとき。transcript の置き場は本体の管理下にある |

@@ -209,7 +209,7 @@ def test_prune_under_limits_deletes_nothing(seed_spool_bytes):
     spool_dir = _spool._spool_dir()
     now = time.time()
     one_day_ago = now - 86400
-    total = int(4.9 * 1024 * 1024)
+    total = int(_spool.DEFAULT_SPOOL_MAX_BYTES * 0.98)
     per_file = total // 5
     for i in range(5):
         seed_spool_bytes(f"{1000 + i}-{'a' * 32}.jsonl", per_file, one_day_ago)
@@ -220,17 +220,17 @@ def test_prune_under_limits_deletes_nothing(seed_spool_bytes):
 
 
 def test_prune_over_size_deletes_oldest_first(seed_spool_bytes):
-    """1MB x 6 件（mtime が 1 分ずつ古い） -> 合計 5MB 以下になるまで古い順に削除。
+    """上限の 1/5 x 6 件（mtime が 1 分ずつ古い） -> 合計が上限以下になるまで古い順に削除。
     残るのは新しい 5 件。"""
     spool_dir = _spool._spool_dir()
     now = time.time()
-    one_mb = 1024 * 1024
+    per_file = _spool.DEFAULT_SPOOL_MAX_BYTES // 5
     names = []
     for i in range(6):
         mtime = now - i * 60
         name = f"{2000 + i}-{'b' * 32}.jsonl"
         names.append((name, mtime))
-        seed_spool_bytes(name, one_mb, mtime)
+        seed_spool_bytes(name, per_file, mtime)
 
     _spool.prune()
 
@@ -239,12 +239,12 @@ def test_prune_over_size_deletes_oldest_first(seed_spool_bytes):
     assert oldest_name not in remaining
     assert len(remaining) == 5
     total_size = sum(p.stat().st_size for p in spool_dir.iterdir())
-    assert total_size <= 5 * 1024 * 1024
+    assert total_size <= _spool.DEFAULT_SPOOL_MAX_BYTES
 
 
 def test_prune_deletes_file_older_than_max_days(seed_spool_bytes):
     spool_dir = _spool._spool_dir()
-    mtime = time.time() - (7 * 86400 + 1)
+    mtime = time.time() - (_spool.DEFAULT_SPOOL_MAX_DAYS * 86400 + 1)
     seed_spool_bytes(f"{3000}-{'c' * 32}.jsonl", 1024, mtime)
 
     _spool.prune()
@@ -253,7 +253,7 @@ def test_prune_deletes_file_older_than_max_days(seed_spool_bytes):
 
 
 def test_prune_keeps_file_within_max_days(seed_spool_bytes):
-    mtime = time.time() - 6 * 86400
+    mtime = time.time() - (_spool.DEFAULT_SPOOL_MAX_DAYS - 1) * 86400
     path = seed_spool_bytes(f"{4000}-{'d' * 32}.jsonl", 1024, mtime)
 
     _spool.prune()

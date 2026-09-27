@@ -48,10 +48,13 @@ Bedrock では、組織で有効なモデル ID への固定（`ANTHROPIC_DEFAUL
   `plugin/` 木の変化を見て、違えばセッション全体を失敗させる
 - **`tests/` と同時に流さない。**`tests/conftest.py` は import 時に `HOME` を差し替え、隔離の前提を
   崩す。混在すると `e2e/conftest.py` が検出して終了する
+- **本体の自動更新は `--settings` で止める。**配る設定が隔離した `settings.json` の `env` で自動更新を有効にし、環境変数の
+  `DISABLE_AUTOUPDATER` に勝つ。native 版の更新先は `HOME` の下で隔離の外なので、`e2e/_root.py` の `run_claude` が
+  上位の層の `--settings` で無効にする。手動確認で起動するときも同じ `--settings` を付ける
 - **`CC_E2E_KEEP=1` で隔離ルートを残せる。**失敗時の調査用。既定では片付けで消える
 - **並行して多く起動すると偽の赤になりうる。**同じ Mac で `claude` を一斉に多数起動すると、
   `SessionStart` の hook が `hooks.json` の `SessionStart` の `timeout` に間に合わず打ち切られ
-  （`outcome: cancelled`）、設定の適用や policy 行が抜ける。本数の目安は `docs/knowledge/measurements.md` の
+  （`outcome: cancelled`）、設定の適用や policy 行が抜けうる。本数の目安は `docs/knowledge/measurements.md` の
   「一斉起動と `SessionStart` の打ち切り」にあり、その値は測った時の `timeout` に依存する。
   複数の E2E を並行させるときは、起動をずらすか本数を絞る。送信の完了待ち（`wait_quiet`）が前提と
   する静止時間（`_QUIET_SEC`）も、高負荷で崩れて偽の赤になるかは未検証
@@ -112,10 +115,8 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 自動圧縮が実際に早く走るか（トークンを消費する長いセッションが要る）と、自動更新が実際に
 新しい版を降ろすか（待ち時間が要る）は確かめない。プロジェクトや managed の設定による
-上書きは確かめない（責務の外）。ここでの判定は、`policy.py` が `None` 以外の値の `SET` だけを持つことを前提にする
-（`e2e/test_settings.py` が policy 行のキーの集合を `SET` のキーと等号で比べる）。`ADD`・`REMOVE`・`ONCE` や
-値が `None` の `SET` を入れると、`test_2回目は適用済みで本体に取り込まれる` が偽の赤になる（撤回のリリースで踏む）。
-それらが実配置で正しく当たるかはここでは確かめない（規則自体の正しさは `tests/` が見る）。
+上書きは確かめない（責務の外）。`ONCE` の値が実配置で書かれたかは確かめない（`SET`・`ADD`・`REMOVE` は
+`settings.json` の中身で判定する）。
 
 ## お知らせ（モジュール 3）
 
@@ -222,5 +223,6 @@ DB は SQLite だけで、MySQL は確かめない。AIP の前段のリバー�
 
 - 2026-09-26: 実装・knowledge と重なる記述を削り、各章の実行コマンドをモジュール一覧の「実行の指定」に集めた
 - 2026-09-28: 組み立てで送信先を空に差し替えることを導入の限界に書いた
-- 2026-09-28: 並行起動時の偽の赤・`CC_E2E_RUN` によるラベルの区別・設定の配布の判定が `SET` だけを見ること・
+- 2026-09-28: 本体の自動更新を `--settings` で止めることを安全の約束に加えた
+- 2026-09-28: 並行起動時の偽の赤・`CC_E2E_RUN` によるラベルの区別・設定の配布で `ONCE` を確かめないこと・
   `permission_mode` が非対話でも `--permission-mode` で変わることを書いた

@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "timeout": 5,
+            "timeout": 10,
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/collect.py\" UserPromptSubmit"
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "timeout": 5,
+            "timeout": 10,
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/collect.py\" UserPromptExpansion"
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "timeout": 5,
+            "timeout": 10,
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/collect.py\" PostToolUse"
           }
         ]
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "timeout": 5,
+            "timeout": 10,
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/collect.py\" PostToolUseFailure"
           }
         ]
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "timeout": 5,
+            "timeout": 10,
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/collect.py\" PreCompact"
           }
         ]
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "timeout": 5,
+            "timeout": 10,
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/collect.py\" Stop"
           }
         ]
@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "timeout": 5,
+            "timeout": 60,
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py\" SessionStart"
           }
         ]
