@@ -128,7 +128,7 @@ python scripts/validate.py
 
 数日後に概況画面の `plugin_version` の分布を見る。この列はセッションを開始した時点の版であり、長く開いたままのセッションは古い版を報告し続ける。更新の直後に新旧が混じるのは正常で、**古い版が何日も残り続けることが、配布の届いていない端末の印である。**
 
-版が上がらない端末では（自動更新の所要は一定しない。`../knowledge/claude-code-behavior.md`）、手動更新の 2 段階を両方行う（1 段目はカタログを更新するだけで、本体の版は上がらない）。
+対話でメッセージを送ってからしばらく経っても版が上がらない端末では（自動更新が走る条件は `../knowledge/claude-code-behavior.md`）、手動更新の 2 段階を両方行う（1 段目はカタログを更新するだけで、本体の版は上がらない）。
 
 ```
 claude plugin marketplace update cc-marketplace-governance-bmsd
