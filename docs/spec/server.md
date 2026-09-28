@@ -66,7 +66,8 @@ window 関数（`ROW_NUMBER() OVER`）を使うため、DB は SQLite 3.25 以�
   イベントが来ない利用者を未導入者として出す。`cost_daily` に行が 1 つも無い（CSV を一度も取り込んでいない）ときに限り、
   分母は「直近に policy イベントが届いた `user_email`」とし、未導入者を含まないことを画面に注記する。
   policy イベントが途絶えた端末も出す。
-  端末ごとのプラグインの版（`constants.py` の `REFERENCE_KEY` の行のうち端末ごとの最新 1 行）と Claude Code 本体の版（版のある `events` の最新 1 行）の分布も出す
+  端末ごとのプラグインの版（`constants.py` の `REFERENCE_KEY` の行のうち端末ごとの最新 1 行）と Claude Code 本体の版（版のある `events` の最新 1 行）の分布も出す。
+  端末は `(user_email, host)` で区別するので、`user_email` が NULL の端末は `host` ごとに 1 台として数える
 - **`/assets` 配布物の利用状況 — 「配ったものは使われているか」**。値の分類辞書は持たず、
   `command_source` の生値で並べる
 - **`/` 概況 — 「全体でいくらかかり、誰が使っているか」**。健全性の表示の読み方は `system.md`
@@ -84,3 +85,4 @@ window 関数（`ROW_NUMBER() OVER`）を使うため、DB は SQLite 3.25 以�
 - 2026-09-28: CSV を取り込んでいないときの準拠率の分母を加えた
 - 2026-09-28: 起動時の照合が同期忘れを検出しないことを書いた
 - 2026-09-28: `cost_daily` を append-only から外し、プラグインの版の分布が数える行を `REFERENCE_KEY` の行とした。列とインデックスの決まり方を削った
+- 2026-09-28: 版の分布で `user_email` が NULL の端末の数え方を書いた
