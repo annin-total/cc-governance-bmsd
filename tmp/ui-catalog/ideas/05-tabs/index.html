@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="#">Claude Code 利用状況</a>
+    <nav aria-label="画面">
+      <a href="#" aria-current="page">概況</a>
+      <a href="#">設定の適用状況</a>
+      <a href="#">設定の効果</a>
+      <a href="#">スキル・コマンドの利用</a>
+    </nav>
+    <span class="asof">集計 <b id="asof"></b></span>
+  </div>
+</header>
+
+<main>
+  <div class="page-head">
+    <h1>概況</h1>
+    <p class="lead">全体の利用量と、集計データの健全性</p>
+  </div>
+
+  <div class="seg" role="tablist" aria-label="概況の切り替え">
+    <button role="tab" id="t-health" aria-controls="p-health" data-hash="health">
+      <span class="seg-name">データの届き具合</span>
+      <span class="seg-sub" id="sub-health"></span>
+    </button>
+    <button role="tab" id="t-usage" aria-controls="p-usage" data-hash="usage">
+      <span class="seg-name">利用</span>
+      <span class="seg-sub" id="sub-usage"></span>
+    </button>
+    <button role="tab" id="t-cost" aria-controls="p-cost" data-hash="cost">
+      <span class="seg-name">費用</span>
+      <span class="seg-sub" id="sub-cost"></span>
+    </button>
+  </div>
+
+  <!-- データの届き具合 -->
+  <section class="panel" role="tabpanel" id="p-health" aria-labelledby="t-health">
+    <div class="block">
+      <div class="block-head">
+        <h2>受信の状況</h2>
+        <p class="scope">直近 7 日（2026-09-22〜09-28）· 前の 7 日との差。照合率のみ CSV の最終日までの 7 日で、前との比較なし</p>
+      </div>
+      <div class="kpis" id="kpis"></div>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <h2>プラグインのエラー</h2>
+        <p class="scope">直近 7 日 · 端末 = 利用者とホスト名の組</p>
+      </div>
+      <p class="note">端末側の処理が失敗した記録。失った記録は戻りません。</p>
+      <table class="tbl" id="errors"></table>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <h2>項目の欠け</h2>
+        <p class="scope">直近 7 日と前の 7 日 · 分母はその項目が送られるはずの記録</p>
+      </div>
+      <p class="note">値が空だった割合。20% を超えたら注意、50% を超えたら要確認。100% に跳ねたら上流の仕様変更を疑います。</p>
+      <table class="tbl" id="nulls"></table>
+    </div>
+  </section>
+
+  <!-- 利用 -->
+  <section class="panel" role="tabpanel" id="p-usage" aria-labelledby="t-usage" hidden>
+    <div class="block">
+      <div class="block-head">
+        <h2>日ごとの利用者数とセッション数</h2>
+        <p class="scope">直近 14 日（2026-09-15〜09-28）· その日に記録を送った利用者 / セッション ID の数</p>
+      </div>
+      <table class="tbl" id="trend"></table>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <h2>使い方の内訳</h2>
+        <p class="scope">直近 7 日 · 記録の件数（開始のしかたはセッション開始の記録の件数）</p>
+      </div>
+      <div class="dists" id="dists"></div>
+    </div>
+  </section>
+
+  <!-- 費用 -->
+  <section class="panel" role="tabpanel" id="p-cost" aria-labelledby="t-cost" hidden>
+    <div class="import">
+      <div>
+        <b>利用明細（CSV）の取り込み</b>
+        <span class="muted">コストとトークンはこの値が正。取り込み元: サーバの CSV フォルダ。いまの最終日 <b id="csv-last"></b></span>
+      </div>
+      <button type="button" class="btn">CSV を取り込む</button>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <h2>提供元ごとのコスト</h2>
+        <p class="scope">CSV の最終日までの 7 日（<span id="wk-range"></span>）· 前の 7 日との差 · USD</p>
+      </div>
+      <table class="tbl" id="provider"></table>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <h2>日ごとのコスト</h2>
+        <p class="scope">CSV の全期間（<span id="all-range"></span>）· 日・提供元ごとの合計 · USD</p>
+      </div>
+      <figure class="chart" id="costchart"></figure>
+      <details class="more">
+        <summary>日ごとの表を開く（<span id="days-n"></span> 日）</summary>
+        <table class="tbl" id="daily"></table>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。</p>
+  <p>監査・人事評価・勤怠管理には使いません。</p>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

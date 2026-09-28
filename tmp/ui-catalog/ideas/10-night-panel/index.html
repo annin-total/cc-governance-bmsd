@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><span class="pulse" aria-hidden="true"></span>Claude Code 利用状況</div>
+  <nav aria-label="画面">
+    <a href="#" aria-current="page">概況</a>
+    <a href="#">設定の適用状況</a>
+    <a href="#">設定の効果</a>
+    <a href="#">スキル・コマンドの利用</a>
+  </nav>
+  <div class="bar-right">
+    <span class="stamp">集計 <b id="gen"></b></span>
+    <div class="seg" role="group" aria-label="表示の明るさ">
+      <button type="button" data-set="dark">暗い表示</button>
+      <button type="button" data-set="light">明るい表示</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="title">
+    <h1>概況</h1>
+    <p>全体の利用量と、集計データの健全性</p>
+  </div>
+
+  <section class="band" aria-labelledby="h-health">
+    <header class="band-head">
+      <h2 id="h-health">データの届き具合</h2>
+      <p>直近 7 日（今日を含む）と前の 7 日の比較。照合率だけ、利用明細（CSV）の最終日までの 7 日</p>
+    </header>
+    <div class="grid">
+      <div class="panel span-3 readout" id="r-events"></div>
+      <div class="panel span-3 readout" id="r-users"></div>
+      <div class="panel span-3 readout" id="r-recon"></div>
+      <div class="panel span-3 readout" id="r-versions"></div>
+
+      <div class="panel span-7">
+        <div class="p-head"><h3>プラグインのエラー</h3><span class="lamp" id="lamp-err"></span></div>
+        <p class="p-note">端末側の処理が失敗した記録。失った記録は戻りません。端末 = 利用者とホスト名の組</p>
+        <table class="t" id="t-err"></table>
+      </div>
+      <div class="panel span-5">
+        <div class="p-head"><h3>項目の欠け</h3><span class="lamp" id="lamp-null"></span></div>
+        <p class="p-note">その項目が送られるはずの記録のうち、値が空だった割合。20% を超えると注意、50% を超えると要確認。60% 以上は右端に描く</p>
+        <div id="null-chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="h-use">
+    <header class="band-head">
+      <h2 id="h-use">利用とコスト</h2>
+      <p>コストとトークンは利用明細（CSV）の値。利用者数とセッション数はプラグインの記録</p>
+    </header>
+    <div class="grid">
+      <div class="panel span-8">
+        <div class="p-head">
+          <h3>日ごとのコスト <span class="unit">USD · CSV の全期間 <span id="cost-range"></span></span></h3>
+          <form class="import" onsubmit="return false">
+            <span class="p-note inline">取り込み元: サーバの CSV フォルダ</span>
+            <button type="submit">CSV を取り込む</button>
+          </form>
+        </div>
+        <div class="legend" id="cost-legend"></div>
+        <div id="cost-chart"></div>
+        <details>
+          <summary>日・提供元ごとの表を開く（<span id="cost-rows"></span> 行）</summary>
+          <div class="scroll"><table class="t" id="t-cost"></table></div>
+        </details>
+      </div>
+      <div class="panel span-4">
+        <div class="p-head"><h3>日ごとの利用者数とセッション数 <span class="unit">直近 14 日</span></h3></div>
+        <div class="legend" id="us-legend"></div>
+        <div id="us-chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="h-how">
+    <header class="band-head">
+      <h2 id="h-how">使われ方</h2>
+      <p>直近 7 日 · 記録の件数。割合の分母は各表の合計</p>
+    </header>
+    <div class="grid">
+      <div class="panel span-4"><div class="p-head"><h3>権限モード</h3></div><div id="d-perm"></div></div>
+      <div class="panel span-4"><div class="p-head"><h3>effort（思考量）の設定</h3></div><div id="d-effort"></div></div>
+      <div class="panel span-4"><div class="p-head"><h3>セッションの開始のしかた</h3></div><div id="d-source"></div></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p>端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。</p>
+    <p>監査・人事評価・勤怠管理には使いません。</p>
+  </footer>
+</main>
+<script src="data.js"></script>
+<script src="charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

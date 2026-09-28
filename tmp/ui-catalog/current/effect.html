@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>effect · Claude Code 利用状況</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header><div class="bar">
+  <a class="brand" href="overview.html">Claude Code 利用状況</a>
+  <nav>
+    <a href="overview.html">概況</a>
+    <a href="policy.html">policy</a>
+    <a href="effect.html" aria-current="page">effect</a>
+    <a href="assets.html">assets</a>
+  </nav>
+</div></header>
+<main>
+<h1>effect 効果測定</h1>
+
+
+<h2>イベントスタディ</h2>
+
+<div class="chips"><span class="chip">施策項目: env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE</span><span class="chip">比較値: 60</span><span class="chip">対象 provider: aws-bedrock</span><span class="chip">相対日: 準拠開始日を基準に ±14 日</span>
+</div>
+<div class="note">
+  相対日 0 は準拠当日のため意図的に除外しています。分母人数は、その相対日が CSV の収録期間に入る利用者だけを数えるため、相対日ごとに変わります。
+</div>
+<div class="note">
+  暦日の変動（繁忙・モデルの切り替えなど）を差し引いていないため、施策が無くても前後差が出ます（実データでは施策なしで ±十数%）。
+  前後差を施策の効果と読まないでください。施策の作用は下のコンテキスト分布で直接見てください。
+</div>
+
+
+<div class="tbl">
+<table data-testid="event-study">
+<caption>相対日ごとの 1 人あたりコスト・処理トークン</caption>
+<tr><th scope="col">相対日</th><th scope="col">分母人数</th><th scope="col">1人あたりコスト</th><th scope="col">1人あたり処理トークン（入力+キャッシュ読み書き）</th><th scope="col"></th></tr>
+
+<tr>
+  <td>−14 日</td>
+  <td class="num">28 <span class="muted">人</span></td>
+  <td class="num">$10.21</td>
+  <td class="num">1,621,096</td>
+  <td><span class="meter"><i style="width: 95.69172178700764%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−13 日</td>
+  <td class="num">29 <span class="muted">人</span></td>
+  <td class="num">$8.42</td>
+  <td class="num">1,570,564</td>
+  <td><span class="meter"><i style="width: 78.99637868598035%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−12 日</td>
+  <td class="num">29 <span class="muted">人</span></td>
+  <td class="num">$10.66</td>
+  <td class="num">1,331,417</td>
+  <td><span class="meter"><i style="width: 100.0%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−11 日</td>
+  <td class="num">30 <span class="muted">人</span></td>
+  <td class="num">$5.70</td>
+  <td class="num">807,530</td>
+  <td><span class="meter"><i style="width: 53.481095878599746%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−10 日</td>
+  <td class="num">30 <span class="muted">人</span></td>
+  <td class="num">$9.26</td>
+  <td class="num">1,143,607</td>
+  <td><span class="meter"><i style="width: 86.78996378685981%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−9 日</td>
+  <td class="num">30 <span class="muted">人</span></td>
+  <td class="num">$8.76</td>
+  <td class="num">1,134,859</td>
+  <td><span class="meter"><i style="width: 82.18291946887395%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−8 日</td>
+  <td class="num">30 <span class="muted">人</span></td>
+  <td class="num">$8.21</td>
+  <td class="num">1,068,751</td>
+  <td><span class="meter"><i style="width: 76.99139937920334%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−7 日</td>
+  <td class="num">32 <span class="muted">人</span></td>
+  <td class="num">$8.37</td>
+  <td class="num">1,231,749</td>
+  <td><span class="meter"><i style="width: 78.51158335488877%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−6 日</td>
+  <td class="num">33 <span class="muted">人</span></td>
+  <td class="num">$8.02</td>
+  <td class="num">995,136</td>
+  <td><span class="meter"><i style="width: 75.19194140055497%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−5 日</td>
+  <td class="num">34 <span class="muted">人</span></td>
+  <td class="num">$8.19</td>
+  <td class="num">1,047,586</td>
+  <td><span class="meter"><i style="width: 76.81655305681507%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−4 日</td>
+  <td class="num">34 <span class="muted">人</span></td>
+  <td class="num">$10.02</td>
+  <td class="num">1,316,952</td>
+  <td><span class="meter"><i style="width: 93.91784714403094%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−3 日</td>
+  <td class="num">34 <span class="muted">人</span></td>
+  <td class="num">$10.20</td>
+  <td class="num">1,406,955</td>
+  <td><span class="meter"><i style="width: 95.5946068287636%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−2 日</td>
+  <td class="num">34 <span class="muted">人</span></td>
+  <td class="num">$9.59</td>
+  <td class="num">1,378,095</td>
+  <td><span class="meter"><i style="width: 89.9245115790755%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>−1 日</td>
+  <td class="num">34 <span class="muted">人</span></td>
+  <td class="num">$7.28</td>
+  <td class="num">990,381</td>
+  <td><span class="meter"><i style="width: 68.28934755485228%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+1 日</td>
+  <td class="num">34 <span class="muted">人</span></td>
+  <td class="num">$8.16</td>
+  <td class="num">1,153,478</td>
+  <td><span class="meter"><i style="width: 76.47182450321051%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+2 日</td>
+  <td class="num">34 <span class="muted">人</span></td>
+  <td class="num">$7.21</td>
+  <td class="num">980,167</td>
+  <td><span class="meter"><i style="width: 67.63574221721798%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+3 日</td>
+  <td class="num">34 <span class="muted">人</span></td>
+  <td class="num">$5.93</td>
+  <td class="num">941,573</td>
+  <td><span class="meter"><i style="width: 55.61988375277686%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+4 日</td>
+  <td class="num">34 <span class="muted">人</span></td>
+  <td class="num">$4.86</td>
+  <td class="num">774,217</td>
+  <td><span class="meter"><i style="width: 45.57863044338275%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+5 日</td>
+  <td class="num">33 <span class="muted">人</span></td>
+  <td class="num">$6.07</td>
+  <td class="num">1,020,979</td>
+  <td><span class="meter"><i style="width: 56.961525498126655%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+6 日</td>
+  <td class="num">33 <span class="muted">人</span></td>
+  <td class="num">$5.67</td>
+  <td class="num">779,249</td>
+  <td><span class="meter"><i style="width: 53.19098904199784%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+7 日</td>
+  <td class="num">33 <span class="muted">人</span></td>
+  <td class="num">$7.56</td>
+  <td class="num">956,563</td>
+  <td><span class="meter"><i style="width: 70.8531251469689%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+8 日</td>
+  <td class="num">33 <span class="muted">人</span></td>
+  <td class="num">$7.99</td>
+  <td class="num">1,144,662</td>
+  <td><span class="meter"><i style="width: 74.9561052846102%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+9 日</td>
+  <td class="num">33 <span class="muted">人</span></td>
+  <td class="num">$5.74</td>
+  <td class="num">1,015,824</td>
+  <td><span class="meter"><i style="width: 53.78768282932794%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+10 日</td>
+  <td class="num">33 <span class="muted">人</span></td>
+  <td class="num">$5.13</td>
+  <td class="num">971,145</td>
+  <td><span class="meter"><i style="width: 48.067946667920815%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+11 日</td>
+  <td class="num">31 <span class="muted">人</span></td>
+  <td class="num">$6.33</td>
+  <td class="num">814,890</td>
+  <td><span class="meter"><i style="width: 59.366082305625554%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+12 日</td>
+  <td class="num">31 <span class="muted">人</span></td>
+  <td class="num">$6.81</td>
+  <td class="num">1,002,835</td>
+  <td><span class="meter"><i style="width: 63.830561720875146%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+13 日</td>
+  <td class="num">31 <span class="muted">人</span></td>
+  <td class="num">$5.02</td>
+  <td class="num">809,840</td>
+  <td><span class="meter"><i style="width: 47.08876391368925%;"></i></span></td>
+</tr>
+
+<tr>
+  <td>+14 日</td>
+  <td class="num">30 <span class="muted">人</span></td>
+  <td class="num">$5.31</td>
+  <td class="num">932,658</td>
+  <td><span class="meter"><i style="width: 49.824215381962404%;"></i></span></td>
+</tr>
+
+</table>
+</div>
+
+<h2>コンテキスト分布（PreCompact）</h2>
+
+<div class="chips"><span class="chip">ビン幅: 20,000 トークン</span><span class="chip">基準日: 準拠開始日（暦日ではない）</span><span class="chip">集計範囲: 準拠開始日の前後 14 日</span>
+</div>
+<div class="note">度数 0 のビンは表示していません。</div>
+<div class="grid">
+  <div>
+    
+    <div class="tbl">
+    <table data-testid="context-precompact-before">
+    <caption>準拠前</caption>
+    <tr><th scope="col">ビン</th><th scope="col">件数</th></tr>
+    
+    <tr><td>0–20k</td><td class="num">24</td></tr>
+    
+    <tr><td>20k–40k</td><td class="num">73</td></tr>
+    
+    <tr><td>40k–60k</td><td class="num">67</td></tr>
+    
+    <tr><td>60k–80k</td><td class="num">73</td></tr>
+    
+    <tr><td>80k–100k</td><td class="num">61</td></tr>
+    
+    <tr><td>100k–120k</td><td class="num">74</td></tr>
+    
+    <tr><td>120k–140k</td><td class="num">81</td></tr>
+    
+    <tr><td>140k–160k</td><td class="num">79</td></tr>
+    
+    <tr><td>160k–180k</td><td class="num">68</td></tr>
+    
+    </table>
+    </div>
+    
+  </div>
+  <div>
+    
+    <div class="tbl">
+    <table data-testid="context-precompact-after">
+    <caption>準拠後</caption>
+    <tr><th scope="col">ビン</th><th scope="col">件数</th></tr>
+    
+    <tr><td>0–20k</td><td class="num">105</td></tr>
+    
+    <tr><td>20k–40k</td><td class="num">204</td></tr>
+    
+    <tr><td>40k–60k</td><td class="num">182</td></tr>
+    
+    <tr><td>60k–80k</td><td class="num">214</td></tr>
+    
+    <tr><td>80k–100k</td><td class="num">152</td></tr>
+    
+    <tr><td>100k–120k</td><td class="num">181</td></tr>
+    
+    </table>
+    </div>
+    
+  </div>
+</div>
+
+<h2>コンテキスト分布（Stop）</h2>
+
+<div class="chips"><span class="chip">ビン幅: 20,000 トークン</span><span class="chip">基準日: 準拠開始日（暦日ではない）</span><span class="chip">集計範囲: 準拠開始日の前後 14 日</span>
+</div>
+<div class="note">度数 0 のビンは表示していません。</div>
+<div class="grid">
+  <div>
+    
+    <div class="tbl">
+    <table data-testid="context-stop-before">
+    <caption>準拠前</caption>
+    <tr><th scope="col">ビン</th><th scope="col">件数</th></tr>
+    
+    <tr><td>0–20k</td><td class="num">32</td></tr>
+    
+    <tr><td>20k–40k</td><td class="num">58</td></tr>
+    
+    <tr><td>40k–60k</td><td class="num">83</td></tr>
+    
+    <tr><td>60k–80k</td><td class="num">70</td></tr>
+    
+    <tr><td>80k–100k</td><td class="num">69</td></tr>
+    
+    <tr><td>100k–120k</td><td class="num">64</td></tr>
+    
+    <tr><td>120k–140k</td><td class="num">87</td></tr>
+    
+    <tr><td>140k–160k</td><td class="num">79</td></tr>
+    
+    <tr><td>160k–180k</td><td class="num">66</td></tr>
+    
+    </table>
+    </div>
+    
+  </div>
+  <div>
+    
+    <div class="tbl">
+    <table data-testid="context-stop-after">
+    <caption>準拠後</caption>
+    <tr><th scope="col">ビン</th><th scope="col">件数</th></tr>
+    
+    <tr><td>0–20k</td><td class="num">88</td></tr>
+    
+    <tr><td>20k–40k</td><td class="num">197</td></tr>
+    
+    <tr><td>40k–60k</td><td class="num">190</td></tr>
+    
+    <tr><td>60k–80k</td><td class="num">196</td></tr>
+    
+    <tr><td>80k–100k</td><td class="num">197</td></tr>
+    
+    <tr><td>100k–120k</td><td class="num">192</td></tr>
+    
+    <tr><td>120k–140k</td><td class="num">1</td></tr>
+    
+    </table>
+    </div>
+    
+  </div>
+</div>
+
+
+</main>
+<footer>
+  端末からの自己申告値。コストとトークンは全社 CSV を正とする。
+  監査・人事評価・勤怠管理には使わない。
+</footer>
+</body>
+</html>

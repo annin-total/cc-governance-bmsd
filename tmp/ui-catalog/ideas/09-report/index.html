@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>設定の効果 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="runhead" aria-label="画面">
+  <span class="app">Claude Code 利用状況</span>
+  <a href="#">概況</a>
+  <a href="#">設定の適用状況</a>
+  <a href="#" aria-current="page">設定の効果</a>
+  <a href="#">スキル・コマンドの利用</a>
+</nav>
+
+<main class="sheet">
+  <header class="masthead">
+    <p class="kicker">報告 · 設定の効果</p>
+    <h1>自動圧縮のしきい値を守り始めた前後で、<br>コストとコンテキストの大きさを比べる</h1>
+    <dl class="colophon">
+      <div><dt>設定</dt><dd>自動圧縮のしきい値 <span class="val">60</span></dd></div>
+      <div><dt>期間</dt><dd>各利用者が守り始めた日の前後 14 日</dd></div>
+      <div><dt>コストの提供元</dt><dd>AWS Bedrock</dd></div>
+      <div><dt>集計日</dt><dd id="gen"></dd></div>
+    </dl>
+  </header>
+
+  <section class="sec abstract" aria-labelledby="h-abs">
+    <div class="main">
+      <h2 id="h-abs"><span class="no">要旨</span></h2>
+      <p class="lead" id="abs-lead"></p>
+      <p id="abs-cost"></p>
+    </div>
+    <aside class="margin">
+      <p class="mn"><b>読み方</b>設定の働きは 1・2 節の分布で見る。3 節のコストの前後差は時期による変動を含む。</p>
+    </aside>
+  </section>
+
+  <section class="sec" aria-labelledby="h1s">
+    <div class="main">
+      <h2 id="h1s"><span class="no">1</span>コンテキストは小さくなったか — 圧縮の直前</h2>
+      <p class="scope">守り始めた日の前後 14 日 · 自動圧縮が走る直前の記録（適用前 <span id="pc-nb"></span> 件 / 適用後 <span id="pc-na"></span> 件）</p>
+      <div class="cols" id="pc-text"></div>
+      <figure>
+        <div id="fig-pc"></div>
+        <figcaption><span class="fn">図 1</span>圧縮直前のトークン数の分布。区間の幅は 2 万トークン。各側の件数に対する割合で描く。</figcaption>
+      </figure>
+      <div class="tbl-wrap" id="tbl-pc"></div>
+    </div>
+    <aside class="margin">
+      <p class="mn"><sup>1</sup>破線の 12 万は、コンテキストの上限を 20 万トークンと仮定したときの 60%。記録から確かめた値ではない。</p>
+      <p class="mn"><sup>2</sup>件数が 0 の区間は記録に出ない。表では「—」とした。</p>
+      <p class="mn">前後の境は暦日ではなく、利用者ごとに守り始めた日。</p>
+    </aside>
+  </section>
+
+  <section class="sec" aria-labelledby="h2s">
+    <div class="main">
+      <h2 id="h2s"><span class="no">2</span>コンテキストは小さくなったか — 応答の終了時</h2>
+      <p class="scope">守り始めた日の前後 14 日 · 各応答が終わった時点の記録（適用前 <span id="st-nb"></span> 件 / 適用後 <span id="st-na"></span> 件）</p>
+      <div class="cols" id="st-text"></div>
+      <figure>
+        <div id="fig-st"></div>
+        <figcaption><span class="fn">図 2</span>応答終了時のトークン数の分布。描き方は図 1 と同じ。</figcaption>
+      </figure>
+      <div class="tbl-wrap" id="tbl-st"></div>
+    </div>
+    <aside class="margin">
+      <p class="mn">応答終了時の値は圧縮と関係なく記録される。上限側の区間が消えたことは、圧縮が早く走るようになった結果と整合する。</p>
+    </aside>
+  </section>
+
+  <section class="sec" aria-labelledby="h3s">
+    <div class="main">
+      <h2 id="h3s"><span class="no">3</span>1 人あたりのコストとトークン</h2>
+      <p class="scope">守り始めた日の前後 14 日（0 日目を除く） · その日が利用明細（CSV）の期間に入る利用者。人数は日ごとに <span id="st-dmin"></span>〜<span id="st-dmax"></span> 人</p>
+      <div class="cols" id="study-text"></div>
+      <figure>
+        <div id="fig-study"></div>
+        <figcaption><span class="fn">図 3</span>守り始めてからの日数ごとの 1 人あたりコスト（上）とトークン（下）。細い横線は前・後それぞれ 14 日の平均。軸の下の数字はその日の対象者数。</figcaption>
+      </figure>
+      <div class="tbl-wrap" id="tbl-study"></div>
+    </div>
+    <aside class="margin">
+      <p class="mn mn-warn"><b>効果とは読まない</b>時期による変動（繁忙・モデルの切り替えなど）を差し引いていない。設定が無くても前後で ±十数% の差が出る。</p>
+      <p class="mn"><sup>3</sup>0 日目（守り始めた当日）は前後が混ざるため除いた。</p>
+      <p class="mn"><sup>4</sup>トークンは入力とキャッシュの読み書きの合計。出力は含まない。</p>
+    </aside>
+  </section>
+
+  <footer class="colofoot">
+    <p>端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。</p>
+    <p>監査・人事評価・勤怠管理には使いません。</p>
+  </footer>
+</main>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

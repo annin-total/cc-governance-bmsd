@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>設定の適用状況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><div class="in">
+  <span class="brand">Claude Code 利用状況</span>
+  <nav>
+    <a href="#">概況</a>
+    <a href="#" aria-current="page">設定の適用状況</a>
+    <a href="#">設定の効果</a>
+    <a href="#">スキル・コマンドの利用</a>
+  </nav>
+</div></header>
+
+<main>
+  <div class="head">
+    <div>
+      <h1>設定の適用状況</h1>
+      <p class="lede" id="lede"></p>
+      <p class="scope" id="scope"></p>
+    </div>
+    <dl class="legend">
+      <div><dt><span class="mk on"></span></dt><dd>配布した値になっている</dd></div>
+      <div><dt><span class="mk off"></span></dt><dd>違う値、または未設定</dd></div>
+      <div><dt><span class="mk none"></span></dt><dd>報告なし（プラグイン未導入）</dd></div>
+    </dl>
+  </div>
+
+  <div class="tools">
+    <div class="seg" id="seg" role="group" aria-label="状態で絞り込む"></div>
+    <label class="search"><span>絞り込み</span><input id="q" type="search" placeholder="利用者・端末名"></label>
+    <button type="button" class="link" id="toggle-all">すべて開く</button>
+  </div>
+
+  <table class="roster" id="roster">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <p class="empty" id="empty" hidden>この条件に当てはまる利用者はいません。</p>
+  <p class="foot-note" id="foot-note"></p>
+
+  <section class="versions">
+    <h2>バージョンの分布</h2>
+    <p class="scope">直近 30 日に報告があった端末 · 端末ごとに最新の報告を 1 件</p>
+    <div class="vgrid" id="versions"></div>
+  </section>
+</main>
+
+<footer>
+  端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。
+</footer>
+
+<script src="data.js"></script>
+<script src="model.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

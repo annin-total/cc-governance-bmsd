@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>assets · Claude Code 利用状況</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header><div class="bar">
+  <a class="brand" href="overview.html">Claude Code 利用状況</a>
+  <nav>
+    <a href="overview.html">概況</a>
+    <a href="policy.html">policy</a>
+    <a href="effect.html">effect</a>
+    <a href="assets.html" aria-current="page">assets</a>
+  </nav>
+</div></header>
+<main>
+<h1>assets 配布物の利用状況</h1>
+
+
+<h2>スキル別</h2>
+
+<div class="chips"><span class="chip">直近 7 日 / 前 7 日</span><span class="chip">対象: skill_name が非 NULL のイベント</span>
+</div>
+<div class="tbl">
+<table data-testid="skill-usage">
+<caption>スキル別の呼出回数と利用者数</caption>
+  <tr>
+    <th scope="col">skill_name</th>
+    <th scope="col">呼出</th>
+    <th scope="col">利用者</th>
+  </tr>
+  
+  
+  
+  <tr>
+    <td>brainstorming</td>
+    <td class="num">63
+      <span class="muted">（前 55）</span> <span class="delta up">+8</span>
+    </td>
+    <td class="num">25
+      <span class="muted">（前 24）</span> <span class="delta up">+1</span>
+    </td>
+  </tr>
+  
+  
+  
+  <tr>
+    <td>governance:reapply</td>
+    <td class="num">59
+      <span class="muted">（前 64）</span> <span class="delta down">−5</span>
+    </td>
+    <td class="num">25
+      <span class="muted">（前 27）</span> <span class="delta down">−2</span>
+    </td>
+  </tr>
+  
+  
+  
+  <tr>
+    <td>systematic-debugging</td>
+    <td class="num">57
+      <span class="muted">（前 53）</span> <span class="delta up">+4</span>
+    </td>
+    <td class="num">26
+      <span class="muted">（前 25）</span> <span class="delta up">+1</span>
+    </td>
+  </tr>
+  
+</table>
+</div>
+
+<h2>コマンド別</h2>
+
+<div class="chips"><span class="chip">直近 7 日 / 前 7 日</span><span class="chip">対象: command_name が非 NULL のイベント</span>
+</div>
+<div class="tbl">
+<table data-testid="command-usage">
+<caption>コマンド別の呼出回数と利用者数</caption>
+  <tr>
+    <th scope="col">command_name</th>
+    <th scope="col">command_source</th>
+    <th scope="col">呼出</th>
+    <th scope="col">利用者</th>
+  </tr>
+  
+  
+  
+  <tr>
+    <td>deploy</td>
+    <td>userSettings</td>
+    <td class="num">178
+      <span class="muted">（前 165）</span> <span class="delta up">+13</span>
+    </td>
+    <td class="num">31
+      <span class="muted">（前 30）</span> <span class="delta up">+1</span>
+    </td>
+  </tr>
+  
+  
+  
+  <tr>
+    <td>review</td>
+    <td>userSettings</td>
+    <td class="num">155
+      <span class="muted">（前 148）</span> <span class="delta up">+7</span>
+    </td>
+    <td class="num">31
+      <span class="muted">（前 32）</span> <span class="delta down">−1</span>
+    </td>
+  </tr>
+  
+  
+  
+  <tr>
+    <td>governance:reapply</td>
+    <td>plugin</td>
+    <td class="num">143
+      <span class="muted">（前 158）</span> <span class="delta down">−15</span>
+    </td>
+    <td class="num">32
+      <span class="muted">（前 32）</span> <span class="muted">±0</span>
+    </td>
+  </tr>
+  
+  
+  
+  <tr>
+    <td>review</td>
+    <td>—</td>
+    <td class="num">23
+      <span class="muted">（前 16）</span> <span class="delta up">+7</span>
+    </td>
+    <td class="num">15
+      <span class="muted">（前 14）</span> <span class="delta up">+1</span>
+    </td>
+  </tr>
+  
+  
+  
+  <tr>
+    <td>governance:reapply</td>
+    <td>—</td>
+    <td class="num">21
+      <span class="muted">（前 26）</span> <span class="delta down">−5</span>
+    </td>
+    <td class="num">13
+      <span class="muted">（前 16）</span> <span class="delta down">−3</span>
+    </td>
+  </tr>
+  
+  
+  
+  <tr>
+    <td>deploy</td>
+    <td>—</td>
+    <td class="num">18
+      <span class="muted">（前 20）</span> <span class="delta down">−2</span>
+    </td>
+    <td class="num">13
+      <span class="muted">（前 11）</span> <span class="delta up">+2</span>
+    </td>
+  </tr>
+  
+</table>
+</div>
+
+<h2>サブエージェント利用の割合</h2>
+
+<div class="chips"><span class="chip">直近 7 日</span><span class="chip">分母: この期間の全イベント</span>
+</div>
+<div class="tiles" data-testid="subagent-ratio">
+  
+<div class="tile">
+  <b>4.4%</b>
+  <span>agent_id が付いたイベント</span>
+  <span>163 / 3,723 件</span>
+</div>
+</div>
+
+
+</main>
+<footer>
+  端末からの自己申告値。コストとトークンは全社 CSV を正とする。
+  監査・人事評価・勤怠管理には使わない。
+</footer>
+</body>
+</html>

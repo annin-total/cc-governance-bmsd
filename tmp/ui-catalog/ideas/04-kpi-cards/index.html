@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="#">Claude Code 利用状況</a>
+    <nav aria-label="画面">
+      <a href="#" aria-current="page">概況</a>
+      <a href="#">設定の適用状況</a>
+      <a href="#">設定の効果</a>
+      <a href="#">スキル・コマンドの利用</a>
+    </nav>
+    <span class="asof" id="asof"></span>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>概況</h1>
+
+  <div class="kpis">
+    <section class="group" aria-labelledby="g-use">
+      <h2 id="g-use" class="glabel">利用 <span>直近 7 日と、その前の 7 日</span></h2>
+      <div class="cards" id="cards-use"></div>
+    </section>
+    <section class="group" aria-labelledby="g-data">
+      <h2 id="g-data" class="glabel">データの届き具合 <span>直近 7 日と、その前の 7 日</span></h2>
+      <div class="cards" id="cards-data"></div>
+    </section>
+  </div>
+
+  <div class="panels">
+    <section class="panel" id="sec-trend">
+      <header><h2>日ごとの利用者数とセッション数</h2><p class="scope">直近 14 日 · 日</p></header>
+      <div class="two" id="trend-charts"></div>
+    </section>
+
+    <section class="panel" id="sec-cost">
+      <header><h2>日ごとのコスト</h2><p class="scope">利用明細（CSV）の全期間 · 日 × 提供元（USD）</p></header>
+      <div id="cost-chart"></div>
+      <details class="more"><summary>日ごとの表を開く</summary><div class="scroll"><table id="t-cost"></table></div></details>
+    </section>
+
+    <section class="panel" id="sec-recv">
+      <header><h2>受信と項目の欠け</h2><p class="scope">直近 7 日と前の 7 日 · 欠けの分母は、その項目が送られるはずの記録</p></header>
+      <table id="t-nulls" class="capped"></table>
+      <p class="note">欠けは 20% 以下を正常、20% 超を注意、50% 超を要確認とします。100% に跳ねたら上流の仕様変更を疑います。</p>
+    </section>
+
+    <section class="panel" id="sec-errors">
+      <header><h2>プラグインのエラーとバージョン</h2><p class="scope">エラーは直近 7 日 · バージョンは直近 30 日の端末ごとに最新の報告 1 件</p></header>
+      <div class="two wide-first">
+        <table id="t-errors"></table>
+        <table id="t-versions"></table>
+      </div>
+    </section>
+
+    <section class="panel" id="sec-usage">
+      <header><h2>使われ方</h2><p class="scope">直近 7 日 · 記録の件数（開始のしかたはセッション開始の記録）</p></header>
+      <div class="three" id="usage"></div>
+    </section>
+
+    <section class="panel import">
+      <div><h2>利用明細（CSV）の取り込み</h2><p class="scope">取り込み元: サーバの CSV フォルダ。コストとトークンはこの値が正です。</p></div>
+      <button type="button">CSV を取り込む</button>
+    </section>
+  </div>
+</main>
+
+<footer class="wrap foot">
+  端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。
+</footer>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

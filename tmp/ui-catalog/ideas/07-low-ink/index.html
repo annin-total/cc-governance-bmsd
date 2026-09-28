@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>設定の効果 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <span class="brand">Claude Code 利用状況</span>
+  <nav aria-label="画面">
+    <a href="#">概況</a>
+    <a href="#">設定の適用状況</a>
+    <a href="#" aria-current="page">設定の効果</a>
+    <a href="#">スキル・コマンドの利用</a>
+  </nav>
+</header>
+
+<main>
+  <article>
+    <h1>設定の効果</h1>
+    <p class="subtitle">自動圧縮のしきい値を 60% にそろえた前後で、コストとコンテキストの大きさを比べる</p>
+
+    <div class="row">
+      <p class="thesis" id="thesis"></p>
+      <aside class="side">
+        <p>設定: 自動圧縮のしきい値（<code>env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE</code>）、配布した値 60。</p>
+        <p>日の数え方: 利用者ごとに、設定を守り始めた日を 0 日目とした前後 14 日。暦日ではない。</p>
+      </aside>
+    </div>
+
+    <section>
+      <h2>コスト・トークン・対象者の前後</h2>
+      <div class="row">
+        <div>
+          <p class="scope">守り始めた日の前後 14 日（0 日目を除く） · 提供元 AWS Bedrock · 1 人あたり</p>
+          <table class="spark" id="spark"></table>
+        </div>
+        <aside class="side">
+          <p>平均は日ごとの値の単純平均。細い線が 28 日の推移で、左半分が守る前、右半分が守った後。</p>
+          <p>0 日目（守り始めた当日）は前後が混ざるため除いている。</p>
+        </aside>
+      </div>
+
+      <div class="row">
+        <figure class="fig">
+          <div id="costfig"></div>
+          <figcaption>図 1　1 人あたりコスト（USD）。灰の点が守る前、色の点が守った後。横線はそれぞれの平均。</figcaption>
+        </figure>
+        <aside class="side warn">
+          <p><b>この差を設定の効果と読まない。</b>時期による変動（繁忙・モデルの切り替えなど）を差し引いていない。設定が無くても前後で ±十数% の差が出る。</p>
+          <p>設定が働いているかは、下のコンテキストの分布で見る。</p>
+        </aside>
+      </div>
+    </section>
+
+    <section>
+      <h2>コンテキストの大きさの分布</h2>
+      <div class="row">
+        <div>
+          <p class="scope">守り始めた日の前後 14 日 · 区間の幅 2 万トークン · 各区間の記録の割合（件数の違う前後を割合でそろえた）</p>
+          <div class="multiples" id="multiples"></div>
+        </div>
+        <aside class="side">
+          <p>圧縮直前（<code>PreCompact</code>）は自動圧縮が走る直前のトークン数。しきい値が効けば小さい側に寄る。</p>
+          <p>応答終了（<code>Stop</code>）は各応答が終わった時点のトークン数。</p>
+          <p>件数 0 の区間は集計に現れないため、図では 0 として描いている。</p>
+        </aside>
+      </div>
+    </section>
+  </article>
+</main>
+
+<footer>
+  端末から送られた値と、全社の利用明細（CSV）の値。コストとトークンは CSV を正とする。監査・人事評価・勤怠管理には使わない。
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap bar">
+    <a class="brand" href="#">Claude Code 利用状況</a>
+    <nav aria-label="画面">
+      <a href="#" aria-current="page">概況</a>
+      <a href="#">設定の適用状況</a>
+      <a href="#">設定の効果</a>
+      <a href="#">スキル・コマンドの利用</a>
+    </nav>
+    <span class="asof" id="asof"></span>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="pagehead">
+    <h1>概況</h1>
+    <p class="lede">全体の利用量と、集計データの健全性</p>
+  </div>
+
+  <section class="entry" id="health">
+    <div class="entry-head">
+      <h2>データの届き具合</h2>
+      <p class="scope">直近 7 日（前の 7 日との差）</p>
+      <p class="note">件数の急な減少や欠けた項目は、収集の停止や仕様変更の兆しです。</p>
+    </div>
+    <div class="entry-body">
+      <table class="ledger">
+        <caption>受信の状況</caption>
+        <thead><tr><th>項目</th><th class="num">直近 7 日</th><th class="num">前の 7 日との差</th><th>数え方</th></tr></thead>
+        <tbody id="t-health"></tbody>
+      </table>
+      <p class="foot">* 照合率だけは期間が異なり、利用明細（CSV）の最終日 <span id="csv-last"></span> までの 7 日で数えます。前との比較はありません。</p>
+    </div>
+  </section>
+
+  <section class="entry" id="errors">
+    <div class="entry-head">
+      <h2>プラグインのエラー</h2>
+      <p class="scope">直近 7 日 · 端末（利用者とホスト名の組）</p>
+      <p class="note">端末側の処理が失敗した記録。失った記録は戻りません。</p>
+    </div>
+    <div class="entry-body">
+      <table class="ledger">
+        <caption>処理段階とエラーの種類ごとの件数</caption>
+        <thead><tr><th>処理段階</th><th>エラーの種類</th><th class="num">件数</th><th class="num">端末数</th><th>最後に起きた版</th></tr></thead>
+        <tbody id="t-errors"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="entry" id="nulls">
+    <div class="entry-head">
+      <h2>項目の欠け</h2>
+      <p class="scope">直近 7 日と前の 7 日 · その項目が送られるはずの記録</p>
+      <p class="note">値が空だった割合。100% に跳ねたら上流の仕様変更を疑います。20% 以下を正常、20% 超を注意、50% 超を要確認とします。</p>
+    </div>
+    <div class="entry-body">
+      <table class="ledger">
+        <caption>項目ごとの欠けの割合</caption>
+        <thead><tr><th>項目</th><th>分母になる記録</th><th class="num">直近 7 日</th><th class="num">前の 7 日</th><th>状態</th></tr></thead>
+        <tbody id="t-nulls"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="entry" id="versions">
+    <div class="entry-head">
+      <h2>プラグインのバージョン</h2>
+      <p class="scope">直近 30 日 · 端末ごとに最新の報告 1 件</p>
+      <p class="note">古い版が残るのは、更新が届いていない端末です。この表は概況にだけ置きます。</p>
+    </div>
+    <div class="entry-body">
+      <table class="ledger narrow">
+        <caption>端末ごとの最新バージョン</caption>
+        <thead><tr><th>バージョン</th><th class="num">端末数</th><th class="num">割合</th></tr></thead>
+        <tbody id="t-versions"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="entry" id="import">
+    <div class="entry-head">
+      <h2>利用明細（CSV）の取り込み</h2>
+      <p class="scope">取り込み元: サーバの CSV フォルダ</p>
+      <p class="note">コストとトークンはこの値が正です。1〜2 週ごとに取り込みます。</p>
+    </div>
+    <div class="entry-body import">
+      <button type="button">CSV を取り込む</button>
+      <p class="foot">取り込むと、照合率・適用率の分母・未導入の利用者・効果の比較が変わります。</p>
+    </div>
+  </section>
+
+  <section class="entry" id="cost">
+    <div class="entry-head">
+      <h2>日ごとのコスト</h2>
+      <p class="scope">CSV の全期間 · 日 × 提供元（USD）</p>
+      <p class="note">新しい日から 14 日分を表示します。</p>
+    </div>
+    <div class="entry-body">
+      <table class="ledger cost">
+        <caption>日・提供元ごとのコスト合計</caption>
+        <thead><tr><th>日付</th><th class="num">AWS Bedrock</th><th class="num">Google Vertex AI</th><th class="num">合計</th></tr></thead>
+        <tbody id="t-cost"></tbody>
+      </table>
+      <details class="more">
+        <summary id="cost-more-label"></summary>
+        <table class="ledger">
+          <thead><tr><th>日付</th><th class="num">AWS Bedrock</th><th class="num">Google Vertex AI</th><th class="num">合計</th></tr></thead>
+          <tbody id="t-cost-rest"></tbody>
+        </table>
+      </details>
+    </div>
+  </section>
+
+  <section class="entry" id="trend">
+    <div class="entry-head">
+      <h2>日ごとの利用者数と<br>セッション数</h2>
+      <p class="scope">直近 14 日 · 日</p>
+      <p class="note">その日に記録を送った利用者と、セッションの数。</p>
+    </div>
+    <div class="entry-body pair" id="trend-pair"></div>
+  </section>
+
+  <section class="entry" id="usage">
+    <div class="entry-head">
+      <h2>使われ方</h2>
+      <p class="scope">直近 7 日 · 記録の件数</p>
+      <p class="note">セッションの開始のしかたは、セッション開始の記録だけを数えます。</p>
+    </div>
+    <div class="entry-body triple">
+      <table class="ledger"><caption>権限モード</caption><thead><tr><th>値</th><th class="num">件数</th><th class="num">割合</th></tr></thead><tbody id="t-perm"></tbody></table>
+      <table class="ledger"><caption>effort（思考量）の設定</caption><thead><tr><th>値</th><th class="num">件数</th><th class="num">割合</th></tr></thead><tbody id="t-effort"></tbody></table>
+      <table class="ledger"><caption>セッションの開始のしかた</caption><thead><tr><th>値</th><th class="num">件数</th><th class="num">割合</th></tr></thead><tbody id="t-source"></tbody></table>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap colophon">
+  <p>端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。</p>
+  <p>監査・人事評価・勤怠管理には使いません。</p>
+</footer>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

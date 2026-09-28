@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="#">Claude Code 利用状況</a>
+    <nav aria-label="画面">
+      <a href="#" aria-current="page">概況</a>
+      <a href="#">設定の適用状況</a>
+      <a href="#">設定の効果</a>
+      <a href="#">スキル・コマンドの利用</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="brief" aria-labelledby="brief-h">
+    <div class="brief-head">
+      <h1 id="brief-h">概況</h1>
+      <p class="asof" id="asof"></p>
+    </div>
+    <ol class="summary" id="summary"></ol>
+    <p class="hint">下線の数字を押すと、その根拠の表が開きます。</p>
+  </section>
+
+  <section class="details" aria-labelledby="details-h">
+    <div class="details-head">
+      <h2 id="details-h">詳細</h2>
+      <div class="tools">
+        <button type="button" class="link" data-toggle="open">すべて開く</button>
+        <button type="button" class="link" data-toggle="close">すべて閉じる</button>
+      </div>
+    </div>
+
+    <details id="d-recv">
+      <summary><span class="t">受信の状況</span><span class="s">直近 7 日 · 前の 7 日との差</span><span class="c">3 項目</span></summary>
+      <div class="body"><table id="t-recv"></table>
+        <p class="note">照合率だけは、利用明細（CSV）の最終日までの 7 日で数えます。前との比較はありません。</p></div>
+    </details>
+    <details id="d-errors">
+      <summary><span class="t">プラグインのエラー</span><span class="s">直近 7 日 · 端末（利用者とホスト名の組）</span><span class="c" id="c-errors"></span></summary>
+      <div class="body"><table id="t-errors"></table>
+        <p class="note">端末側の処理が失敗した記録です。失った記録は戻りません。</p></div>
+    </details>
+    <details id="d-nulls">
+      <summary><span class="t">項目の欠け</span><span class="s">直近 7 日と前の 7 日 · その項目が送られるはずの記録</span><span class="c">4 項目</span></summary>
+      <div class="body"><table id="t-nulls"></table>
+        <p class="note">20% 以下を正常、20% 超を注意、50% 超を要確認とします。100% に跳ねたら上流の仕様変更を疑います。</p></div>
+    </details>
+    <details id="d-versions">
+      <summary><span class="t">プラグインのバージョン</span><span class="s">直近 30 日 · 端末ごとに最新の報告 1 件</span><span class="c" id="c-versions"></span></summary>
+      <div class="body"><table id="t-versions"></table></div>
+    </details>
+    <details id="d-cost">
+      <summary><span class="t">日ごとのコスト</span><span class="s">利用明細（CSV）の全期間 · 日 × 提供元（USD）</span><span class="c" id="c-cost"></span></summary>
+      <div class="body"><div class="scroll"><table id="t-cost"></table></div></div>
+    </details>
+    <details id="d-trend">
+      <summary><span class="t">日ごとの利用者数とセッション数</span><span class="s">直近 14 日 · 日</span><span class="c">14 日</span></summary>
+      <div class="body"><table id="t-trend"></table></div>
+    </details>
+    <details id="d-usage">
+      <summary><span class="t">使われ方</span><span class="s">直近 7 日 · 記録の件数（開始のしかたはセッション開始の記録）</span><span class="c">3 表</span></summary>
+      <div class="body three" id="usage"></div>
+    </details>
+
+    <div class="import">
+      <div>
+        <p class="t">利用明細（CSV）の取り込み</p>
+        <p class="note">取り込み元はサーバの CSV フォルダです。取り込むと、照合率・適用率の分母・効果の比較が変わります。</p>
+      </div>
+      <button type="button" class="primary">CSV を取り込む</button>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。
+</footer>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

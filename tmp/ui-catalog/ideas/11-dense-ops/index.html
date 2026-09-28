@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>設定の適用状況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <span class="app">Claude Code 利用状況</span>
+  <nav aria-label="画面">
+    <a href="#">概況</a>
+    <a href="#" aria-current="page">設定の適用状況</a>
+    <a href="#">設定の効果</a>
+    <a href="#">スキル・コマンドの利用</a>
+  </nav>
+  <dl class="meta">
+    <div><dt>集計</dt><dd class="num" id="gen"></dd></div>
+    <div><dt>期間</dt><dd>直近 30 日</dd></div>
+    <div><dt>利用明細（CSV）</dt><dd id="csv"></dd></div>
+  </dl>
+</header>
+
+<main class="board">
+  <div class="col">
+    <section class="p" aria-labelledby="h-rate">
+      <header><h2 id="h-rate">設定ごとの適用率</h2><span class="scope">分母: CSV の最終日までの 30 日にコストがある利用者</span></header>
+      <div id="t-rate"></div>
+      <p class="note">1 台でも違う値の端末があれば、その利用者は未適用と数える。このため人数と端末数は一致しない。</p>
+    </section>
+    <section class="p" aria-labelledby="h-noplug">
+      <header><h2 id="h-noplug">プラグイン未導入の利用者</h2><span class="scope">CSV にコストがあり、設定の報告が 30 日無い人</span></header>
+      <div id="t-noplug"></div>
+    </section>
+    <section class="p" aria-labelledby="h-stale">
+      <header><h2 id="h-stale">報告が止まった端末</h2><span class="scope">最後の報告が 14 日以上前。30 日を過ぎると外れる</span></header>
+      <div id="t-stale"></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="p grow" aria-labelledby="h-nc">
+      <header><h2 id="h-nc">未適用の端末</h2><span class="scope">最新の報告の値が配布した値と違う端末 · 全設定</span></header>
+      <div id="t-nc"></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="p grow" aria-labelledby="h-latest">
+      <header><h2 id="h-latest">端末ごとの現在の値 · 自動圧縮のしきい値</h2><span class="scope">この設定を報告した端末 · 端末ごとに最新 1 件</span></header>
+      <div id="t-latest"></div>
+    </section>
+    <section class="p" aria-labelledby="h-ver">
+      <header><h2 id="h-ver">バージョン</h2><span class="scope">端末ごとに最新の報告</span></header>
+      <div class="pair">
+        <div><h3>プラグイン</h3><div id="t-pv"></div></div>
+        <div><h3>Claude Code 本体</h3><div id="t-cv"></div></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="foot">
+  <span>端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。</span>
+  <span>監査・人事評価・勤怠管理には使いません。</span>
+</footer>
+<script src="data.js"></script>
+<script src="table.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

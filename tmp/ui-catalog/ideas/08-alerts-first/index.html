@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <span class="brand">Claude Code 利用状況</span>
+    <nav aria-label="画面">
+      <a href="#" aria-current="page">概況</a>
+      <a href="#">設定の適用状況<span class="dot ng nav-dot" title="要対応あり"></span></a>
+      <a href="#">設定の効果</a>
+      <a href="#">スキル・コマンドの利用</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="head">
+    <div>
+      <h1>概況</h1>
+      <p class="asof">集計 <span id="asof"></span> · 直近 7 日 = <span id="wk"></span></p>
+    </div>
+    <div class="csv">
+      <span>利用明細（CSV）の最終日 <b id="csv-last"></b></span>
+      <button type="button">CSV を取り込む</button>
+    </div>
+  </div>
+
+  <section class="alerts" aria-labelledby="alerts-h">
+    <h2 id="alerts-h" class="alerts-h"><span id="alerts-title"></span></h2>
+    <div id="alerts"></div>
+    <p class="rule">判定の基準: プラグインのエラーは 1 件でもあれば要対応。項目の欠けは 50% 超で要対応、20% 超または前の 7 日から 5 ポイント以上の増加で注意。</p>
+  </section>
+
+  <section class="elsewhere" aria-label="ほかの画面の要対応">
+    <span class="el-h">ほかの画面</span>
+    <a href="#"><span class="dot ng"></span>設定の適用状況 — 未適用の端末 10 台 · 未導入の利用者 4 人 · 報告が止まった端末 5 台</a>
+  </section>
+
+  <div class="sections" id="sections">
+    <details class="sec" id="s-errors" data-st="ng">
+      <summary><span class="st"></span><span class="t">プラグインのエラー</span><span class="k" id="k-errors"></span><span class="p">直近 7 日 · 端末</span></summary>
+      <div class="body"><p class="note">端末側の処理が失敗した記録。失った記録は戻りません。端末 = 利用者とホスト名の組。</p><table class="tbl" id="t-errors"></table></div>
+    </details>
+    <details class="sec" id="s-nulls" data-st="warn">
+      <summary><span class="st"></span><span class="t">項目の欠け</span><span class="k" id="k-nulls"></span><span class="p">直近 7 日と前の 7 日 · その項目が送られるはずの記録</span></summary>
+      <div class="body"><p class="note">値が空だった割合。100% に跳ねたら上流の仕様変更を疑います。</p><table class="tbl" id="t-nulls"></table></div>
+    </details>
+    <details class="sec" id="s-recv" data-st="ok">
+      <summary><span class="st"></span><span class="t">受信の状況</span><span class="k" id="k-recv"></span><span class="p">直近 7 日（照合率は CSV の最終日までの 7 日）</span></summary>
+      <div class="body"><table class="tbl" id="t-recv"></table></div>
+    </details>
+    <h3 class="grp">利用の実態<span>状態の判定はしない</span></h3>
+    <details class="sec" id="s-cost" data-st="info">
+      <summary><span class="st"></span><span class="t">日ごとのコスト</span><span class="k" id="k-cost"></span><span class="p">CSV の全期間 · 提供元ごと</span></summary>
+      <div class="body" id="b-cost"></div>
+    </details>
+    <details class="sec" id="s-trend" data-st="info">
+      <summary><span class="st"></span><span class="t">日ごとの利用者数とセッション数</span><span class="k" id="k-trend"></span><span class="p">直近 14 日</span></summary>
+      <div class="body"><table class="tbl" id="t-trend"></table></div>
+    </details>
+    <details class="sec" id="s-dist" data-st="info">
+      <summary><span class="st"></span><span class="t">使い方の内訳</span><span class="k">権限モード · effort · セッションの開始のしかた</span><span class="p">直近 7 日 · 記録</span></summary>
+      <div class="body"><div class="dists" id="b-dist"></div></div>
+    </details>
+  </div>
+</main>
+
+<footer class="wrap">
+  端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

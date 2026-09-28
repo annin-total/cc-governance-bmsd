@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 · Claude Code 利用状況</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header><div class="bar">
+  <a class="brand" href="overview.html">Claude Code 利用状況</a>
+  <nav>
+    <a href="overview.html" aria-current="page">概況</a>
+    <a href="policy.html">policy</a>
+    <a href="effect.html">effect</a>
+    <a href="assets.html">assets</a>
+  </nav>
+</div></header>
+<main>
+<h1>概況</h1>
+
+
+<h2>健全性</h2>
+
+<div class="chips"><span class="chip">直近7日 · 前7日と比較</span><span class="chip">突合率: CSV の最終日までの7日 · 比較なし</span>
+</div>
+<div class="tiles">
+  
+<div class="tile">
+  <b>3,723</b>
+  <span>イベント</span>
+  <span class="delta up">+120</span>
+</div>
+  
+<div class="tile">
+  <b>32</b>
+  <span>送信した利用者</span>
+  <span class="muted">±0</span>
+</div>
+  
+<div class="tile">
+  <b>100.0%</b>
+  <span>突合率</span>
+  <span>32 / 32 人</span>
+</div>
+</div>
+<div class="tbl">
+<table data-testid="error-summary">
+<caption>hook の失敗（直近7日 · 端末: user_email と host の組）</caption>
+<tr><th scope="col">stage</th><th scope="col">error_type</th><th scope="col">件数</th><th scope="col">端末数</th><th scope="col">最新の版</th></tr>
+
+<tr><td>apply_settings</td><td>PermissionError</td><td class="num">10</td><td class="num">10</td><td>0.2.1</td></tr>
+
+<tr><td>send</td><td>ConnectionRefusedError</td><td class="num">10</td><td class="num">10</td><td>0.2.0</td></tr>
+
+<tr><td>send</td><td>HTTP 401</td><td class="num">10</td><td class="num">10</td><td>0.2.0</td></tr>
+
+<tr><td>collect</td><td>KeyError</td><td class="num">9</td><td class="num">9</td><td>0.1.9</td></tr>
+
+</table>
+</div>
+
+<h2>NULL率</h2>
+
+<div class="chips"><span class="chip">直近7日 · 前7日と比較</span><span class="chip">分母: その列が来るはずのイベント</span>
+</div>
+<div class="tbl">
+<table data-testid="null-rates">
+<caption>列別の NULL 率（直近7日 / 前7日）</caption>
+<tr><th scope="col">列</th><th scope="col">直近7日</th><th scope="col">前7日</th></tr>
+
+
+<tr>
+  <td>tool_name</td>
+  <td>
+    <span class="meter"><i style="width: 10.3%;"></i></span> 10.3% <span class="pill ok">良好</span>
+  </td>
+  <td class="num">11.0%</td>
+</tr>
+
+
+<tr>
+  <td>skill_name</td>
+  <td>
+    <span class="meter"><i style="width: 11.5%;"></i></span> 11.5% <span class="pill ok">良好</span>
+  </td>
+  <td class="num">6.2%</td>
+</tr>
+
+
+<tr>
+  <td>context_tokens</td>
+  <td>
+    <span class="meter"><i style="width: 9.5%;"></i></span> 9.5% <span class="pill ok">良好</span>
+  </td>
+  <td class="num">10.5%</td>
+</tr>
+
+
+<tr>
+  <td>command_source</td>
+  <td>
+    <span class="meter"><i style="width: 11.5%;"></i></span> 11.5% <span class="pill ok">良好</span>
+  </td>
+  <td class="num">11.6%</td>
+</tr>
+
+</table>
+</div>
+
+<h2>plugin_version の分布</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">分母: 端末ごとの最新1行</span>
+</div>
+<div class="tbl">
+<table data-testid="plugin-version-distribution">
+<caption>端末ごとの最新版と台数</caption>
+<tr><th scope="col">版</th><th scope="col">台数</th></tr>
+
+<tr><td>0.1.9</td><td class="num">15</td></tr>
+
+<tr><td>0.2.0</td><td class="num">15</td></tr>
+
+<tr><td>0.2.1</td><td class="num">14</td></tr>
+
+</table>
+</div>
+
+<h2>CSV 取込</h2>
+
+<div class="chips"><span class="chip">取込元: CSV_DIR</span><span class="chip">コストとトークンの正本</span>
+</div>
+
+<form class="actions" method="post" action="#">
+  <button type="submit" class="btn primary">CSV を取り込む</button>
+</form>
+
+<h2>日次コスト推移</h2>
+
+<div class="chips"><span class="chip">全期間</span>
+</div>
+<div class="tbl">
+<table data-testid="daily-cost">
+<caption>day × provider の合計コスト（全期間）</caption>
+<tr><th scope="col">day</th><th scope="col">provider</th><th scope="col">合計コスト</th></tr>
+
+<tr><td class="date">2026-07-17</td><td>aws-bedrock</td><td class="num">$131.08</td></tr>
+
+<tr><td class="date">2026-07-18</td><td>aws-bedrock</td><td class="num">$152.34</td></tr>
+
+<tr><td class="date">2026-07-18</td><td>google-vertex</td><td class="num">$26.69</td></tr>
+
+<tr><td class="date">2026-07-19</td><td>aws-bedrock</td><td class="num">$104.65</td></tr>
+
+<tr><td class="date">2026-07-19</td><td>google-vertex</td><td class="num">$73.30</td></tr>
+
+<tr><td class="date">2026-07-20</td><td>aws-bedrock</td><td class="num">$148.21</td></tr>
+
+<tr><td class="date">2026-07-20</td><td>google-vertex</td><td class="num">$25.75</td></tr>
+
+<tr><td class="date">2026-07-21</td><td>aws-bedrock</td><td class="num">$106.83</td></tr>
+
+<tr><td class="date">2026-07-21</td><td>google-vertex</td><td class="num">$68.53</td></tr>
+
+<tr><td class="date">2026-07-22</td><td>aws-bedrock</td><td class="num">$178.80</td></tr>
+
+<tr><td class="date">2026-07-23</td><td>aws-bedrock</td><td class="num">$142.38</td></tr>
+
+<tr><td class="date">2026-07-23</td><td>google-vertex</td><td class="num">$31.53</td></tr>
+
+<tr><td class="date">2026-07-24</td><td>aws-bedrock</td><td class="num">$135.24</td></tr>
+
+<tr><td class="date">2026-07-24</td><td>google-vertex</td><td class="num">$55.65</td></tr>
+
+<tr><td class="date">2026-07-25</td><td>aws-bedrock</td><td class="num">$149.98</td></tr>
+
+<tr><td class="date">2026-07-25</td><td>google-vertex</td><td class="num">$59.78</td></tr>
+
+<tr><td class="date">2026-07-26</td><td>aws-bedrock</td><td class="num">$262.73</td></tr>
+
+<tr><td class="date">2026-07-26</td><td>google-vertex</td><td class="num">$32.41</td></tr>
+
+<tr><td class="date">2026-07-27</td><td>aws-bedrock</td><td class="num">$247.87</td></tr>
+
+<tr><td class="date">2026-07-27</td><td>google-vertex</td><td class="num">$11.34</td></tr>
+
+<tr><td class="date">2026-07-28</td><td>aws-bedrock</td><td class="num">$214.10</td></tr>
+
+<tr><td class="date">2026-07-28</td><td>google-vertex</td><td class="num">$34.05</td></tr>
+
+<tr><td class="date">2026-07-29</td><td>aws-bedrock</td><td class="num">$220.85</td></tr>
+
+<tr><td class="date">2026-07-29</td><td>google-vertex</td><td class="num">$23.77</td></tr>
+
+<tr><td class="date">2026-07-30</td><td>aws-bedrock</td><td class="num">$191.47</td></tr>
+
+<tr><td class="date">2026-07-30</td><td>google-vertex</td><td class="num">$70.40</td></tr>
+
+<tr><td class="date">2026-07-31</td><td>aws-bedrock</td><td class="num">$184.69</td></tr>
+
+<tr><td class="date">2026-08-01</td><td>aws-bedrock</td><td class="num">$200.60</td></tr>
+
+<tr><td class="date">2026-08-01</td><td>google-vertex</td><td class="num">$12.24</td></tr>
+
+<tr><td class="date">2026-08-02</td><td>aws-bedrock</td><td class="num">$191.40</td></tr>
+
+<tr><td class="date">2026-08-02</td><td>google-vertex</td><td class="num">$48.84</td></tr>
+
+<tr><td class="date">2026-08-03</td><td>aws-bedrock</td><td class="num">$213.07</td></tr>
+
+<tr><td class="date">2026-08-03</td><td>google-vertex</td><td class="num">$21.16</td></tr>
+
+<tr><td class="date">2026-08-04</td><td>aws-bedrock</td><td class="num">$153.60</td></tr>
+
+<tr><td class="date">2026-08-04</td><td>google-vertex</td><td class="num">$108.27</td></tr>
+
+<tr><td class="date">2026-08-05</td><td>aws-bedrock</td><td class="num">$215.83</td></tr>
+
+<tr><td class="date">2026-08-05</td><td>google-vertex</td><td class="num">$33.08</td></tr>
+
+<tr><td class="date">2026-08-06</td><td>aws-bedrock</td><td class="num">$165.04</td></tr>
+
+<tr><td class="date">2026-08-06</td><td>google-vertex</td><td class="num">$75.54</td></tr>
+
+<tr><td class="date">2026-08-07</td><td>aws-bedrock</td><td class="num">$220.63</td></tr>
+
+<tr><td class="date">2026-08-07</td><td>google-vertex</td><td class="num">$33.83</td></tr>
+
+<tr><td class="date">2026-08-08</td><td>aws-bedrock</td><td class="num">$261.73</td></tr>
+
+<tr><td class="date">2026-08-08</td><td>google-vertex</td><td class="num">$45.23</td></tr>
+
+<tr><td class="date">2026-08-09</td><td>aws-bedrock</td><td class="num">$203.37</td></tr>
+
+<tr><td class="date">2026-08-09</td><td>google-vertex</td><td class="num">$111.83</td></tr>
+
+<tr><td class="date">2026-08-10</td><td>aws-bedrock</td><td class="num">$210.77</td></tr>
+
+<tr><td class="date">2026-08-10</td><td>google-vertex</td><td class="num">$101.89</td></tr>
+
+<tr><td class="date">2026-08-11</td><td>aws-bedrock</td><td class="num">$187.11</td></tr>
+
+<tr><td class="date">2026-08-11</td><td>google-vertex</td><td class="num">$53.79</td></tr>
+
+<tr><td class="date">2026-08-12</td><td>aws-bedrock</td><td class="num">$230.55</td></tr>
+
+<tr><td class="date">2026-08-12</td><td>google-vertex</td><td class="num">$46.65</td></tr>
+
+<tr><td class="date">2026-08-13</td><td>aws-bedrock</td><td class="num">$183.02</td></tr>
+
+<tr><td class="date">2026-08-13</td><td>google-vertex</td><td class="num">$61.83</td></tr>
+
+<tr><td class="date">2026-08-14</td><td>aws-bedrock</td><td class="num">$262.94</td></tr>
+
+<tr><td class="date">2026-08-14</td><td>google-vertex</td><td class="num">$90.91</td></tr>
+
+<tr><td class="date">2026-08-15</td><td>aws-bedrock</td><td class="num">$255.90</td></tr>
+
+<tr><td class="date">2026-08-15</td><td>google-vertex</td><td class="num">$84.23</td></tr>
+
+<tr><td class="date">2026-08-16</td><td>aws-bedrock</td><td class="num">$241.60</td></tr>
+
+<tr><td class="date">2026-08-16</td><td>google-vertex</td><td class="num">$84.54</td></tr>
+
+<tr><td class="date">2026-08-17</td><td>aws-bedrock</td><td class="num">$278.44</td></tr>
+
+<tr><td class="date">2026-08-17</td><td>google-vertex</td><td class="num">$54.46</td></tr>
+
+<tr><td class="date">2026-08-18</td><td>aws-bedrock</td><td class="num">$271.36</td></tr>
+
+<tr><td class="date">2026-08-18</td><td>google-vertex</td><td class="num">$55.56</td></tr>
+
+<tr><td class="date">2026-08-19</td><td>aws-bedrock</td><td class="num">$209.25</td></tr>
+
+<tr><td class="date">2026-08-19</td><td>google-vertex</td><td class="num">$76.17</td></tr>
+
+<tr><td class="date">2026-08-20</td><td>aws-bedrock</td><td class="num">$286.60</td></tr>
+
+<tr><td class="date">2026-08-20</td><td>google-vertex</td><td class="num">$100.34</td></tr>
+
+<tr><td class="date">2026-08-21</td><td>aws-bedrock</td><td class="num">$250.78</td></tr>
+
+<tr><td class="date">2026-08-21</td><td>google-vertex</td><td class="num">$41.15</td></tr>
+
+<tr><td class="date">2026-08-22</td><td>aws-bedrock</td><td class="num">$233.27</td></tr>
+
+<tr><td class="date">2026-08-22</td><td>google-vertex</td><td class="num">$130.32</td></tr>
+
+<tr><td class="date">2026-08-23</td><td>aws-bedrock</td><td class="num">$226.58</td></tr>
+
+<tr><td class="date">2026-08-23</td><td>google-vertex</td><td class="num">$120.79</td></tr>
+
+<tr><td class="date">2026-08-24</td><td>aws-bedrock</td><td class="num">$268.99</td></tr>
+
+<tr><td class="date">2026-08-24</td><td>google-vertex</td><td class="num">$56.22</td></tr>
+
+<tr><td class="date">2026-08-25</td><td>aws-bedrock</td><td class="num">$237.77</td></tr>
+
+<tr><td class="date">2026-08-25</td><td>google-vertex</td><td class="num">$57.50</td></tr>
+
+<tr><td class="date">2026-08-26</td><td>aws-bedrock</td><td class="num">$309.34</td></tr>
+
+<tr><td class="date">2026-08-26</td><td>google-vertex</td><td class="num">$91.91</td></tr>
+
+<tr><td class="date">2026-08-27</td><td>aws-bedrock</td><td class="num">$290.76</td></tr>
+
+<tr><td class="date">2026-08-27</td><td>google-vertex</td><td class="num">$79.95</td></tr>
+
+<tr><td class="date">2026-08-28</td><td>aws-bedrock</td><td class="num">$317.26</td></tr>
+
+<tr><td class="date">2026-08-28</td><td>google-vertex</td><td class="num">$35.13</td></tr>
+
+<tr><td class="date">2026-08-29</td><td>aws-bedrock</td><td class="num">$375.41</td></tr>
+
+<tr><td class="date">2026-08-29</td><td>google-vertex</td><td class="num">$89.89</td></tr>
+
+<tr><td class="date">2026-08-30</td><td>aws-bedrock</td><td class="num">$309.73</td></tr>
+
+<tr><td class="date">2026-08-30</td><td>google-vertex</td><td class="num">$95.44</td></tr>
+
+<tr><td class="date">2026-08-31</td><td>aws-bedrock</td><td class="num">$312.85</td></tr>
+
+<tr><td class="date">2026-08-31</td><td>google-vertex</td><td class="num">$69.38</td></tr>
+
+<tr><td class="date">2026-09-01</td><td>aws-bedrock</td><td class="num">$261.74</td></tr>
+
+<tr><td class="date">2026-09-01</td><td>google-vertex</td><td class="num">$48.06</td></tr>
+
+<tr><td class="date">2026-09-02</td><td>aws-bedrock</td><td class="num">$266.30</td></tr>
+
+<tr><td class="date">2026-09-02</td><td>google-vertex</td><td class="num">$79.70</td></tr>
+
+<tr><td class="date">2026-09-03</td><td>aws-bedrock</td><td class="num">$232.44</td></tr>
+
+<tr><td class="date">2026-09-03</td><td>google-vertex</td><td class="num">$104.83</td></tr>
+
+<tr><td class="date">2026-09-04</td><td>aws-bedrock</td><td class="num">$322.74</td></tr>
+
+<tr><td class="date">2026-09-04</td><td>google-vertex</td><td class="num">$45.68</td></tr>
+
+<tr><td class="date">2026-09-05</td><td>aws-bedrock</td><td class="num">$355.28</td></tr>
+
+<tr><td class="date">2026-09-05</td><td>google-vertex</td><td class="num">$23.77</td></tr>
+
+<tr><td class="date">2026-09-06</td><td>aws-bedrock</td><td class="num">$314.68</td></tr>
+
+<tr><td class="date">2026-09-06</td><td>google-vertex</td><td class="num">$29.46</td></tr>
+
+<tr><td class="date">2026-09-07</td><td>aws-bedrock</td><td class="num">$242.43</td></tr>
+
+<tr><td class="date">2026-09-07</td><td>google-vertex</td><td class="num">$42.25</td></tr>
+
+<tr><td class="date">2026-09-08</td><td>aws-bedrock</td><td class="num">$298.12</td></tr>
+
+<tr><td class="date">2026-09-08</td><td>google-vertex</td><td class="num">$35.92</td></tr>
+
+<tr><td class="date">2026-09-09</td><td>aws-bedrock</td><td class="num">$235.36</td></tr>
+
+<tr><td class="date">2026-09-09</td><td>google-vertex</td><td class="num">$55.71</td></tr>
+
+<tr><td class="date">2026-09-10</td><td>aws-bedrock</td><td class="num">$224.53</td></tr>
+
+<tr><td class="date">2026-09-10</td><td>google-vertex</td><td class="num">$76.64</td></tr>
+
+<tr><td class="date">2026-09-11</td><td>aws-bedrock</td><td class="num">$245.09</td></tr>
+
+<tr><td class="date">2026-09-11</td><td>google-vertex</td><td class="num">$20.26</td></tr>
+
+<tr><td class="date">2026-09-12</td><td>aws-bedrock</td><td class="num">$249.75</td></tr>
+
+<tr><td class="date">2026-09-12</td><td>google-vertex</td><td class="num">$51.85</td></tr>
+
+<tr><td class="date">2026-09-13</td><td>aws-bedrock</td><td class="num">$231.16</td></tr>
+
+<tr><td class="date">2026-09-13</td><td>google-vertex</td><td class="num">$138.80</td></tr>
+
+<tr><td class="date">2026-09-14</td><td>aws-bedrock</td><td class="num">$210.25</td></tr>
+
+<tr><td class="date">2026-09-14</td><td>google-vertex</td><td class="num">$79.52</td></tr>
+
+<tr><td class="date">2026-09-15</td><td>aws-bedrock</td><td class="num">$313.72</td></tr>
+
+<tr><td class="date">2026-09-15</td><td>google-vertex</td><td class="num">$60.58</td></tr>
+
+<tr><td class="date">2026-09-16</td><td>aws-bedrock</td><td class="num">$187.10</td></tr>
+
+<tr><td class="date">2026-09-16</td><td>google-vertex</td><td class="num">$94.80</td></tr>
+
+<tr><td class="date">2026-09-17</td><td>aws-bedrock</td><td class="num">$236.98</td></tr>
+
+<tr><td class="date">2026-09-17</td><td>google-vertex</td><td class="num">$62.57</td></tr>
+
+<tr><td class="date">2026-09-18</td><td>aws-bedrock</td><td class="num">$244.79</td></tr>
+
+<tr><td class="date">2026-09-18</td><td>google-vertex</td><td class="num">$25.47</td></tr>
+
+<tr><td class="date">2026-09-19</td><td>aws-bedrock</td><td class="num">$248.09</td></tr>
+
+<tr><td class="date">2026-09-19</td><td>google-vertex</td><td class="num">$52.80</td></tr>
+
+<tr><td class="date">2026-09-20</td><td>aws-bedrock</td><td class="num">$225.10</td></tr>
+
+<tr><td class="date">2026-09-20</td><td>google-vertex</td><td class="num">$48.94</td></tr>
+
+<tr><td class="date">2026-09-21</td><td>aws-bedrock</td><td class="num">$281.69</td></tr>
+
+<tr><td class="date">2026-09-21</td><td>google-vertex</td><td class="num">$55.99</td></tr>
+
+<tr><td class="date">2026-09-22</td><td>aws-bedrock</td><td class="num">$259.23</td></tr>
+
+<tr><td class="date">2026-09-22</td><td>google-vertex</td><td class="num">$57.01</td></tr>
+
+<tr><td class="date">2026-09-23</td><td>aws-bedrock</td><td class="num">$247.17</td></tr>
+
+<tr><td class="date">2026-09-23</td><td>google-vertex</td><td class="num">$120.83</td></tr>
+
+<tr><td class="date">2026-09-24</td><td>aws-bedrock</td><td class="num">$250.14</td></tr>
+
+<tr><td class="date">2026-09-24</td><td>google-vertex</td><td class="num">$49.36</td></tr>
+
+<tr><td class="date">2026-09-25</td><td>aws-bedrock</td><td class="num">$213.13</td></tr>
+
+<tr><td class="date">2026-09-25</td><td>google-vertex</td><td class="num">$68.06</td></tr>
+
+<tr><td class="date">2026-09-26</td><td>aws-bedrock</td><td class="num">$306.00</td></tr>
+
+<tr><td class="date">2026-09-26</td><td>google-vertex</td><td class="num">$54.89</td></tr>
+
+<tr><td class="date">2026-09-27</td><td>aws-bedrock</td><td class="num">$244.68</td></tr>
+
+<tr><td class="date">2026-09-27</td><td>google-vertex</td><td class="num">$50.86</td></tr>
+
+</table>
+</div>
+
+<h2>利用者数・セッション数の推移</h2>
+
+<div class="chips"><span class="chip">直近14日</span>
+</div>
+<div class="tbl">
+<table data-testid="user-session-trend">
+<caption>day 別の利用者数・セッション数（直近14日）</caption>
+<tr><th scope="col">day</th><th scope="col">利用者数</th><th scope="col">セッション数</th></tr>
+
+<tr><td class="date">2026-09-15</td><td class="num">27</td><td class="num">49</td></tr>
+
+<tr><td class="date">2026-09-16</td><td class="num">26</td><td class="num">42</td></tr>
+
+<tr><td class="date">2026-09-17</td><td class="num">26</td><td class="num">45</td></tr>
+
+<tr><td class="date">2026-09-18</td><td class="num">27</td><td class="num">46</td></tr>
+
+<tr><td class="date">2026-09-19</td><td class="num">24</td><td class="num">46</td></tr>
+
+<tr><td class="date">2026-09-20</td><td class="num">29</td><td class="num">49</td></tr>
+
+<tr><td class="date">2026-09-21</td><td class="num">27</td><td class="num">50</td></tr>
+
+<tr><td class="date">2026-09-22</td><td class="num">25</td><td class="num">48</td></tr>
+
+<tr><td class="date">2026-09-23</td><td class="num">29</td><td class="num">49</td></tr>
+
+<tr><td class="date">2026-09-24</td><td class="num">30</td><td class="num">54</td></tr>
+
+<tr><td class="date">2026-09-25</td><td class="num">27</td><td class="num">47</td></tr>
+
+<tr><td class="date">2026-09-26</td><td class="num">26</td><td class="num">43</td></tr>
+
+<tr><td class="date">2026-09-27</td><td class="num">25</td><td class="num">40</td></tr>
+
+<tr><td class="date">2026-09-28</td><td class="num">32</td><td class="num">57</td></tr>
+
+</table>
+</div>
+
+<h2>permission_mode の分布</h2>
+
+<div class="chips"><span class="chip">直近7日</span>
+</div>
+<div class="tbl">
+<table data-testid="permission-mode-distribution">
+<caption>permission_mode 別の件数（直近7日）</caption>
+<tr><th scope="col">値</th><th scope="col">件数</th></tr>
+
+<tr><td>plan</td><td class="num">952</td></tr>
+
+<tr><td>acceptEdits</td><td class="num">943</td></tr>
+
+<tr><td>default</td><td class="num">920</td></tr>
+
+<tr><td>bypassPermissions</td><td class="num">908</td></tr>
+
+</table>
+</div>
+
+<h2>effort_level の分布</h2>
+
+<div class="chips"><span class="chip">直近7日</span>
+</div>
+<div class="tbl">
+<table data-testid="effort-level-distribution">
+<caption>effort_level 別の件数（直近7日）</caption>
+<tr><th scope="col">値</th><th scope="col">件数</th></tr>
+
+<tr><td>low</td><td class="num">598</td></tr>
+
+<tr><td>high</td><td class="num">562</td></tr>
+
+<tr><td>medium</td><td class="num">531</td></tr>
+
+</table>
+</div>
+
+<h2>source の分布</h2>
+
+<div class="chips"><span class="chip">直近7日</span>
+</div>
+<div class="tbl">
+<table data-testid="source-distribution">
+<caption>source 別の件数（直近7日）</caption>
+<tr><th scope="col">値</th><th scope="col">件数</th></tr>
+
+<tr><td>compact</td><td class="num">87</td></tr>
+
+<tr><td>startup</td><td class="num">85</td></tr>
+
+<tr><td>resume</td><td class="num">84</td></tr>
+
+<tr><td>clear</td><td class="num">82</td></tr>
+
+</table>
+</div>
+
+
+</main>
+<footer>
+  端末からの自己申告値。コストとトークンは全社 CSV を正とする。
+  監査・人事評価・勤怠管理には使わない。
+</footer>
+</body>
+</html>

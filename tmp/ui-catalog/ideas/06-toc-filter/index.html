@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>設定の適用状況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="toc" aria-label="目次">
+  <div class="toc-brand">
+    <b>Claude Code 利用状況</b>
+    <span>集計 <span id="asof" class="num"></span></span>
+  </div>
+  <nav id="toc"></nav>
+</aside>
+
+<div class="main">
+  <header class="page-head">
+    <p class="crumb">守られているか</p>
+    <h1>設定の適用状況</h1>
+    <p class="lead">配布した設定が各端末で有効になっているか。直近 30 日（2026-08-30〜09-28）の報告で数えます。</p>
+  </header>
+
+  <form class="filters" id="filters" role="search" onsubmit="return false">
+    <label class="f-text">
+      <span class="f-label">利用者</span>
+      <input type="search" id="q" placeholder="メールアドレスの一部（例: user004）" autocomplete="off">
+    </label>
+    <fieldset class="f-seg">
+      <legend class="f-label">最終報告</legend>
+      <label><input type="radio" name="period" value="all" checked><span>30 日すべて</span></label>
+      <label><input type="radio" name="period" value="7"><span>直近 7 日</span></label>
+      <label><input type="radio" name="period" value="stale"><span>14 日以上前</span></label>
+    </fieldset>
+    <label class="f-check"><input type="checkbox" id="only"><span>要対応のみ</span></label>
+    <output class="f-count" id="count" aria-live="polite"></output>
+  </form>
+
+  <section id="rates" class="sec">
+    <div class="sec-head">
+      <h2>設定ごとの適用率</h2>
+      <p class="scope">直近 30 日 · 対象者 = 利用明細（CSV）の最終日までの 30 日にコストがある利用者 <b id="denom"></b> 人</p>
+    </div>
+    <table class="tbl sortable" id="t-rates"></table>
+    <p class="note">1 台でも違う値の端末があれば、その利用者は未適用と数えます。このため下の表の端末数と人数は一致しません。</p>
+  </section>
+
+  <section id="terminals" class="sec">
+    <div class="sec-head">
+      <h2>端末ごとの状況</h2>
+      <p class="scope">直近 30 日に設定を報告した端末 <b id="n-term"></b> 台と、プラグイン未導入の利用者 <b id="n-ni"></b> 人 · 絞り込みはこの表にかかります</p>
+    </div>
+    <table class="tbl sortable" id="t-term"></table>
+    <p class="empty" id="empty" hidden>条件に合う端末・利用者はいません。</p>
+    <dl class="legend">
+      <div><dt><span class="st ng">未適用</span></dt><dd>最新の報告の値が配布した値と違う</dd></div>
+      <div><dt><span class="st ng">未導入</span></dt><dd>CSV にコストがあるのに、プラグインからの報告が 1 件も無い（端末名は分からない）</dd></div>
+      <div><dt><span class="st warn">報告停止</span></dt><dd>最後の報告から 14 日以上経った。30 日を過ぎると一覧から外れる</dd></div>
+    </dl>
+  </section>
+
+  <section id="versions" class="sec">
+    <div class="sec-head">
+      <h2>バージョン</h2>
+      <p class="scope">直近 30 日 · 端末ごとに最後の報告を 1 件</p>
+    </div>
+    <div class="two">
+      <div><h3>プラグイン</h3><table class="tbl sortable" id="t-plugin"></table></div>
+      <div><h3>Claude Code 本体</h3><table class="tbl sortable" id="t-cc"></table></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。</p>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script src="toc.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>policy · Claude Code 利用状況</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header><div class="bar">
+  <a class="brand" href="overview.html">Claude Code 利用状況</a>
+  <nav>
+    <a href="overview.html">概況</a>
+    <a href="policy.html" aria-current="page">policy</a>
+    <a href="effect.html">effect</a>
+    <a href="assets.html">assets</a>
+  </nav>
+</div></header>
+<main>
+<h1>policy 適用状況</h1>
+
+
+
+
+<h2>最後に観測した値（env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE<span class="muted"> / 自動圧縮のしきい値</span>）</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: この期間に env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE の値を送った端末（端末ごとの最新1行）</span>
+</div>
+
+<div class="tbl">
+<table data-testid="latest-values">
+  <caption>最後に観測した値</caption>
+  <tr><th scope="col">user_email</th><th scope="col">host</th><th scope="col">最後に観測した値</th><th scope="col">最終観測日</th></tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-1</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user005@example.com</td>
+    <td>pc-001-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user006@example.com</td>
+    <td>pc-002-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user007@example.com</td>
+    <td>pc-003-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user008@example.com</td>
+    <td>pc-004-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user009@example.com</td>
+    <td>pc-005-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user009@example.com</td>
+    <td>pc-005-1</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user010@example.com</td>
+    <td>pc-006-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user011@example.com</td>
+    <td>pc-007-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user012@example.com</td>
+    <td>pc-008-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user013@example.com</td>
+    <td>pc-009-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user014@example.com</td>
+    <td>pc-010-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user014@example.com</td>
+    <td>pc-010-1</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user015@example.com</td>
+    <td>pc-011-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user016@example.com</td>
+    <td>pc-012-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user017@example.com</td>
+    <td>pc-013-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user018@example.com</td>
+    <td>pc-014-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user019@example.com</td>
+    <td>pc-015-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user019@example.com</td>
+    <td>pc-015-1</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user020@example.com</td>
+    <td>pc-016-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user021@example.com</td>
+    <td>pc-017-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user022@example.com</td>
+    <td>pc-018-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user023@example.com</td>
+    <td>pc-019-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user024@example.com</td>
+    <td>pc-020-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user024@example.com</td>
+    <td>pc-020-1</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user025@example.com</td>
+    <td>pc-021-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user026@example.com</td>
+    <td>pc-022-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user027@example.com</td>
+    <td>pc-023-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user028@example.com</td>
+    <td>pc-024-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user029@example.com</td>
+    <td>pc-025-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user029@example.com</td>
+    <td>pc-025-1</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user030@example.com</td>
+    <td>pc-026-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user031@example.com</td>
+    <td>pc-027-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user032@example.com</td>
+    <td>pc-028-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user033@example.com</td>
+    <td>pc-029-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user034@example.com</td>
+    <td>pc-030-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user034@example.com</td>
+    <td>pc-030-1</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user035@example.com</td>
+    <td>pc-031-0</td>
+    <td>60</td>
+    <td class="date">2026-09-28</td>
+  </tr>
+  
+  <tr>
+    <td>user036@example.com</td>
+    <td>pc-032-0</td>
+    <td>60</td>
+    <td class="date">2026-08-31</td>
+  </tr>
+  
+  <tr>
+    <td>user037@example.com</td>
+    <td>pc-033-0</td>
+    <td>60</td>
+    <td class="date">2026-08-31</td>
+  </tr>
+  
+  <tr>
+    <td>user038@example.com</td>
+    <td>pc-034-0</td>
+    <td>60</td>
+    <td class="date">2026-09-08</td>
+  </tr>
+  
+  <tr>
+    <td>user039@example.com</td>
+    <td>pc-035-0</td>
+    <td>60</td>
+    <td class="date">2026-09-03</td>
+  </tr>
+  
+  <tr>
+    <td>user039@example.com</td>
+    <td>pc-035-1</td>
+    <td>60</td>
+    <td class="date">2026-09-03</td>
+  </tr>
+  
+</table>
+</div>
+
+
+<h2>準拠率（施策項目別）</h2>
+
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">分母: CSV の最終日までの30日に cost_daily にコストの記録がある利用者</span>
+</div>
+
+<p class="note">1 台でも未準拠なら、その利用者は未準拠として数える。台数と人数が一致しないのはこのため。</p>
+<div class="tbl">
+<table data-testid="compliance-rate">
+  <caption>準拠率（施策項目別）</caption>
+  <tr><th scope="col">施策項目</th><th scope="col">準拠</th><th scope="col">対象</th><th scope="col">率</th></tr>
+  
+  <tr>
+    <td>env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE<br><span class="muted">自動圧縮のしきい値</span></td>
+    <td class="num">34</td>
+    <td class="num">40</td>
+    <td><span class="meter"><i style="width: 85.0%;"></i></span>85.0% <span class="muted">(34/40)</span></td>
+  </tr>
+  
+  <tr>
+    <td>extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate<br><span class="muted">マーケットプレイスの自動更新</span></td>
+    <td class="num">32</td>
+    <td class="num">40</td>
+    <td><span class="meter"><i style="width: 80.0%;"></i></span>80.0% <span class="muted">(32/40)</span></td>
+  </tr>
+  
+  <tr>
+    <td>autoUpdatesChannel</td>
+    <td class="num">31</td>
+    <td class="num">40</td>
+    <td><span class="meter"><i style="width: 77.5%;"></i></span>77.5% <span class="muted">(31/40)</span></td>
+  </tr>
+  
+  <tr>
+    <td>env.DISABLE_AUTOUPDATER</td>
+    <td class="num">30</td>
+    <td class="num">40</td>
+    <td><span class="meter"><i style="width: 75.0%;"></i></span>75.0% <span class="muted">(30/40)</span></td>
+  </tr>
+  
+  <tr>
+    <td>env.DISABLE_UPDATES</td>
+    <td class="num">29</td>
+    <td class="num">40</td>
+    <td><span class="meter"><i style="width: 72.5%;"></i></span>72.5% <span class="muted">(29/40)</span></td>
+  </tr>
+  
+  <tr>
+    <td>env.CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE</td>
+    <td class="num">28</td>
+    <td class="num">40</td>
+    <td><span class="meter"><i style="width: 70.0%;"></i></span>70.0% <span class="muted">(28/40)</span></td>
+  </tr>
+  
+</table>
+</div>
+
+
+<h2>未準拠者の一覧（env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE / 自動圧縮のしきい値）</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: この期間に値を送った端末のうち、最新値が施策値と異なるもの</span>
+</div>
+<div class="tbl">
+<table data-testid="non-compliant" data-key="env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE">
+  <caption>未準拠者の一覧（env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE）</caption>
+  <tr><th scope="col">user_email</th><th scope="col">host</th><th scope="col">最後に観測した値</th><th scope="col">最終観測日</th><th scope="col">状態</th></tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-1</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user010@example.com</td>
+    <td>pc-006-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+</table>
+</div>
+
+<h2>未準拠者の一覧（extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate / マーケットプレイスの自動更新）</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: この期間に値を送った端末のうち、最新値が施策値と異なるもの</span>
+</div>
+<div class="tbl">
+<table data-testid="non-compliant" data-key="extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate">
+  <caption>未準拠者の一覧（extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate）</caption>
+  <tr><th scope="col">user_email</th><th scope="col">host</th><th scope="col">最後に観測した値</th><th scope="col">最終観測日</th><th scope="col">状態</th></tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-1</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user005@example.com</td>
+    <td>pc-001-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user010@example.com</td>
+    <td>pc-006-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user011@example.com</td>
+    <td>pc-007-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+</table>
+</div>
+
+<h2>未準拠者の一覧（autoUpdatesChannel）</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: この期間に値を送った端末のうち、最新値が施策値と異なるもの</span>
+</div>
+<div class="tbl">
+<table data-testid="non-compliant" data-key="autoUpdatesChannel">
+  <caption>未準拠者の一覧（autoUpdatesChannel）</caption>
+  <tr><th scope="col">user_email</th><th scope="col">host</th><th scope="col">最後に観測した値</th><th scope="col">最終観測日</th><th scope="col">状態</th></tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-1</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user005@example.com</td>
+    <td>pc-001-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user006@example.com</td>
+    <td>pc-002-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user010@example.com</td>
+    <td>pc-006-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user011@example.com</td>
+    <td>pc-007-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+</table>
+</div>
+
+<h2>未準拠者の一覧（env.DISABLE_AUTOUPDATER）</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: この期間に値を送った端末のうち、最新値が施策値と異なるもの</span>
+</div>
+<div class="tbl">
+<table data-testid="non-compliant" data-key="env.DISABLE_AUTOUPDATER">
+  <caption>未準拠者の一覧（env.DISABLE_AUTOUPDATER）</caption>
+  <tr><th scope="col">user_email</th><th scope="col">host</th><th scope="col">最後に観測した値</th><th scope="col">最終観測日</th><th scope="col">状態</th></tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-1</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user005@example.com</td>
+    <td>pc-001-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user006@example.com</td>
+    <td>pc-002-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user007@example.com</td>
+    <td>pc-003-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user010@example.com</td>
+    <td>pc-006-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user011@example.com</td>
+    <td>pc-007-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+</table>
+</div>
+
+<h2>未準拠者の一覧（env.DISABLE_UPDATES）</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: この期間に値を送った端末のうち、最新値が施策値と異なるもの</span>
+</div>
+<div class="tbl">
+<table data-testid="non-compliant" data-key="env.DISABLE_UPDATES">
+  <caption>未準拠者の一覧（env.DISABLE_UPDATES）</caption>
+  <tr><th scope="col">user_email</th><th scope="col">host</th><th scope="col">最後に観測した値</th><th scope="col">最終観測日</th><th scope="col">状態</th></tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-1</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user005@example.com</td>
+    <td>pc-001-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user006@example.com</td>
+    <td>pc-002-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user007@example.com</td>
+    <td>pc-003-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user008@example.com</td>
+    <td>pc-004-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user010@example.com</td>
+    <td>pc-006-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user011@example.com</td>
+    <td>pc-007-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+</table>
+</div>
+
+<h2>未準拠者の一覧（env.CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE）</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: この期間に値を送った端末のうち、最新値が施策値と異なるもの</span>
+</div>
+<div class="tbl">
+<table data-testid="non-compliant" data-key="env.CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE">
+  <caption>未準拠者の一覧（env.CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE）</caption>
+  <tr><th scope="col">user_email</th><th scope="col">host</th><th scope="col">最後に観測した値</th><th scope="col">最終観測日</th><th scope="col">状態</th></tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user004@example.com</td>
+    <td>pc-000-1</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user005@example.com</td>
+    <td>pc-001-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user006@example.com</td>
+    <td>pc-002-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user007@example.com</td>
+    <td>pc-003-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user008@example.com</td>
+    <td>pc-004-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user009@example.com</td>
+    <td>pc-005-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user009@example.com</td>
+    <td>pc-005-1</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user010@example.com</td>
+    <td>pc-006-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+  <tr>
+    <td>user011@example.com</td>
+    <td>pc-007-0</td>
+    <td>未設定</td>
+    <td class="date">2026-09-28</td>
+    <td><span class="pill ng">未準拠</span></td>
+  </tr>
+  
+</table>
+</div>
+
+
+<h2>未導入者の一覧</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: CSV の最終日までの30日に cost_daily にコストの記録があるが、今日までの30日の policy_state に1行も無い利用者</span>
+</div>
+
+<div class="tbl">
+<table data-testid="not-introduced">
+  <caption>未導入者の一覧</caption>
+  <tr><th scope="col">user_email</th><th scope="col">状態</th></tr>
+  
+  <tr><td>user000@example.com</td><td><span class="pill warn">未導入</span></td></tr>
+  
+  <tr><td>user001@example.com</td><td><span class="pill warn">未導入</span></td></tr>
+  
+  <tr><td>user002@example.com</td><td><span class="pill warn">未導入</span></td></tr>
+  
+  <tr><td>user003@example.com</td><td><span class="pill warn">未導入</span></td></tr>
+  
+</table>
+</div>
+
+
+<h2>policy イベントが途絶えた端末</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: 直近30日内の最終観測日が14日以上前の端末</span>
+</div>
+
+<div class="tbl">
+<table data-testid="stale">
+  <caption>policy イベントが途絶えた端末</caption>
+  <tr><th scope="col">user_email</th><th scope="col">host</th><th scope="col">最終観測日</th><th scope="col">状態</th></tr>
+  
+  <tr><td>user036@example.com</td><td>pc-032-0</td><td class="date">2026-08-31</td><td><span class="pill warn">途絶</span></td></tr>
+  
+  <tr><td>user037@example.com</td><td>pc-033-0</td><td class="date">2026-08-31</td><td><span class="pill warn">途絶</span></td></tr>
+  
+  <tr><td>user038@example.com</td><td>pc-034-0</td><td class="date">2026-09-08</td><td><span class="pill warn">途絶</span></td></tr>
+  
+  <tr><td>user039@example.com</td><td>pc-035-0</td><td class="date">2026-09-03</td><td><span class="pill warn">途絶</span></td></tr>
+  
+  <tr><td>user039@example.com</td><td>pc-035-1</td><td class="date">2026-09-03</td><td><span class="pill warn">途絶</span></td></tr>
+  
+</table>
+</div>
+
+
+<h2>plugin_version の分布</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE の最新値がある端末</span>
+</div>
+
+<div class="tbl">
+<table data-testid="plugin-versions">
+  <caption>plugin_version の分布</caption>
+  <tr><th scope="col">version</th><th scope="col">件数</th></tr>
+  
+  <tr><td>0.1.9</td><td class="num">15</td></tr>
+  
+  <tr><td>0.2.0</td><td class="num">15</td></tr>
+  
+  <tr><td>0.2.1</td><td class="num">14</td></tr>
+  
+</table>
+</div>
+
+
+<h2>Claude Code の版の分布</h2>
+
+<div class="chips"><span class="chip">直近30日</span><span class="chip">対象: 版を記録した events がある端末</span>
+</div>
+
+<div class="tbl">
+<table data-testid="claude-code-versions">
+  <caption>Claude Code の版の分布</caption>
+  <tr><th scope="col">version</th><th scope="col">件数</th></tr>
+  
+  <tr><td>2.1.281</td><td class="num">15</td></tr>
+  
+  <tr><td>2.1.282</td><td class="num">14</td></tr>
+  
+  <tr><td>2.1.283</td><td class="num">15</td></tr>
+  
+</table>
+</div>
+
+
+
+</main>
+<footer>
+  端末からの自己申告値。コストとトークンは全社 CSV を正とする。
+  監査・人事評価・勤怠管理には使わない。
+</footer>
+</body>
+</html>

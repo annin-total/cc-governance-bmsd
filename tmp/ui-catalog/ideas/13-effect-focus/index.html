@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>設定の効果 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><div class="in">
+  <span class="brand">Claude Code 利用状況</span>
+  <nav>
+    <a href="#">概況</a>
+    <a href="#">設定の適用状況</a>
+    <a href="#" aria-current="page">設定の効果</a>
+    <a href="#">スキル・コマンドの利用</a>
+  </nav>
+</div></header>
+
+<main>
+  <div class="head">
+    <h1>設定の効果</h1>
+    <p class="lede">自動圧縮のしきい値を守り始めた前と後で、コンテキストの大きさとコストを比べます。</p>
+    <ul class="spec">
+      <li>設定<b>自動圧縮のしきい値</b></li>
+      <li>配布した値<b id="refval"></b></li>
+      <li>期間<b>各利用者が守り始めた日の前後 14 日</b></li>
+      <li>コストの提供元<b>AWS Bedrock</b></li>
+    </ul>
+  </div>
+
+  <div class="answer">
+    <div class="work">
+      <div class="k">設定は働いているか</div>
+      <p id="ans-work"></p>
+      <div class="sub">圧縮直前の記録のうち、12 万トークン以上だったものの割合。12 万は、上限 20 万トークンのモデルでの 60% にあたります。</div>
+    </div>
+    <div class="cost">
+      <div class="k">コストは下がったか</div>
+      <p id="ans-cost"></p>
+      <div class="sub">時期による変動を差し引いていません。この差をそのまま設定の効果とは読めません。</div>
+    </div>
+  </div>
+
+  <section id="s1">
+    <div class="sh"><span class="no">図 1</span><h2>前後の変化</h2></div>
+    <p class="scope">適用前 = 守り始める前の 14 日、適用後 = 後の 14 日（守り始めた当日は含めない）。各図の縦軸は 0 から。</p>
+    <div class="fig">
+      <div class="slopes" id="slopes"></div>
+      <div class="aside">
+        <h3>読み方</h3>
+        <p>左の 2 つ（青）は設定そのものの働き、右の 2 つ（灰）はコストです。</p>
+        <p class="caution"><b>コストの差は効果と読まない</b>設定が無くても、繁忙やモデルの切り替えで前後に ±十数% の差が出ます。設定の働きは左の 2 つと図 2 で見てください。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s2">
+    <div class="sh"><span class="no">図 2</span><h2>コンテキストの大きさの分布</h2></div>
+    <p class="scope">区間の幅 2 万トークン。前後の境は各利用者が守り始めた日（暦日ではない）。前と後で記録の件数が違うため、縦軸は各期間の中の割合。</p>
+    <div class="fig">
+      <div>
+        <div class="legend"><span class="b"><i></i>適用前</span><span class="a"><i></i>適用後</span></div>
+        <div class="hists" id="hists"></div>
+        <details>
+          <summary>件数の表を開く</summary>
+          <div class="tables" id="hist-tables"></div>
+        </details>
+      </div>
+      <div class="aside">
+        <h3>見るところ</h3>
+        <p>しきい値が効いていれば、適用後は破線（12 万トークン）より左に収まります。</p>
+        <h3>注意</h3>
+        <p>件数が 0 の区間はサーバが返さないため、図では 0 として描いています。</p>
+        <p>12 万トークンの線は、上限 20 万トークンのモデルを仮定した目安です。上限の違うモデルが混ざると位置がずれます。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s3">
+    <div class="sh"><span class="no">図 3</span><h2>日ごとの 1 人あたりコストとトークン</h2></div>
+    <p class="scope">横軸は守り始めてからの日数。その日が利用明細（CSV）の期間に入る利用者だけを数えるため、日ごとに人数が変わります。</p>
+    <div class="fig">
+      <div>
+        <div id="daily"></div>
+        <details>
+          <summary>日ごとの表を開く</summary>
+          <div id="daily-table"></div>
+        </details>
+      </div>
+      <div class="aside">
+        <h3>注意</h3>
+        <p>0 日目（守り始めた当日）は前後が混ざるため除いています。</p>
+        <p>トークンは入力とキャッシュの読み書きの合計です（出力は含まない）。</p>
+        <p class="caution"><b>時期の変動を含む</b>破線は各期間の平均。前後の差には設定以外の要因が入っています。</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。</p>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
