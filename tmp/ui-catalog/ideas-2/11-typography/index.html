@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="variant.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="index.html">Claude Code 利用状況</a>
+    <nav aria-label="画面">
+      <a href="index.html" aria-current="page">概況</a>
+      <a href="policy.html">設定の適用状況</a>
+      <a href="#" aria-disabled="true">設定の効果</a>
+      <a href="#" aria-disabled="true">スキル・コマンドの利用</a>
+    </nav>
+    <div class="variant" id="variant"></div>
+    <span class="asof" id="asof"></span>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div><h1>概況</h1><p class="lead">全体の利用量と、集計データの健全性</p></div>
+    <div class="head-act">
+      <span>利用明細（CSV）はコストとトークンの正本です</span>
+      <button type="button" class="btn">CSV を取り込む</button>
+    </div>
+  </div>
+  <div class="kpis" id="cards"></div>
+  <section class="detail" id="detail" aria-label="詳しい一覧">
+    <h2 class="glabel">詳しい一覧<span>タブで切り替え · カードを押すと該当する一覧が開きます</span></h2>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="panel" role="tabpanel" id="panel"></div>
+  </section>
+</main>
+
+<footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。</footer>
+<script src="data.js"></script>
+<script src="variant.js"></script>
+<script src="parts.js"></script>
+<script src="table.js"></script>
+<script src="page.js"></script>
+<script src="charts.js"></script>
+<script src="overview.js"></script>
+</body>
+</html>

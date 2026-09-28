@@ -1,0 +1,4 @@
+/* 01: タブの帯と面を 1 つの塊に見せる */
+.tabs { border-bottom: 0; }
+.detail .panel { border-top-left-radius: 0; }
+.detail .tabs .tab[aria-selected="true"] { background: var(--card); border-bottom-color: var(--card); border-radius: 8px 8px 0 0; box-shadow: inset 0 2px 0 var(--accent); }

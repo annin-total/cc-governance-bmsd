@@ -1,0 +1,18 @@
+/* 03: 詳しい一覧への入口（要点のページ）と、詳しい一覧のページ */
+.toc { margin-top: 30px; }
+.toc-list { list-style: none; margin: 0; padding: 0; background: var(--card); border-radius: 10px; }
+.toc-list a { display: grid; grid-template-columns: 200px 1fr 64px 96px; align-items: baseline; gap: 16px; padding: 11px 20px; color: inherit; text-decoration: none; border-top: 1px solid var(--hair); }
+.toc-list li:first-child a { border-top: 0; }
+.toc-list a:hover { background: var(--card-hover); }
+.toc-list b { font-size: 13px; }
+.toc-list .scope { font-size: 12px; color: var(--muted); }
+.toc-list .n { font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.toc-list .go { font-size: 12px; color: var(--accent); text-align: right; }
+.crumb { display: flex; gap: 8px; margin-top: 24px; font-size: 12px; color: var(--muted); }
+.crumb a { color: var(--accent); text-decoration: none; }
+.crumb a:hover { text-decoration: underline; }
+.crumb + .head { margin-top: 6px; }
+.tabs { border-bottom: 0; }
+.tabs + .panel { border-top-left-radius: 0; }
+.tabs .tab[aria-selected="true"] { background: var(--card); border-bottom-color: var(--card); border-radius: 8px 8px 0 0; box-shadow: inset 0 2px 0 var(--accent); }
+.tbl-wrap { max-height: none; }

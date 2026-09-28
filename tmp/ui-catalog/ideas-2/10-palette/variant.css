@@ -1,0 +1,11 @@
+/* 配色の変奏。変数だけを差し替える（グレージュは style.css の既定値） */
+[data-palette="bluegray"] {
+  --bg: #e3e6e9; --card: #f5f6f7; --card-hover: #fafbfb; --ink: #23282d; --ink-2: #414951; --muted: #5f6872; --rule: #d0d5da;
+  --accent: #3f5e78; --accent-2: #a5b5c4; --ghost: #c4cbd2; --track: #e7eaed; --chip: #dfe3e7; --chip-up: #d9e3ec; --chip-up-ink: #2c465c; --tabs: #d8dde2;
+  --ok: #3a6a50; --warn: #8a5d14; --ng: #9b3a33; --neutral: #66707a; --warn-2: #b08744; --warn-3: #d7bd92;
+}
+[data-palette="sepia"] {
+  --bg: #e9e3d7; --card: #f7f3eb; --card-hover: #fbf8f2; --ink: #2d2920; --ink-2: #4c4538; --muted: #6d6452; --rule: #d9cfbe;
+  --accent: #636d3c; --accent-2: #bcc09c; --ghost: #d2c8b4; --track: #ede7dc; --chip: #e6dfd1; --chip-up: #e3e5d3; --chip-up-ink: #45502a; --tabs: #e0d8c9;
+  --ok: #3f6b58; --warn: #97620f; --ng: #9a3b2b; --neutral: #74695a; --warn-2: #b98b45; --warn-3: #dcc193;
+}

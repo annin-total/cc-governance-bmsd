@@ -1,0 +1,14 @@
+/* 04: 下の段のナビ（画面の中の一覧）。スクロールしても上端に残る */
+.top { border-bottom: 0; }
+.nav a[aria-current="page"] { background: #dcd7cf; }
+.subnav { position: sticky; top: 0; z-index: 10; background: #dcd7cf; border-bottom: 1px solid var(--rule); }
+.sub-in { display: flex; align-items: center; gap: 20px; height: 44px; }
+.sub-label { flex: none; font-size: 12px; font-weight: 700; color: var(--ink-2); padding-right: 20px; border-right: 1px solid #c6c0b6; }
+.subnav .tabs { border-bottom: 0; align-self: stretch; }
+.subnav .tab { padding: 0 12px; border-bottom-width: 2px; margin-bottom: 0; }
+.subnav .tab .n { background: rgba(255, 255, 255, .45); }
+.subnav .tab[aria-selected="true"] { border-bottom-color: var(--accent); }
+.subnav .tab[aria-selected="true"] .n { background: var(--card); }
+.sub-top { margin-left: auto; flex: none; font-size: 12px; color: var(--muted); text-decoration: none; }
+.sub-top:hover { color: var(--accent); }
+.detail { margin-top: 28px; scroll-margin-top: 56px; }

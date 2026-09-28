@@ -1,0 +1,20 @@
+/* 文字組みの変奏。変数だけを差し替える（配色は 04 のグレージュのまま） */
+[data-type="gothic13"] {
+  --fs: 13px; --fs-label: 13px; --fs-sm: 12px; --fs-xs: 11px; --fs-tbl: 13px; --fs-h1: 22px; --fs-h2: 15px; --fs-val: 38px; --fs-unit: 14px; --lh: 1.65;
+}
+[data-type="mincho"] {
+  --fs: 13px; --fs-label: 13px; --fs-sm: 12px; --fs-xs: 11px; --fs-tbl: 13px; --fs-h1: 24px; --fs-h2: 17px; --fs-val: 38px; --fs-unit: 14px; --lh: 1.7;
+  --head: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "BIZ UDPMincho", serif; --head-weight: 600;
+}
+[data-type="mincho"] h1 { letter-spacing: .08em; }
+[data-type="mincho"] .k-label, [data-type="mincho"] .glabel { letter-spacing: .03em; }
+[data-type="dense12"] {
+  --fs: 12px; --fs-label: 12px; --fs-sm: 11px; --fs-xs: 10px; --fs-tbl: 12px; --fs-h1: 19px; --fs-h2: 14px; --fs-val: 30px; --fs-unit: 13px; --lh: 1.55;
+  --card-pad: 12px 16px 11px; --card-min: 150px; --gap: 10px; --cell-y: 4px; --spark-h: 36px;
+}
+[data-type="dense12"] .page-head { margin: 18px 0 12px; }
+[data-type="dense12"] .kpis { gap: 14px; }
+[data-type="dense12"] .detail { margin-top: 20px; }
+[data-type="dense12"] .tabs button { padding: 6px 12px; }
+[data-type="dense12"] .panel { padding: 16px 20px 18px; }
+[data-type="dense12"] .k-viz .legend { min-height: 31px; }

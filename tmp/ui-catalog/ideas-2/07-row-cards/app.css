@@ -1,0 +1,22 @@
+/* 07 横長の行カード */
+.rgroups { display: grid; gap: 18px; }
+.rows { display: grid; gap: 6px; }
+.rowcard {
+  display: grid; grid-template-columns: 72px minmax(250px, .9fr) 150px minmax(320px, 1.1fr) 250px 12px; align-items: center; gap: 0 20px;
+  width: 100%; text-align: left; border: 0; cursor: pointer; background: var(--card); border-radius: 8px; padding: 10px 18px;
+  min-height: 70px; box-shadow: 0 1px 0 rgba(0, 0, 0, .04); transition: background .15s;
+}
+.rowcard:hover { background: var(--card-hover); }
+.rowcard[aria-pressed="true"] { box-shadow: inset 3px 0 0 var(--accent), 0 1px 0 rgba(0, 0, 0, .04); background: var(--card-hover); }
+.r-name b { display: block; font-size: 14px; font-weight: 600; }
+.r-name .scope { margin: 0; display: block; }
+.r-value { font-family: var(--fig); font-size: 28px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; letter-spacing: -.01em; line-height: 1.2; white-space: nowrap; }
+.r-value .u { font-family: var(--sans); font-size: 13px; font-weight: 600; margin-left: 3px; color: var(--ink-2); }
+.r-sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.5; }
+.r-sub .r-rule { display: block; font-size: 11px; color: var(--muted); opacity: .85; }
+.r-viz .viz { padding: 0; }
+.r-viz svg { height: 34px; }
+.r-viz .bars > div { line-height: 1.35; grid-template-columns: 116px 1fr 46px; }
+.r-go { color: var(--ghost); font-size: 20px; line-height: 1; }
+.rowcard:hover .r-go, .rowcard[aria-pressed="true"] .r-go { color: var(--accent); }
+.detail { margin-top: 30px; background: var(--card); border-radius: 10px; padding: 12px 24px 22px; scroll-margin-top: 12px; }

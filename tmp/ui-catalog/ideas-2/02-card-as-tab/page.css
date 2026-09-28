@@ -1,0 +1,7 @@
+/* 02: 選んだカードを枠で示し、下の面とつなげる */
+.card[aria-pressed="true"] { background: var(--card-hover); box-shadow: inset 0 0 0 1.5px var(--accent-2); }
+.card[aria-pressed="true"] .go { color: var(--accent); font-weight: 600; }
+.panel { box-shadow: inset 0 3px 0 var(--accent); padding-top: 18px; }
+.panel-h { flex-wrap: wrap; row-gap: 2px; }
+.panel-h .from { flex-basis: 100%; font-size: 12px; font-weight: 600; color: var(--accent); }
+.detail { margin-top: 24px; }
