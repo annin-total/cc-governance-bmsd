@@ -1,10 +1,10 @@
 """`scripts/seed_dashboard.py` が作る DB で、管理画面の表と分布が空にならないことを確かめる。
 
 集計は画面と同じ `ccgov.store.queries_*` で行う（flask を要さない）。
+`SEED_DASHBOARD_TEST_DSN` に空の DB の DSN を渡すと、全ての表の検査をその DB で行う（既定は一時の SQLite）。
 """
 
 import os
-import sqlite3
 import subprocess
 import sys
 import time
@@ -23,33 +23,45 @@ from ccgov.constants import (
     REFERENCE_KEY,
     REFERENCE_VALUE,
 )
-from ccgov.store import queries_errors, queries_events, queries_policy
+from ccgov.store import db, queries_errors, queries_events, queries_policy
 from ccgov.vendor import contract, policy
 from seed_dashboard import _check_rules
 from seed_dashboard_columns import RULES
 from seed_dashboard_rows import scalar_keys
 
 
-def _run(*args: str) -> subprocess.CompletedProcess:
+def _run(dsn: str, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
         capture_output=True,
         text=True,
         check=False,
+        env={**os.environ, "DB_DSN": dsn},
     )
+
+
+def _count(dsn: str, table: str, monkeypatch) -> int:
+    monkeypatch.setenv("DB_DSN", dsn)
+    conn = db.connect()
+    try:
+        cur = conn.cursor()
+        cur.execute(f"SELECT COUNT(*) FROM {table}")
+        return cur.fetchone()[0]
+    finally:
+        conn.close()
 
 
 @pytest.fixture(scope="module")
 def seeded(tmp_path_factory):
     """既定の規模で 1 回だけ流した DB への接続と、集計の基準日。"""
-    db_path = tmp_path_factory.mktemp("seed") / "seed.db"
-    result = _run(str(db_path))
+    dsn = os.environ.get("SEED_DASHBOARD_TEST_DSN") or (
+        f"sqlite:///{tmp_path_factory.mktemp('seed') / 'seed.db'}"
+    )
+    result = _run(dsn)
     assert result.returncode == 0, result.stderr
     with pytest.MonkeyPatch.context() as mp:
-        mp.setenv(
-            "DB_DSN", f"sqlite:///{db_path}"
-        )  # 集計の関数が方言を DB_DSN から決める
-        conn = sqlite3.connect(db_path)
+        mp.setenv("DB_DSN", dsn)  # 集計の関数が方言を DB_DSN から決める
+        conn = db.connect()
         yield conn, contract.to_day(int(time.time()))
         conn.close()
 
@@ -96,23 +108,19 @@ def test_画面の全ての表と分布が埋まる(seeded):
         assert set(distribution) == {"before", "after"}, hook_event
 
 
-def test_CSVなし_既存の出力先_下限を割る引数を扱う(tmp_path):
-    no_csv = tmp_path / "no_csv.db"
-    result = _run(str(no_csv), "--no-csv")
+def test_CSVなし_行の在るDB_下限を割る引数を扱う(tmp_path, monkeypatch):
+    dsn = f"sqlite:///{tmp_path / 'no_csv.db'}"
+    result = _run(dsn, "--no-csv")
     assert result.returncode == 0, result.stderr
-    conn = sqlite3.connect(no_csv)
-    try:
-        assert conn.execute("SELECT COUNT(*) FROM cost_daily").fetchone() == (0,)
-    finally:
-        conn.close()
+    assert _count(dsn, "cost_daily", monkeypatch) == 0
 
-    before = os.stat(no_csv).st_mtime_ns
-    assert _run(str(no_csv), "--no-csv").returncode != 0
-    assert os.stat(no_csv).st_mtime_ns == before
+    events = _count(dsn, "events", monkeypatch)
+    assert _run(dsn, "--no-csv").returncode != 0
+    assert _count(dsn, "events", monkeypatch) == events
 
     for args in (("--users", "1"), ("--days", "1")):
         target = tmp_path / f"small{args[0]}.db"
-        assert _run(str(target), *args).returncode != 0, args
+        assert _run(f"sqlite:///{target}", *args).returncode != 0, args
         assert not target.exists(), args
 
 

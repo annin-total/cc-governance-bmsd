@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-"""管理画面 4 画面（/・/policy・/effect・/assets）の表と分布が空にならない合成データを SQLite に作る。
+"""管理画面 4 画面（/・/policy・/effect・/assets）の表と分布が空にならない合成データを、`DB_DSN` の DB に作る。
 
-使い方: python3 scripts/seed_dashboard.py <出力する DB> [--users 人数] [--days 日数] [--no-csv]
-  出力先が既に在れば上書きせずに止まる。乱数の種は固定。`--no-csv` は CSV（cost_daily）を入れない。
+使い方: DB_DSN=<DSN> python3 scripts/seed_dashboard.py [--users 人数] [--days 日数] [--no-csv]
+  DSN の形はサーバと同じ（`server/ccgov/store/db.py`）。契約の表に 1 行でも在る DB には入れずに止まる。
+  乱数の種は固定。`--no-csv` は CSV（cost_daily）を入れない。
   受信・取込の本体（`/ingest`・`/import` と同じ関数）を通し、行が 1 つでも捨てられたら止まる。
-  compose の手動確認へ入れる: `server/` で `docker compose -p ccgov-manual cp <DB> server:<パス>`
-  （`<パス>` は `server/dev.env` の `DB_DSN` から `sqlite:///` を除いたもの）
 """
 
 import argparse
 import csv
 import json
-import os
 import random
+import re
 import sys
 import tempfile
 import time
@@ -80,7 +79,6 @@ def _import_csv(costs: list, conn) -> None:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("db")
     parser.add_argument("--users", type=int, default=DEFAULT_USERS)
     parser.add_argument("--days", type=int, default=DEFAULT_DAYS)
     parser.add_argument("--no-csv", action="store_true")
@@ -92,40 +90,49 @@ def _parse_args() -> argparse.Namespace:
     return args
 
 
+def _tables() -> list:
+    return [
+        re.search(r"CREATE TABLE IF NOT EXISTS (\w+)", sql).group(1)
+        for sql in contract.ddl()
+    ]
+
+
+def _has_rows(conn) -> bool:
+    cur = conn.cursor()
+    for table in _tables():
+        cur.execute(db.q(f"SELECT COUNT(*) FROM {table}"))
+        if cur.fetchone()[0]:
+            return True
+    return False
+
+
 def _load(rows: list, costs: list, no_csv: bool) -> None:
+    db.init()
     conn = db.connect()
     try:
-        # 受信は表を作らない。索引は入れ終えてから db.init() で作る
-        for statement in contract.ddl():
-            conn.execute(statement)
+        if _has_rows(conn):
+            sys.exit("契約の表に行が在る DB には入れない（空の DB を DB_DSN に渡す）")
         raw = "\n".join(json.dumps(r, ensure_ascii=False) for r in rows)
         result = ndjson.ingest(raw.encode("utf-8"), conn)
         if result["dropped"]:
-            sys.exit(f"受信で破棄された行がある: {result}")
+            sys.exit(
+                f"受信で破棄された行がある（途中まで入った。空の DB でやり直す）: {result}"
+            )
         if not no_csv:
             _import_csv(costs, conn)
     finally:
         conn.close()
-    db.init()
 
 
 def main() -> None:
     args = _parse_args()
-    out = Path(args.db).resolve()
-    if out.exists():
-        sys.exit(f"出力先が既に在る（上書きしない）: {out}")
     _check_rules()
-    os.environ["DB_DSN"] = f"sqlite:///{out}"
     rng = random.Random(SEED)
     rows, costs = generate(rng, args.users, args.days, int(time.time()))
-    try:
-        _load(rows, costs, args.no_csv)
-    except BaseException:
-        out.unlink(missing_ok=True)  # 作りかけを残すと、次の実行が「既に在る」で止まる
-        raise
+    _load(rows, costs, args.no_csv)
     counts = {k: sum(r["kind"] == k for r in rows) for k in KINDS}
     n_cost = 0 if args.no_csv else len(costs)
-    print(f"{out}: users={args.users} days={args.days} {counts} cost_daily={n_cost}")
+    print(f"users={args.users} days={args.days} {counts} cost_daily={n_cost}")
 
 
 if __name__ == "__main__":
