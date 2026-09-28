@@ -45,6 +45,12 @@ REAL_CONFIG_DIRS = tuple(
 _EXTRA_KEYS = ("CC_GOVERNANCE_DISABLE",)
 
 
+def _prefix() -> str:
+    """隔離ルートの名前の接頭辞。`CC_E2E_RUN` があれば入れ、並行する実行と持ち主を見分けられるようにする。"""
+    run = os.environ.get("CC_E2E_RUN")
+    return f"cc-e2e-{run}-" if run else "cc-e2e-"
+
+
 def _real(p) -> Path:
     return Path(os.path.realpath(p))
 
@@ -57,7 +63,7 @@ class E2ERoot:
     """`config/`・`project/`・`build/`・`srv/`・`tmp/` を持つ一時ディレクトリ。"""
 
     def __init__(self) -> None:
-        self.path = _real(tempfile.mkdtemp(prefix="cc-e2e-"))
+        self.path = _real(tempfile.mkdtemp(prefix=_prefix()))
         (self.path / MARKER).touch()
         for name in ("config", "project", "build", "srv", "tmp"):
             (self.path / name).mkdir()
@@ -156,7 +162,10 @@ class E2ERoot:
 
 
 def hook_rows(data_dir: Path) -> list:
-    """queue.jsonl と spool/*.jsonl の和集合（送信先が空でも送信プロセスが spool へ移すため）。"""
+    """queue.jsonl と spool/*.jsonl の和集合（送信先が空でも送信プロセスが spool へ移すため）。
+
+    送信済みの行は端末から消えるので、送信先がある導入では届いた行はここに現れない。
+    """
     # queue を先に読む。読んだ後に spool へ移されても、後から列挙する spool で拾える
     rows = _jsonl(data_dir / "queue.jsonl")
     for f in sorted((data_dir / "spool").glob("*.jsonl")):

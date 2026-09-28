@@ -57,7 +57,19 @@ def session(root, extra_env: Optional[dict] = None) -> list:
         "-p", "ok", "--output-format", "stream-json", "--verbose",
         timeout=_SESSION_TIMEOUT, extra_env=extra_env,
     )  # fmt: skip
-    return [json.loads(line) for line in res.stdout.splitlines() if line.strip()]
+    lines = [json.loads(line) for line in res.stdout.splitlines() if line.strip()]
+    # 打ち切られた hook も最後まで走り、書き込みが済むことがある。後の assert の合否は当てにならない
+    cancelled = [
+        e
+        for e in lines
+        if e.get("subtype") == "hook_response"
+        and e.get("hook_event") == "SessionStart"
+        and e.get("outcome") == "cancelled"
+    ]
+    assert not cancelled, (
+        f"SessionStart の hook が打ち切られた（高負荷。この回は判定できない）: {cancelled}"
+    )
+    return lines
 
 
 def data_dir(root) -> Path:

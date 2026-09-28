@@ -51,10 +51,15 @@ Bedrock では、組織で有効なモデル ID への固定（`ANTHROPIC_DEFAUL
 - **本体の自動更新は `--settings` で止める。**配る設定が隔離した `settings.json` の `env` で自動更新を有効にし、環境変数の
   `DISABLE_AUTOUPDATER` に勝つ。native 版の更新先は `HOME` の下で隔離の外なので、`e2e/_root.py` の `run_claude` が
   上位の層の `--settings` で無効にする。手動確認で起動するときも同じ `--settings` を付ける
+- **E2E の外で `plugin/` を複製して hook を直接起動するときは、複製の送信先を空かローカルにする。**開発ツリーの
+  `config.json` の `ingest_url`・`ingest_token` は本番の値であり、そのまま起動すると本番へ送りうる。
+  `e2e/_market.py` の `publish` を通した組み立ては送信先を空にする。直接起動では、状態の置き場の `sent_at` の
+  mtime で送信プロセスを起動させるかを制御する（`plugin/hooks/_spool.py` の `should_send`）
 - **`CC_E2E_KEEP=1` で隔離ルートを残せる。**失敗時の調査用。既定では片付けで消える
 - **並行して多く起動すると偽の赤になりうる。**同じ Mac で `claude` を一斉に多数起動すると、
   `SessionStart` の hook が `hooks.json` の `SessionStart` の `timeout` に間に合わず打ち切られ
-  （`outcome: cancelled`）、設定の適用や policy 行が抜けうる。本数の目安は `docs/knowledge/measurements.md` の
+  （`outcome: cancelled`）、設定の適用や policy 行が抜けうる。`e2e/_flow.py` の `session()` は、打ち切られた回を
+  「SessionStart の hook が打ち切られた」と名指しして落とす（その回は判定できない）。本数の目安は `docs/knowledge/measurements.md` の
   「一斉起動と `SessionStart` の打ち切り」にあり、その値は測った時の `timeout` に依存する。
   複数の E2E を並行させるときは、起動をずらすか本数を絞る。送信の完了待ち（`wait_quiet`）が前提と
   する静止時間（`_QUIET_SEC`）も、高負荷で崩れて偽の赤になるかは未検証
@@ -188,7 +193,7 @@ HTTPS・プロキシ越しの送信と、本番の受信先への到達は確か
 - Docker のデーモンに繋がること。繋がらなければ skip される。ビルドには PyPI への到達が要る
 - コンテナ・イメージのラベルは `cc-e2e=<CC_E2E_RUN>`。同じ Docker で
   サーバのモジュールを並行して走らせるときは、実行ごとに異なる `CC_E2E_RUN` を付け、片付け漏れの
-  検査が他の実行の資源と混ざらないようにする
+  検査が他の実行の資源と混ざらないようにする。`CC_E2E_RUN` は隔離ルートの名前（`cc-e2e-<CC_E2E_RUN>-`）にも付く
 - 前回の実行の片付け漏れ（このラベルのコンテナ・イメージ）が残っていると、テストは失敗して
   削除コマンドを表示する。自動では消さない
 - ビルドのたびに Docker のビルドキャッシュが増える。テストは消さない（消す操作は他のイメージの
@@ -225,3 +230,4 @@ DB は SQLite だけで、MySQL は確かめない。AIP の前段のリバー�
 - 2026-09-28: 並行起動時の偽の赤・`CC_E2E_RUN` によるラベルの区別・設定の配布で `ONCE` を確かめないこと・
   `permission_mode` が非対話でも `--permission-mode` で変わることを書いた
 - 2026-09-28: 手動確認の起動に `--settings` を付け、管理画面のパスと CSV の置き場を `dev.env` の名前で指し、テストと knowledge に重なる判定の記述を削った
+- 2026-09-28: E2E の外で hook を直接起動するときの送信先・打ち切りを名指しで落とすこと・隔離ルートの名前の `CC_E2E_RUN` を書いた
