@@ -175,8 +175,8 @@
 
 収集の範囲について次を採らない。何が取れるかは `../knowledge/` にある。
 
-- **最高頻度帯の hook を増やさない。** `PreToolUse` が増やす情報は `PostToolUse` との差分だけで、
-  ツール呼出ごとのプロセス起動が倍になる代償に見合わない。
+- **最高頻度帯の hook を増やさない。** `PreToolUse` が増やす情報は `PostToolUse` との差分だけで（権限で拒否された呼出が
+  `PreToolUse` にだけ現れるかは未検証）、ツール呼出ごとのプロセス起動が倍になる代償に見合わない。
 - **コンテキストトークン数を取る hook を増やさない。** `SessionEnd` の値は `Stop` の最終値と、
   `UserPromptSubmit` の値は前ターンの `Stop` の値と同じで、重複にしかならない。
 - **コンテキストトークン数の取得元を transcript 末尾読取に一本化する。** 再開時のキーからも取れるが、
@@ -195,8 +195,8 @@
 | `env.FORCE_AUTOUPDATE_PLUGINS` | 本体の自動更新を抑止している端末でも、プラグインの更新だけを生かす | 本体の自動更新を抑止している端末が社内に実在し、かつその端末でプラグインの版が古いまま止まったとき |
 | マネージド設定による配布 | 管理者が配る層（`managed-settings.json`）でマーケットプレイスと施策を配る | `~/.claude/settings.json` への書き込みが上位の設定に負けて効かない端末が出たとき、または導入を利用者任せにできなくなったとき |
 | `model` によるモデル別の層別 | `SessionStart` の `model` を文字列のまま `GROUP BY` する。率を出さないので名寄せ表は要らない | `PreCompact` 時点のコンテキストトークン数の分布が多峰性を示し、コンテキストウィンドウのサイズの違いで解釈が止まったとき。**AI Gateway CSV の `Model` とは突き合わせない**（名寄せ表という人手の保守が発生する） |
-| `PostCompact` の登録 | 圧縮後のコンテキストトークン数が取れ、圧縮の効き目を直接測れる | 圧縮の回数と `PreCompact` 時点の分布シフトだけでは効果を説明できなくなったとき。先にキー構成の調査が要る |
-| `seconds_since_last_response` / `prompt_cache_likely_expired` の収集 | 「前回応答から N 分でキャッシュが切れる」を実データで示せる唯一の組み合わせ。どちらも公式ドキュメント未記載で消失リスクがある | 「N 分以内に再開せよ」型の施策で閾値を決める段になったとき |
+| `PostCompact` の登録 | その時点の transcript から圧縮後のコンテキストトークン数を読めれば、効き目を直接測れる | 圧縮の回数と `PreCompact` 時点の分布シフトだけでは効果を説明できなくなったとき。先に、その時点の transcript から圧縮後のコンテキストトークン数を読めるかの確認が要る |
+| `seconds_since_last_response` / `prompt_cache_likely_expired` の収集 | 「前回応答から N 分でキャッシュが切れる」を実データで示せる唯一の組み合わせ | 「N 分以内に再開せよ」型の施策で閾値を決める段になったとき |
 | `estimated_cache_write_usd` の収集 | AI Gateway CSV の日次 Cache Write を「どの再開が生んだか」に分解できる | コストの上位者が特定でき、その内訳を行動単位まで割りたくなったとき |
 | transcript の読み取り範囲（`plugin/hooks/_context.py` の `_TAIL_BYTES`）の拡大 | 末尾から `message.usage` を取れない割合を下げる | その割合がベースライン（読み取り範囲由来 約 0.5% ＋ 応答なし由来 約 3%。`../knowledge/measurements.md`）を大きく超えたとき。1 行が読み取り範囲を超える構造は拡大では消えない |
 | `PermissionDenied` の登録 | 権限拒否の事象が取れる。安全性の材料は現在 `permission_mode` だけで、それを増やせる唯一の低頻度な候補 | `permission_mode` だけでは足りないと分かったとき。先に、auto mode の分類器による拒否で発火するかと、キー構成の確認が要る（確かめた範囲は `../knowledge/upstream-features.md`）。`PermissionRequest` は採らない（「求めた」だけでは判断材料にならず、頻度帯も中〜高になりうる） |
@@ -221,3 +221,4 @@
 - 2026-09-28: 送信の error 行の集約と打ち切りの判断を加え、hook のタイムアウトを設定の名前で指した
 - 2026-09-28: 将来の検討事項（SessionStart の行の追記の前倒し・送信プロセスの排他）と OpenTelemetry の再検討の条件を「条件が変われば再検討すること」に集め、読み取り範囲を定数名で書いた
 - 2026-09-28: コードのコメントと重なる理由（`_signal`・`import _sender`・途中の dict・`policy` の import 位置）と、hook の種類の数・`tool_input` の現在のキーを削った。送信先を埋める時期を書き、`python3` の検知を `../guide/onboarding.md` に任せ、ベースラインに出典を添えた
+- 2026-09-28: 収集の範囲の判断の前提を公式ドキュメントに合わせ（`PreToolUse` の差分の未検証点）、`PostCompact` の入力と再開時のキーの記載を `../knowledge/upstream-features.md` に任せた

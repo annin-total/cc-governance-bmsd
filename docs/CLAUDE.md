@@ -43,7 +43,8 @@ docs/
   （「使っている」「採らない」「だから Z にした」）には触れない
 - 1 項目は数行。事実とそれがいつ効くかだけを書き、再現手順は書かない
 - 確認した版（と環境）を添える。数字には測定条件を添え、`knowledge/measurements.md` に置く。
-  測らずに決まっている仕様は `knowledge/db-and-framework-facts.md` に置く
+  DB とフレームワークの、測らずに決まっている仕様と数字でない観測（版を添える）は `knowledge/db-and-framework-facts.md` に置く
+- 例外として、我々のサーバの画面・受信の実測値も、条件を添えて `knowledge/measurements.md` に置く（数字の置き場を 1 か所にするため）
 
 ### remaining/ に置くもの
 
