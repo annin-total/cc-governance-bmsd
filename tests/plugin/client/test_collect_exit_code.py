@@ -84,7 +84,7 @@ _COLLECTING_CASES = {
         {"stdin": json.dumps({"session_id": "x" * (10 * 1024 * 1024)})},
     ),
     "stdin_closed": lambda t, h: (("Stop",), {"close_stdin": True}),
-    # transcript_path の異常値（数値は open() に float を渡して TypeError になる経路）
+    # transcript_path の異常値
     "transcript_path_missing_file": lambda t, h: (
         ("Stop",),
         {"stdin": json.dumps({"transcript_path": str(t / "no-such-file.jsonl")})},
@@ -163,10 +163,7 @@ def test_ingest_url_unresolvable_host(run_collect, tmp_path, write_config):
 
 
 def test_unexpected_exception_is_swallowed(run_collect, tmp_path):
-    """深い入れ子の JSON が起こす RecursionError が最外周まで届いても clean exit で終わる。
-
-    途中で捕まえるよう実装が変わっても通り続けるが、その場合は最外周の例外処理の検査ではなくなる。
-    """
+    """深い入れ子の JSON が起こす RecursionError が最外周まで届いても clean exit で終わり、collect の error 行が 1 つ積まれる。"""
     result = run_collect(
         "Stop", plugin_data=tmp_path / "plugin-data", stdin="[" * 100_000
     )

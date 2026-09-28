@@ -43,7 +43,7 @@ git config --global user.email
 Claude Code の中で、次の 2 つを順に実行してください。
 
 ```
-/plugin marketplace add <社内リポジトリの https URL>
+/plugin marketplace add <社内リポジトリの git URL（https、末尾 .git）>
 /plugin install governance@cc-marketplace-governance-bmsd
 ```
 
@@ -75,7 +75,7 @@ claude plugin update governance
 
 ## 3. 導入していない人を見つける
 
-案内を送った後、管理画面 `/policy` の未導入者一覧を見る。AI Gateway の利用記録には現れるのに、端末から一度も報告が届いていない人が並ぶ。「案内を送る前に（Windows 端末）」の確認で止まっている Windows 端末は必ずここに現れる。
+案内を送った後、管理画面 `/policy` の未導入者一覧を見る。AI Gateway の利用記録には現れるのに、どの端末からも直近に報告が届いていない人が並ぶ（CSV を取り込んでいる間だけ。`../spec/server.md`）。「案内を送る前に（Windows 端末）」の確認で止まっている Windows 端末も、その人のほかの端末から届いていなければここに現れる。
 
 一覧に残っている人には、案内が届いていないか、事前確認で止まっているかのどちらかなので、個別に声をかける。案内を送るたびにこれを繰り返す。
 
@@ -110,3 +110,4 @@ claude plugin update governance
   案内日をずらしても効果を測れるわけではないことを書いた
 - 2026-09-26: 画面に無い「準拠開始日の分布」で分けた効果を確かめる記述を外した
 - 2026-09-26: コストの前後差の参照先を `decisions/server.md` にした
+- 2026-09-28: 未導入者一覧に出る条件と、マーケットプレイスの URL の形を書いた

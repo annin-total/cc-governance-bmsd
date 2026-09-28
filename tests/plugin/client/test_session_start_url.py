@@ -322,9 +322,7 @@ def test_open_url_exception_does_not_break_output_or_collection(
     sys.platform != "darwin", reason="darwin だけが `open` コマンドで開く"
 )
 def test_real_process_opens_url_via_fake_open_not_real_one(hooks_dir, tmp_path):
-    """実プロセスで起動し、PATH 先頭の偽 `open` に URL が渡ることを確かめる。
-    本物の /usr/bin/open は PATH より後ろに置かれるため呼ばれない。偽 open が呼ばれた記録で担保する。
-    """
+    """実プロセスで起動し、PATH を偽の bin だけにして、偽の open に URL が渡ることを確かめる。"""
     notices_path = tmp_path / "plugin" / "notices.json"
     notices_path.write_text(
         json.dumps(
