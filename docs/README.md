@@ -13,7 +13,7 @@
 | `spec/system.md` | 全体像。端末・配布経路・サーバが何をどう受け渡すか・契約 |
 | `spec/plugin.md` | 端末プラグインの仕様（設定の適用・お知らせ・収集と送信） |
 | `spec/server.md` | 集計サーバの仕様（受信・保存・集計・画面・CSV 取込） |
-| `spec/dashboard-style.md` | サーバの画面の見た目の決まり |
+| `spec/design-system.md` | 管理画面のデザインシステム（見た目・部品・文言の決まり） |
 | `decisions/plugin.md` | プラグインと契約の設計判断 |
 | `decisions/server.md` | サーバの設計判断 |
 | `guide/onboarding.md` | 利用者への導入案内と段階的な展開の進め方 |
