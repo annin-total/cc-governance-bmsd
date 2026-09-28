@@ -45,8 +45,8 @@ Basic 認証で守る（ユーザー名は問わない）。`ADMIN_PATH` の外�
 ## データモデル
 
 テーブルは `events`（端末の利用ログ）・`policy_state`（適用した設定値の時系列）・
-`errors`（hook の失敗）・`cost_daily`（AI Gateway CSV）の 4 つ。列は契約から、インデックスは `db.py` から決まる。
-すべて append-only で、サロゲートキーも外部キーも持たず、行を個別に参照しない。
+`errors`（hook の失敗）・`cost_daily`（AI Gateway CSV）の 4 つ。`events`・`policy_state`・`errors` は append-only で、
+`cost_daily` は CSV 取込で `day` 単位に置き換える。どれもサロゲートキーも外部キーも持たず、行を個別に参照しない。
 
 - 準拠の判定は `policy_state.prev_value`（セッションを開いた時点で既にあった値）で行う。
   準拠開始日は、`prev_value` が比較値（`constants.py` の `REFERENCE_VALUE`）に一致した最初の日である
@@ -66,7 +66,7 @@ window 関数（`ROW_NUMBER() OVER`）を使うため、DB は SQLite 3.25 以�
   イベントが来ない利用者を未導入者として出す。`cost_daily` に行が 1 つも無い（CSV を一度も取り込んでいない）ときに限り、
   分母は「直近に policy イベントが届いた `user_email`」とし、未導入者を含まないことを画面に注記する。
   policy イベントが途絶えた端末も出す。
-  端末ごとのプラグインの版（`policy_state` の最新 1 行）と Claude Code 本体の版（版のある `events` の最新 1 行）の分布も出す
+  端末ごとのプラグインの版（`constants.py` の `REFERENCE_KEY` の行のうち端末ごとの最新 1 行）と Claude Code 本体の版（版のある `events` の最新 1 行）の分布も出す
 - **`/assets` 配布物の利用状況 — 「配ったものは使われているか」**。値の分類辞書は持たず、
   `command_source` の生値で並べる
 - **`/` 概況 — 「全体でいくらかかり、誰が使っているか」**。健全性の表示の読み方は `system.md`
@@ -83,3 +83,4 @@ window 関数（`ROW_NUMBER() OVER`）を使うため、DB は SQLite 3.25 以�
 - 2026-09-28: `/policy` に Claude Code 本体の版の分布を加えた
 - 2026-09-28: CSV を取り込んでいないときの準拠率の分母を加えた
 - 2026-09-28: 起動時の照合が同期忘れを検出しないことを書いた
+- 2026-09-28: `cost_daily` を append-only から外し、プラグインの版の分布が数える行を `REFERENCE_KEY` の行とした。列とインデックスの決まり方を削った
