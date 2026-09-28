@@ -208,6 +208,8 @@ HTTPS・プロキシ越しの送信と、本番の受信先への到達は確か
 
 1. `server/` で `docker compose -p ccgov-manual up -d --build` を実行し、
    `docker compose -p ccgov-manual cp ../e2e/samples/cost_daily.csv server:<CSV_DIR>/` で見本の CSV を入れる（`<CSV_DIR>` は `server/dev.env` の `CSV_DIR`）
+   - 全ての表を埋めて見るときは、見本の CSV の代わりに、`DB_DSN=sqlite:///<ローカルのファイル>` で `scripts/seed_dashboard.py` を流して作った DB を
+     `docker compose -p ccgov-manual cp <ローカルのファイル> server:<パス>`（`<パス>` は `server/dev.env` の SQLite の `DB_DSN` のパス）で入れ、2 の取込は押さない
 2. `http://127.0.0.1:<ポート>/<ADMIN_PATH>/`（`<ポート>` は `server/compose.yaml` の `ports` のホスト側、`<ADMIN_PATH>` は `server/dev.env` の `ADMIN_PATH`）を開き（パスワードは `dev.env` の `ADMIN_PASSWORD`、ユーザー名は任意）、
    「CSV を取り込む」を押す
 3. ブラウザの幅を 1280px にし、4 画面（`<ADMIN_PATH>` の下の `/`・`/policy`・`/effect`・`/assets`）を
@@ -231,3 +233,4 @@ DB は SQLite だけで、MySQL は確かめない。AIP の前段のリバー�
   `permission_mode` が非対話でも `--permission-mode` で変わることを書いた
 - 2026-09-28: 手動確認の起動に `--settings` を付け、管理画面のパスと CSV の置き場を `dev.env` の名前で指し、テストと knowledge に重なる判定の記述を削った
 - 2026-09-28: E2E の外で hook を直接起動するときの送信先・打ち切りを名指しで落とすこと・隔離ルートの名前の `CC_E2E_RUN` を書いた
+- 2026-09-28: 手動確認で表を埋める合成データの入れ方を書いた

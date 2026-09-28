@@ -20,6 +20,8 @@ python3.9 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirem
 .venv/bin/python -m pytest -q
 .venv/bin/ruff check . && .venv/bin/ruff format .
 docker compose up                                    # http://localhost:15000/ 。終了は docker compose down
+# DB アクセスかテストを変えたら MySQL でも流す（MySQL は docker compose --profile mysql up -d mysql。値は compose.yaml の先頭）
+CCGOV_TEST_MYSQL_DSN=mysql://root:<pw>@127.0.0.1:13306 .venv/bin/python -m pytest -q
 ```
 
 ## Coding
@@ -55,6 +57,8 @@ docker compose up                                    # http://localhost:15000/ �
 - **収集は最小限にする**：契約が名指ししたものだけを読む。本文（prompt・応答・メッセージ）には触れない
 - **hook は利用者の作業を妨げない**：常に exit 0 で終わり、標準エラーにも何も出力しない
 - **配布物を汚さない**：`plugin/` はそのまま配布される。テストや生成物を置かない
+- **DB に依存しない**：サーバは SQLite（AIP）と MySQL（One Cloud）の両方で動かす。方言差は `server/ccgov/store/db.py` に閉じ、
+  スクリプトとテストも `DB_DSN` を通して DB を開く。今の既定が SQLite でも、SQLite でしか動かない書き方をしない
 - **依存と機能を増やさない**：依存の追加は設計判断として扱い、理由を残す。「将来必要かもしれない」を理由に足さない
 
 ## Git

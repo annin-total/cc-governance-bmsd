@@ -86,7 +86,7 @@ py -m venv .venv
 
 ### サーバの起動
 
-`server/` で Docker Compose を使う。設定は `server/dev.env`（開発用のダミー値）が使われる。
+`server/` で Docker Compose を使う。設定は `server/dev.env`（開発用のダミー値）が使われる。DB は既定で SQLite（AIP 相当）で、MySQL（One Cloud 相当）で動かすときは、`dev.env` の `DB_DSN` の 2 行を入れ替えて profile `mysql` を付ける（使い方は `server/compose.yaml` の先頭）。
 
 ```bash
 cd server
