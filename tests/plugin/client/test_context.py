@@ -326,3 +326,23 @@ def test_version_outside_tail_window_returns_none(tmp_path):
     lines = [_version_line("2.1.283")] + [json.dumps({"f": "x" * 100})] * 50
     _write_jsonl(path, lines)
     assert claude_code_version(str(path), tail=1024) is None
+
+
+def test_deeply_nested_line_is_skipped(tmp_path):
+    """末尾の行が再帰上限を超える入れ子でも、その行を飛ばして手前の行から両方を採る。
+
+    `RecursionError` は ValueError 派生ではない。捕まえ損ねると Stop の行ごと失われる。
+    """
+    depth = sys.getrecursionlimit() * 10
+    path = tmp_path / "t.jsonl"
+    _write_jsonl(
+        path,
+        [
+            json.dumps(
+                {"version": "2.1.283", "message": {"usage": {"input_tokens": 7}}}
+            ),
+            ('{"a":' * depth) + "1" + ("}" * depth),
+        ],
+    )
+    assert context_tokens(str(path)) == 7
+    assert claude_code_version(str(path)) == "2.1.283"
