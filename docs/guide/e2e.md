@@ -20,7 +20,7 @@
 ## 実行方法
 
 ```bash
-cd product/cc-governance-bmsd
+# リポジトリのルートで
 .venv/bin/python -m pytest e2e                      # 全モジュール
 .venv/bin/python -m pytest e2e/test_install.py      # 導入だけ（ほかは一覧の「実行の指定」）
 ```
@@ -79,7 +79,7 @@ git source のマーケットプレイスとして導入し、cache への複製
 ```bash
 CC_E2E_KEEP=1 .venv/bin/python -m pytest e2e -k 未読 -s   # 残したルートのパスが表示される（-s が無いと出ない）
 cd <ルート>/project
-env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<ルート>/config <認証の変数> claude   # 対話で起動する（認証は環境変数で渡し、/login しない）
+env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<ルート>/config <認証の変数> claude --settings '{"env":{"DISABLE_AUTOUPDATER":"1"}}'   # 対話で起動する（認証は環境変数で渡し、/login しない）
 ```
 
 - 起動はルート内の空の `project/` から行う。リポジトリ内で起動すると、そのプロジェクトの hooks や CLAUDE.md が混ざる
@@ -128,7 +128,7 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 準備は「手動確認の準備」。`url` 付きの項目を足し、この順に行う（後の確認で既読になるため）。
 
-1. **`-p` では開かない**: 「手動確認の準備」と同じ起動のしかた（`env -i`・空の `project/`）で、`claude` に `-p ok` を付けて実行する。
+1. **`-p` では開かない**: 「手動確認の準備」と同じ起動のしかた（`env -i`・`--settings`・空の `project/`）で、`claude` に `-p ok` を付けて実行する。
    合格: ブラウザが開かず、`<ルート>/config/plugins/data/` 配下に `seen.json` が無い
 2. **対話での見え方**: 対話で起動する。合格: 題名・本文・`詳細: <url>` がそろって表示される
    （表示の接頭辞と長文の退避は `docs/knowledge/claude-code-behavior.md`）
@@ -148,9 +148,7 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 ### 実物でも確かめられない限界
 
 モデルが指示どおりにツールを呼ぶことに依存する（手順を飛ばすと落ちる。再実行で区別する）。
-対話起動でしか現れない値（`is_interrupt` の真）は確かめない。`permission_mode` の `default` 以外は
-`--permission-mode` を付ければ非対話からでも出せる（詳細は `docs/knowledge/claude-code-behavior.md`）が、
-ここでは既定のまま起動するため確かめない。
+対話起動でしか現れない値（`is_interrupt` の真）は確かめない。`permission_mode` の `default` 以外は確かめない（既定のまま起動する）。
 期待するイベントは `hooks.json` から導くため、hook を登録から外すと期待も一緒に減る。外したことには、
 その hook でしか埋まらない列が NULL になることで気づく。他の hook と同じ列しか持たない hook
 （`UserPromptSubmit` など）の登録漏れは検出できない。
@@ -159,9 +157,8 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 切り離された送信プロセスが `claude` の終了後に実サーバ（サーバのモジュールと同じ Docker の集計サーバ）へ
 届けること、届かなかった分（誤トークンの 401・閉じたポート）が spool に残り、送信先を直した次の
-セッションで届くことを確かめる。共有 DB なので判定は自分の `event_id` だけで行う。
+セッションで届くことを確かめる。
 誤トークンの 401 は error 行（`stage` が `send`）になって同じ経路で届き、概況の「hook の失敗」の表に出ることも見る。
-ほかの処理段階（`stage`）の error 行は起こさない（error 行を見るモジュールは 0 件を期待する）。
 
 ### 実物でも確かめられない限界
 
@@ -204,14 +201,14 @@ HTTPS・プロキシ越しの送信と、本番の受信先への到達は確か
 動いていれば、先に `server/` で `docker compose stop` する。
 
 1. `server/` で `docker compose -p ccgov-manual up -d --build` を実行し、
-   `docker compose -p ccgov-manual cp ../e2e/samples/cost_daily.csv server:/app/data/csv/` で見本の CSV を入れる
-2. `http://127.0.0.1:<ポート>/dev-admin/`（`<ポート>` は `server/compose.yaml` の `ports` のホスト側）を開き（パスワードは `dev.env` の `ADMIN_PASSWORD`、ユーザー名は任意）、
+   `docker compose -p ccgov-manual cp ../e2e/samples/cost_daily.csv server:<CSV_DIR>/` で見本の CSV を入れる（`<CSV_DIR>` は `server/dev.env` の `CSV_DIR`）
+2. `http://127.0.0.1:<ポート>/<ADMIN_PATH>/`（`<ポート>` は `server/compose.yaml` の `ports` のホスト側、`<ADMIN_PATH>` は `server/dev.env` の `ADMIN_PATH`）を開き（パスワードは `dev.env` の `ADMIN_PASSWORD`、ユーザー名は任意）、
    「CSV を取り込む」を押す
-3. ブラウザの幅を 1280px にし、4 画面（`/dev-admin/`・`/dev-admin/policy`・`/dev-admin/effect`・
-   `/dev-admin/assets`）を順に開く。合格: 開発者ツールのコンソールに error・warning が 0 件、
+3. ブラウザの幅を 1280px にし、4 画面（`<ADMIN_PATH>` の下の `/`・`/policy`・`/effect`・`/assets`）を
+   順に開く。合格: 開発者ツールのコンソールに error・warning が 0 件、
    コンソールで `document.documentElement.scrollWidth <= document.documentElement.clientWidth` が
    `true`、表のセルが切れていない。**スクリーンショットだけで判定しない**
-   - 端末のデータを入れた場合、1 回目の起動だけでは未準拠に見えるのが正常（`docs/spec/server.md` の準拠の判定）
+   - 端末のデータを入れた場合、1 回目の起動だけでは未準拠に見えるのが正常（`docs/spec/server.md` の「データモデル」）
 4. 終わったら `docker compose -p ccgov-manual down -v --rmi local` で、この確認のコンテナ・ボリューム・
    イメージだけを消す
 
@@ -226,3 +223,4 @@ DB は SQLite だけで、MySQL は確かめない。AIP の前段のリバー�
 - 2026-09-28: 本体の自動更新を `--settings` で止めることを安全の約束に加えた
 - 2026-09-28: 並行起動時の偽の赤・`CC_E2E_RUN` によるラベルの区別・設定の配布で `ONCE` を確かめないこと・
   `permission_mode` が非対話でも `--permission-mode` で変わることを書いた
+- 2026-09-28: 手動確認の起動に `--settings` を付け、管理画面のパスと CSV の置き場を `dev.env` の名前で指し、テストと knowledge に重なる判定の記述を削った
