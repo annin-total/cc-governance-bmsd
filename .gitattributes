@@ -1,0 +1,2 @@
+# 改行を LF に統一する。契約ファイルの sha256 照合や fixture のバイト一致が Windows の autocrlf で壊れないため
+* text=auto eol=lf

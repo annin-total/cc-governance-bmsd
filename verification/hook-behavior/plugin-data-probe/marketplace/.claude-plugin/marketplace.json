@@ -1,7 +1,0 @@
-{
-  "name": "pdtest-mp",
-  "owner": { "name": "verify" },
-  "plugins": [
-    { "name": "pdtest", "source": "./plugins/pdtest", "description": "CLAUDE_PLUGIN_DATA probe" }
-  ]
-}

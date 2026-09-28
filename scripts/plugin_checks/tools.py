@@ -14,6 +14,7 @@ CONTRACT_REQUIRED_NAMES = (
     "HOOK_FIELDS",
     "EXTRA_COLUMNS",
     "POLICY_COLUMNS",
+    "ERROR_COLUMNS",
     "CSV_COLUMNS",
     "dig",
     "coerce",
@@ -108,3 +109,17 @@ def check_ruff(repo_root: Path, plugin_name: str) -> None:
         ok("ruff check: py39 構文として妥当")
     else:
         ng("ruff check で py39 構文の問題を検出")
+
+
+# --- マニフェストの形式（未知のフィールド・欠けた version を含む）は上流の検証器で見る ---
+def check_upstream_validate(plugin_dir: Path) -> None:
+    claude = shutil.which("claude")
+    if claude is None:
+        ng("claude plugin validate: claude が見つからない（検査できない）")
+        return
+    result = run([claude, "plugin", "validate", "--strict", str(plugin_dir)])
+    if result.returncode == 0:
+        ok("claude plugin validate --strict に合格")
+    else:
+        ng("claude plugin validate --strict に失敗")
+        print((result.stdout + result.stderr).strip())

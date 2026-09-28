@@ -14,7 +14,7 @@ _ENV_USER_EMAIL = "CC_GOVERNANCE_USER_EMAIL"
 _ENV_PLUGIN_ROOT = "CLAUDE_PLUGIN_ROOT"
 _PLUGIN_JSON_RELATIVE = (".claude-plugin", "plugin.json")
 
-# hook 全体の timeout（hooks.json の 5 秒）より短くする。
+# hook 全体の timeout（hooks.json の timeout）より短くする。
 _GIT_TIMEOUT_SEC = 3
 
 

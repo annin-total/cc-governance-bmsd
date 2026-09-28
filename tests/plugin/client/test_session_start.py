@@ -11,23 +11,26 @@ from pathlib import Path
 import _identity
 import _notices
 import _spool
-import policy
 import pytest
 import session_start
 
 PCT_KEY = "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 AUTOUPDATE_KEY = "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate"
 MARKER = "ZZMARKER-NOTICE-BODY"
-POLICY_KEY_COUNT = sum(
-    len(table) for table in (policy.SET, policy.ADD, policy.REMOVE, policy.ONCE)
-)
+
+
+def _policy_key_count() -> int:
+    """`fixed_policy` が差し替えた policy の項目数。"""
+    import policy
+
+    return sum(len(t) for t in (policy.SET, policy.ADD, policy.REMOVE, policy.ONCE))
 
 
 def _raiser(*_args, **_kwargs):
     raise RuntimeError("boom")
 
 
-pytestmark = pytest.mark.usefixtures("session_start_env", "spy_launch")
+pytestmark = pytest.mark.usefixtures("session_start_env", "spy_launch", "fixed_policy")
 
 
 @pytest.fixture
@@ -83,7 +86,7 @@ def _event_rows(tmp_path) -> list:
 def test_policy_event_count_matches_policy_items(tmp_path):
     _write_settings(tmp_path, {})
     session_start.main()
-    assert len(_policy_rows(tmp_path)) == POLICY_KEY_COUNT
+    assert len(_policy_rows(tmp_path)) == _policy_key_count()
 
 
 def test_policy_event_key_names_keep_dots(tmp_path):
@@ -145,7 +148,7 @@ def test_policy_event_write_failed_events_are_queued(tmp_path, monkeypatch):
 
 
 def test_policy_event_queue_append_failure_does_not_leak(tmp_path, monkeypatch):
-    """キューへの追記を例外にしても漏れない。設定ファイルには既にポリシー値が入っている。"""
+    """キューへの追記を例外にしても漏れない。設定ファイルには既に施策値が入っている。"""
     _write_settings(tmp_path, {})
     monkeypatch.setattr(_spool, "append", _raiser)
 
@@ -305,7 +308,7 @@ def test_order_normal_run_does_everything(notices_file, tmp_path, capsys):
     settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
     assert "systemMessage" in out
-    assert len(_policy_rows(tmp_path)) == POLICY_KEY_COUNT
+    assert len(_policy_rows(tmp_path)) == _policy_key_count()
     assert len(_event_rows(tmp_path)) == 1
 
 
@@ -416,7 +419,7 @@ def test_order_stdin_read_failure_does_not_silence_settings_and_notices(
     assert "systemMessage" in out
     settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
-    assert len(_policy_rows(tmp_path)) == POLICY_KEY_COUNT
+    assert len(_policy_rows(tmp_path)) == _policy_key_count()
 
 
 # ---- 無効化スイッチ ----
@@ -504,7 +507,7 @@ def test_disable_value_1_still_records_policy_rows(tmp_path, monkeypatch):
 
     session_start.main()
 
-    assert len(_policy_rows(tmp_path)) == POLICY_KEY_COUNT
+    assert len(_policy_rows(tmp_path)) == _policy_key_count()
 
 
 def test_disable_value_1_stdout_is_still_valid_json(tmp_path, monkeypatch, capsys):

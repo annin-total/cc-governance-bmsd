@@ -115,6 +115,35 @@ def _write_config(monkeypatch, tmp_path, **overrides):
     return path
 
 
+def _error_rows():
+    """`queue.jsonl` の error 行を (stage, error_type, hook_event) の並びで返す。"""
+    path = _spool._queue_path()
+    if not path.exists():
+        return []
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    return [
+        (r["stage"], r["error_type"], r["hook_event"])
+        for r in rows
+        if r.get("kind") == "error"
+    ]
+
+
+def _all_error_rows():
+    """spool と `queue.jsonl` の error 行を合わせて (stage, error_type, hook_event) の並びで返す。"""
+    paths = [*_spool._spool_dir().glob("*.jsonl"), _spool._queue_path()]
+    rows = [
+        json.loads(line)
+        for path in paths
+        if path.exists()
+        for line in path.read_text(encoding="utf-8").splitlines()
+    ]
+    return [
+        (r["stage"], r["error_type"], r["hook_event"])
+        for r in rows
+        if r.get("kind") == "error"
+    ]
+
+
 def _seed_spool_file(name, rows, mtime=None):
     """spool/ に、渡した行から作った `.jsonl` ファイルを 1 つ置く。"""
     spool_dir = _spool._spool_dir()
@@ -140,6 +169,7 @@ def test_2xx_deletes_file(server, monkeypatch, tmp_path, status):
     _sender.run()
 
     assert not path.exists()
+    assert _error_rows() == []
 
 
 _HEADER_CASES = {
@@ -184,6 +214,36 @@ def test_non_2xx_keeps_file(server, monkeypatch, tmp_path, status):
     _sender.run()
 
     assert path.exists()
+    assert _error_rows() == [("send", f"HTTP {status}", None)]
+
+
+def test_ssl_error_queues_error_row(server, monkeypatch, tmp_path):
+    """平文の HTTP サーバへ https で繋ぐ（TLS のハンドシェイクが失敗する）。"""
+    srv = server()
+    url = srv.url.replace("http://", "https://")
+    _write_config(monkeypatch, tmp_path, ingest_url=url, timeout_sec=5)
+    path = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
+
+    _sender.run()
+
+    assert path.exists()
+    assert _error_rows() == [("send", "SSLError", None)]
+
+
+def test_run_failure_queues_error_row(monkeypatch, tmp_path):
+    class _InjectedError(Exception):
+        pass
+
+    def _raiser():
+        raise _InjectedError("ZZMARKER")
+
+    _write_config(monkeypatch, tmp_path, ingest_url="")
+    monkeypatch.setattr(_spool, "rotate", _raiser)
+
+    _sender.run()
+
+    assert _error_rows() == [("send", "_InjectedError", None)]
+    assert "ZZMARKER" not in _spool._queue_path().read_text(encoding="utf-8")
 
 
 # --- 到達できない・応答しないサーバ ---
@@ -197,6 +257,7 @@ def test_connection_refused_is_silent(monkeypatch, tmp_path, unused_port):
     _sender.run()
 
     assert path.exists()
+    assert _error_rows() == []
 
 
 def test_unresponsive_server_stops_after_first_file(server, monkeypatch, tmp_path):
@@ -213,6 +274,7 @@ def test_unresponsive_server_stops_after_first_file(server, monkeypatch, tmp_pat
 
     assert all(p.exists() for p in paths)
     assert elapsed < 2
+    assert _error_rows() == []
 
 
 def test_unreachable_server_still_prunes(monkeypatch, tmp_path, unused_port):
@@ -299,6 +361,58 @@ def test_middle_file_failure_keeps_only_that_file(server, monkeypatch, tmp_path)
     assert not p3.exists()
 
 
+def test_error_rows_are_one_per_status_per_run(server, monkeypatch, tmp_path):
+    """全ファイルが 413 のまま k 回送る -> error 行は k 行（ファイル数ぶん積まない）。"""
+    runs = 3
+    srv = server(status_codes=[413])
+    _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
+    for i in range(3):
+        _seed_spool_file(f"{1000 + i}-{'a' * 32}.jsonl", [{"n": i}])
+
+    for _ in range(runs):
+        _sender.run()
+
+    assert _all_error_rows() == [("send", "HTTP 413", None)] * runs
+
+
+@pytest.mark.parametrize("status", [400, 413])
+def test_poison_file_does_not_block_later_files(server, monkeypatch, tmp_path, status):
+    """1 ファイルだけが 4xx（打ち切らない状態コード） -> 後続のファイルは届いて消える。"""
+    srv = server(status_codes=[status, 200, 200])
+    _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
+    poison = _seed_spool_file(_SPOOL_NAME, [{"n": 1}])
+    later = [
+        _seed_spool_file(f"{2000 + i}-{'b' * 32}.jsonl", [{"n": i}]) for i in range(2)
+    ]
+
+    _sender.run()
+
+    assert poison.exists()
+    assert not any(p.exists() for p in later)
+    assert _error_rows() == [("send", f"HTTP {status}", None)]
+
+
+@pytest.mark.parametrize(
+    ("status", "expected_posts"),
+    [(500, _sender._MAX_CONSECUTIVE_5XX), (401, 1), (403, 1), (404, 1)],
+)
+def test_run_halts_on_failure_status(
+    server, monkeypatch, tmp_path, status, expected_posts
+):
+    """全件が 5xx なら連続上限で、401・403・404 なら 1 本目で打ち切り、ファイルは残す。"""
+    srv = server(status_codes=[status])
+    _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
+    paths = [
+        _seed_spool_file(f"{1000 + i}-{'a' * 32}.jsonl", [{"n": i}]) for i in range(5)
+    ]
+
+    _sender.run()
+
+    assert len(srv.requests) == expected_posts
+    assert all(p.exists() for p in paths)
+    assert _error_rows() == [("send", f"HTTP {status}", None)]
+
+
 # --- queue.jsonl の退避との連携 ---
 
 
@@ -327,7 +441,7 @@ def test_nothing_to_send_does_not_post(server, monkeypatch, tmp_path):
 
 
 def test_prune_runs_after_posting(server, monkeypatch, tmp_path, seed_spool_bytes):
-    """spool 合計が 6MB（1MB x 6）、サーバが 500 -> 6 ファイルとも POST され、その後に古い 1 ファイルが破棄される。"""
+    """spool 合計が 6MB（1MB x 6）、サーバが 500 -> 打ち切った後に古い 1 ファイルが破棄される。"""
     srv = server(status_codes=[500] * 6)
     _write_config(monkeypatch, tmp_path, ingest_url=srv.url)
     now = time.time()
@@ -339,7 +453,7 @@ def test_prune_runs_after_posting(server, monkeypatch, tmp_path, seed_spool_byte
 
     _sender.run()
 
-    assert len(srv.requests) == 6
+    assert len(srv.requests) == _sender._MAX_CONSECUTIVE_5XX
     assert [p.exists() for p in paths] == [True] * 5 + [False]
 
 

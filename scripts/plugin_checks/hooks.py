@@ -16,6 +16,10 @@ from plugin_checks.report import ng, ok, run, skip
 PLUGIN_ROOT_VAR_PATTERN = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\s\"]+)")
 HOOK_TIMEOUT_SECONDS = 5
 ISOLATED_USER_EMAIL = "validate-plugin-py@example.invalid"
+# plugin/hooks/_spool.py の _SENT_AT_FILENAME・_QUEUE_FILENAME・_SPOOL_DIRNAME と同じ名前
+SENT_AT_FILENAME = "sent_at"
+QUEUE_FILENAME = "queue.jsonl"
+SPOOL_DIRNAME = "spool"
 
 
 def _walk_hook_commands(node: object, out: list) -> None:
@@ -78,10 +82,22 @@ def _settings_hash(settings_path: Path) -> str:
     return digest.hexdigest()
 
 
+def _count_rows(plugin_data: Path) -> int:
+    """queue と spool の行数の和。送信プロセスが queue を spool へ移しても変わらない。"""
+    paths = [plugin_data / QUEUE_FILENAME]
+    paths += (plugin_data / SPOOL_DIRNAME).glob("*.jsonl")
+    total = 0
+    for path in paths:
+        if path.is_file():
+            with path.open("rb") as f:
+                total += sum(1 for _ in f)
+    return total
+
+
 def _run_hook_commands(
     hooks_json: Path, commands: Optional[list], plugin_dir: Path
 ) -> None:
-    """hooks.json の各 command を隔離環境で実行し、exit 0・無出力を確かめる。"""
+    """hooks.json の各 command を隔離環境で実行し、exit 0・無出力・行の追記を確かめる。"""
     if commands is None:
         ng(f"hooks.json のパースに失敗: {hooks_json}")
         return
@@ -92,6 +108,9 @@ def _run_hook_commands(
         isolated_config_dir = Path(isolation_dir) / "config-dir"
         isolated_plugin_data.mkdir(parents=True, exist_ok=True)
         isolated_config_dir.mkdir(parents=True, exist_ok=True)
+        # 送信先は開発ツリーの config.json（本番の値）なので、送信済みの印を今の時刻で置き、
+        # 送信プロセスを起動させない（_spool.should_send）。
+        (isolated_plugin_data / SENT_AT_FILENAME).touch()
 
         env = os.environ.copy()
         env["CLAUDE_PLUGIN_ROOT"] = str(plugin_dir)
@@ -112,6 +131,7 @@ def _run_hook_commands(
                 "${CLAUDE_PLUGIN_ROOT}", str(Path(plugin_dir.as_posix()))
             )
             argv = shlex.split(expanded, posix=True)
+            rows_before = _count_rows(isolated_plugin_data)
             try:
                 result = run(argv, input="{}", env=env, timeout=HOOK_TIMEOUT_SECONDS)
                 rc = result.returncode
@@ -126,14 +146,18 @@ def _run_hook_commands(
             if rc != 0 or stderr_content:
                 ng(f"hook が exit 0・無出力で終わらない（rc={rc}）: {cmd}")
                 failed = True
+            # exit 0・無出力のまま収集だけが止まる壊れ方は、行が増えたかでしか見えない。
+            elif _count_rows(isolated_plugin_data) <= rows_before:
+                ng(f"hook が queue にも spool にも行を書かない: {cmd}")
+                failed = True
 
         if not failed:
-            ok("すべての hook が exit 0 で終わり、標準エラーに何も出さない")
+            ok("すべての hook が exit 0 で終わり、標準エラーに何も出さず、行を書く")
     finally:
         shutil.rmtree(isolation_dir, ignore_errors=True)
 
 
-# --- hook が常に exit 0 で終わり、標準エラーに何も出さない（隔離実行）---
+# --- hook が常に exit 0 で終わり、標準エラーに何も出さず、行を書く（隔離実行）---
 # 利用者の実ファイルに触れうる唯一の検査なので、実 settings.json のハッシュを前後で比べる。
 def check_hook_execution(
     hooks_json: Path, commands: Optional[list], plugin_dir: Path

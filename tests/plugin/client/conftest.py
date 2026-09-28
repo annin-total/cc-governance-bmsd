@@ -7,6 +7,7 @@ import socket
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -21,14 +22,44 @@ _DEFAULT_CONFIG = {
 }
 
 
+_FIXED_POLICY_SET = {
+    "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60",
+    "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate": True,
+}
+
+
 @pytest.fixture
-def hooks_dir(tmp_path) -> Path:
-    """`plugin/hooks` と `config.json` を一時ディレクトリへ複製し、hooks ディレクトリを返す。"""
+def fixed_policy(monkeypatch) -> SimpleNamespace:
+    """書き込みの仕組みを確かめるための 2 キーの policy。以後の `import policy` もこれを返す。
+
+    実物の `policy.py` は配る値に合わせて変わるため、その中身の検査は `test_policy_schema.py` が持つ。
+    """
+    fixed = SimpleNamespace(SET=dict(_FIXED_POLICY_SET), ADD={}, REMOVE={}, ONCE={})
+    monkeypatch.setitem(sys.modules, "policy", fixed)
+    return fixed
+
+
+@pytest.fixture
+def plugin_src() -> Path:
+    """`hooks_dir` の複製元。テストモジュールで上書きできる。"""
+    return _PLUGIN_SRC
+
+
+@pytest.fixture
+def hooks_dir(tmp_path, plugin_src) -> Path:
+    """`plugin/hooks` と `config.json` を一時ディレクトリへ複製し、hooks ディレクトリを返す。
+
+    開発ツリーの `config.json` は本番の送信先を持ちうるので、送信先だけを空にして書く。
+    """
     hooks_dst = tmp_path / "plugin" / "hooks"
     shutil.copytree(
-        _PLUGIN_SRC / "hooks", hooks_dst, ignore=shutil.ignore_patterns("__pycache__")
+        plugin_src / "hooks", hooks_dst, ignore=shutil.ignore_patterns("__pycache__")
     )
-    shutil.copy(_PLUGIN_SRC / "config.json", tmp_path / "plugin" / "config.json")
+    config = json.loads((plugin_src / "config.json").read_text(encoding="utf-8"))
+    config.update(ingest_url="", ingest_token="")
+    (tmp_path / "plugin" / "config.json").write_text(
+        json.dumps(config), encoding="utf-8"
+    )
     return hooks_dst
 
 

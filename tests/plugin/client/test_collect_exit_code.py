@@ -30,6 +30,19 @@ def _queue_line_count(plugin_data):
     return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line)
 
 
+def _error_rows(plugin_data):
+    """`queue.jsonl` の error 行を (stage, error_type, hook_event) の並びで返す。"""
+    path = Path(plugin_data) / "queue.jsonl"
+    if not path.exists():
+        return []
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    return [
+        (r["stage"], r["error_type"], r["hook_event"])
+        for r in rows
+        if r.get("kind") == "error"
+    ]
+
+
 def _transcript_dir(tmp_path, _hooks_dir):
     a_dir = tmp_path / "a-directory"
     a_dir.mkdir()
@@ -71,7 +84,7 @@ _COLLECTING_CASES = {
         {"stdin": json.dumps({"session_id": "x" * (10 * 1024 * 1024)})},
     ),
     "stdin_closed": lambda t, h: (("Stop",), {"close_stdin": True}),
-    # transcript_path の異常値（数値は open() に float を渡して TypeError になる経路）
+    # transcript_path の異常値
     "transcript_path_missing_file": lambda t, h: (
         ("Stop",),
         {"stdin": json.dumps({"transcript_path": str(t / "no-such-file.jsonl")})},
@@ -150,20 +163,20 @@ def test_ingest_url_unresolvable_host(run_collect, tmp_path, write_config):
 
 
 def test_unexpected_exception_is_swallowed(run_collect, tmp_path):
-    """深い入れ子の JSON が起こす RecursionError が最外周まで届いても clean exit で終わる。
-
-    途中で捕まえるよう実装が変わっても通り続けるが、その場合は最外周の例外処理の検査ではなくなる。
-    """
+    """深い入れ子の JSON が起こす RecursionError が最外周まで届いても clean exit で終わり、collect の error 行が 1 つ積まれる。"""
     result = run_collect(
         "Stop", plugin_data=tmp_path / "plugin-data", stdin="[" * 100_000
     )
     _assert_clean_exit(result)
+    assert _error_rows(tmp_path / "plugin-data") == [
+        ("collect", "RecursionError", "Stop")
+    ]
 
 
 # --- SIGINT による中断 ---
 
 # インタプリタの起動そのものにも時間がかかり、起動中に届いた SIGINT は Python 側で
-# 捕まえられない（既知の制約）。起動中の窓とこのテストが検査したい「collect.py 自身の実行中」の窓を
+# 捕まえられない（既知の制約）。起動中の時間帯とこのテストが検査したい「collect.py 自身の実行中」の時間帯を
 # 混同しないよう、起動時間よりも十分後ろの時点だけを狙う。50MB の標準入力を与えて
 # collect.py 自身の処理時間を伸ばし、狙った時点が確実にその中に収まるようにする。
 _SIGINT_DELAYS_SEC = (0.3, 0.6, 0.9, 1.2)

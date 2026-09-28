@@ -1,4 +1,4 @@
-"""transcript 末尾の最後の `message.usage` から context_tokens を求める。例外を外に出さない。"""
+"""transcript 末尾から context_tokens と Claude Code の版を求める。例外を外に出さない。"""
 
 import json
 from typing import Optional
@@ -14,9 +14,27 @@ def context_tokens(path: Optional[str], tail: int = _TAIL_BYTES) -> Optional[int
         return None
     for line in reversed(chunk.split(b"\n")):
         total = _usage_total(line)
-        # 合計 0 は API エラー応答の行であり、採ると文脈量 0 の実データと画面上で区別できない。
+        # 合計 0 は API エラー応答の行であり、採るとコンテキストトークン数 0 の実データと画面上で区別できない。
         if total:
             return total
+    return None
+
+
+def claude_code_version(path: Optional[str], tail: int = _TAIL_BYTES) -> Optional[str]:
+    """末尾 `tail` バイトで最も末尾に近い文字列の `version` を返す。取れなければ None。"""
+    # transcript の行の形は公式の契約ではないため、context_tokens と同じく末尾だけを読み、形が違えば None にする
+    chunk = _read_tail(path, tail)
+    if chunk is None:
+        return None
+    for line in reversed(chunk.split(b"\n")):
+        try:
+            obj = json.loads(line)
+        # 深い入れ子の行は RecursionError を投げる（ValueError 派生ではない）。
+        except (ValueError, RecursionError):
+            continue
+        version = obj.get("version") if isinstance(obj, dict) else None
+        if isinstance(version, str):
+            return version
     return None
 
 
@@ -41,7 +59,7 @@ def _usage_total(line: bytes) -> Optional[int]:
     """1 行の `message.usage` の 3 値の合計。取れなければ None。"""
     try:
         obj = json.loads(line)
-    except ValueError:
+    except (ValueError, RecursionError):
         return None
     if not isinstance(obj, dict):
         return None

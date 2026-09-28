@@ -21,7 +21,13 @@ import _identity
 import _notices
 import _spool
 from _settings import apply_settings
-from collect import _DISABLE_ENV, _read_stdin_json, extract_event, send_if_due
+from collect import (
+    _DISABLE_ENV,
+    _read_stdin_json,
+    append_error,
+    extract_event,
+    send_if_due,
+)
 from contract import POLICY_COLUMNS, coerce, to_day
 
 
@@ -33,7 +39,6 @@ def _policy_row(
     ts: int,
     plugin_version: Optional[str],
 ) -> dict:
-    """1 件の適用結果を policy イベント（キューの 1 行）にする。"""
     raw = {
         "event_id": _identity.new_event_id(),
         "ts": ts,
@@ -69,10 +74,7 @@ def _apply_settings_step() -> None:
 
 
 def _mark_seen_and_open(unread: list, seen: set) -> None:
-    """未読を既読にし、対話セッションなら先頭の URL を開く。非対話起動では既読にしない。
-
-    開くのは既読を書けた後だけ（書けない端末で毎回開かないため）。
-    """
+    """`CLAUDE_CODE_ENTRYPOINT` が `sdk-` 始まりの起動では何もしない。それ以外は未読を既読にし、書けたら対話起動（`cli`）に限り先頭の URL を開く（書けない端末で毎回開かないため）。"""
     if _browser.is_headless():
         return
     if not _notices._write_seen(seen | {n["id"] for n in unread}):
@@ -86,8 +88,7 @@ def _mark_seen_and_open(unread: list, seen: set) -> None:
 def _emit_output(output: dict) -> bool:
     """hook の JSON 出力を標準出力へ 1 個だけ書く。書けたら真。
 
-    失敗時は fd 1 を `/dev/null` に差し替える。内部バッファに残ったデータが終了時の flush で
-    再び失敗し、標準エラーに漏れて exit 120 になるため（`sys.stdout` の差し替えでは防げない）。
+    失敗時は fd 1 を `/dev/null` に差し替える。残ったバッファの flush が終了時に標準エラーへ漏れ exit 120 になるため（`sys.stdout` の差し替えでは防げない）。
     """
     try:
         sys.stdout.write(json.dumps(output, ensure_ascii=False))
@@ -121,36 +122,37 @@ def main() -> None:
     # 以降の段はキャッシュを読む。git の設定の変更をセッションごとに拾うため、ここで解決し直す
     try:
         _identity.get_user_email(refresh=True)
-    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
-        pass
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error("identity", type(e).__name__, hook_event)
 
     # 設定より先に置く。設定がこのファイルを指したとき、既に在るようにするため
     try:
         _govdir.sync_statusline(_govdir.governance_dir())
-    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
-        pass
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error("statusline", type(e).__name__, hook_event)
 
     try:
         _apply_settings_step()
-    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
-        pass
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error("apply_settings", type(e).__name__, hook_event)
 
     try:
         output, unread, seen = _notices.notices_step(disabled, _notices._NOTICES_PATH)
-    except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
         output, unread, seen = {}, [], set()
+        append_error("notices", type(e).__name__, hook_event)
 
     # 出力は必ず 1 回だけ行う。ここより上で何が失敗しても、少なくとも空の JSON を出す。
     if _emit_output(output) and unread:
         try:
             _mark_seen_and_open(unread, seen)
-        except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
-            pass
+        except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+            append_error("mark_seen", type(e).__name__, hook_event)
 
     try:
         _collect_step(hook_event, disabled)
-    except Exception:  # noqa: BLE001, S110 (hook は例外を外に出さない)
-        pass
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error("collect", type(e).__name__, hook_event)
 
 
 if __name__ == "__main__":

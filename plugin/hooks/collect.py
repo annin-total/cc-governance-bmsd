@@ -12,14 +12,14 @@ import json
 import os
 import sys
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import _context
 import _identity
 import _spool
-from contract import EXTRA_COLUMNS, HOOK_FIELDS, coerce, dig, to_day
+from contract import ERROR_COLUMNS, EXTRA_COLUMNS, HOOK_FIELDS, coerce, dig, to_day
 
-_CONTEXT_TOKEN_HOOK_EVENTS = ("PreCompact", "Stop")
+_TRANSCRIPT_HOOK_EVENTS = ("PreCompact", "Stop")
 _SEND_CHECK_HOOK_EVENTS = ("SessionStart", "Stop")
 _DISABLE_ENV = "CC_GOVERNANCE_DISABLE"
 
@@ -36,7 +36,10 @@ def extract_event(raw_input: Any, hook_event: Optional[str]) -> dict[str, Any]:
         "user_email": _identity.get_user_email(),
         "host": _identity.get_host(),
         "hook_event": hook_event,
-        "context_tokens": _resolve_context_tokens(obj, hook_event),
+        "context_tokens": _from_transcript(_context.context_tokens, obj, hook_event),
+        "claude_code_version": _from_transcript(
+            _context.claude_code_version, obj, hook_event
+        ),
     }
 
     row: dict[str, Any] = {"kind": "event"}
@@ -49,10 +52,38 @@ def extract_event(raw_input: Any, hook_event: Optional[str]) -> dict[str, Any]:
     return row
 
 
-def _resolve_context_tokens(obj: dict, hook_event: Optional[str]):
-    if hook_event not in _CONTEXT_TOKEN_HOOK_EVENTS:
+def append_error(stage: str, error_type: str, hook_event: Optional[str]) -> None:
+    """失敗を error 行としてキューに積む。載せるのは固定値の段名と、例外クラス名か `HTTP <状態コード>` だけ。例外を外に出さない。"""
+    try:
+        try:
+            user_email = _identity.get_user_email()
+        except Exception:  # noqa: BLE001 (識別子の解決の失敗も記録する)
+            user_email = None
+        ts = int(time.time())
+        raw = {
+            "event_id": _identity.new_event_id(),
+            "ts": ts,
+            "day": to_day(ts),
+            "user_email": user_email,
+            "host": _identity.get_host(),
+            "hook_event": hook_event,
+            "plugin_version": _identity.get_plugin_version(),
+            "stage": stage,
+            "error_type": error_type,
+        }
+        row: dict[str, Any] = {"kind": "error"}
+        for name, type_str in ERROR_COLUMNS:
+            row[name] = coerce(raw.get(name), type_str)
+        _spool.append(row)
+    except Exception:  # noqa: BLE001, S110 (記録の失敗で hook を失敗させない)
+        pass
+
+
+def _from_transcript(read: Callable[[Any], Any], obj: dict, hook_event: Optional[str]):
+    """transcript を読む hook でだけ `read(transcript_path)` を呼ぶ。"""
+    if hook_event not in _TRANSCRIPT_HOOK_EVENTS:
         return None
-    return _context.context_tokens(dig(obj, ("transcript_path",)))
+    return read(dig(obj, ("transcript_path",)))
 
 
 def _read_stdin_json() -> Any:
@@ -95,5 +126,9 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error(
+            "collect", type(e).__name__, sys.argv[1] if len(sys.argv) > 1 else None
+        )
     except BaseException:  # noqa: BLE001, S110 (KeyboardInterrupt も含めて常に exit 0)
         pass

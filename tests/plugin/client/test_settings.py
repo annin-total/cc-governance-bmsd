@@ -4,7 +4,6 @@ import json
 import os
 
 import _settings
-import policy
 import pytest
 
 PCT_KEY = "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
@@ -17,8 +16,13 @@ def _write_settings(tmp_path, content):
     return path
 
 
+pytestmark = pytest.mark.usefixtures("fixed_policy")
+
+
 def _apply(path):
-    """現行の policy.py を適用する。バックアップと ONCE の記録は settings.json の隣に置く。"""
+    """`fixed_policy` の policy を適用する。バックアップと ONCE の記録は settings.json の隣に置く。"""
+    import policy
+
     return _settings.apply_settings(path, policy, path.parent / "governance")
 
 

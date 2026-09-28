@@ -22,8 +22,8 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 | `server/` | 集計サーバと管理画面（submodule） |
 | `docs/` | 仕様・設計判断・手順書 |
 | `tests/` | プラグインと契約のテスト、統合テスト |
-| `scripts/` | 契約の同期、プラグインの検証 |
-| `verification/` | 実機検証の道具 |
+| `e2e/` | 実機検証（`pytest e2e`） |
+| `scripts/` | 契約の同期、プラグインの検証、fixture の再生成、hook stdin の採取、性能計測 |
 
 ## 技術スタック
 
@@ -86,7 +86,7 @@ py -m venv .venv
 
 ### サーバの起動
 
-`server/` で Docker Compose を使う。設定は `server/dev.env`（開発用のダミー値）が使われる。
+`server/` で Docker Compose を使う。設定は `server/dev.env`（開発用のダミー値）が使われる。DB は既定で SQLite（AIP 相当）で、MySQL（One Cloud 相当）で動かすときは、`dev.env` の `DB_DSN` の 2 行を入れ替えて profile `mysql` を付ける（使い方は `server/compose.yaml` の先頭）。
 
 ```bash
 cd server

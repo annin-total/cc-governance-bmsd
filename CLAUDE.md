@@ -20,6 +20,8 @@ python3.9 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirem
 .venv/bin/python -m pytest -q
 .venv/bin/ruff check . && .venv/bin/ruff format .
 docker compose up                                    # http://localhost:15000/ 。終了は docker compose down
+# DB アクセスかテストを変えたら MySQL でも流す（MySQL は docker compose --profile mysql up -d mysql。値は compose.yaml の先頭）
+CCGOV_TEST_MYSQL_DSN=mysql://root:<pw>@127.0.0.1:13306 .venv/bin/python -m pytest -q
 ```
 
 ## Coding
@@ -37,18 +39,29 @@ docker compose up                                    # http://localhost:15000/ �
 - コメントは、込み入ったロジックか、コードから読めず失うと事故になる理由にだけ書く。作業の経緯や検証番号（`# K-1` など）を書かない
 - 値のハードコードは避けて定数に分離する。ただし過剰にはしない
 - 内部関数・内部メソッドは識別子を付与して区別する
-- `tests/fixtures/hook_inputs/` を書き換えない。実採取した hook stdin の記録であり、一括置換は改竄になる
+- `tests/fixtures/hook_inputs/` を書き換えない。実採取した hook stdin の記録であり、一括置換は改竄になる。
+  作り直すときは `scripts/sanitize_fixtures.py` を使う
 
-## 増やす作業と減らす作業
+## Scope
 
-- **機能の追加・変更（増やす）と、リファクタリング・文書の見直し（減らす）を 1 つの作業に混ぜない。**
-  増やす作業の途中で 200 行超え・重複・肥大化に気づいても、その場で直さず、減らす作業として提案する
-- 減らす作業では、着手前に `.claude/skills/refactor/SKILL.md` を読んで従う
+- **機能の追加・変更（増やす）と、リファクタリング・文書の見直し（減らす）を 1 つの作業に混ぜない**
+- 作業中に確認した依頼範囲外の課題は直さず、`.claude/templates/issues.md` の形で `.local/<作業名>/issues.md` に記録し、
+  完了報告で移し先を提案する（移したら記録を更新する）
+- `.local/` は一時領域。コード・`docs/`・コミット・PR から参照せず、残す事実は `docs/` か PR 本文に書く
+- 減らす作業は `.claude/skills/refactor/SKILL.md`、文書・docstring・コメントの見直しは `.claude/skills/revise-docs/SKILL.md` に従う
 
 ## Design
 
-- **定義は単一の正本に置く**：契約（収集項目・policy イベントの列・CSV 列などの列と型）は `contract.py`、配る設定値は `policy.py` が正本である。どちらも 1 か所にだけ置き、ほかの場所で複製や再定義をしない（サーバの複製は `sync_contract.py` の生成物）
+- **定義は単一の正本に置く**：契約（収集項目・policy イベントの列・CSV 列などの列と型）は `contract.py`、配る設定値は `policy.py` が正本である。
+  どちらも 1 か所にだけ置き、ほかの場所で複製や再定義をしない（サーバの複製は `sync_contract.py` の生成物）
 - **収集は最小限にする**：契約が名指ししたものだけを読む。本文（prompt・応答・メッセージ）には触れない
 - **hook は利用者の作業を妨げない**：常に exit 0 で終わり、標準エラーにも何も出力しない
 - **配布物を汚さない**：`plugin/` はそのまま配布される。テストや生成物を置かない
+- **DB に依存しない**：サーバは SQLite（AIP）と MySQL（One Cloud）の両方で動かす。方言差は `server/ccgov/store/db.py` に閉じ、
+  スクリプトとテストも `DB_DSN` を通して DB を開く。今の既定が SQLite でも、SQLite でしか動かない書き方をしない
 - **依存と機能を増やさない**：依存の追加は設計判断として扱い、理由を残す。「将来必要かもしれない」を理由に足さない
+
+## Git
+
+- PR の本文は `.github/pull_request_template.md` の見出しとチェック項目を消さず、書き換えずに使う。
+  チェックは 1 項目ずつ検証してから付ける（書き方はテンプレートのコメント）

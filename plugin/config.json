@@ -2,6 +2,6 @@
   "ingest_url": "",
   "ingest_token": "",
   "timeout_sec": 60,
-  "spool_max_bytes": 5242880,
-  "spool_max_days": 7
+  "spool_max_bytes": 20971520,
+  "spool_max_days": 14
 }
