@@ -29,6 +29,8 @@ Claude Code が届ける収集項目・hook・環境変数のうち、**実在�
 | `reason` | `SessionEnd` | `"prompt_input_exit"` / `"other"` | セッションの閉じ方 | — |
 | `tool_use_id` | ツール系 hook | `toolu_01…` | 呼出の一意識別 | — |
 | `expansion_type` | `UserPromptExpansion` | `"slash_command"` | コマンド以外の展開との区別 | `command_source` と同じことが分かる |
+| `command_source` | `UserPromptExpansion` | `"userSettings"` / `"plugin"` | コマンドの出どころ | 2.1.283。観測したのは利用者のコマンドとプラグイン同梱のコマンドの 2 つだけで、プロジェクト・managed の値は未確認 |
+| `command_name` / `tool_input.skill` | `UserPromptExpansion` / `PostToolUse`（Skill） | `"<プラグイン名>:foo"` / `"foo"` | 呼ばれたコマンド・スキルの名前 | 2.1.283。プラグイン同梱のものは `<プラグイン名>:<名前>`、利用者のものは名前だけ |
 | `background_tasks` / `session_crons` | `Stop` | ともに空リスト | 背景実行・定期実行の利用有無 | — |
 | `scratchpad_dir` | 一部 hook（`claude -p` には無い） | — | — | — |
 | `stop_hook_active` | `Stop` | — | hook 再入防止フラグ | Claude Code 内部の状態 |
@@ -77,6 +79,13 @@ hook から環境変数をセッションへ戻す経路である。
 `SessionEnd` のコンテキストトークン数は `Stop` の最終値と同じで、`UserPromptSubmit` のコンテキストトークン数は
 前ターンの `Stop` の値と同じである。
 
+組み込みのスラッシュコマンド `/compact` は `UserPromptExpansion` を経ず、直接 `PreCompact` に入る（2.1.283、`claude -p`）。
+
+Agent ツールを使ったターンの hook の順序（2.1.283、`claude -p --continue`・haiku、2 回。解釈は推定）:
+Agent の `PostToolUse` が先に戻る → 親の `Stop` → サブエージェントのツール呼出（`agent_id` 付き。`prompt_id` は Agent を呼んだターンのもの）
+→ 親の新しいターン（`UserPromptSubmit` と `Stop`）。利用者の入力 1 回で `UserPromptSubmit` と `Stop` が 2 組出る。
+Agent 自体の `PostToolUse` には `agent_id` が無く、`Stop` にも無い。`agent_id` の値はサブエージェントの呼出ごとに異なる。
+
 ## 6. hook の頻度帯
 
 hook は 1 発火につき Python プロセスを 1 つ起動する。
@@ -87,6 +96,10 @@ hook は 1 発火につき Python プロセスを 1 つ起動する。
 | 中 | `UserPromptSubmit` / `UserPromptExpansion` / `Stop` / `StopFailure` / `SubagentStart` / `SubagentStop` | ターン・サブエージェントごと |
 | 低 | `SessionStart` / `SessionEnd` / `PreCompact` | セッション・事象ごと（1 日に数回） |
 
-`PermissionDenied` と `PermissionRequest` も存在する。
-**発火条件は未確認**（非対話モードでは再現できず、対話セッションでの確認が要る）。
-届くキーも未確認である。
+`PermissionDenied` と `PermissionRequest` も存在する（2.1.283、`claude -p` で各 1〜2 回の観測）。
+
+- `PermissionRequest` は、`-p` の既定モードで許可リスト外のツールを呼ぶと発火する。
+  届くキーは `session_id`・`transcript_path`・`cwd`・`prompt_id`・`permission_mode`・`hook_event_name`・`tool_name`・`tool_input`・`permission_suggestions`
+- `PermissionDenied` は、`-p` の既定モードの拒否でも、`--permission-mode auto` での deny ルールの拒否でも発火しなかった。
+  公式ドキュメント（hooks、2026-09）は、auto mode の拒否で発火し、分類器の判定が無い拒否も含むと書くが、
+  deny ルールの拒否では発火しなかった。分類器による拒否での発火は未確認

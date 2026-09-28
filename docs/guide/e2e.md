@@ -52,6 +52,12 @@ Bedrock では、組織で有効なモデル ID への固定（`ANTHROPIC_DEFAUL
   `DISABLE_AUTOUPDATER` に勝つ。native 版の更新先は `HOME` の下で隔離の外なので、`e2e/_root.py` の `run_claude` が
   上位の層の `--settings` で無効にする。手動確認で起動するときも同じ `--settings` を付ける
 - **`CC_E2E_KEEP=1` で隔離ルートを残せる。**失敗時の調査用。既定では片付けで消える
+- **並行して多く起動すると偽の赤になりうる。**同じ Mac で `claude` を一斉に多数起動すると、
+  `SessionStart` の hook が `hooks.json` の `SessionStart` の `timeout` に間に合わず打ち切られ
+  （`outcome: cancelled`）、設定の適用や policy 行が抜けうる。本数の目安は `docs/knowledge/measurements.md` の
+  「一斉起動と `SessionStart` の打ち切り」にあり、その値は測った時の `timeout` に依存する。
+  複数の E2E を並行させるときは、起動をずらすか本数を絞る。送信の完了待ち（`wait_quiet`）が前提と
+  する静止時間（`_QUIET_SEC`）も、高負荷で崩れて偽の赤になるかは未検証
 
 ## 導入（モジュール 1）
 
@@ -109,7 +115,8 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 自動圧縮が実際に早く走るか（トークンを消費する長いセッションが要る）と、自動更新が実際に
 新しい版を降ろすか（待ち時間が要る）は確かめない。プロジェクトや managed の設定による
-上書きは確かめない（責務の外）。
+上書きは確かめない（責務の外）。`ONCE` の値が実配置で書かれたかは確かめない（`SET`・`ADD`・`REMOVE` は
+`settings.json` の中身で判定する）。
 
 ## お知らせ（モジュール 3）
 
@@ -130,8 +137,7 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 ### 実物でも確かめられない限界
 
-ブラウザ起動は OS に依存する観測であり、自動では確かめない。VS Code 拡張など
-`cli` 以外の対話起動での見え方は未検証。
+ブラウザ起動は OS に依存する観測であり、自動では確かめない。
 
 ## 収集（モジュール 4）
 
@@ -142,7 +148,9 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 ### 実物でも確かめられない限界
 
 モデルが指示どおりにツールを呼ぶことに依存する（手順を飛ばすと落ちる。再実行で区別する）。
-対話起動でしか現れない値（`permission_mode` の `default` 以外、`is_interrupt` の真）は確かめない。
+対話起動でしか現れない値（`is_interrupt` の真）は確かめない。`permission_mode` の `default` 以外は
+`--permission-mode` を付ければ非対話からでも出せる（詳細は `docs/knowledge/claude-code-behavior.md`）が、
+ここでは既定のまま起動するため確かめない。
 期待するイベントは `hooks.json` から導くため、hook を登録から外すと期待も一緒に減る。外したことには、
 その hook でしか埋まらない列が NULL になることで気づく。他の hook と同じ列しか持たない hook
 （`UserPromptSubmit` など）の登録漏れは検出できない。
@@ -180,7 +188,10 @@ HTTPS・プロキシ越しの送信と、本番の受信先への到達は確か
 ### 前提と罠
 
 - Docker のデーモンに繋がること。繋がらなければ skip される。ビルドには PyPI への到達が要る
-- 前回の実行の片付け漏れ（ラベル `cc-e2e=1` のコンテナ・イメージ）が残っていると、テストは失敗して
+- コンテナ・イメージのラベルは `cc-e2e=<CC_E2E_RUN>`。同じ Docker で
+  サーバのモジュールを並行して走らせるときは、実行ごとに異なる `CC_E2E_RUN` を付け、片付け漏れの
+  検査が他の実行の資源と混ざらないようにする
+- 前回の実行の片付け漏れ（このラベルのコンテナ・イメージ）が残っていると、テストは失敗して
   削除コマンドを表示する。自動では消さない
 - ビルドのたびに Docker のビルドキャッシュが増える。テストは消さない（消す操作は他のイメージの
   キャッシュも巻き込む）。必要なら `docker builder prune` を手で実行する
@@ -190,11 +201,11 @@ HTTPS・プロキシ越しの送信と、本番の受信先への到達は確か
 画面の見た目はブラウザが要るため自動化しない。見た目の規約は `docs/spec/dashboard-style.md`。
 
 開発用のイメージとボリュームを壊さないよう、compose のプロジェクト名を分ける。開発用のサーバが
-15000 番で動いていれば、先に `server/` で `docker compose stop` する。
+動いていれば、先に `server/` で `docker compose stop` する。
 
 1. `server/` で `docker compose -p ccgov-manual up -d --build` を実行し、
    `docker compose -p ccgov-manual cp ../e2e/samples/cost_daily.csv server:/app/data/csv/` で見本の CSV を入れる
-2. `http://127.0.0.1:15000/dev-admin/` を開き（パスワードは `dev.env` の `ADMIN_PASSWORD`、ユーザー名は任意）、
+2. `http://127.0.0.1:<ポート>/dev-admin/`（`<ポート>` は `server/compose.yaml` の `ports` のホスト側）を開き（パスワードは `dev.env` の `ADMIN_PASSWORD`、ユーザー名は任意）、
    「CSV を取り込む」を押す
 3. ブラウザの幅を 1280px にし、4 画面（`/dev-admin/`・`/dev-admin/policy`・`/dev-admin/effect`・
    `/dev-admin/assets`）を順に開く。合格: 開発者ツールのコンソールに error・warning が 0 件、
@@ -213,3 +224,5 @@ DB は SQLite だけで、MySQL は確かめない。AIP の前段のリバー�
 - 2026-09-26: 実装・knowledge と重なる記述を削り、各章の実行コマンドをモジュール一覧の「実行の指定」に集めた
 - 2026-09-28: 組み立てで送信先を空に差し替えることを導入の限界に書いた
 - 2026-09-28: 本体の自動更新を `--settings` で止めることを安全の約束に加えた
+- 2026-09-28: 並行起動時の偽の赤・`CC_E2E_RUN` によるラベルの区別・設定の配布で `ONCE` を確かめないこと・
+  `permission_mode` が非対話でも `--permission-mode` で変わることを書いた
