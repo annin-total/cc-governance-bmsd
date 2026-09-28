@@ -144,7 +144,7 @@ def test_broken_json_lines_after_usage_are_skipped(tmp_path):
 
 
 def test_truncated_first_line_at_tail_boundary_is_skipped(tmp_path):
-    """256KB 境界で先頭行が途中から切れる → 切れた行を飛ばし、後ろの usage の値。"""
+    """末尾 tail バイトの境界で先頭行が途中から切れても、切れた行を飛ばして後ろの usage を採る。"""
     path = tmp_path / "t.jsonl"
     tail = 4096
     good = _usage_line(input_tokens=7).encode("utf-8")

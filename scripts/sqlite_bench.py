@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""events テーブルの COUNT(DISTINCT event_id) を被覆インデックスあり/なしで計測する。
+"""events の COUNT(DISTINCT event_id) などを被覆インデックスあり/なしで計測する。
 
-規模: 1 日 50,000 行 × DAYS 日。空きディスクの制約で年間 1,500 万行は作れないため、
-画面が実際に投げる「`day` の範囲で絞った」クエリを同じ密度で計測する。
+画面が投げる「`day` の範囲で絞った」クエリを、指定した日数と 1 日の行数で計測する。
 
 使い方: python3 scripts/sqlite_bench.py <db> <日数> <1日の行数>
 ANALYZE を呼ばない。インデックスの効果を見るときは計測前に手で実行する（docs/knowledge/measurements.md）。

@@ -7,7 +7,7 @@ Claude Code の端末プラグイン。設定の自動適用・お知らせの�
 の位置づけは `system.md` にある。
 
 hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `session_start.py`
-（statusline.js の同期 → 設定適用 → お知らせ表示 → 収集）の 2 つだけであり、`_` 始まりの
+（`SessionStart`）の 2 つだけであり、`_` 始まりの
 ファイルは内部モジュールである。ほかに利用者が呼ぶ `/governance:reapply`（入口は
 `reapply.py`）がある。端末の状態（識別子のキャッシュ・既読・送信待ち）は `${CLAUDE_PLUGIN_DATA}`
 （無ければ `~/.claude/cc-governance/`）に置く。アンインストールすると `${CLAUDE_PLUGIN_DATA}` は消え、既読と
@@ -27,11 +27,11 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 
 ## 収集
 
-`collect.py` は hook の種類で分岐せず、標準入力の JSON から契約の `HOOK_FIELDS` が名指しした
+`collect.py` は列の抽出を hook の種類で分岐させず、標準入力の JSON から契約の `HOOK_FIELDS` が名指しした
 キーパスだけを引く。来ないキーは NULL になる。
 
 **許可するのはキーパスだけで、値の中身は検査しない。**`skill_name`・`command_name`・
-`command_source` は利用者が自由に命名できる文字列であり、255 文字までそのまま送信・永続化
+`command_source`・MCP の `tool_name` は利用者が自由に命名できる文字列であり、255 文字までそのまま送信・永続化
 される。
 
 - `user_email` は突合キーである。環境変数 `CC_GOVERNANCE_USER_EMAIL` があればそれを使い、無ければ
@@ -45,7 +45,7 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 
 **本文（プロンプト・応答・メッセージ）は送らない。**利用者に由来する値で送るのは、`SET` / `ONCE` の
 書き込み前の値（`prev_value`。スカラだけ。「設定の自動適用」）、スキル名とコマンド名（`skill_name`・
-`command_name`・`command_source`）、端末のホスト名（`host`）、`user_email` だけである。
+`command_name`・`command_source`）、`tool_name`（MCP のツールはサーバ名を含む）、端末のホスト名（`host`）、`user_email` だけである。
 
 環境変数 `CC_GOVERNANCE_DISABLE` が空でないとき、**利用ログの収集とお知らせの表示**
 （ブラウザの起動を含む）を止める。設定の適用と policy イベントの記録・送信（`SessionStart` での
@@ -98,10 +98,11 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
   項目にだけ書く。途中が dict でないとき、対象が配列でないとき（`ADD` / `REMOVE`）は書かない
 - 差分が無ければ書かない。読んでから書くまでに mtime が変わっていたら今回は諦め、
   パースに失敗したら何もしない。書き込みは一時ファイル + `os.replace` で原子的に行う
-- **Claude Code 本体が読めない `settings.json` では、プラグインが起動しない。**本体は検証を通らない箇所が
-  1 つでもあるとファイル全体を無視して `enabledPlugins` も読まないので、hook が 1 本も動かず、適用も
-  policy・error 行の記録も起きない。本体が読めてプラグインが読めないとき（BOM 付き・非 UTF-8 など）は
-  hook が動き、適用を飛ばして全項目を `parse_failed` として記録する。気づき方と復旧の順は `../guide/release.md`
+- **本体が `settings.json` をファイルごと無視すると、プラグインが起動しない。**`enabledPlugins` も効かないので
+  hook が 1 本も動かず、適用も policy・error 行の記録も起きない（無視される条件は
+  `../knowledge/claude-code-behavior.md` の「settings.json の読み込み」、気づき方と復旧の順は `../guide/release.md`）。
+  本体が読めてプラグインが読めないとき（BOM 付き・非 UTF-8 など）は hook が動き、適用を飛ばして全項目を
+  `parse_failed` として記録する
 - 書き換える直前に、元のファイルを丸ごと `<config_dir>/governance/backups/` に日時付きで保存し、
   新しい一定の世代数だけを残す。最新の世代と同じ内容なら保存しない。保存に失敗したら書かない
 - 結果はキーごとに policy イベントとして記録する。`key_name` は `SET` ならパスそのまま、ほかは
@@ -149,4 +150,4 @@ JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポー�
 - 2026-09-26: 重複の扱いの参照先を `decisions/server.md` にした
 - 2026-09-28: Claude Code 本体の版（`claude_code_version`）の収集と、本体の自動更新を強制する設定を加えた
 - 2026-09-28: HTTP のエラー応答での送信の打ち切りと、error 行の状態コードごとの集約を書いた
-- 2026-09-28: 本体が読めない settings.json・アンインストールで消える状態・ONCE の記録の範囲・送る値・同じ内容のバックアップを取らないことを書いた
+- 2026-09-28: 本体が読めない settings.json・アンインストールで消える状態・ONCE の記録の範囲・送る値・同じ内容のバックアップを取らないことを書いた。送る値に MCP の `tool_name` を含め、収集の分岐の範囲を実装にそろえた

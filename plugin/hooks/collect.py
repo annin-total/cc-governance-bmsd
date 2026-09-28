@@ -53,7 +53,7 @@ def extract_event(raw_input: Any, hook_event: Optional[str]) -> dict[str, Any]:
 
 
 def append_error(stage: str, error_type: str, hook_event: Optional[str]) -> None:
-    """失敗を error 行としてキューに積む。載せるのは固定値の段名と例外クラス名だけ。例外を外に出さない。"""
+    """失敗を error 行としてキューに積む。載せるのは固定値の段名と、例外クラス名か `HTTP <状態コード>` だけ。例外を外に出さない。"""
     try:
         try:
             user_email = _identity.get_user_email()
