@@ -100,7 +100,7 @@ python scripts/validate.py
    `CLAUDE_CONFIG_DIR` には `$STAGING` を渡す
 
 5. 行が本番の受信先に届いたことを確かめる。staging で配る `config.json` は本番の送信先を持つので、
-   この端末（開発者本人）の行は本番の DB に入る。これは許容する（理由は `../decisions/plugin.md` の「配布と検証」）
+   この端末（開発者本人）の行は本番の DB に入る。これは許容する
 
    合格: 概況の版の分布に上げた版が出る（行が届いた証拠）
 
@@ -152,7 +152,7 @@ claude plugin update governance
 
 ## 11. 列や行の種類を足したとき
 
-契約（`plugin/hooks/contract.py`）に列を足すリリースでは、サーバ側で列の追加を先に済ませる。稼働中のサーバの DB に `ALTER TABLE <t> ADD COLUMN <列> <型>` を手で実行し、その後、新しいコードでサーバを再起動する（テーブルは作り直さない。理由は `../decisions/server.md`。AIP での実行場所と再起動は `deploy-aip.md` の「列を足すとき」。実機では未検証）。既存の行の新しい列は NULL になる。
+契約（`plugin/hooks/contract.py`）に列を足すリリースでは、サーバ側で列の追加を先に済ませる。サーバを止め、`ALTER TABLE <t> ADD COLUMN <列> <型>` を手で実行してから起動する（テーブルは作り直さない。理由は `../decisions/server.md`）。既存の行の新しい列は NULL になる。
 
 - `<型>` は `contract.py` に書いた型と同じにする。起動時の検査は列名しか見ないので、型を誤っても起動する。SQLite では値が誤った型で入り、比較や `max` が無言で誤る
 - サーバの環境に `sqlite3` CLI があるとは限らない（`server/Dockerfile` の基底イメージには無い）。サーバが使う Python の標準モジュールで実行し、実行後に `PRAGMA table_info(<t>)` で列と型を確かめる
@@ -179,4 +179,4 @@ claude plugin update governance
 - 2026-09-28: staging で行が届いたことの確認と、本体が捨てる値を配ったときの復旧の順序を加えた
 - 2026-09-28: 401 が続く間も spool の上限を超えた分は失われることを書いた
 - 2026-09-28: ロールバックで戻らないもの、列を足すときの型・実行手段・端末を先に配ったときの欠損を加え、同期の確認項目に `contract.py` を加えた
-- 2026-09-28: 章番号での参照を見出し名に替え、staging の対話起動を `e2e.md` の手動確認に寄せ、列の追加を稼働中の ALTER と再起動の順にし、knowledge・スクリプトと重なる記述を参照に縮めた
+- 2026-09-28: 章番号での参照を見出し名に替え、staging の対話起動を `e2e.md` の手動確認に寄せ、knowledge・スクリプトと重なる記述を参照に縮めた
