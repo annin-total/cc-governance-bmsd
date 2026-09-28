@@ -96,7 +96,8 @@ def generate(rng: random.Random, n_users: int, days: int, base_ts: int) -> tuple
     """(NDJSON に載せる行のリスト, CSV の行のリスト)。`base_ts` の日を今日とする。"""
     today = contract.to_day(base_ts)
     hooks = sorted(
-        json.loads(HOOKS_JSON.read_text())["hooks"], key=lambda h: h != "SessionStart"
+        json.loads(HOOKS_JSON.read_text(encoding="utf-8"))["hooks"],
+        key=lambda h: h != "SessionStart",
     )
     terms, not_introduced = _terminals(rng, n_users, today, days)
     rows, costs = [], []

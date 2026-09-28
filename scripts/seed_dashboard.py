@@ -92,15 +92,7 @@ def _parse_args() -> argparse.Namespace:
     return args
 
 
-def main() -> None:
-    args = _parse_args()
-    out = Path(args.db).resolve()
-    if out.exists():
-        sys.exit(f"出力先が既に在る（上書きしない）: {out}")
-    _check_rules()
-    os.environ["DB_DSN"] = f"sqlite:///{out}"
-    rng = random.Random(SEED)
-    rows, costs = generate(rng, args.users, args.days, int(time.time()))
+def _load(rows: list, costs: list, no_csv: bool) -> None:
     conn = db.connect()
     try:
         # 受信は表を作らない。索引は入れ終えてから db.init() で作る
@@ -110,11 +102,27 @@ def main() -> None:
         result = ndjson.ingest(raw.encode("utf-8"), conn)
         if result["dropped"]:
             sys.exit(f"受信で破棄された行がある: {result}")
-        if not args.no_csv:
+        if not no_csv:
             _import_csv(costs, conn)
     finally:
         conn.close()
     db.init()
+
+
+def main() -> None:
+    args = _parse_args()
+    out = Path(args.db).resolve()
+    if out.exists():
+        sys.exit(f"出力先が既に在る（上書きしない）: {out}")
+    _check_rules()
+    os.environ["DB_DSN"] = f"sqlite:///{out}"
+    rng = random.Random(SEED)
+    rows, costs = generate(rng, args.users, args.days, int(time.time()))
+    try:
+        _load(rows, costs, args.no_csv)
+    except BaseException:
+        out.unlink(missing_ok=True)  # 作りかけを残すと、次の実行が「既に在る」で止まる
+        raise
     counts = {k: sum(r["kind"] == k for r in rows) for k in KINDS}
     n_cost = 0 if args.no_csv else len(costs)
     print(f"{out}: users={args.users} days={args.days} {counts} cost_daily={n_cost}")

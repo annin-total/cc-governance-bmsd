@@ -37,7 +37,9 @@ def seeded(tmp_path_factory):
     result = _run(str(db_path))
     assert result.returncode == 0, result.stderr
     with pytest.MonkeyPatch.context() as mp:
-        mp.setenv("DB_DSN", f"sqlite:///{db_path}")
+        mp.setenv(
+            "DB_DSN", f"sqlite:///{db_path}"
+        )  # 集計の関数が方言を DB_DSN から決める
         conn = sqlite3.connect(db_path)
         yield conn, contract.to_day(int(time.time()))
         conn.close()
@@ -51,7 +53,7 @@ def _scalar_set_items() -> list:
     ]
 
 
-def test_seed_fills_every_table(seeded):
+def test_画面の全ての表と分布が埋まる(seeded):
     conn, today = seeded
     for key, expected in _scalar_set_items():
         numerator, denominator, _ = queries_policy.compliance_rate(
@@ -91,7 +93,7 @@ def test_seed_fills_every_table(seeded):
         assert set(distribution) == {"before", "after"}, hook_event
 
 
-def test_seed_guards(tmp_path):
+def test_CSVなし_既存の出力先_下限を割る引数を扱う(tmp_path):
     no_csv = tmp_path / "no_csv.db"
     result = _run(str(no_csv), "--no-csv")
     assert result.returncode == 0, result.stderr
