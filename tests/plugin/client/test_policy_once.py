@@ -70,6 +70,20 @@ def test_値を変えて配れば再度1回だけ書く():
     assert _read()["statusLine"]["command"] == "mine"
 
 
+def test_前の値へ戻して配ると再び1回だけ書く():
+    """ONCE の記録は今の組だけを持つ。A → B → A と配ると、利用者の値を再び 1 回だけ上書きする。"""
+    changed = {**STATUS, "padding": 1}
+    _apply({"statusLine": STATUS})
+    _write({"statusLine": {"type": "command", "command": "mine"}})
+    _apply({"statusLine": changed})
+    _write({"statusLine": {"type": "command", "command": "mine"}})
+
+    assert _apply({"statusLine": STATUS}) == {"once:statusLine": "applied"}
+    assert _read()["statusLine"]["command"] == _expected_command()
+    _write({"statusLine": {"type": "command", "command": "mine"}})
+    assert _apply({"statusLine": STATUS}) == {"once:statusLine": "already_ok"}
+
+
 def test_既に同じ値なら書かずに適用済みにする():
     _write({"statusLine": {**STATUS, "command": _expected_command()}})
     assert _apply({"statusLine": STATUS}) == {"once:statusLine": "already_ok"}

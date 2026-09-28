@@ -85,7 +85,7 @@ def test_サンプルのONCEがステータスラインを絶対パスで書く(
 def test_定義の形(module_name):
     """パスに空の段が無く、ADD / REMOVE の値が list で、同じパスの同じ要素を両方に書かない。
 
-    文字列だと 1 文字ずつ足される。両方に書くと足して消すたびに書き込みが起き、毎回バックアップが増える。
+    文字列だと 1 文字ずつ足される。両方に書くと、足して消すために毎セッション settings.json を書き換える。
     """
     module = MODULES[module_name]
     for table in (module.SET, module.ADD, module.REMOVE, module.ONCE):
