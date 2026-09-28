@@ -29,7 +29,8 @@ def claude_code_version(path: Optional[str], tail: int = _TAIL_BYTES) -> Optiona
     for line in reversed(chunk.split(b"\n")):
         try:
             obj = json.loads(line)
-        except ValueError:
+        # 深い入れ子の行は RecursionError を投げる（ValueError 派生ではない）。
+        except (ValueError, RecursionError):
             continue
         version = obj.get("version") if isinstance(obj, dict) else None
         if isinstance(version, str):
@@ -58,7 +59,7 @@ def _usage_total(line: bytes) -> Optional[int]:
     """1 行の `message.usage` の 3 値の合計。取れなければ None。"""
     try:
         obj = json.loads(line)
-    except ValueError:
+    except (ValueError, RecursionError):
         return None
     if not isinstance(obj, dict):
         return None

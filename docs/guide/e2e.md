@@ -144,6 +144,7 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 本物の Claude Code が `hooks.json` に登録した全 hook を呼び、`contract.py` の `HOOK_FIELDS` の各キーパスが
 実際の stdin で全行を通して 1 つ以上埋まることを確かめる。上流でキーが改名されると列は無言で NULL に
 なり、`tests/` の fixture（採取時点の stdin）では気づけない。
+transcript を読む hook（`collect.py` の `_TRANSCRIPT_HOOK_EVENTS`）の行では、transcript から埋める `EXTRA_COLUMNS` の列も同じく確かめる（transcript の行の形は公式の契約ではない）。
 
 ### 実物でも確かめられない限界
 
