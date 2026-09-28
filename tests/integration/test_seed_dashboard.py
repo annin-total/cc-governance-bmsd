@@ -15,10 +15,19 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPT = ROOT / "scripts" / "seed_dashboard.py"
 sys.path.insert(0, str(ROOT / "server"))
+sys.path.insert(0, str(ROOT / "scripts"))
 
-from ccgov.constants import EFFECT_PROVIDER, REFERENCE_KEY, REFERENCE_VALUE
+from ccgov.constants import (
+    EFFECT_PROVIDER,
+    EVENT_STUDY_SPAN,
+    REFERENCE_KEY,
+    REFERENCE_VALUE,
+)
 from ccgov.store import queries_errors, queries_events, queries_policy
 from ccgov.vendor import contract, policy
+from seed_dashboard import _check_rules
+from seed_dashboard_columns import RULES
+from seed_dashboard_rows import scalar_keys
 
 
 def _run(*args: str) -> subprocess.CompletedProcess:
@@ -45,17 +54,10 @@ def seeded(tmp_path_factory):
         conn.close()
 
 
-def _scalar_set_items() -> list:
-    return [
-        (key, contract.policy_text(value))
-        for key, value in policy.SET.items()
-        if value is not None and not isinstance(value, (dict, list))
-    ]
-
-
 def test_画面の全ての表と分布が埋まる(seeded):
     conn, today = seeded
-    for key, expected in _scalar_set_items():
+    for key in scalar_keys():
+        expected = contract.policy_text(policy.SET[key])
         numerator, denominator, _ = queries_policy.compliance_rate(
             conn, today, key, expected
         )[0]
@@ -84,7 +86,8 @@ def test_画面の全ての表と分布が埋まる(seeded):
     assert queries_events.reconciliation_rate(conn, today)[0][0] > 0
 
     starts = queries_policy.compliance_start_dates(conn, REFERENCE_KEY, REFERENCE_VALUE)
-    assert len(set(starts.values())) > 1
+    # 準拠開始日が散らばらないと、イベントスタディの相対日の人数の変化が見えない
+    assert max(starts.values()) - min(starts.values()) >= EVENT_STUDY_SPAN
     assert queries_policy.event_study(
         conn, REFERENCE_KEY, REFERENCE_VALUE, EFFECT_PROVIDER
     )
@@ -111,3 +114,13 @@ def test_CSVなし_既存の出力先_下限を割る引数を扱う(tmp_path):
         target = tmp_path / f"small{args[0]}.db"
         assert _run(str(target), *args).returncode != 0, args
         assert not target.exists(), args
+
+
+def test_対応表と契約の列が食い違えば名指しで止まる(monkeypatch):
+    missing = next(iter(RULES["event"]))
+    monkeypatch.delitem(RULES["event"], missing)
+    with pytest.raises(SystemExit, match=missing):
+        _check_rules()
+    monkeypatch.setitem(RULES["policy"], "not_in_contract", lambda c: None)
+    with pytest.raises(SystemExit, match="not_in_contract"):
+        _check_rules()

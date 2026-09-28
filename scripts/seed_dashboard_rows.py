@@ -8,7 +8,7 @@ from pathlib import Path
 from ccgov.constants import EVENT_STUDY_SPAN, POLICY_DAYS, STALE_DAYS
 from ccgov.store.queries_events import _HEALTH_NULL_SCOPES
 from ccgov.vendor import contract, policy
-from seed_dashboard_rules import CSV_RULES, RULES, Ctx, Term
+from seed_dashboard_columns import CSV_RULES, RULES, Ctx, Term
 
 HOOKS_JSON = Path(__file__).resolve().parents[1] / "plugin" / "hooks" / "hooks.json"
 ACTIVE_RATE = 0.8

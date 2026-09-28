@@ -29,8 +29,8 @@ from ccgov.constants import (
 from ccgov.ingestion import csv_import, ndjson
 from ccgov.store import db
 from ccgov.vendor import contract, policy
+from seed_dashboard_columns import CSV_RULES, RULES
 from seed_dashboard_rows import generate
-from seed_dashboard_rules import CSV_RULES, RULES
 
 SEED = 20260928
 # 途絶えた端末にも、導入から準拠開始まで EVENT_STUDY_SPAN 日を取れる最短の日数
