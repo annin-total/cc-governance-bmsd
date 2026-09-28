@@ -1,0 +1,63 @@
+/* この案で足した部品。値は tokens.css の変数を使い、足した変数はここの :root に置く */
+:root {
+  --tip-max-w: 300px;
+  --fc-label-w: 2.6em;
+  --fc-num-w: 4.4em;
+  --ex-select-w: 220px;
+}
+
+/* 見出し帯の右端: 時点とエクスポートの入口 */
+.bar-end { margin-left: auto; display: flex; align-items: center; gap: var(--sp-l); }
+.bar-end .asof { margin-left: 0; }
+.bar-end a { color: var(--ink-2); text-decoration: none; padding: var(--sp-2xs) var(--sp-m); border-radius: var(--r-m); white-space: nowrap; }
+.bar-end a:hover { color: var(--accent); }
+.bar-end a[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 700; }
+
+/* 期間の分段（絞り込みの chipbar と同じ見た目） */
+.period button { font-size: var(--fs-label); padding: var(--sp-3xs) var(--sp-m); }
+
+/* 月末の見込み: 前月と今月の 2 本。今月は実績（濃）＋見込みの残り（薄） */
+.fc { display: grid; gap: var(--sp-2xs); }
+.fc-row { display: grid; grid-template-columns: var(--fc-label-w) 1fr var(--fc-num-w); align-items: center; gap: var(--sp-s); font-size: var(--fs-xs); color: var(--muted); line-height: 1.5; font-variant-numeric: tabular-nums; }
+.fc-row .num { text-align: right; }
+.fc-row .num.strong { color: var(--ink); font-weight: 700; }
+.fc-bar { display: flex; }
+.fc-bar i { border-radius: 0; }
+.fc-bar i.rest { background: var(--accent-2); }
+
+/* ツールチップ */
+.tip { position: fixed; z-index: 10; max-width: var(--tip-max-w); pointer-events: none; padding: var(--sp-2xs) var(--sp-s); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-s); box-shadow: var(--shadow-raised); font-size: var(--fs-sm); line-height: 1.5; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tip[hidden] { display: none; }
+.tip b { display: block; font-weight: 600; color: var(--ink); }
+.tip span { display: block; }
+.hit { fill: transparent; }
+.col:hover > :not(.hit):not(text) { opacity: .7; }
+.guide { stroke: var(--ink-2); stroke-width: 1; opacity: 0; }
+[data-tip]:not(rect) { cursor: default; }
+
+/* 12 か月では記録由来の群をカードなしで見出しだけにする */
+.cards:empty { display: none; }
+.tabs a[hidden] { display: none; }
+.col.partial > :not(.hit):not(text) { opacity: .45; }
+
+/* エクスポートのページ */
+.ex-form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: var(--sp-m) var(--sp-l); }
+.field { display: grid; gap: var(--sp-2xs); font-size: var(--fs-sm); color: var(--muted); }
+.field select, .field input { font: inherit; font-size: var(--fs-label); color: var(--ink); min-width: var(--ex-select-w); padding: var(--sp-xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); }
+.field input::file-selector-button { font: inherit; font-size: var(--fs-sm); color: var(--ink-2); background: var(--tabs); border: 0; border-radius: var(--r-s); padding: 0 var(--sp-s); margin-right: var(--sp-s); cursor: pointer; }
+.field select { appearance: none; padding-right: var(--sp-3xl); cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - var(--sp-l)) 55%, calc(100% - var(--sp-m)) 55%; background-size: var(--sp-2xs) var(--sp-2xs); background-repeat: no-repeat; }
+.ex-meta { flex-basis: 100%; display: grid; margin: 0; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.ex-meta b { font-weight: 600; color: var(--ink); }
+.ex .group + .group { margin-top: var(--sp-3xl); }
+.ex .panel { margin-top: 0; }
+
+/* 案 03: ナビの下に常設する期間の帯（スクロールしても残る） */
+:root { --pbar-h: 40px; }
+.pbar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--rule); }
+.pbar-in { display: flex; align-items: center; gap: var(--sp-l); height: var(--pbar-h); font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pbar-dates { color: var(--ink-2); }
+.pbar-csv { margin-left: auto; }
+.period.slim button { font-size: var(--fs-sm); padding: 0 var(--sp-m); }
+.detail { scroll-margin-top: calc(var(--pbar-h) + var(--sp-m)); }

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="../../base/static/tokens.css">
+<link rel="stylesheet" href="../../base/static/layout.css">
+<link rel="stylesheet" href="../../base/static/components.css">
+<link rel="stylesheet" href="idea.css">
+<script src="../../data/data.js" defer></script>
+<script src="charts.js" defer></script>
+<script src="cards.js" defer></script>
+<script src="view.js" defer></script>
+<script src="../../base/static/app.js" defer></script>
+</head>
+<body>
+<header class="top"><div class="wrap bar">
+  <a class="brand" href="index.html">Claude Code 利用状況</a>
+  <nav aria-label="画面">
+    <a href="index.html" aria-current="page">概況</a>
+    <a href="../../base/policy.html">設定の適用状況</a>
+    <a href="../../base/effect.html">設定の効果</a>
+    <a href="../../base/assets.html">スキル・コマンドの利用</a>
+  </nav>
+  <span class="bar-end"><span class="asof">2026-09-29 時点</span><a href="export.html">エクスポート</a></span>
+</div></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div><h1>概況</h1><p class="lead">全体の利用量と、データの届き具合</p></div>
+    <label class="psel"><span>期間</span><select data-period-select><option value="7">直近 7 日と前の 7 日</option><option value="28">直近 28 日と前の 28 日</option><option value="12m">直近 12 か月（週ごと）</option></select></label>
+  </div>
+<div class="kpis">
+  <section class="group" aria-label="利用">
+    <h2 class="glabel">利用<span data-text="usage"></span></h2>
+    <div class="cards" data-cards="usage"></div>
+  </section>
+  <section class="group" aria-label="データの届き具合">
+    <h2 class="glabel">データの届き具合<span data-text="delivery"></span></h2>
+    <div class="cards" data-cards="delivery"></div>
+  </section>
+</div>
+<section class="detail" id="detail" aria-label="詳しい一覧" data-tabs>
+  <h2 class="glabel">詳しい一覧<span>タブで切り替え · カードを押すと該当する一覧が開きます</span></h2>
+  <div class="tabs" role="tablist"><a role="tab" id="tab-daily" href="#daily" aria-controls="daily" data-tab="daily"><b>日ごとの利用</b><span>直近 14 日</span></a><a role="tab" id="tab-cost" href="#cost" aria-controls="cost" data-tab="cost"><b>日ごとのコスト</b><span>利用明細の全期間</span></a><a role="tab" id="tab-modes" href="#modes" aria-controls="modes" data-tab="modes"><b>使われ方</b><span>直近 7 日 · 記録</span></a><a role="tab" id="tab-health" href="#health" aria-controls="health" data-tab="health"><b>受信と項目の欠け</b><span>直近 7 日と前の 7 日</span></a><a role="tab" id="tab-errors" href="#errors" aria-controls="errors" data-tab="errors"><b>プラグインのエラー</b><span>直近 7 日 · 39 件</span></a></div>
+  <div class="panel" role="tabpanel" id="daily" aria-labelledby="tab-daily" data-panel="daily"></div>
+  <div class="panel" role="tabpanel" id="cost" aria-labelledby="tab-cost" data-panel="cost"></div>
+  <div class="panel" role="tabpanel" id="modes" aria-labelledby="tab-modes" data-panel="modes">
+  <header class="p-head"><h2>使われ方</h2>
+    <p class="scope">直近 7 日 · 記録の件数（開始のしかたはセッション開始の記録）· 割合は区分の中での割合</p>
+  </header>
+  <div class="filters" data-filter hidden>
+  <div class="chipbar" role="group" aria-label="区分"><button type="button" data-chip="all" aria-pressed="true">すべて<b>11</b></button><button type="button" data-chip="permission_mode" aria-pressed="false">権限モード<b>4</b></button><button type="button" data-chip="effort_level" aria-pressed="false">effort（思考量）<b>3</b></button><button type="button" data-chip="source" aria-pressed="false">セッションの開始<b>4</b></button></div>
+  <span class="count"><b data-shown>11</b> / 11 行</span>
+</div>
+<div class="tscroll">
+<table data-testid="modes">
+<thead><tr><th scope="col" class="c-tag"><button type="button" data-sort="0">区分<i class="arrow"></i></button></th><th scope="col" class="c-term"><button type="button" data-sort="1">値<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="2">件数<i class="arrow"></i></button></th><th scope="col" class="c-pct num"><button type="button" data-sort="3">割合<i class="arrow"></i></button></th><th scope="col" class="c-bar"></th></tr></thead>
+<tbody>
+<tr data-tags="permission_mode" data-q=""><td class="c-tag" data-v="permission_mode"><span class="sub">権限モード</span></td><td class="c-term" data-v="acceptEdits">編集を自動承認 <span class="sub">ファイル編集は確認なし</span></td><td class="c-num num" data-v="945">945</td><td class="c-pct num" data-v="26.3">26.3%</td><td class="c-bar" data-v="26.3"><span class="hbar "><i style="width: 26.3%"></i></span></td></tr>
+<tr data-tags="permission_mode" data-q=""><td class="c-tag" data-v="permission_mode"><span class="sub">権限モード</span></td><td class="c-term" data-v="plan">プランモード <span class="sub">計画だけ立て、変更はしない</span></td><td class="c-num num" data-v="895">895</td><td class="c-pct num" data-v="24.9">24.9%</td><td class="c-bar" data-v="24.9"><span class="hbar "><i style="width: 24.9%"></i></span></td></tr>
+<tr data-tags="permission_mode" data-q=""><td class="c-tag" data-v="permission_mode"><span class="sub">権限モード</span></td><td class="c-term" data-v="bypassPermissions">確認なし <span class="sub">すべての操作を確認なし</span></td><td class="c-num num" data-v="876">876</td><td class="c-pct num" data-v="24.4">24.4%</td><td class="c-bar" data-v="24.4"><span class="hbar "><i style="width: 24.4%"></i></span></td></tr>
+<tr data-tags="permission_mode" data-q=""><td class="c-tag" data-v="permission_mode"><span class="sub">権限モード</span></td><td class="c-term" data-v="default">通常 <span class="sub">操作ごとに許可を求める</span></td><td class="c-num num" data-v="876">876</td><td class="c-pct num" data-v="24.4">24.4%</td><td class="c-bar" data-v="24.4"><span class="hbar "><i style="width: 24.4%"></i></span></td></tr>
+<tr data-tags="effort_level" data-q=""><td class="c-tag" data-v="effort_level"><span class="sub">effort（思考量）</span></td><td class="c-term" data-v="low">低</td><td class="c-num num" data-v="567">567</td><td class="c-pct num" data-v="35.0">35.0%</td><td class="c-bar" data-v="35.0"><span class="hbar "><i style="width: 35.0%"></i></span></td></tr>
+<tr data-tags="effort_level" data-q=""><td class="c-tag" data-v="effort_level"><span class="sub">effort（思考量）</span></td><td class="c-term" data-v="high">高</td><td class="c-num num" data-v="528">528</td><td class="c-pct num" data-v="32.6">32.6%</td><td class="c-bar" data-v="32.6"><span class="hbar "><i style="width: 32.6%"></i></span></td></tr>
+<tr data-tags="effort_level" data-q=""><td class="c-tag" data-v="effort_level"><span class="sub">effort（思考量）</span></td><td class="c-term" data-v="medium">中</td><td class="c-num num" data-v="526">526</td><td class="c-pct num" data-v="32.4">32.4%</td><td class="c-bar" data-v="32.4"><span class="hbar "><i style="width: 32.4%"></i></span></td></tr>
+<tr data-tags="source" data-q=""><td class="c-tag" data-v="source"><span class="sub">セッションの開始</span></td><td class="c-term" data-v="resume">再開 <span class="sub">前のセッションを続けた</span></td><td class="c-num num" data-v="93">93</td><td class="c-pct num" data-v="28.1">28.1%</td><td class="c-bar" data-v="28.1"><span class="hbar "><i style="width: 28.1%"></i></span></td></tr>
+<tr data-tags="source" data-q=""><td class="c-tag" data-v="source"><span class="sub">セッションの開始</span></td><td class="c-term" data-v="startup">新規起動</td><td class="c-num num" data-v="84">84</td><td class="c-pct num" data-v="25.4">25.4%</td><td class="c-bar" data-v="25.4"><span class="hbar "><i style="width: 25.4%"></i></span></td></tr>
+<tr data-tags="source" data-q=""><td class="c-tag" data-v="source"><span class="sub">セッションの開始</span></td><td class="c-term" data-v="compact">圧縮後</td><td class="c-num num" data-v="79">79</td><td class="c-pct num" data-v="23.9">23.9%</td><td class="c-bar" data-v="23.9"><span class="hbar "><i style="width: 23.9%"></i></span></td></tr>
+<tr data-tags="source" data-q=""><td class="c-tag" data-v="source"><span class="sub">セッションの開始</span></td><td class="c-term" data-v="clear">クリア後</td><td class="c-num num" data-v="75">75</td><td class="c-pct num" data-v="22.7">22.7%</td><td class="c-bar" data-v="22.7"><span class="hbar "><i style="width: 22.7%"></i></span></td></tr>
+</tbody>
+</table>
+<p class="empty" data-empty hidden>条件に合う行はありません。</p>
+</div>
+</div>
+  <div class="panel" role="tabpanel" id="health" aria-labelledby="tab-health" data-panel="health">
+  <header class="p-head"><h2>受信と項目の欠け</h2>
+    <p class="scope">直近 7 日と前の 7 日 · 欠けの分母は、その項目が送られるはずの記録</p>
+  </header>
+  <div class="filters" data-filter hidden>
+  <div class="chipbar" role="group" aria-label="区分"><button type="button" data-chip="all" aria-pressed="true">すべて<b>7</b></button><button type="button" data-chip="recv" aria-pressed="false">受信<b>3</b></button><button type="button" data-chip="null" aria-pressed="false">項目の欠け<b>4</b></button></div>
+  <span class="count"><b data-shown>7</b> / 7 行</span>
+</div>
+<div class="tscroll">
+<table data-testid="health">
+<thead><tr><th scope="col" class="c-tag">区分</th><th scope="col" class="c-term">項目</th><th scope="col" class="c-measure num">直近 7 日</th><th scope="col" class="c-measure_sub num">前の 7 日</th><th scope="col" class="c-diff num">差</th><th scope="col" class="c-state">状態</th></tr></thead>
+<tbody>
+<tr data-tags="recv" data-q=""><td class="c-tag" data-v="recv"><span class="sub">受信</span></td><td class="c-term" data-v="events">受信した記録 <span class="sub">再送の重複を除く</span></td><td class="c-measure num" data-v="3592">3,592 件</td><td class="c-measure_sub num" data-v="3541"><span class="sub">3,541 件</span></td><td class="c-diff num" data-v="51">+51</td><td class="c-state" data-v=""><span class="sub">—</span></td></tr>
+<tr data-tags="recv" data-q=""><td class="c-tag" data-v="recv"><span class="sub">受信</span></td><td class="c-term" data-v="users">送信した利用者</td><td class="c-measure num" data-v="32">32 人</td><td class="c-measure_sub num" data-v="32"><span class="sub">32 人</span></td><td class="c-diff num" data-v="0">±0</td><td class="c-state" data-v=""><span class="sub">—</span></td></tr>
+<tr data-tags="recv" data-q=""><td class="c-tag" data-v="recv"><span class="sub">受信</span></td><td class="c-term" data-v="reconciliation">CSV との照合率 <span class="sub">利用明細の最終日までの 7 日</span></td><td class="c-measure num" data-v="100.0">100.0% <span class="sub">32 / 32 人</span></td><td class="c-measure_sub num" data-v=""><span class="sub"><span class="sub">—</span></span></td><td class="c-diff num" data-v=""><span class="sub">—</span></td><td class="c-state" data-v=""><span class="sub">—</span></td></tr>
+<tr data-tags="null" data-q=""><td class="c-tag" data-v="null"><span class="sub">項目の欠け</span></td><td class="c-term" data-v="tool_name">ツール名 <span class="sub">ツール実行の記録が分母</span></td><td class="c-measure num" data-v="9.2">9.2%</td><td class="c-measure_sub num" data-v="10.3"><span class="sub">10.3%</span></td><td class="c-diff num" data-v="-1.1">−1.1 pt</td><td class="c-state" data-v="ok"><span class="mark ok">正常</span></td></tr>
+<tr data-tags="null" data-q=""><td class="c-tag" data-v="null"><span class="sub">項目の欠け</span></td><td class="c-term" data-v="skill_name">スキル名 <span class="sub">Skill ツールの実行記録が分母</span></td><td class="c-measure num" data-v="6.4">6.4%</td><td class="c-measure_sub num" data-v="12.5"><span class="sub">12.5%</span></td><td class="c-diff num" data-v="-6.1">−6.1 pt</td><td class="c-state" data-v="ok"><span class="mark ok">正常</span></td></tr>
+<tr data-tags="null" data-q=""><td class="c-tag" data-v="null"><span class="sub">項目の欠け</span></td><td class="c-term" data-v="context_tokens">コンテキストのトークン数 <span class="sub">圧縮直前と応答終了の記録が分母</span></td><td class="c-measure num" data-v="8.6">8.6%</td><td class="c-measure_sub num" data-v="9.1"><span class="sub">9.1%</span></td><td class="c-diff num" data-v="-0.5">−0.5 pt</td><td class="c-state" data-v="ok"><span class="mark ok">正常</span></td></tr>
+<tr data-tags="null" data-q=""><td class="c-tag" data-v="null"><span class="sub">項目の欠け</span></td><td class="c-term" data-v="command_source">コマンドの定義元 <span class="sub">コマンド展開の記録が分母</span></td><td class="c-measure num" data-v="11.7">11.7%</td><td class="c-measure_sub num" data-v="9.4"><span class="sub">9.4%</span></td><td class="c-diff num" data-v="2.3">+2.3 pt</td><td class="c-state" data-v="ok"><span class="mark ok">正常</span></td></tr>
+</tbody>
+</table>
+<p class="empty" data-empty hidden>条件に合う行はありません。</p>
+</div>
+  <p class="note">欠けは 20% 以下を正常、20% 超を注意、50% 超を要確認とします（仮の基準）。100% に跳ねたら上流の仕様変更を疑います。</p>
+</div>
+  <div class="panel" role="tabpanel" id="errors" aria-labelledby="tab-errors" data-panel="errors">
+  <header class="p-head"><h2>プラグインのエラー</h2>
+    <p class="scope">直近 7 日 · 端末 = 利用者とホスト名の組 · 失った記録は戻りません</p>
+  </header>
+  <div class="filters" data-filter hidden>
+  <label class="search"><span class="sr">絞り込み</span><input type="search" placeholder="エラーの種類・版" data-search></label>
+  <div class="chipbar" role="group" aria-label="区分"><button type="button" data-chip="all" aria-pressed="true">すべて<b>4</b></button><button type="button" data-chip="k0" aria-pressed="false">送信<b>2</b></button><button type="button" data-chip="k1" aria-pressed="false">設定の書き込み<b>1</b></button><button type="button" data-chip="k2" aria-pressed="false">記録の収集<b>1</b></button></div>
+  <span class="count"><b data-shown>4</b> / 4 行</span>
+</div>
+<div class="tscroll">
+<table data-testid="errors">
+<thead><tr><th scope="col" class="c-stage"><button type="button" data-sort="0">処理段階<i class="arrow"></i></button></th><th scope="col" class="c-code"><button type="button" data-sort="1">エラーの種類<i class="arrow"></i></button></th><th scope="col" class="c-num num" aria-sort="descending"><button type="button" data-sort="2">件数<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="3">端末数<i class="arrow"></i></button></th><th scope="col" class="c-code"><button type="button" data-sort="4">最後に起きた版<i class="arrow"></i></button></th></tr></thead>
+<tbody>
+<tr data-tags="k1" data-q="PermissionError 0.2.1 apply_settings"><td class="c-stage" data-v="apply_settings">設定の書き込み<span class="sub code"> apply_settings</span></td><td class="c-code" data-v="PermissionError"><span class="code">PermissionError</span></td><td class="c-num num" data-v="10">10</td><td class="c-num num" data-v="10">10 台</td><td class="c-code" data-v="0.2.1"><span class="code">0.2.1</span></td></tr>
+<tr data-tags="k0" data-q="ConnectionRefusedError 0.2.0 send"><td class="c-stage" data-v="send">送信<span class="sub code"> send</span></td><td class="c-code" data-v="ConnectionRefusedError"><span class="code">ConnectionRefusedError</span></td><td class="c-num num" data-v="10">10</td><td class="c-num num" data-v="10">10 台</td><td class="c-code" data-v="0.2.0"><span class="code">0.2.0</span></td></tr>
+<tr data-tags="k0" data-q="HTTP 401 0.2.1 send"><td class="c-stage" data-v="send">送信<span class="sub code"> send</span></td><td class="c-code" data-v="HTTP 401"><span class="code">HTTP 401</span></td><td class="c-num num" data-v="10">10</td><td class="c-num num" data-v="10">10 台</td><td class="c-code" data-v="0.2.1"><span class="code">0.2.1</span></td></tr>
+<tr data-tags="k2" data-q="KeyError 0.2.0 collect"><td class="c-stage" data-v="collect">記録の収集<span class="sub code"> collect</span></td><td class="c-code" data-v="KeyError"><span class="code">KeyError</span></td><td class="c-num num" data-v="9">9</td><td class="c-num num" data-v="9">9 台</td><td class="c-code" data-v="0.2.0"><span class="code">0.2.0</span></td></tr>
+</tbody>
+</table>
+<p class="empty" data-empty hidden>条件に合う行はありません。</p>
+</div>
+</div>
+</section>
+</main>
+<footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。</footer>
+</body>
+</html>

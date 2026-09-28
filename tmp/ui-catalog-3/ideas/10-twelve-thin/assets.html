@@ -1,0 +1,50 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>スキル・コマンドの利用 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="../../base/static/tokens.css">
+<link rel="stylesheet" href="../../base/static/layout.css">
+<link rel="stylesheet" href="../../base/static/components.css">
+<link rel="stylesheet" href="idea.css">
+</head>
+<body>
+<header class="top"><div class="wrap bar">
+  <a class="brand" href="index.html">Claude Code 利用状況</a>
+  <nav aria-label="画面">
+    <a href="index.html" data-keep-period>概況</a>
+    <a href="../../base/policy.html">設定の適用状況</a>
+    <a href="../../base/effect.html">設定の効果</a>
+    <a href="assets.html" data-keep-period aria-current="page">スキル・コマンドの利用</a>
+  </nav>
+  <span class="asof">2026-09-29 時点</span>
+  <a class="exp" href="export.html">エクスポート</a>
+</div></header>
+<main class="wrap">
+  <div class="page-head">
+    <div><h1>スキル・コマンドの利用</h1><p class="lead">配布したスキルやコマンドが使われているか</p></div>
+<div class="head-act" id="switch"></div>
+  </div>
+  
+
+<div class="kpis" id="top"></div>
+<section class="detail" id="detail" aria-label="詳しい一覧" data-tabs>
+  <h2 class="glabel">詳しい一覧<span>タブで切り替え · カードを押すと該当する一覧が開きます</span></h2>
+  <div class="tabs" role="tablist"><a role="tab" id="tab-skills" href="#skills" aria-controls="skills" data-tab="skills"><b>スキル</b><span>3 種類 · 162 回</span></a><a role="tab" id="tab-commands" href="#commands" aria-controls="commands" data-tab="commands"><b>コマンド</b><span>3 種類 · 549 回</span></a><a role="tab" id="tab-agent" href="#agent" aria-controls="agent" data-tab="agent"><b>サブエージェント</b><span>直近 7 日 · 4.6%</span></a></div>
+<div class="panel" data-panel="skills"></div><div class="panel" data-panel="commands"></div><div class="panel" data-panel="agent"></div>
+</section>
+
+</main>
+<footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。</footer>
+<script src="../../data/data.js"></script>
+<script src="lib.js"></script>
+<script src="parts.js"></script>
+<script src="charts.js"></script>
+<script src="overview.js"></script>
+<script src="assets.js"></script>
+<script src="twelve-thin.js"></script>
+<script>A.start();</script>
+</body>
+</html>

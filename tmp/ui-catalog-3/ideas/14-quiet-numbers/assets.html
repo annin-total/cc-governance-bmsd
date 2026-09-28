@@ -1,0 +1,111 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>スキル・コマンドの利用 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="../../base/static/tokens.css">
+<link rel="stylesheet" href="../../base/static/layout.css">
+<link rel="stylesheet" href="../../base/static/components.css">
+<link rel="stylesheet" href="idea.css">
+<script src="../../data/data.js" defer></script>
+<script src="ui.js" defer></script>
+<script src="pre.js" defer></script>
+<script src="assets.js" defer></script>
+<script src="quiet.js" defer></script>
+<script src="../../base/static/app.js" defer></script>
+</head>
+<body>
+<header class="top"><div class="wrap bar">
+  <a class="brand" href="index.html">Claude Code 利用状況</a>
+  <nav aria-label="画面">
+    <a href="index.html">概況</a>
+    <a href="../../base/policy.html">設定の適用状況</a>
+    <a href="effect.html">設定の効果</a>
+    <a href="assets.html" aria-current="page">スキル・コマンドの利用</a>
+  </nav>
+  <span class="asof">2026-09-29 時点</span>
+  <a class="hlink" href="export.html">エクスポート</a>
+</div></header>
+<main class="wrap">
+  <div class="page-head">
+    <div><h1>スキル・コマンドの利用</h1><p class="lead">配布したスキルやコマンドが使われているか</p></div>
+    <div class="chipbar" role="group" aria-label="期間" data-period-switch></div>
+  </div>
+<div class="kpis" data-kpis></div>
+<section class="detail" id="detail" aria-label="詳しい一覧" data-tabs>
+  <h2 class="glabel">詳しい一覧<span>タブで切り替え · カードを押すと該当する一覧が開きます</span></h2>
+  <div class="tabs" role="tablist"><a role="tab" id="tab-skills" href="#skills" aria-controls="skills" data-tab="skills"><b>スキル</b><span>3 種類 · 162 回</span></a><a role="tab" id="tab-commands" href="#commands" aria-controls="commands" data-tab="commands"><b>コマンド</b><span>3 種類 · 549 回</span></a><a role="tab" id="tab-agent" href="#agent" aria-controls="agent" data-tab="agent"><b>サブエージェント</b><span>直近 7 日 · 4.6%</span></a></div>
+  <div class="panel" role="tabpanel" id="skills" aria-labelledby="tab-skills" data-panel="skills">
+  <header class="p-head"><h2>スキルごとの呼び出し回数と利用者数</h2>
+    <p class="scope">直近 7 日と前の 7 日 · スキルの呼び出しの記録</p>
+  </header>
+  <div class="filters" data-filter hidden>
+  <label class="search"><span class="sr">絞り込み</span><input type="search" placeholder="スキル名で絞り込み" data-search></label>
+  <div class="chipbar" role="group" aria-label="区分"><button type="button" data-chip="all" aria-pressed="true">すべて<b>3</b></button><button type="button" data-chip="up" aria-pressed="false">増えた<b>2</b></button><button type="button" data-chip="down" aria-pressed="false">減った<b>1</b></button><button type="button" data-chip="flat" aria-pressed="false">変わらない<b>0</b></button></div>
+  <span class="count"><b data-shown>3</b> / 3 行</span>
+</div>
+<div class="tscroll">
+<table data-testid="skills">
+<thead><tr><th scope="col" class="c-code"><button type="button" data-sort="0">スキル<i class="arrow"></i></button></th><th scope="col" class="c-num num" aria-sort="descending"><button type="button" data-sort="1">呼び出し回数<i class="arrow"></i></button></th><th scope="col" class="c-bar"></th><th scope="col" class="c-num_sub num"><button type="button" data-sort="3">前の 7 日<i class="arrow"></i></button></th><th scope="col" class="c-diff num"><button type="button" data-sort="4">差<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="5">利用者数<i class="arrow"></i></button></th><th scope="col" class="c-diff num"><button type="button" data-sort="6">利用者の差<i class="arrow"></i></button></th></tr></thead>
+<tbody>
+<tr data-tags="up" data-q="governance:reapply"><td class="c-code" data-v="governance:reapply"><span class="code">governance:reapply</span></td><td class="c-num num" data-v="60">60 回</td><td class="c-bar" data-v="60"><span class="hbar "><i style="width: 100.0%"></i></span></td><td class="c-num_sub num" data-v="43"><span class="sub">43</span></td><td class="c-diff num" data-v="17">+17</td><td class="c-num num" data-v="27">27 人</td><td class="c-diff num" data-v="3">+3</td></tr>
+<tr data-tags="up" data-q="brainstorming"><td class="c-code" data-v="brainstorming"><span class="code">brainstorming</span></td><td class="c-num num" data-v="59">59 回</td><td class="c-bar" data-v="59"><span class="hbar "><i style="width: 98.3%"></i></span></td><td class="c-num_sub num" data-v="49"><span class="sub">49</span></td><td class="c-diff num" data-v="10">+10</td><td class="c-num num" data-v="26">26 人</td><td class="c-diff num" data-v="0">±0</td></tr>
+<tr data-tags="down" data-q="systematic-debugging"><td class="c-code" data-v="systematic-debugging"><span class="code">systematic-debugging</span></td><td class="c-num num" data-v="43">43 回</td><td class="c-bar" data-v="43"><span class="hbar "><i style="width: 71.7%"></i></span></td><td class="c-num_sub num" data-v="53"><span class="sub">53</span></td><td class="c-diff num" data-v="-10">−10</td><td class="c-num num" data-v="25">25 人</td><td class="c-diff num" data-v="-2">−2</td></tr>
+</tbody>
+</table>
+<p class="empty" data-empty hidden>条件に合う行はありません。</p>
+</div>
+  <p class="note">差は直近から前の 7 日を引いた値です。増えた・減ったは呼び出し回数の差で分けます。</p>
+</div>
+  <div class="panel" role="tabpanel" id="commands" aria-labelledby="tab-commands" data-panel="commands">
+  <header class="p-head"><h2>コマンドごとの呼び出し回数と利用者数</h2>
+    <p class="scope">直近 7 日と前の 7 日 · コマンドの呼び出しの記録 · 定義元は記録された値のまま</p>
+  </header>
+  <div class="filters" data-filter hidden>
+  <label class="search"><span class="sr">絞り込み</span><input type="search" placeholder="コマンド名・定義元で絞り込み" data-search></label>
+  <div class="chipbar" role="group" aria-label="区分"><button type="button" data-chip="all" aria-pressed="true">すべて<b>6</b></button><button type="button" data-chip="up" aria-pressed="false">増えた<b>5</b></button><button type="button" data-chip="down" aria-pressed="false">減った<b>1</b></button><button type="button" data-chip="flat" aria-pressed="false">変わらない<b>0</b></button></div>
+  <span class="count"><b data-shown>6</b> / 6 行</span>
+</div>
+<div class="tscroll">
+<table data-testid="commands">
+<thead><tr><th scope="col" class="c-code"><button type="button" data-sort="0">コマンド<i class="arrow"></i></button></th><th scope="col" class="c-code"><button type="button" data-sort="1">定義元<i class="arrow"></i></button></th><th scope="col" class="c-num num" aria-sort="descending"><button type="button" data-sort="2">呼び出し回数<i class="arrow"></i></button></th><th scope="col" class="c-bar"></th><th scope="col" class="c-num_sub num"><button type="button" data-sort="4">前の 7 日<i class="arrow"></i></button></th><th scope="col" class="c-diff num"><button type="button" data-sort="5">差<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="6">利用者数<i class="arrow"></i></button></th><th scope="col" class="c-diff num"><button type="button" data-sort="7">利用者の差<i class="arrow"></i></button></th></tr></thead>
+<tbody>
+<tr data-tags="up" data-q="review userSettings"><td class="c-code" data-v="review"><span class="code">review</span></td><td class="c-code" data-v="userSettings"><span class="code">userSettings</span></td><td class="c-num num" data-v="171">171 回</td><td class="c-bar" data-v="171"><span class="hbar "><i style="width: 100.0%"></i></span></td><td class="c-num_sub num" data-v="166"><span class="sub">166</span></td><td class="c-diff num" data-v="5">+5</td><td class="c-num num" data-v="32">32 人</td><td class="c-diff num" data-v="0">±0</td></tr>
+<tr data-tags="up" data-q="deploy userSettings"><td class="c-code" data-v="deploy"><span class="code">deploy</span></td><td class="c-code" data-v="userSettings"><span class="code">userSettings</span></td><td class="c-num num" data-v="160">160 回</td><td class="c-bar" data-v="160"><span class="hbar "><i style="width: 93.6%"></i></span></td><td class="c-num_sub num" data-v="153"><span class="sub">153</span></td><td class="c-diff num" data-v="7">+7</td><td class="c-num num" data-v="32">32 人</td><td class="c-diff num" data-v="0">±0</td></tr>
+<tr data-tags="down" data-q="governance:reapply plugin"><td class="c-code" data-v="governance:reapply"><span class="code">governance:reapply</span></td><td class="c-code" data-v="plugin"><span class="code">plugin</span></td><td class="c-num num" data-v="154">154 回</td><td class="c-bar" data-v="154"><span class="hbar "><i style="width: 90.1%"></i></span></td><td class="c-num_sub num" data-v="161"><span class="sub">161</span></td><td class="c-diff num" data-v="-7">−7</td><td class="c-num num" data-v="32">32 人</td><td class="c-diff num" data-v="0">±0</td></tr>
+<tr data-tags="up" data-q="governance:reapply —"><td class="c-code" data-v="governance:reapply"><span class="code">governance:reapply</span></td><td class="c-code" data-v=""><span class="sub">—</span></td><td class="c-num num" data-v="24">24 回</td><td class="c-bar" data-v="24"><span class="hbar "><i style="width: 14.0%"></i></span></td><td class="c-num_sub num" data-v="21"><span class="sub">21</span></td><td class="c-diff num" data-v="3">+3</td><td class="c-num num" data-v="19">19 人</td><td class="c-diff num" data-v="2">+2</td></tr>
+<tr data-tags="up" data-q="review —"><td class="c-code" data-v="review"><span class="code">review</span></td><td class="c-code" data-v=""><span class="sub">—</span></td><td class="c-num num" data-v="24">24 回</td><td class="c-bar" data-v="24"><span class="hbar "><i style="width: 14.0%"></i></span></td><td class="c-num_sub num" data-v="15"><span class="sub">15</span></td><td class="c-diff num" data-v="9">+9</td><td class="c-num num" data-v="16">16 人</td><td class="c-diff num" data-v="4">+4</td></tr>
+<tr data-tags="up" data-q="deploy —"><td class="c-code" data-v="deploy"><span class="code">deploy</span></td><td class="c-code" data-v=""><span class="sub">—</span></td><td class="c-num num" data-v="16">16 回</td><td class="c-bar" data-v="16"><span class="hbar "><i style="width: 9.4%"></i></span></td><td class="c-num_sub num" data-v="14"><span class="sub">14</span></td><td class="c-diff num" data-v="2">+2</td><td class="c-num num" data-v="12">12 人</td><td class="c-diff num" data-v="4">+4</td></tr>
+</tbody>
+</table>
+<p class="empty" data-empty hidden>条件に合う行はありません。</p>
+</div>
+  <p class="note">同じコマンドでも定義元が違えば別の行です。差は直近から前の 7 日を引いた値です。増えた・減ったは呼び出し回数の差で分けます。</p>
+</div>
+  <div class="panel" role="tabpanel" id="agent" aria-labelledby="tab-agent" data-panel="agent">
+  <header class="p-head"><h2>サブエージェントの利用</h2>
+    <p class="scope">直近 7 日 · 分母は全記録 3,592 件</p>
+  </header>
+  <div class="filters" data-filter hidden>
+  <span class="count"><b data-shown>2</b> / 2 行</span>
+</div>
+<div class="tscroll">
+<table data-testid="agent">
+<thead><tr><th scope="col" class="c-term"><button type="button" data-sort="0">記録<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="1">件数<i class="arrow"></i></button></th><th scope="col" class="c-pct_strong num"><button type="button" data-sort="2">割合<i class="arrow"></i></button></th><th scope="col" class="c-bar"></th></tr></thead>
+<tbody>
+<tr data-tags="" data-q=""><td class="c-term" data-v="agent">サブエージェントの中</td><td class="c-num num" data-v="167">167 件</td><td class="c-pct_strong num" data-v="4.6"><b>4.6%</b></td><td class="c-bar" data-v="4.6"><span class="hbar "><i style="width: 4.6%"></i></span></td></tr>
+<tr data-tags="" data-q=""><td class="c-term" data-v="main">サブエージェントの外</td><td class="c-num num" data-v="3425">3,425 件</td><td class="c-pct_strong num" data-v="95.4"><b>95.4%</b></td><td class="c-bar" data-v="95.4"><span class="hbar "><i style="width: 95.4%"></i></span></td></tr>
+</tbody>
+</table>
+<p class="empty" data-empty hidden>条件に合う行はありません。</p>
+</div>
+  <p class="note">サブエージェントの中で起きた記録にだけ、サブエージェントの識別子が付きます。</p>
+</div>
+</section>
+
+</main>
+<footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。</footer>
+</body>
+</html>

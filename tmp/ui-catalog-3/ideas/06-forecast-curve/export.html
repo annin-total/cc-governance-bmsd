@@ -1,0 +1,44 @@
+
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>エクスポート — Claude Code 利用状況</title>
+<link rel="stylesheet" href="../../base/static/tokens.css">
+<link rel="stylesheet" href="../../base/static/layout.css">
+<link rel="stylesheet" href="../../base/static/components.css">
+<script src="../../base/static/app.js" defer></script>
+<link rel="stylesheet" href="idea.css">
+</head>
+<body>
+<header class="top"><div class="wrap bar">
+  <a class="brand" href="overview.html">Claude Code 利用状況</a>
+  <nav aria-label="画面">
+    <a href="overview.html" >概況</a>
+    <a href="../../base/policy.html">設定の適用状況</a>
+    <a href="../../base/effect.html">設定の効果</a>
+    <a href="../../base/assets.html">スキル・コマンドの利用</a>
+  </nav>
+  <span class="asof">2026-09-29 時点</span>
+  <a class="nav-end" href="export.html" aria-current="page">エクスポート</a>
+</div></header>
+<main class="wrap export">
+  <div class="page-head">
+    <div><h1>エクスポート</h1><p class="lead">月ごとの全ログを、表ごとの CSV にまとめた ZIP で書き出します</p></div>
+  </div>
+  <h2 class="glabel">書き出す<span>記録・設定の報告・エラー・利用明細の 4 表 · 利用者名つき · 日付は JST</span></h2>
+  <form class="panel form" action="#">
+    <label class="field">対象の月<select name="month"><option value="2026-09">2026 年 9 月（29 日まで）</option><option value="2026-08">2026 年 8 月</option><option value="2026-07">2026 年 7 月</option><option value="2026-06">2026 年 6 月</option><option value="2026-05">2026 年 5 月</option><option value="2026-04">2026 年 4 月</option><option value="2026-03">2026 年 3 月</option><option value="2026-02">2026 年 2 月</option><option value="2026-01">2026 年 1 月</option><option value="2025-12">2025 年 12 月</option><option value="2025-11">2025 年 11 月</option><option value="2025-10">2025 年 10 月</option><option value="2025-09">2025 年 9 月</option><option value="2025-08">2025 年 8 月</option></select></label>
+    <button type="submit" class="btn">ZIP をダウンロード</button>
+  </form>
+  <h2 class="glabel">取り込む<span>利用明細（CSV）はコストとトークンの正本です · いまの最終日 2026-09-28</span></h2>
+  <form class="panel form" method="post" action="#">
+    <label class="field">利用明細の CSV<input type="file" name="csv" accept=".csv"></label>
+    <button type="submit" class="btn">CSV を取り込む</button>
+  </form>
+</main>
+<footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。</footer>
+</body>
+</html>

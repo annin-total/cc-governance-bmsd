@@ -1,0 +1,43 @@
+/* 案で足した部品。値は base/static/tokens.css の変数と、ここで足した変数だけを使う */
+:root {
+  --tip-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+}
+
+/* ヘッダーの右端: エクスポートの入口 */
+.bar .exp { margin-left: calc(var(--sp-m) - var(--sp-3xl)); color: var(--ink-2); text-decoration: none; padding: var(--sp-2xs) var(--sp-m); border-radius: var(--r-m); white-space: nowrap; }
+.bar .exp:hover { color: var(--accent); }
+.bar .exp[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 700; }
+
+/* 浮いた札（ツールチップ）と、当てた点・棒の強調 */
+.tip { position: fixed; z-index: 10; pointer-events: none; padding: var(--sp-2xs) var(--sp-s); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-s); box-shadow: var(--tip-shadow); font-size: var(--fs-sm); color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tip[hidden] { display: none; }
+.tip b { font-weight: 600; color: var(--ink); }
+svg .hit { fill: transparent; }
+.spark-hover { fill: var(--accent); stroke: var(--card); stroke-width: 1.5; visibility: hidden; }
+.spark-hover.is-hot { visibility: visible; }
+svg rect.is-hot { opacity: .7; }
+
+/* 見込みのカード: 今月と前月の営業日あたり */
+.rates.fc .rate { grid-template-columns: 2.5em 1fr 4.6em; }
+
+/* 12 か月で出さないカードとタブ（場所だけを残す） */
+.card.is-off { background: transparent; box-shadow: inset 0 0 0 1px var(--rule); cursor: default; }
+.card.is-off:hover { background: transparent; }
+.card.is-off .k-label { color: var(--muted); }
+.off-note { margin-top: auto; display: grid; gap: var(--sp-3xs); font-size: var(--fs-sm); color: var(--muted); line-height: 1.5; }
+.off-note b { font-weight: 600; color: var(--ink-2); }
+.tabs a[aria-disabled="true"] { cursor: default; color: var(--muted); }
+.tabs a[aria-disabled="true"]:hover { background: transparent; }
+
+/* エクスポートと取り込みのフォーム */
+.form-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-m); margin: 0 0 var(--sp-2xl); }
+.field { font-size: var(--fs-label); font-weight: 600; color: var(--ink-2); }
+.form-row select, .form-row input[type="file"] { font: inherit; font-size: var(--fs-label); color: var(--ink); }
+.form-row select { min-width: var(--search-w); padding: var(--sp-2xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); }
+.form-hint { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.form-row input[type="file"]::file-selector-button { font: inherit; margin-right: var(--sp-s); padding: var(--sp-3xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.sub { background: var(--chip); color: var(--ink); font-weight: 600; padding: var(--sp-3xs) var(--sp-m); white-space: nowrap; }
+.btn.sub:hover { background: var(--tabs); }
+.tscroll .c-act { width: 1%; text-align: right; }
+.tscroll td.c-act { padding-top: var(--sp-2xs); padding-bottom: var(--sp-2xs); }
+[data-panel="months"] .tscroll { max-height: none; }

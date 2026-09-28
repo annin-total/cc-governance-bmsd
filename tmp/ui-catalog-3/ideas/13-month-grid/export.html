@@ -1,0 +1,60 @@
+
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>エクスポート — Claude Code 利用状況</title>
+<link rel="stylesheet" href="../../base/static/tokens.css">
+<link rel="stylesheet" href="../../base/static/layout.css">
+<link rel="stylesheet" href="../../base/static/components.css">
+<link rel="stylesheet" href="idea.css">
+<script src="../../data/data.js" defer></script>
+<script src="ui.js" defer></script>
+<script src="export.js" defer></script>
+<script src="../../base/static/app.js" defer></script>
+</head>
+<body>
+<header class="top"><div class="wrap bar">
+  <a class="brand" href="index.html">Claude Code 利用状況</a>
+  <nav aria-label="画面">
+    <a href="index.html">概況</a>
+    <a href="../../base/policy.html">設定の適用状況</a>
+    <a href="../../base/effect.html">設定の効果</a>
+    <a href="../../base/assets.html">スキル・コマンドの利用</a>
+  </nav>
+  <span class="asof">2026-09-29 時点</span>
+  <a class="hlink" href="export.html" aria-current="page">エクスポート</a>
+</div></header>
+<main class="wrap">
+  <div class="page-head">
+    <div><h1>エクスポート</h1><p class="lead">月ごとの全ログを書き出し、利用明細（CSV）を取り込む</p></div>
+  </div>
+<div class="kpis">
+  <section class="group" aria-label="書き出す">
+    <div class="ghead">
+      <h2 class="glabel">書き出す<span>月を押すと、その月の全ログを表ごとの CSV にまとめた ZIP でダウンロードします</span></h2>
+      <div class="chipbar" role="group" aria-label="年" data-years></div>
+    </div>
+    <div class="mgrid" data-grid></div>
+    <div data-dl-result></div>
+    <p class="gnote">ZIP には記録・設定の報告・エラー・利用明細の 4 つの CSV が入ります（利用者のメールアドレスつき）。大きさは見込みです。</p>
+  </section>
+  <section class="group" aria-label="取り込む">
+    <h2 class="glabel">取り込む<span>利用明細（CSV）· コストとトークンの正本</span></h2>
+    <div class="panel ximport" data-import>
+      <div data-import-result></div>
+      <div class="xrow">
+        <p class="xfact" data-import-facts></p>
+        <form method="post" action="#"><button type="submit" class="btn">CSV を取り込む</button></form>
+      </div>
+      <p class="note">押すたびに <span class="code">CSV_DIR</span> の全ファイルを読み直し、日ごとに置き換えます。何度押しても重複しません。</p>
+    </div>
+  </section>
+</div>
+
+</main>
+<footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。監査・人事評価・勤怠管理には使いません。</footer>
+</body>
+</html>

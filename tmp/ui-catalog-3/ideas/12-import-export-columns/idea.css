@@ -1,0 +1,61 @@
+/* 既定の扱いの部品: ヘッダーのエクスポートへの入口・期間の分段・見込みのカード・ツールチップ。値は tokens.css の変数だけを使う */
+:root {
+  --fc-rate-cols: 2.6em 1fr 4.2em;
+}
+
+/* ヘッダーの右端の入口 */
+.hlink { color: var(--ink-2); text-decoration: none; font-size: var(--fs-label); padding: var(--sp-2xs) var(--sp-m); border-radius: var(--r-m); white-space: nowrap; }
+.hlink:hover { color: var(--accent); }
+.hlink[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 700; }
+.asof + .hlink { margin-left: calc(-1 * var(--sp-l)); }
+
+/* 期間の分段（絞り込みの .chipbar をそのまま使う） */
+.page-head .chipbar button { padding: var(--sp-3xs) var(--sp-m); }
+
+/* 群の注記と、見込みのカード */
+.gnote { margin: var(--sp-s) 0 0; font-size: var(--fs-sm); color: var(--muted); }
+.go-plain { font-size: var(--fs-sm); font-weight: 400; color: var(--muted); }
+.k-viz .rates.fc .rate { grid-template-columns: var(--fc-rate-cols); font-size: var(--fs-xs); color: var(--muted); }
+
+/* グラフの当たり判定と、浮いた札 */
+.hit { fill: transparent; }
+.hit:hover { fill: var(--ink); fill-opacity: .06; }
+.tip {
+  position: fixed; left: 0; top: 0; z-index: 10; pointer-events: none;
+  display: flex; gap: var(--sp-s); align-items: baseline; white-space: nowrap;
+  padding: var(--sp-2xs) var(--sp-s); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-s);
+  box-shadow: var(--shadow-raised); font-size: var(--fs-sm); color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.tip[hidden] { display: none; }
+.tip span { color: var(--muted); }
+.tip b { font-weight: 700; }
+.tabs a.off { color: var(--muted); cursor: default; }
+.tabs a.off:hover { background: transparent; }
+
+
+/* 案 12: エクスポートのページを 取り込む｜書き出す の 2 列に */
+:root {
+  --x-cols: minmax(0, 1fr) minmax(0, 2fr);
+  --x-name-w: 9.5em;
+  --x-sel-w: 12em;
+  --x-num-w: 6.5em;
+}
+.xcols { display: grid; grid-template-columns: var(--x-cols); gap: var(--sp-xl); align-items: start; }
+.xpanel { margin-top: 0; }
+.xfacts { margin: 0; display: grid; gap: var(--sp-s); }
+.xfacts div { display: grid; gap: var(--sp-3xs); }
+.xfacts dt { font-size: var(--fs-sm); color: var(--muted); }
+.xfacts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.xact { margin-top: var(--sp-l); }
+.xpick { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-m) var(--sp-l); }
+.xsel { display: inline-flex; align-items: center; gap: var(--sp-s); font-size: var(--fs-label); color: var(--ink-2); }
+.xsel select { width: var(--x-sel-w); font: inherit; padding: var(--sp-2xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); }
+.btn:disabled { background: var(--ghost); color: var(--card); cursor: default; }
+.xzip { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.xtscroll { margin-top: var(--sp-l); max-height: none; }
+.xtables .xname { width: var(--x-name-w); white-space: nowrap; }
+.xtables td { vertical-align: top; }
+.xtables .xcolsl { color: var(--muted); line-height: 1.55; }
+.xtables .xcolsl .code { font-size: var(--fs-xs); }
+@media (max-width: 960px) { .xcols { grid-template-columns: 1fr; } }
+.xtables th.num, .xtables td.num { width: var(--x-num-w); }

@@ -1,0 +1,57 @@
+/* 案で足した部品。値は tokens.css の変数だけを使う */
+:root {
+  --tip-gap: var(--sp-xs);
+}
+.top .bar { gap: var(--sp-3xl); }
+.nav-end { color: var(--ink-2); text-decoration: none; font-size: var(--fs-sm); padding: var(--sp-2xs) var(--sp-m); border-radius: var(--r-m); white-space: nowrap; }
+.nav-end:hover { color: var(--accent); }
+.nav-end[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 700; }
+.asof + .nav-end { margin-left: calc(-1 * var(--sp-xl)); }
+
+/* 期間の切り替え（既存の chipbar を流用） */
+.period { font-size: var(--fs-sm); color: var(--muted); }
+.period .chipbar button { min-width: 4.5em; justify-content: center; }
+
+/* グラフの当たり判定と、当てた点・棒 */
+.hit { fill: transparent; }
+.pt { fill: var(--accent); opacity: 0; }
+.pt.is-hot { opacity: 1; }
+rect.bar-hi.is-hot { fill: var(--ink-2); }
+rect.bar-old.is-hot { fill: var(--muted); }
+.p-chart h3 { display: flex; justify-content: space-between; gap: var(--sp-m); }
+
+/* 既定のツールチップ */
+.tip { position: fixed; z-index: 10; pointer-events: none; display: flex; align-items: baseline; gap: var(--tip-gap); padding: var(--sp-2xs) var(--sp-s);
+  background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-s); box-shadow: var(--shadow-raised);
+  font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tip b { color: var(--ink); font-weight: 600; }
+.tip[hidden] { display: none; }
+
+/* エクスポートのページ */
+.form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: var(--sp-m) var(--sp-l); }
+.field { display: grid; gap: var(--sp-2xs); font-size: var(--fs-sm); color: var(--muted); }
+.field select, .field input[type="file"] { font: inherit; font-size: var(--fs-label); color: var(--ink); padding: var(--sp-xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); min-width: 16em; min-height: 36px; }
+.field select:focus, .field input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.btn.quiet { background: var(--tabs); color: var(--ink); }
+.export .panel + .glabel { margin-top: var(--sp-3xl); }
+.export .panel { margin-top: 0; }
+
+/* 案 06: 見込みの累積グラフ */
+:root {
+  --fc-chart-w: 56%;
+}
+.card.fc { display: grid; grid-template-columns: minmax(0, 1fr) var(--fc-chart-w); grid-template-rows: auto auto auto 1fr auto; column-gap: var(--sp-xl); }
+.card.fc .k-label { grid-column: 1 / -1; }
+.card.fc .k-value, .card.fc .k-sub { grid-column: 1; }
+.card.fc .k-viz { display: contents; }
+.card.fc .fc-chart { grid-column: 2; grid-row: 2 / 5; align-self: end; margin-top: var(--sp-s); }
+.card.fc .fc-side { grid-column: 1; grid-row: 4 / 6; align-self: end; display: grid; gap: var(--sp-3xs); }
+.card.fc .fc-side .k-sub { margin: 0 0 var(--sp-2xs); }
+.card.fc .fc-key { grid-column: 2; grid-row: 5; margin-top: var(--sp-xs); }
+.fc-cur { fill: none; stroke: var(--accent); stroke-width: 2; }
+.fc-est { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.fc-prev { fill: none; stroke: var(--ghost); stroke-width: 1.5; }
+.fc-end { fill: var(--card); stroke: var(--accent); stroke-width: 1.5; }
+.fc-key i { width: var(--sp-l); height: 0; border-radius: 0; vertical-align: middle; border-top: 2px solid var(--accent); }
+.fc-key i.k-est { border-top: 2px dashed var(--accent); }
+.fc-key i.k-prev { border-top-color: var(--ghost); }
