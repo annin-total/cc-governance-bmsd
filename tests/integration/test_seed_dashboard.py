@@ -1,6 +1,6 @@
 """`scripts/seed_dashboard.py` が作る DB で、管理画面の表と分布が空にならないことを確かめる。
 
-集計は画面と同じ `ccgov.store.queries_*` で行う（flask を要さない）。
+集計は画面と同じ `ccgov.store.queries_*`・`ccgov.reports`・`ccgov.metrics` の関数で行う（flask を要さない）。
 `SEED_DASHBOARD_TEST_DSN` に空の DB の DSN を渡すと、全ての表の検査をその DB で行う（既定は一時の SQLite）。
 """
 
@@ -23,7 +23,11 @@ from ccgov.constants import (
     REFERENCE_KEY,
     REFERENCE_VALUE,
 )
-from ccgov.store import db, queries_errors, queries_events, queries_policy
+from ccgov.metrics.health import null_rates
+from ccgov.metrics.rates import rate_row
+from ccgov.reports import assets, effect
+from ccgov.reports import policy as policy_report
+from ccgov.store import db, queries_cost, queries_errors, queries_events, queries_policy
 from ccgov.vendor import contract, policy
 from seed_dashboard import _check_rules
 from seed_dashboard_columns import RULES
@@ -70,11 +74,11 @@ def test_画面の全ての表と分布が埋まる(seeded):
     conn, today = seeded
     for key in scalar_keys():
         expected = contract.policy_text(policy.SET[key])
-        numerator, denominator, _ = queries_policy.compliance_rate(
+        numerator, denominator, _ = policy_report.compliance_rate(
             conn, today, key, expected
         )[0]
         assert 0 < numerator < denominator, key
-        assert queries_policy.non_compliant(conn, today, key, expected), key
+        assert policy_report.non_compliant(conn, today, key, expected), key
     assert queries_policy.latest_values(conn, today, REFERENCE_KEY)
     assert queries_policy.not_introduced(conn, today)
     assert queries_policy.stale_terminals(conn, today)
@@ -86,25 +90,24 @@ def test_画面の全ての表と分布が埋まる(seeded):
     errors = queries_errors.error_summary(conn, today)
     assert ("send", "HTTP 401") in {(stage, kind) for stage, kind, *_ in errors}
 
-    health = queries_events.health_counts(conn, today)["recent"]
+    recent = queries_events.health_window_counts(conn, today)["recent"]
+    health = {"null_rates": null_rates(recent["null_counts"])}
     assert all(rate and rate < 100 for rate in health["null_rates"].values()), health
     for column in ("permission_mode", "effort_level", "source"):
         assert queries_events.distribution(conn, today, column), column
     assert queries_events.skill_usage(conn, today)
     sources = {source for _, source, *_ in queries_events.command_usage(conn, today)}
     assert {"plugin", "userSettings"} <= sources
-    assert queries_events.subagent_ratio(conn, today)[0][0] > 0
-    assert queries_events.daily_cost(conn)
-    assert queries_events.reconciliation_rate(conn, today)[0][0] > 0
+    assert assets.subagent_ratio(conn, today)[0][0] > 0
+    assert queries_cost.daily_cost(conn)
+    assert rate_row(*queries_events.reconciliation_counts(conn, today))[0] > 0
 
     starts = queries_policy.compliance_start_dates(conn, REFERENCE_KEY, REFERENCE_VALUE)
     # 準拠開始日が散らばらないと、イベントスタディの相対日の人数の変化が見えない
     assert max(starts.values()) - min(starts.values()) >= EVENT_STUDY_SPAN
-    assert queries_policy.event_study(
-        conn, REFERENCE_KEY, REFERENCE_VALUE, EFFECT_PROVIDER
-    )
+    assert effect.event_study(conn, REFERENCE_KEY, REFERENCE_VALUE, EFFECT_PROVIDER)
     for hook_event in ("PreCompact", "Stop"):
-        distribution = queries_policy.context_distribution(conn, hook_event, starts)
+        distribution = effect.context_distribution(conn, hook_event, starts)
         assert set(distribution) == {"before", "after"}, hook_event
 
 
