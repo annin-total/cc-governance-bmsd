@@ -94,6 +94,33 @@ SQLite は統計情報なしに skip-scan の可否を判断できない。
 同じ 1 倍の DB を Docker（Colima 2 CPU・3 GiB・`python:3.9-slim`・SQLite 3.46.1・waitress、HTTP）で測ると、`/` 0.54〜1.48、`/policy` 0.30〜0.35、`/effect` 0.13〜0.30（初回 0.87）、`/assets` 0.10〜0.12。
 再起動後の初回の `/ingest`（5,000 行）は 1.49 GB の DB への `ANALYZE` を含んで 3.34 s、2 回目は 0.28 s。
 
+## 期間ごとの画面と書き出し（`seed_dashboard.py` の 200 名・365 日）
+
+測定条件: `scripts/seed_dashboard.py --users 200 --days 365`（`events` 51.7 万行・`policy_state` 28.2 万行・`cost_daily` 3.4 万行）／
+索引あり + `ANALYZE` 済み ／ Flask の `test_client` ／ macOS・Python 3.13 ／ 各 5 回の中央値（括弧は最小値）、単位は秒 ／ 2026-09-30。
+上の「画面の応答時間」とはデータの量も形も違うので、並べて比べない。
+
+画面の期間ごと（SQLite。並行する別作業で load average 37〜43）。12 か月は利用明細（`cost_daily`）から数える項目だけを集計する。
+
+| 画面 | 7 日 | 28 日 | 12 か月 |
+| --- | ---: | ---: | ---: |
+| `/` | 0.20 (0.19) | 0.84 (0.81) | 0.11 (0.11) |
+| `/assets` | 0.05 (0.05) | 0.21 (0.20) | 0.00 (0.00) |
+
+「データと設定」の表示と、1 か月分の 4 表を CSV の ZIP にする書き出し（load average 3〜5。MySQL は 8.4 の公式イメージを Colima で）。
+
+| 対象 | 行数 | 所要 | ZIP |
+| --- | ---: | ---: | ---: |
+| `/settings` の表示（SQLite） | — | 0.13 (0.12) | — |
+| 2026-08 の書き出し（SQLite） | 131,713（`events` 82,043・`policy_state` 44,874・`cost_daily` 4,796） | 1.42 (1.27) | 7.07 MB（展開後 23.6 MB） |
+| 2026-01 の書き出し（SQLite） | 44,197 | 0.49 (0.49) | 2.19 MB |
+| `/settings` の表示（MySQL） | — | 0.20 (0.19) | — |
+| 2026-08 の書き出し（MySQL） | 131,713 | 2.51 (2.37) | 6.34 MB |
+
+ZIP の中の 1 行あたりの大きさ（deflate 後）は `events` 約 69・`policy_state` 約 29・`cost_daily` 約 30 バイト（`errors` は 44 行で約 40）。
+MySQL の 2026-08 の書き出しで、プロセスの最大 RSS は PyMySQL 1.2.3 の `SSCursor`（サーバ側のカーソル）と `fetchmany` で 81 MB、
+既定のカーソル（全行を受け取ってから返す）で 158 MB（別プロセスで比較）。SQLite の RSS はページキャッシュを含むため比べていない。
+
 ## `/ingest` の同時受信
 
 測定条件: Docker（Colima 2 CPU・3 GiB）上の `python:3.9-slim`・waitress 3.0.2（既定の 4 スレッド）・SQLite ／ 送り手はホストの Python 3.13（スレッド + urllib）で、
