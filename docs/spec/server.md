@@ -12,9 +12,8 @@ Claude Code 利用状況の集計サーバ。端末プラグインから NDJSON 
 ## 契約の複製
 
 `ccgov/vendor/` の各複製（`contract.py`・`policy.py`）は正本（`plugin/hooks/`）の複製であり、
-直接編集しない（生成の仕組みは `system.md`）。起動時に `entry.sh` が、各複製の生成物ヘッダが
-壊れていないことと、ヘッダを除いた残りのハッシュが対応する `.sha256` と一致することを確かめ、
-どちらかが崩れていれば起動を中止する。ここで検出するのは複製とハッシュ記録の食い違い（複製の直接編集）だけである。
+直接編集しない（生成の仕組みは `system.md`）。起動時に `entry.sh` から呼ばれる `ccgov/vendor_check.py` が、
+各複製の生成物ヘッダを除いた残りのハッシュが対応する `.sha256` と一致することを確かめ、崩れていれば起動を中止する。ここで検出するのは複製とハッシュ記録の食い違い（複製の直接編集）だけである。
 **正本を変えて `scripts/sync_contract.py` を実行し忘れた状態は検出しない。**複製とハッシュ記録が互いに一致したままだからで、
 これを捕まえるのは `scripts/sync_contract.py --check` と `tests/integration/test_contract_sync.py` である。
 
