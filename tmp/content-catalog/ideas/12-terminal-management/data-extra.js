@@ -1,0 +1,10 @@
+"use strict";
+// 案 12 の値の足し（seed の DB と data.js から計算。作り方は README）。window.DATA に足す。
+(() => {
+  const E = {"terminal_core": ["2.1.281", "2.1.281", "2.1.282", "2.1.283", "2.1.281", "2.1.282", "2.1.283", "2.1.283", "2.1.281", "2.1.282", "2.1.283", "2.1.281", "2.1.282", "2.1.282", "2.1.283", "2.1.281", "2.1.282", "2.1.283", "2.1.281", "2.1.281", "2.1.282", "2.1.283", "2.1.281", "2.1.282", "2.1.283", "2.1.283", "2.1.281", "2.1.282", "2.1.283", "2.1.281", "2.1.282", "2.1.282", "2.1.283", "2.1.281", "2.1.282", "2.1.283", "2.1.281", "2.1.281", "2.1.282", "2.1.283", "2.1.281", "2.1.282", "2.1.283", "2.1.283"], "T32": {"7": [{"email": "user000@example.com", "reason": "billed_only"}, {"email": "user001@example.com", "reason": "billed_only"}, {"email": "user002@example.com", "reason": "billed_only"}, {"email": "user003@example.com", "reason": "billed_only"}], "28": [{"email": "user000@example.com", "reason": "billed_only"}, {"email": "user001@example.com", "reason": "billed_only"}, {"email": "user002@example.com", "reason": "billed_only"}, {"email": "user003@example.com", "reason": "billed_only"}]}, "retention": [{"day": 20361, "retention": null, "left": 0}, {"day": 20362, "retention": 100.0, "left": 0}, {"day": 20393, "retention": 100.0, "left": 0}, {"day": 20423, "retention": 100.0, "left": 0}, {"day": 20454, "retention": 100.0, "left": 0}, {"day": 20485, "retention": 100.0, "left": 0}, {"day": 20513, "retention": 100.0, "left": 0}, {"day": 20544, "retention": 100.0, "left": 0}, {"day": 20574, "retention": 100.0, "left": 0}, {"day": 20605, "retention": 100.0, "left": 0}, {"day": 20635, "retention": 100.0, "left": 0}, {"day": 20666, "retention": 100.0, "left": 0}, {"day": 20697, "retention": 100.0, "left": 0}]};
+  const D = window.DATA;
+  D.fixed.policy.terminals.forEach((t, i) => { t.core = E.terminal_core[i]; });
+  ["7", "28"].forEach((k) => { D.p[k].m.uncollected_rows = E.T32[k]; });
+  const last = E.retention[E.retention.length - 2];
+  D.p["12m"].m.retention_rate = last.retention; D.p["12m"].m.left_users = new Array(last.left).fill(""); D.p["12m"].m.retention_month = last.day;
+})();

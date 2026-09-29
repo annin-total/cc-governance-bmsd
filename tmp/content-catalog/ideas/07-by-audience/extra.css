@@ -1,0 +1,4 @@
+/* この案で足した見た目: タブと区分が多いと 1 行に収まらず重なる・はみ出すため折り返す。利用者とモデルの列は折り返さない */
+.tabs { grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.filters .chipbar { flex-wrap: wrap; }
+.tscroll td.c-user, .tscroll td.c-model { white-space: nowrap; }
