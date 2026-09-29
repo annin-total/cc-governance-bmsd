@@ -1,0 +1,16 @@
+/* 今月のコストのタブ: 累積の線（今月の実績・見込みの破線・前月）、週末と祝日の帯、凡例 */
+:root { --cum-line: 2px; --cum-dash: 5 4; --ln-w: 18px; }
+.cum polyline { fill: none; stroke-width: var(--cum-line); stroke-linejoin: round; }
+.cum .cum-now { stroke: var(--accent); }
+.cum .cum-fc { stroke: var(--accent); stroke-dasharray: var(--cum-dash); }
+.cum .cum-prev { stroke: var(--ghost); }
+.cum .dot-now { fill: var(--accent); }
+.cum .dot-fc { fill: var(--card); stroke: var(--accent); stroke-width: 1.5; }
+.cum .dot-prev { fill: var(--ghost); visibility: hidden; }
+.cum .guide { stroke: var(--muted); stroke-width: 1; visibility: hidden; }
+.legend .ln { width: var(--ln-w); height: 0; border-radius: 0; vertical-align: middle; border-top: var(--cum-line) solid var(--accent); }
+.legend .ln.fc { border-top-style: dashed; }
+.legend .ln.prev { border-top-color: var(--ghost); }
+.cum .off, .legend i.off { fill: var(--chip); background: var(--chip); }
+.legend i.off { width: var(--sp-m); height: var(--sp-m); vertical-align: -1px; }
+.tscroll .c-bd { width: 5em; text-align: right; font-variant-numeric: tabular-nums; }

@@ -1,0 +1,220 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>設定の効果 — Claude Code 利用状況</title>
+<link rel="stylesheet" href="../../base/static/tokens.css">
+<link rel="stylesheet" href="../../base/static/layout.css">
+<link rel="stylesheet" href="../../base/static/components.css">
+<link rel="stylesheet" href="common/common.css">
+</head>
+<body data-page="effect">
+<header class="top"></header>
+<main class="wrap">
+  <div class="page-head">
+    <div><h1>設定の効果</h1><p class="lead">設定を守り始めた前後で、コンテキストの大きさとコストを比べる</p></div>
+    
+  </div>
+  
+
+<div class="kpis">
+  <section class="group" aria-label="設定は働いているか">
+    <h2 class="glabel">設定は働いているか<span>自動圧縮のしきい値を 60 にした前後 14 日 · 前後の境は各利用者が守り始めた日</span></h2>
+    <div class="cards"><a class="card wide" href="#precompact" data-open="precompact">
+  <span class="k-label"><span>圧縮直前のコンテキスト（中央の区間）</span><span class="go">一覧</span></span>
+  <span class="k-value">60k–80k<span class="u">トークン</span></span>
+  <span class="k-sub">適用前 80k–100k · 記録 615 → 1,125 件</span>
+  <span class="k-viz"><svg class="spark" viewBox="0 0 300 48" preserveAspectRatio="none" aria-hidden="true"><rect class="bar-old" x="4.0" y="39.2" width="11.7" height="8.8"/><rect class="bar-hi" x="16.7" y="32.2" width="11.7" height="15.8"/><rect class="bar-old" x="37.3" y="28.2" width="11.7" height="19.8"/><rect class="bar-hi" x="50.0" y="15.8" width="11.7" height="32.2"/><rect class="bar-old" x="70.6" y="26.4" width="11.7" height="21.6"/><rect class="bar-hi" x="83.3" y="21.6" width="11.7" height="26.4"/><rect class="bar-old" x="104.0" y="29.8" width="11.7" height="18.2"/><rect class="bar-hi" x="116.7" y="15.2" width="11.7" height="32.8"/><rect class="bar-old" x="137.3" y="29.6" width="11.7" height="18.4"/><rect class="bar-hi" x="150.0" y="21.8" width="11.7" height="26.2"/><rect class="bar-old" x="170.6" y="31.7" width="11.7" height="16.3"/><rect class="bar-hi" x="183.3" y="21.6" width="11.7" height="26.4"/><rect class="bar-old" x="204.0" y="30.9" width="11.7" height="17.1"/><rect class="bar-hi" x="216.7" y="48.0" width="11.7" height="0.0"/><rect class="bar-old" x="237.3" y="26.9" width="11.7" height="21.1"/><rect class="bar-hi" x="250.0" y="48.0" width="11.7" height="0.0"/><rect class="bar-old" x="270.6" y="29.6" width="11.7" height="18.4"/><rect class="bar-hi" x="283.3" y="48.0" width="11.7" height="0.0"/></svg>
+<span class="legend"><span><i class="bar-old"></i>適用前</span><span><i class="bar-hi"></i>適用後</span></span><span class="cap"><span>区間の幅 20k トークン · 縦は各期間の中の割合</span></span></span>
+</a><a class="card wide" href="#stop" data-open="stop">
+  <span class="k-label"><span>応答終了時のコンテキスト（中央の区間）</span><span class="go">一覧</span></span>
+  <span class="k-value">60k–80k<span class="u">トークン</span></span>
+  <span class="k-sub">適用前 80k–100k · 記録 611 → 1,142 件</span>
+  <span class="k-viz"><svg class="spark" viewBox="0 0 300 48" preserveAspectRatio="none" aria-hidden="true"><rect class="bar-old" x="4.0" y="36.8" width="11.7" height="11.2"/><rect class="bar-hi" x="16.7" y="29.6" width="11.7" height="18.4"/><rect class="bar-old" x="37.3" y="21.4" width="11.7" height="26.6"/><rect class="bar-hi" x="50.0" y="13.6" width="11.7" height="34.4"/><rect class="bar-old" x="70.6" y="25.8" width="11.7" height="22.2"/><rect class="bar-hi" x="83.3" y="10.8" width="11.7" height="37.2"/><rect class="bar-old" x="104.0" y="27.0" width="11.7" height="21.0"/><rect class="bar-hi" x="116.7" y="13.0" width="11.7" height="35.0"/><rect class="bar-old" x="137.3" y="25.4" width="11.7" height="22.6"/><rect class="bar-hi" x="150.0" y="9.2" width="11.7" height="38.8"/><rect class="bar-old" x="170.6" y="26.4" width="11.7" height="21.6"/><rect class="bar-hi" x="183.3" y="11.6" width="11.7" height="36.4"/><rect class="bar-old" x="204.0" y="21.2" width="11.7" height="26.8"/><rect class="bar-hi" x="216.7" y="48.0" width="11.7" height="0.0"/><rect class="bar-old" x="237.3" y="26.4" width="11.7" height="21.6"/><rect class="bar-hi" x="250.0" y="48.0" width="11.7" height="0.0"/><rect class="bar-old" x="270.6" y="21.4" width="11.7" height="26.6"/><rect class="bar-hi" x="283.3" y="48.0" width="11.7" height="0.0"/></svg>
+<span class="legend"><span><i class="bar-old"></i>適用前</span><span><i class="bar-hi"></i>適用後</span></span><span class="cap"><span>区間の幅 20k トークン · 縦は各期間の中の割合</span></span></span>
+</a></div>
+  </section>
+  <section class="group" aria-label="コストの前後差">
+    <h2 class="glabel">コストの前後差<span>1 人 1 日あたり · AWS Bedrock · 時期の変動を含むため、前後差を施策の効果と読まない</span></h2>
+    <div class="cards"><a class="card" href="#study" data-open="study">
+  <span class="k-label"><span>設定を守り始めた利用者</span><span class="go">一覧</span></span>
+  <span class="k-value">34<span class="u">人</span></span>
+  <span class="k-sub">日ごとの対象者 33〜34 人</span>
+  <span class="k-viz"><span class="cap"><span>その日が利用明細の期間に入る人だけを数える</span></span></span>
+</a><a class="card" href="#study" data-open="study">
+  <span class="k-label"><span>1 人 1 日あたりのコスト</span><span class="go">一覧</span></span>
+  <span class="k-value">$7.12<span class="u"></span></span>
+  <span class="k-sub">適用前 $8.22 · のべ 475 → 476 人日</span>
+  <span class="k-viz"><span class="pair"><span>適用前</span><span class="hbar ghost"><i style="width: 100.0%"></i></span></span><span class="pair"><span>適用後</span><span class="hbar "><i style="width: 86.7%"></i></span></span><span class="cap"><span>0 日目（守り始めた当日）を除く</span></span></span>
+</a><a class="card" href="#study" data-open="study">
+  <span class="k-label"><span>1 人 1 日あたりのトークン</span><span class="go">一覧</span></span>
+  <span class="k-value"><span data-tok="980629">980,629</span><span class="u">トークン</span></span>
+  <span class="k-sub">適用前 <span data-tok="1203171">1,203,171</span></span>
+  <span class="k-viz"><span class="pair"><span>適用前</span><span class="hbar ghost"><i style="width: 100.0%"></i></span></span><span class="pair"><span>適用後</span><span class="hbar "><i style="width: 81.5%"></i></span></span><span class="cap"><span>入力とキャッシュの読み書き（出力は含まない）</span></span></span>
+</a></div>
+  </section>
+</div>
+<section class="detail" id="detail" aria-label="詳しい一覧" data-tabs>
+  <h2 class="glabel">詳しい一覧<span>タブで切り替え · カードを押すと該当する一覧が開きます</span></h2>
+  <div class="tabs" role="tablist"><a role="tab" id="tab-precompact" href="#precompact" aria-controls="precompact" data-tab="precompact"><b>圧縮直前の分布</b><span>記録 615 → 1,125 件</span></a><a role="tab" id="tab-stop" href="#stop" aria-controls="stop" data-tab="stop"><b>応答終了時の分布</b><span>記録 611 → 1,142 件</span></a><a role="tab" id="tab-study" href="#study" aria-controls="study" data-tab="study"><b>日ごとの 1 人あたり</b><span>守り始めた日の前後 14 日</span></a></div>
+  <div class="panel" role="tabpanel" id="precompact" aria-labelledby="tab-precompact" data-panel="precompact">
+  <header class="p-head"><h2>圧縮直前のコンテキストの大きさ</h2>
+    <p class="scope">自動圧縮が走る直前（PreCompact）のトークン数 · 前後 14 日 · 区間の幅 20k トークン · 割合は各期間の中の割合</p>
+  </header>
+  <div class="p-chart"><svg viewBox="0 0 1100 200" aria-hidden="true">
+  <line class="gridline" x1="44" x2="1100" y1="178.0" y2="178.0"/>
+  <text x="36" y="182.0" text-anchor="end">0%</text>
+  <line class="gridline" x1="44" x2="1100" y1="144.0" y2="144.0"/>
+  <text x="36" y="148.0" text-anchor="end">5%</text>
+  <line class="gridline" x1="44" x2="1100" y1="110.0" y2="110.0"/>
+  <text x="36" y="114.0" text-anchor="end">10%</text>
+  <line class="gridline" x1="44" x2="1100" y1="76.0" y2="76.0"/>
+  <text x="36" y="80.0" text-anchor="end">15%</text>
+  <line class="gridline" x1="44" x2="1100" y1="42.0" y2="42.0"/>
+  <text x="36" y="46.0" text-anchor="end">20%</text>
+  <line class="gridline" x1="44" x2="1100" y1="8.0" y2="8.0"/>
+  <text x="36" y="12.0" text-anchor="end">25%</text>
+  <rect class="bar-old" x="58.1" y="140.6" width="43.6" height="37.4"/><rect class="bar-hi" x="102.7" y="110.7" width="43.6" height="67.3"/><rect class="bar-old" x="175.4" y="93.7" width="43.6" height="84.3"/><rect class="bar-hi" x="220.0" y="41.3" width="43.6" height="136.7"/><rect class="bar-old" x="292.7" y="86.2" width="43.6" height="91.8"/><rect class="bar-hi" x="337.3" y="65.8" width="43.6" height="112.2"/><rect class="bar-old" x="410.1" y="100.5" width="43.6" height="77.5"/><rect class="bar-hi" x="454.7" y="38.6" width="43.6" height="139.4"/><rect class="bar-old" x="527.4" y="99.8" width="43.6" height="78.2"/><rect class="bar-hi" x="572.0" y="66.5" width="43.6" height="111.5"/><rect class="bar-old" x="644.7" y="108.6" width="43.6" height="69.4"/><rect class="bar-hi" x="689.3" y="65.8" width="43.6" height="112.2"/><rect class="bar-old" x="762.1" y="105.2" width="43.6" height="72.8"/><rect class="bar-hi" x="806.7" y="178.0" width="43.6" height="0.0"/><rect class="bar-old" x="879.4" y="88.2" width="43.6" height="89.8"/><rect class="bar-hi" x="924.0" y="178.0" width="43.6" height="0.0"/><rect class="bar-old" x="996.7" y="99.8" width="43.6" height="78.2"/><rect class="bar-hi" x="1041.3" y="178.0" width="43.6" height="0.0"/>
+  <text x="102.7" y="196" text-anchor="middle">0–20k</text>
+  <text x="220.0" y="196" text-anchor="middle">20k–40k</text>
+  <text x="337.3" y="196" text-anchor="middle">40k–60k</text>
+  <text x="454.7" y="196" text-anchor="middle">60k–80k</text>
+  <text x="572.0" y="196" text-anchor="middle">80k–100k</text>
+  <text x="689.3" y="196" text-anchor="middle">100k–120k</text>
+  <text x="806.7" y="196" text-anchor="middle">120k–140k</text>
+  <text x="924.0" y="196" text-anchor="middle">140k–160k</text>
+  <text x="1041.3" y="196" text-anchor="middle">160k–180k</text>
+</svg>
+<div class="legend"><span><i class="bar-old"></i>適用前</span><span><i class="bar-hi"></i>適用後</span></div></div>
+  <div class="filters" data-filter hidden>
+  <span class="count"><b data-shown>9</b> / 9 区間</span>
+</div>
+<div class="tscroll">
+<table data-testid="precompact">
+<thead><tr><th scope="col" class="c-bin"><button type="button" data-sort="0">トークン数の区間<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="1">適用前の件数<i class="arrow"></i></button></th><th scope="col" class="c-pct num"><button type="button" data-sort="2">適用前の割合<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="3">適用後の件数<i class="arrow"></i></button></th><th scope="col" class="c-pct_strong num"><button type="button" data-sort="4">適用後の割合<i class="arrow"></i></button></th></tr></thead>
+<tbody>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="0">0–20k</td><td class="c-num num" data-v="34">34</td><td class="c-pct num" data-v="5.5">5.5%</td><td class="c-num num" data-v="111">111</td><td class="c-pct_strong num" data-v="9.9"><b>9.9%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="20000">20k–40k</td><td class="c-num num" data-v="76">76</td><td class="c-pct num" data-v="12.4">12.4%</td><td class="c-num num" data-v="226">226</td><td class="c-pct_strong num" data-v="20.1"><b>20.1%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="40000">40k–60k</td><td class="c-num num" data-v="83">83</td><td class="c-pct num" data-v="13.5">13.5%</td><td class="c-num num" data-v="186">186</td><td class="c-pct_strong num" data-v="16.5"><b>16.5%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="60000">60k–80k</td><td class="c-num num" data-v="70">70</td><td class="c-pct num" data-v="11.4">11.4%</td><td class="c-num num" data-v="231">231</td><td class="c-pct_strong num" data-v="20.5"><b>20.5%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="80000">80k–100k</td><td class="c-num num" data-v="71">71</td><td class="c-pct num" data-v="11.5">11.5%</td><td class="c-num num" data-v="185">185</td><td class="c-pct_strong num" data-v="16.4"><b>16.4%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="100000">100k–120k</td><td class="c-num num" data-v="63">63</td><td class="c-pct num" data-v="10.2">10.2%</td><td class="c-num num" data-v="186">186</td><td class="c-pct_strong num" data-v="16.5"><b>16.5%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="120000">120k–140k</td><td class="c-num num" data-v="66">66</td><td class="c-pct num" data-v="10.7">10.7%</td><td class="c-num num" data-v="0">0</td><td class="c-pct_strong num" data-v="0.0"><b>0.0%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="140000">140k–160k</td><td class="c-num num" data-v="81">81</td><td class="c-pct num" data-v="13.2">13.2%</td><td class="c-num num" data-v="0">0</td><td class="c-pct_strong num" data-v="0.0"><b>0.0%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="160000">160k–180k</td><td class="c-num num" data-v="71">71</td><td class="c-pct num" data-v="11.5">11.5%</td><td class="c-num num" data-v="0">0</td><td class="c-pct_strong num" data-v="0.0"><b>0.0%</b></td></tr>
+</tbody>
+</table>
+<p class="empty" data-empty hidden>条件に合う行はありません。</p>
+</div>
+  <p class="note">両方の期間で 0 件の区間は出しません。しきい値が効いていれば、適用後は小さい区間に寄ります。</p>
+</div>
+  <div class="panel" role="tabpanel" id="stop" aria-labelledby="tab-stop" data-panel="stop">
+  <header class="p-head"><h2>応答終了時のコンテキストの大きさ</h2>
+    <p class="scope">各応答が終わった時点（Stop）のトークン数 · 前後 14 日 · 区間の幅 20k トークン · 割合は各期間の中の割合</p>
+  </header>
+  <div class="p-chart"><svg viewBox="0 0 1100 200" aria-hidden="true">
+  <line class="gridline" x1="44" x2="1100" y1="178.0" y2="178.0"/>
+  <text x="36" y="182.0" text-anchor="end">0%</text>
+  <line class="gridline" x1="44" x2="1100" y1="135.5" y2="135.5"/>
+  <text x="36" y="139.5" text-anchor="end">5%</text>
+  <line class="gridline" x1="44" x2="1100" y1="93.0" y2="93.0"/>
+  <text x="36" y="97.0" text-anchor="end">10%</text>
+  <line class="gridline" x1="44" x2="1100" y1="50.5" y2="50.5"/>
+  <text x="36" y="54.5" text-anchor="end">15%</text>
+  <line class="gridline" x1="44" x2="1100" y1="8.0" y2="8.0"/>
+  <text x="36" y="12.0" text-anchor="end">20%</text>
+  <rect class="bar-old" x="58.1" y="130.4" width="43.6" height="47.6"/><rect class="bar-hi" x="102.7" y="99.8" width="43.6" height="78.2"/><rect class="bar-old" x="175.4" y="64.9" width="43.6" height="113.1"/><rect class="bar-hi" x="220.0" y="31.8" width="43.6" height="146.2"/><rect class="bar-old" x="292.7" y="83.7" width="43.6" height="94.3"/><rect class="bar-hi" x="337.3" y="19.9" width="43.6" height="158.1"/><rect class="bar-old" x="410.1" y="88.8" width="43.6" height="89.2"/><rect class="bar-hi" x="454.7" y="29.2" width="43.6" height="148.8"/><rect class="bar-old" x="527.4" y="81.9" width="43.6" height="96.1"/><rect class="bar-hi" x="572.0" y="13.1" width="43.6" height="164.9"/><rect class="bar-old" x="644.7" y="86.2" width="43.6" height="91.8"/><rect class="bar-hi" x="689.3" y="23.3" width="43.6" height="154.7"/><rect class="bar-old" x="762.1" y="64.1" width="43.6" height="113.9"/><rect class="bar-hi" x="806.7" y="178.0" width="43.6" height="0.0"/><rect class="bar-old" x="879.4" y="86.2" width="43.6" height="91.8"/><rect class="bar-hi" x="924.0" y="178.0" width="43.6" height="0.0"/><rect class="bar-old" x="996.7" y="64.9" width="43.6" height="113.1"/><rect class="bar-hi" x="1041.3" y="178.0" width="43.6" height="0.0"/>
+  <text x="102.7" y="196" text-anchor="middle">0–20k</text>
+  <text x="220.0" y="196" text-anchor="middle">20k–40k</text>
+  <text x="337.3" y="196" text-anchor="middle">40k–60k</text>
+  <text x="454.7" y="196" text-anchor="middle">60k–80k</text>
+  <text x="572.0" y="196" text-anchor="middle">80k–100k</text>
+  <text x="689.3" y="196" text-anchor="middle">100k–120k</text>
+  <text x="806.7" y="196" text-anchor="middle">120k–140k</text>
+  <text x="924.0" y="196" text-anchor="middle">140k–160k</text>
+  <text x="1041.3" y="196" text-anchor="middle">160k–180k</text>
+</svg>
+<div class="legend"><span><i class="bar-old"></i>適用前</span><span><i class="bar-hi"></i>適用後</span></div></div>
+  <div class="filters" data-filter hidden>
+  <span class="count"><b data-shown>9</b> / 9 区間</span>
+</div>
+<div class="tscroll">
+<table data-testid="stop">
+<thead><tr><th scope="col" class="c-bin"><button type="button" data-sort="0">トークン数の区間<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="1">適用前の件数<i class="arrow"></i></button></th><th scope="col" class="c-pct num"><button type="button" data-sort="2">適用前の割合<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="3">適用後の件数<i class="arrow"></i></button></th><th scope="col" class="c-pct_strong num"><button type="button" data-sort="4">適用後の割合<i class="arrow"></i></button></th></tr></thead>
+<tbody>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="0">0–20k</td><td class="c-num num" data-v="34">34</td><td class="c-pct num" data-v="5.6">5.6%</td><td class="c-num num" data-v="105">105</td><td class="c-pct_strong num" data-v="9.2"><b>9.2%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="20000">20k–40k</td><td class="c-num num" data-v="81">81</td><td class="c-pct num" data-v="13.3">13.3%</td><td class="c-num num" data-v="196">196</td><td class="c-pct_strong num" data-v="17.2"><b>17.2%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="40000">40k–60k</td><td class="c-num num" data-v="68">68</td><td class="c-pct num" data-v="11.1">11.1%</td><td class="c-num num" data-v="212">212</td><td class="c-pct_strong num" data-v="18.6"><b>18.6%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="60000">60k–80k</td><td class="c-num num" data-v="64">64</td><td class="c-pct num" data-v="10.5">10.5%</td><td class="c-num num" data-v="200">200</td><td class="c-pct_strong num" data-v="17.5"><b>17.5%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="80000">80k–100k</td><td class="c-num num" data-v="69">69</td><td class="c-pct num" data-v="11.3">11.3%</td><td class="c-num num" data-v="221">221</td><td class="c-pct_strong num" data-v="19.4"><b>19.4%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="100000">100k–120k</td><td class="c-num num" data-v="66">66</td><td class="c-pct num" data-v="10.8">10.8%</td><td class="c-num num" data-v="208">208</td><td class="c-pct_strong num" data-v="18.2"><b>18.2%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="120000">120k–140k</td><td class="c-num num" data-v="82">82</td><td class="c-pct num" data-v="13.4">13.4%</td><td class="c-num num" data-v="0">0</td><td class="c-pct_strong num" data-v="0.0"><b>0.0%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="140000">140k–160k</td><td class="c-num num" data-v="66">66</td><td class="c-pct num" data-v="10.8">10.8%</td><td class="c-num num" data-v="0">0</td><td class="c-pct_strong num" data-v="0.0"><b>0.0%</b></td></tr>
+<tr data-tags="" data-q=""><td class="c-bin" data-v="160000">160k–180k</td><td class="c-num num" data-v="81">81</td><td class="c-pct num" data-v="13.3">13.3%</td><td class="c-num num" data-v="0">0</td><td class="c-pct_strong num" data-v="0.0"><b>0.0%</b></td></tr>
+</tbody>
+</table>
+<p class="empty" data-empty hidden>条件に合う行はありません。</p>
+</div>
+  <p class="note">両方の期間で 0 件の区間は出しません。しきい値が効いていれば、適用後は小さい区間に寄ります。</p>
+</div>
+  <div class="panel" role="tabpanel" id="study" aria-labelledby="tab-study" data-panel="study">
+  <header class="p-head"><h2>日ごとの 1 人あたりコストとトークン</h2>
+    <p class="scope">守り始めた日を 0 日目とした前後 14 日 · AWS Bedrock · トークンは入力とキャッシュの読み書きの合計</p>
+  </header>
+  <div class="filters" data-filter hidden>
+  <div class="chipbar" role="group" aria-label="区分"><button type="button" data-chip="all" aria-pressed="true">すべて<b>28</b></button><button type="button" data-chip="before" aria-pressed="false">適用前<b>14</b></button><button type="button" data-chip="after" aria-pressed="false">適用後<b>14</b></button></div>
+  <span class="count"><b data-shown>28</b> / 28 日</span>
+</div>
+<div class="tscroll">
+<table data-testid="study">
+<thead><tr><th scope="col" class="c-rel"><button type="button" data-sort="0">守り始めてからの日数<i class="arrow"></i></button></th><th scope="col" class="c-tag"><button type="button" data-sort="1">期間<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="2">対象者数<i class="arrow"></i></button></th><th scope="col" class="c-num num"><button type="button" data-sort="3">1 人あたりトークン<i class="arrow"></i></button></th><th scope="col" class="c-usd num"><button type="button" data-sort="4">1 人あたりコスト<i class="arrow"></i></button></th><th scope="col" class="c-bar"></th></tr></thead>
+<tbody>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-14">−14 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="33">33 人</td><td class="c-num num" data-v="835546" data-tok-col>835,546</td><td class="c-usd num" data-v="5.8945454545454545">$5.89</td><td class="c-bar" data-v="5.8945454545454545"><span class="hbar "><i style="width: 56.8%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-13">−13 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1524127" data-tok-col>1,524,127</td><td class="c-usd num" data-v="10.370882352941175">$10.37</td><td class="c-bar" data-v="10.370882352941175"><span class="hbar "><i style="width: 100.0%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-12">−12 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1143505" data-tok-col>1,143,505</td><td class="c-usd num" data-v="7.617058823529412">$7.62</td><td class="c-bar" data-v="7.617058823529412"><span class="hbar "><i style="width: 73.4%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-11">−11 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1487500" data-tok-col>1,487,500</td><td class="c-usd num" data-v="7.880588235294118">$7.88</td><td class="c-bar" data-v="7.880588235294118"><span class="hbar "><i style="width: 76.0%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-10">−10 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1389170" data-tok-col>1,389,170</td><td class="c-usd num" data-v="9.142352941176469">$9.14</td><td class="c-bar" data-v="9.142352941176469"><span class="hbar "><i style="width: 88.2%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-9">−9 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1375340" data-tok-col>1,375,340</td><td class="c-usd num" data-v="8.117058823529412">$8.12</td><td class="c-bar" data-v="8.117058823529412"><span class="hbar "><i style="width: 78.3%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-8">−8 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="978188" data-tok-col>978,188</td><td class="c-usd num" data-v="7.482352941176471">$7.48</td><td class="c-bar" data-v="7.482352941176471"><span class="hbar "><i style="width: 72.1%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-7">−7 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1123741" data-tok-col>1,123,741</td><td class="c-usd num" data-v="8.445588235294117">$8.45</td><td class="c-bar" data-v="8.445588235294117"><span class="hbar "><i style="width: 81.4%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-6">−6 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="847169" data-tok-col>847,169</td><td class="c-usd num" data-v="7.313529411764706">$7.31</td><td class="c-bar" data-v="7.313529411764706"><span class="hbar "><i style="width: 70.5%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-5">−5 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1183102" data-tok-col>1,183,102</td><td class="c-usd num" data-v="7.763529411764705">$7.76</td><td class="c-bar" data-v="7.763529411764705"><span class="hbar "><i style="width: 74.9%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-4">−4 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1168998" data-tok-col>1,168,998</td><td class="c-usd num" data-v="8.907058823529413">$8.91</td><td class="c-bar" data-v="8.907058823529413"><span class="hbar "><i style="width: 85.9%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-3">−3 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1239627" data-tok-col>1,239,627</td><td class="c-usd num" data-v="8.20264705882353">$8.20</td><td class="c-bar" data-v="8.20264705882353"><span class="hbar "><i style="width: 79.1%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-2">−2 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1184124" data-tok-col>1,184,124</td><td class="c-usd num" data-v="8.314117647058822">$8.31</td><td class="c-bar" data-v="8.314117647058822"><span class="hbar "><i style="width: 80.2%"></i></span></td></tr>
+<tr data-tags="before" data-q=""><td class="c-rel" data-v="-1">−1 日</td><td class="c-tag" data-v="before"><span class="sub">適用前</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1353450" data-tok-col>1,353,450</td><td class="c-usd num" data-v="9.505588235294118">$9.51</td><td class="c-bar" data-v="9.505588235294118"><span class="hbar "><i style="width: 91.7%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="1">+1 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1190027" data-tok-col>1,190,027</td><td class="c-usd num" data-v="8.295588235294119">$8.30</td><td class="c-bar" data-v="8.295588235294119"><span class="hbar "><i style="width: 80.0%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="2">+2 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="930003" data-tok-col>930,003</td><td class="c-usd num" data-v="6.9688235294117655">$6.97</td><td class="c-bar" data-v="6.9688235294117655"><span class="hbar "><i style="width: 67.2%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="3">+3 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="939825" data-tok-col>939,825</td><td class="c-usd num" data-v="7.280882352941177">$7.28</td><td class="c-bar" data-v="7.280882352941177"><span class="hbar "><i style="width: 70.2%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="4">+4 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1059377" data-tok-col>1,059,377</td><td class="c-usd num" data-v="7.06705882352941">$7.07</td><td class="c-bar" data-v="7.06705882352941"><span class="hbar "><i style="width: 68.1%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="5">+5 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="897803" data-tok-col>897,803</td><td class="c-usd num" data-v="5.579117647058823">$5.58</td><td class="c-bar" data-v="5.579117647058823"><span class="hbar "><i style="width: 53.8%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="6">+6 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="966212" data-tok-col>966,212</td><td class="c-usd num" data-v="5.619411764705881">$5.62</td><td class="c-bar" data-v="5.619411764705881"><span class="hbar "><i style="width: 54.2%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="7">+7 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1009526" data-tok-col>1,009,526</td><td class="c-usd num" data-v="8.137352941176472">$8.14</td><td class="c-bar" data-v="8.137352941176472"><span class="hbar "><i style="width: 78.5%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="8">+8 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1066348" data-tok-col>1,066,348</td><td class="c-usd num" data-v="7.156470588235297">$7.16</td><td class="c-bar" data-v="7.156470588235297"><span class="hbar "><i style="width: 69.0%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="9">+9 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="603587" data-tok-col>603,587</td><td class="c-usd num" data-v="5.659705882352941">$5.66</td><td class="c-bar" data-v="5.659705882352941"><span class="hbar "><i style="width: 54.6%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="10">+10 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="908999" data-tok-col>908,999</td><td class="c-usd num" data-v="5.798235294117647">$5.80</td><td class="c-bar" data-v="5.798235294117647"><span class="hbar "><i style="width: 55.9%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="11">+11 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1096580" data-tok-col>1,096,580</td><td class="c-usd num" data-v="8.985588235294115">$8.99</td><td class="c-bar" data-v="8.985588235294115"><span class="hbar "><i style="width: 86.6%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="12">+12 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1067347" data-tok-col>1,067,347</td><td class="c-usd num" data-v="7.523235294117647">$7.52</td><td class="c-bar" data-v="7.523235294117647"><span class="hbar "><i style="width: 72.5%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="13">+13 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="1225395" data-tok-col>1,225,395</td><td class="c-usd num" data-v="9.181176470588236">$9.18</td><td class="c-bar" data-v="9.181176470588236"><span class="hbar "><i style="width: 88.5%"></i></span></td></tr>
+<tr data-tags="after" data-q=""><td class="c-rel" data-v="14">+14 日</td><td class="c-tag" data-v="after"><span class="sub">適用後</span></td><td class="c-num num" data-v="34">34 人</td><td class="c-num num" data-v="767779" data-tok-col>767,779</td><td class="c-usd num" data-v="6.490000000000001">$6.49</td><td class="c-bar" data-v="6.490000000000001"><span class="hbar "><i style="width: 62.6%"></i></span></td></tr>
+</tbody>
+</table>
+<p class="empty" data-empty hidden>条件に合う行はありません。</p>
+</div>
+  <p class="note">0 日目（守り始めた当日）は前後が混ざるため除いています。その日が利用明細（CSV）の期間に入る人だけを数えるため、日ごとに人数が変わります。時期による変動（繁忙・モデルの切り替えなど）を差し引いていないため、前後差を施策の効果と読まないでください。</p>
+</div>
+</section>
+
+</main>
+<footer class="wrap foot"></footer>
+<script src="../../data/data.js"></script>
+<script src="common/fmt.js"></script>
+<script src="common/shell.js"></script>
+<script src="common/tip.js"></script>
+<script>window.Shell.mount();</script>
+<script src="pages/effect.js"></script>
+<script src="../../base/static/app.js"></script>
+</body>
+</html>

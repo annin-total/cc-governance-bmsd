@@ -1,0 +1,7 @@
+/* 月末のコストの見込みのカード: 営業日あたりと 1 人 1 営業日あたりを 2 列に並べる */
+.fc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-m); }
+.fc-stat { display: grid; min-width: 0; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.fc-label, .fc-prev { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+.fc-now { display: flex; align-items: center; gap: var(--sp-xs); font-family: var(--fig); font-size: var(--fs-label); font-weight: 600; color: var(--ink); white-space: nowrap; }
+.fc-now .change { margin-right: 0; font-family: var(--sans); font-size: var(--fs-xs); }
+.fc .k-viz .cap { margin-top: var(--sp-2xs); }

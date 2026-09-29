@@ -1,0 +1,13 @@
+/* エクスポートのページ: 取り込みの 1 行と、月の一覧の行の中のダウンロードのボタン */
+.ex-import { margin-top: 0; }
+.ex-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-m) var(--sp-l); }
+.ex-field { font-size: var(--fs-label); font-weight: 600; color: var(--ink-2); }
+.ex-row input[type="file"] { font: inherit; font-size: var(--fs-label); color: var(--ink); }
+.ex-row input[type="file"]::file-selector-button { font: inherit; margin-right: var(--sp-s); padding: var(--sp-3xs) var(--sp-m); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); cursor: pointer; }
+.ex-hint { margin-left: auto; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.btn.sub { background: var(--chip); color: var(--ink); font-weight: 600; padding: var(--sp-3xs) var(--sp-m); white-space: nowrap; }
+.btn.sub:hover { background: var(--tabs); }
+.tscroll .c-act { width: 1%; text-align: right; }
+.tscroll td.c-act { padding-top: var(--sp-2xs); padding-bottom: var(--sp-2xs); }
+.group > .panel { margin-top: 0; }
+.tscroll:has([data-testid="months"]) { max-height: none; }

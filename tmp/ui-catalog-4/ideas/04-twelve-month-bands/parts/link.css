@@ -1,0 +1,6 @@
+/* グラフと表の連動: 当てた k の棒・行を強調し、ほかの棒を薄くする */
+:root { --link-dim: .35; }
+.is-linking svg.chart g.col:not(.is-hot) rect:not(.hit) { opacity: var(--link-dim); }
+.cum g.col.is-hot .guide, .cum g.col.is-hot .dot-prev { visibility: visible; }
+.cum g.col.is-hot circle { r: 4.5; }
+.tscroll tbody tr.is-hot td { background: var(--tabs); }

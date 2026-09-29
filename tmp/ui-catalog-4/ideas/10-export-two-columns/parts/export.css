@@ -1,0 +1,41 @@
+/* エクスポートのページ（変奏 10）: 取り込む｜書き出す の 2 列。右は月の一覧で、月を押すとその ZIP の中身が行の下に開く */
+:root {
+  --ex-cols: minmax(0, 1fr) minmax(0, 2.2fr);
+  --ex-file-cols: 9.5em 5.5em 5em minmax(0, 1fr);
+}
+.ex-cols2 { display: grid; grid-template-columns: var(--ex-cols); gap: var(--sp-xl); align-items: start; }
+.group > .panel { margin-top: 0; }
+
+/* 取り込む */
+.ex-facts { margin: 0 0 var(--sp-l); }
+.ex-facts dt, .ex-field { display: block; font-size: var(--fs-sm); color: var(--muted); }
+.ex-facts dd { margin: var(--sp-3xs) 0 0; font-variant-numeric: tabular-nums; }
+.ex-field { margin-bottom: var(--sp-2xs); }
+.ex-import input[type="file"] { display: block; max-width: 100%; font: inherit; font-size: var(--fs-label); color: var(--ink); }
+.ex-import input[type="file"]::file-selector-button { font: inherit; margin-right: var(--sp-s); padding: var(--sp-3xs) var(--sp-m); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); cursor: pointer; }
+.ex-act { margin-top: var(--sp-l); }
+
+/* 月の一覧 */
+.btn.sub { background: var(--chip); color: var(--ink); font-weight: 600; padding: var(--sp-3xs) var(--sp-m); white-space: nowrap; }
+.btn.sub:hover { background: var(--tabs); }
+.tscroll:has([data-testid="months"]) { max-height: none; }
+.tscroll .c-act { width: 1%; text-align: right; }
+.tscroll td.c-act { padding-top: var(--sp-2xs); padding-bottom: var(--sp-2xs); }
+tr[data-month] { cursor: pointer; }
+tr[data-month]:hover td { background: var(--card-hover); }
+.ex-pick { border: 0; background: none; padding: 0; font: inherit; color: var(--ink); cursor: pointer; font-variant-numeric: tabular-nums; }
+.ex-caret { display: inline-block; width: 0; height: 0; margin: 0 var(--sp-xs) 1px 0; border-style: solid; border-width: 4px 0 4px 5px; border-color: transparent transparent transparent var(--muted); vertical-align: middle; }
+.ex-pick[aria-expanded="true"] .ex-caret { transform: rotate(90deg); }
+tr.is-open td { border-bottom-color: transparent; font-weight: 600; }
+tr.is-open .sub { font-weight: 400; }
+
+/* 開いた月の中身: 表ごとの CSV の行数・大きさ・列 */
+.tscroll td:has(> .ex-flist) { padding: 0 0 var(--sp-m) calc(var(--sp-s) + 5px); }
+.ex-flist { margin: 0; padding: var(--sp-2xs) var(--sp-l); background: var(--bg); border-radius: var(--r-m); font-size: var(--fs-sm); }
+.ex-flist > div { display: grid; grid-template-columns: var(--ex-file-cols); gap: var(--sp-m); padding: var(--sp-xs) 0; align-items: baseline; }
+.ex-flist > div + div { border-top: 1px solid var(--rule); }
+.ex-flist dt b { display: block; font-weight: 600; color: var(--ink-2); }
+.ex-flist dd { margin: 0; color: var(--ink-2); }
+.ex-flist .code { font-size: var(--fs-xs); color: var(--muted); }
+.ex-cols { line-height: 1.55; }
+.ex-flist dt .code { white-space: nowrap; }

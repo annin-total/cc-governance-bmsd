@@ -1,0 +1,14 @@
+/* グラフと表の連動: 当てた k の棒・行を強調し、ほかの棒を薄くする */
+:root { --link-dim: .35; }
+.is-linking svg.chart g.col:not(.is-hot) rect:not(.hit) { opacity: var(--link-dim); }
+.cum g.col.is-hot .guide, .cum g.col.is-hot .dot-prev { visibility: visible; }
+.cum g.col.is-hot circle { r: 4.5; }
+.tscroll tbody tr.is-hot td { background: var(--tabs); }
+
+/* 押して固定: 棒と行は押せる。固定中は表の上に「09/23 を表示中 ×」（絞り込みの chipbar と同じ地）。当てた棒は少しだけ濃くして、押せば移ることを示す */
+.panel svg.chart g.col[data-k], .panel tbody tr[data-k] { cursor: pointer; }
+.is-pinned svg.chart g.col:not(.is-hot):hover rect:not(.hit) { opacity: .6; }
+.pin-tag { display: inline-flex; align-items: center; gap: var(--sp-xs); border: 0; background: var(--tabs); padding: var(--sp-2xs) var(--sp-s); border-radius: var(--r-m); font: inherit; font-size: var(--fs-label); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.pin-tag b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.pin-tag .x { color: var(--muted); }
+.pin-tag:hover .x { color: var(--ink); }

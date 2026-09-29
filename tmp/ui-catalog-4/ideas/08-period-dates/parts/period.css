@@ -1,0 +1,4 @@
+/* 期間の分段の下の日付: 分段の右端に揃えた小さな 1 行 */
+.period-box { display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-2xs); }
+.period-dates { margin: 0; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.period-dates .sep { margin: 0 var(--sp-2xs); }

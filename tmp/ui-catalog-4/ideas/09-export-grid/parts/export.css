@@ -1,0 +1,28 @@
+/* エクスポートのページ: 取り込みの 1 行と、12 か月の格子（マスはカードと同じ地・角丸・見出し） */
+:root { --ex-cols: 4; --ex-cell-h: 112px; }
+.ex-import { margin-top: 0; }
+.ex-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-m) var(--sp-l); }
+.ex-field { font-size: var(--fs-label); font-weight: 600; color: var(--ink-2); }
+.ex-row input[type="file"] { font: inherit; font-size: var(--fs-label); color: var(--ink); }
+.ex-row input[type="file"]::file-selector-button { font: inherit; margin-right: var(--sp-s); padding: var(--sp-3xs) var(--sp-m); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); cursor: pointer; }
+.ex-hint { margin-left: auto; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.group > .panel { margin-top: 0; }
+
+.ex-ghead { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-l); margin-bottom: var(--sp-s); }
+.ex-ghead .glabel { margin: 0; }
+.ex-grid { display: grid; grid-template-columns: repeat(var(--ex-cols), minmax(0, 1fr)); gap: var(--sp-m); }
+.ex-grid + .gnote { margin-top: var(--sp-s); }
+.ex-cell {
+  display: flex; flex-direction: column; gap: var(--sp-2xs); min-height: var(--ex-cell-h); padding: var(--sp-l) var(--sp-xl) var(--sp-m);
+  background: var(--card); border: 0; border-radius: var(--r-l); box-shadow: var(--shadow-card); text-align: left; font: inherit; color: inherit; cursor: pointer; transition: background .15s;
+}
+.ex-cell:hover { background: var(--card-hover); }
+.ex-cell:hover .go { color: var(--accent); }
+.ex-cell .k-label { width: 100%; }
+.ex-count { font-size: var(--fs-h2); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ex-cell .hbar { margin-top: auto; }
+.ex-foot { display: flex; justify-content: space-between; gap: var(--sp-s); font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.ex-cell.none { background: transparent; box-shadow: inset 0 0 0 1px var(--rule); cursor: default; }
+.ex-cell.none .k-label { color: var(--muted); font-weight: 400; }
+@media (max-width: 960px) { :root { --ex-cols: 3; } }
+@media (prefers-reduced-motion: reduce) { .ex-cell { transition: none; } }
