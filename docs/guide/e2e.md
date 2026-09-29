@@ -206,13 +206,12 @@ HTTPS・プロキシ越しの送信と、本番の受信先への到達は確か
 開発用のイメージとボリュームを壊さないよう、compose のプロジェクト名を分ける。開発用のサーバが
 動いていれば、先に `server/` で `docker compose stop` する。
 
-1. `server/` で `docker compose -p ccgov-manual up -d --build` を実行し、
-   `docker compose -p ccgov-manual cp ../e2e/samples/cost_daily.csv server:<CSV_DIR>/` で見本の CSV を入れる（`<CSV_DIR>` は `server/dev.env` の `CSV_DIR`）
-   - 全ての表を埋めて見るときは、見本の CSV の代わりに、`DB_DSN=sqlite:///<ローカルのファイル>` で `scripts/seed_dashboard.py` を流して作った DB を
-     `docker compose -p ccgov-manual cp <ローカルのファイル> server:<パス>`（`<パス>` は `server/dev.env` の SQLite の `DB_DSN` のパス）で入れ、2 の取込は押さない
+1. `server/` で `docker compose -p ccgov-manual up -d --build` を実行する
+   - 全ての表を埋めて見るときは、`DB_DSN=sqlite:///<ローカルのファイル>` で `scripts/seed_dashboard.py` を流して作った DB を
+     `docker compose -p ccgov-manual cp <ローカルのファイル> server:<パス>`（`<パス>` は `server/dev.env` の SQLite の `DB_DSN` のパス）で入れ、2 の取込はしない
 2. `http://127.0.0.1:<ポート>/<ADMIN_PATH>/`（`<ポート>` は `server/compose.yaml` の `ports` のホスト側、`<ADMIN_PATH>` は `server/dev.env` の `ADMIN_PATH`）を開き（パスワードは `dev.env` の `ADMIN_PASSWORD`、ユーザー名は任意）、
-   「CSV を取り込む」を押す
-3. ブラウザの幅を 1280px にし、4 画面（`<ADMIN_PATH>` の下の `/`・`/policy`・`/effect`・`/assets`）を
+   見出し帯の右端の「データと設定」の「取り込む」で見本の CSV（`e2e/samples/cost_daily.csv`）を取り込む
+3. ブラウザの幅を 1280px にし、4 画面（`<ADMIN_PATH>` の下の `/`・`/policy`・`/effect`・`/assets`）と `/settings` を
    順に開く。合格: 開発者ツールのコンソールに error・warning が 0 件、
    コンソールで `document.documentElement.scrollWidth <= document.documentElement.clientWidth` が
    `true`、表のセルが切れていない。**スクリーンショットだけで判定しない**
@@ -235,3 +234,4 @@ DB は SQLite だけで、MySQL は確かめない。AIP の前段のリバー�
 - 2026-09-28: E2E の外で hook を直接起動するときの送信先・打ち切りを名指しで落とすこと・隔離ルートの名前の `CC_E2E_RUN` を書いた
 - 2026-09-28: 手動確認で表を埋める合成データの入れ方を書いた
 - 2026-09-29: 見た目の規約の参照先を `design-system.md` にし、error 行が出る場所を刷新後の画面の語で書いた
+- 2026-09-30: CSV の取込を「データと設定」の画面で受け取る手順にし、手動確認の画面に `/settings` を加えた
