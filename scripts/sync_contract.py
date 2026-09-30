@@ -9,7 +9,7 @@
 複製は固定の生成物ヘッダ（`_header`）＋正本のバイト列そのもの、という構成を取る。
 これにより、複製ファイル単体（正本が手元に無い場所）でも、ヘッダの既知の長さを引いた残りを
 ハッシュ化すれば正本のハッシュと比較でき、複製が直接編集されていないかを検査できる
-（`server/entry.sh` がこの方式でサーバ起動時に検査する）。
+（`server/ccgov/vendor_check.py` がこの方式でサーバ起動時に検査する）。
 
 使い方:
     python scripts/sync_contract.py          複製とハッシュを正本から書き出す
@@ -28,10 +28,7 @@ NAMES = ("contract.py", "policy.py")
 
 
 def _header(name: str) -> str:
-    """複製の先頭の固定ヘッダ。
-
-    `server/entry.sh` がこの長さを引いてハッシュを検査するため、変えるなら entry.sh も揃える。
-    """
+    """複製の先頭の固定ヘッダ。`server/ccgov/vendor_check.py` が同じものを持つので、変えるなら揃える。"""
     return (
         f'"""server/ccgov/vendor/{name} — 生成物。直接編集しない。\n'
         "\n"
