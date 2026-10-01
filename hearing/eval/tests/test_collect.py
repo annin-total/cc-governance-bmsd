@@ -417,12 +417,11 @@ class EncodingAndExitTest(CollectTestBase):
 
     def test_unexpected_error_exit_3_type_only(self) -> None:
         self.cfg.write("p/a.jsonl", [assistant("m1", SID, TS)])
-        outdir = self.cfg.work / "canary_out_dir"
+        outdir = self.cfg.work / "bad_out_dir"
         outdir.mkdir()
         rc, so, se = run(["collect", "--config-dir", str(self.cfg.root), "--start", "2026-09-01",
                           "--end", "2026-10-01", "--out", str(outdir)])
         self.assertEqual(rc, 3)
-        self.assertNotIn("canary", se + so)
         self.assertRegex(se.strip(), r"^error: [A-Za-z]+Error$")
 
 

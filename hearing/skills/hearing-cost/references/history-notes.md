@@ -1,13 +1,13 @@
 # 履歴の読み方の覚え書き
 
 確認日: 2026-10-01。形を確かめたのは Claude Code 2.1.286 の実機 1 台だけ。ほかの版・OS は未確認。
-読むのは `scripts/collect.py` だけ（`scan` は `scan.py`、共通の小物は `_common.py` に分かれている）。LLM は履歴を直接開かず、`collect` が出す集計 JSON だけを読む。
+スクリプトは `scripts/collect.py`（集計本体）と `scripts/_common.py`（共通の小物）の 2 つ。数値の集計（重複排除・期間・トークン種別・ファミリー判別）は `collect` が決定的に行う。
 
 ## 保存先
 
 - 設定ディレクトリは `CLAUDE_CONFIG_DIR`、なければホームの `.claude`（Windows は `%USERPROFILE%\.claude`）。
 - transcript は `<設定ディレクトリ>/projects/<作業ディレクトリをエンコードした名前>/<sessionId>.jsonl`。
-  フォルダ名は cwd の区切り文字を `-` に置き換えた形で、パスそのものなので出力に出さない。
+  フォルダ名は cwd の区切り文字を `-` に置き換えた形。
 - サブエージェントは `<sessionId>/subagents/agent-<agentId>.jsonl`（隣に `.meta.json`。読まない）。行の `sessionId` は親と同じで、`agentId` と `isSidechain: true` が付く。
 - workflows は `<sessionId>/workflows/` 以下にあるとされる（実機では未観測）。`collect` は `projects/` 以下を再帰で読むので、置き場所が変わっても拾える。
 - 大きな tool 結果は `tool-results/` に退避されることがある（実機では未観測）。`collect` はファイル数と合計バイトだけ数える。
@@ -46,7 +46,7 @@
 ## 巨大行
 
 - 1 行が既定 50,000,000 バイト（`--max-line-bytes`）を超えたら読まずに飛ばし、件数だけ数える。
-- 壊れた行（JSON として読めない・オブジェクトでない・途中で切れている・`type` が無い）は種類別に件数だけ数える。例外メッセージは出さない。
+- 壊れた行（JSON として読めない・オブジェクトでない・途中で切れている・`type` が無い）は種類別に件数だけ数える。
 
 ## cost-state
 
@@ -77,7 +77,7 @@
 ## 集計 JSON のスキーマ（schema_version 1.0）
 
 キーは英小文字のスネークケース。トークンは種別ごとに `input`（新規入力）・`output`（出力）・`cache_creation`（キャッシュ書き込み）・`cache_read`（キャッシュ読み込み）・`cache_creation_5m`／`cache_creation_1h`（書き込みの内訳）で持ち、種別を合算した値は持たない。
-「期間内」は assistant 行の timestamp が [start, end) に入ること。ラベル `S-xxxxxxxx` はセッション、`P-xxxxxxxx` は cwd の sha256 先頭 8 桁で、対応表は無い。
+「期間内」は assistant 行の timestamp が [start, end) に入ること。ラベル `S-xxxxxxxx` はセッション、`P-xxxxxxxx` は cwd の sha256 先頭 8 桁。
 
 | キー | 意味 |
 |---|---|
@@ -100,7 +100,7 @@
 | `coverage.coverage_ratio` | 処理できた行／全行（巨大行・壊れた行を除いた割合）。目安 0.9 未満なら「部分的な集計」 |
 | `history_range` | `oldest_ts`・`newest_ts`（期間内外を問わず履歴全体）と `files_with_lines` |
 | `retention` | `cleanup_period_days`（設定値、無ければ既定 30 と仮定し `cleanup_period_days_source` に `default_assumed`）、`history_starts_after_period_start`、`oldest_near_cleanup_cutoff`、`suspected_gap`（両方真のとき。断定ではない） |
-| `settings` | `settings.json` の `found`・`cleanup_period_days`・`model`（`alias`・`bucket`・`generation` のみ。生の ID は出さない）・`effort_level`・`always_thinking_enabled`・`mcp_servers_count` |
+| `settings` | `settings.json` の `found`・`cleanup_period_days`・`model`（`alias`・`bucket`・`generation` のみ）・`effort_level`・`always_thinking_enabled`・`mcp_servers_count` |
 | `line_types` / `versions` | 行の種類別件数 / assistant 行の版別件数 |
 | `totals` | 期間内の `api_calls`（重複排除後の件数）、`sidechain_api_calls`、`tokens_by_type`、`active_days` |
 | `models.buckets.<名前>` | 名前はファミリー（`opus` 等や新しい語）・`other_claude`・`non_claude`・`unknown`。各々 `api_calls`、`generations`（世代別件数、例 `5-5`）、`tokens` |
@@ -108,7 +108,7 @@
 | `effort.by_version.<版>` | `records`、`effort_observed`、`per_turn_effort_observed` |
 | `sessions.count` / `subagents_distinct` | 期間内のセッション数（sessionId）/ サブエージェント数（agentId） |
 | `sessions.active_minutes` / `length_buckets` | 稼働分の合計・中央値・p90・最大 / 長さの分布。定義は `length_definition`（間隔 30 分超で分割し稼働時間を足す） |
-| `sessions.top_by_output` ほか | `top_by_output`・`top_by_cache_creation`・`top_by_input`・`top_by_cache_read`。各 5 件まで `{session, value, share}`（share は種別の全体に対する寄与率） |
+| `sessions.top_by_output` ほか | `top_by_output`・`top_by_cache_creation`・`top_by_input`・`top_by_cache_read`。各 5 件まで `{session, session_id, file, value, share}`（`session_id` は生の ID、`file` は設定ディレクトリからの相対パスで親セッションの jsonl（サブエージェントのファイルではない。複数ファイルなら最大寄与のもの）、share は種別の全体に対する寄与率） |
 | `sessions.details.<S-ラベル>` | 上位に出たセッションの `project`、`api_calls`、`turns`（人の入力）、`active_minutes`、`segments`、`subagents`、`sidechain_ratio`、`tokens`、`model_buckets`、`effort`、`tools`、`file_extensions` |
 | `projects` | `count` と `top_by_output`（`label`・`sessions`・`api_calls`・`tokens`） |
 | `tools.calls_by_name` / `file_extensions` | tool 名別の呼び出し数 / ファイル系ツールの拡張子別件数（`(none)`・`(other)` あり） |
@@ -122,6 +122,11 @@
 | `cost_state` | `confidence`（常に `estimate`）、`sessions_with_snapshot`、`by_family.<名前>` の `cost_state`・`transcript`・`outside_transcript`（差。負もありうる）・`only_in_cost_state` |
 | `timeline` | `by_day`・`by_hour`（件数。調書には書かない） |
 
-スキル名・MCP サーバ名・tool 名は名前のまま入っている。調書には名前を出さず分類と件数で書く。
+スキル名・MCP サーバ名・tool 名は名前のまま入っている。集計 JSON は簡潔さのため本文・コマンド・cwd の生文字列を含めない。
+
+## 履歴の読み方
+
+LLM は必要に応じて履歴の jsonl を直接読んでよい（本文を含む）。ただし重さへの寄与が大きいセッション（`top_by_*` の `file`）を中心に、必要な範囲だけを読み、全文は読まない。
+数値は `collect` の集計を正とし、LLM が履歴から数え直さない。
 
 実データと食い違ったら実データを優先し、必要なら Web 検索する。

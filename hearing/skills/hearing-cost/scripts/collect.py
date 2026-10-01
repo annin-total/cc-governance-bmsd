@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""hearing-cost の集計スクリプト。サブコマンド collect（履歴の集計）と scan（漏洩検査、scan.py）を持つ。
+"""hearing-cost の集計スクリプト。サブコマンド collect が履歴を決定的に集計し、集計 JSON を書く。
 
-Python 3.8 以上・標準ライブラリのみ。本文・パス・コマンド・cwd の生文字列は出力しない。
+Python 3.8 以上・標準ライブラリのみ。集計 JSON は簡潔さのため本文・コマンド・cwd の生文字列を含めない。
 """
 
 from __future__ import annotations
@@ -21,7 +21,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple  # noqa: E402
 from _common import (  # noqa: E402
     DEFAULT_MAX_LINE_BYTES, ArgError, inc, iter_lines, skill_files, unescape, write_json,
 )
-from scan import cmd_scan  # noqa: E402
 
 SCHEMA_VERSION = "1.0"
 SESSION_GAP_SECONDS = 30 * 60
@@ -85,6 +84,14 @@ RE_GEN_BEFORE = r"claude-(\d{{1,2}})(?:[-.](\d{{1,2}}))?-{fam}"
 
 
 # ---------------------------------------------------------------- 共通の小物
+
+def parent_session_file(config_dir: str, path: str) -> str:
+    """設定ディレクトリからの相対パス。サブエージェント等のファイルは親セッションの jsonl に読み替える。"""
+    parts = os.path.relpath(path, config_dir).split(os.sep)
+    if len(parts) > 3:  # projects/<proj>/<sessionId>/subagents/... -> projects/<proj>/<sessionId>.jsonl
+        parts = parts[:2] + [parts[2] + ".jsonl"]
+    return "/".join(parts)
+
 
 def _int(v: Any) -> int:
     if isinstance(v, bool) or not isinstance(v, (int, float)):
@@ -377,6 +384,8 @@ class Collector:
         self.session_ts: Dict[str, List[float]] = {}
         self.session_agents: Dict[str, Set[str]] = {}
         self.session_turns: Dict[str, int] = {}
+        self.session_files: Dict[str, Dict[str, int]] = {}
+        self.cur_file = ""
         self.cost_state: Dict[str, Dict[str, Dict[str, int]]] = {}
         self.attribution: Dict[str, Set[str]] = {}
         self.attribution_lines: Dict[str, int] = {}
@@ -431,6 +440,7 @@ class Collector:
 
     def _read_file(self, path: str, fidx: int) -> None:
         had = False
+        self.cur_file = parent_session_file(self.config_dir, path)
         try:
             for lineno, body in iter_lines(path, self.max_bytes):
                 self.cov["lines_total"] += 1
@@ -446,7 +456,7 @@ class Collector:
                     self.cov["lines_invalid_utf8"] += 1
                 try:
                     ok = self._line(text, fidx, lineno)
-                except Exception as e:  # noqa: BLE001 - 本文を出さないため種類だけ数える
+                except Exception as e:  # noqa: BLE001 - 例外メッセージは出さず種類だけ数える
                     self._broken("error_" + type(e).__name__)
                     continue
                 if ok:
@@ -532,6 +542,7 @@ class Collector:
         self.cov["records_before_dedup"] += 1
         if sid and self._in_period(ts):
             self.session_ts.setdefault(sid, []).append(ts)  # type: ignore[arg-type]
+            inc(self.session_files.setdefault(sid, {}), self.cur_file)
             agent = d.get("agentId")
             if isinstance(agent, str) and agent:
                 self.session_agents.setdefault(sid, set()).add(agent)
@@ -916,8 +927,10 @@ class Report:
                 if s["tokens"][ttype] <= 0:
                     continue
                 share = s["tokens"][ttype] / totals[ttype] if totals[ttype] else 0.0
-                tops[name].append({"session": _label("S", sid), "value": s["tokens"][ttype],
-                                   "share": round(share, 4)})
+                files = self.c.session_files.get(sid, {})
+                top_file = max(sorted(files), key=lambda k: files[k]) if files else None
+                tops[name].append({"session": _label("S", sid), "session_id": sid, "file": top_file,
+                                   "value": s["tokens"][ttype], "share": round(share, 4)})
                 details[_label("S", sid)] = self._session_detail(sid, s)
         out: Dict[str, Any] = {
             "count": len(sessions), "subagents_distinct": len(agents),
@@ -952,7 +965,7 @@ class Report:
             p["api_calls"] += s["api_calls"]
             _add_tokens(p["tokens"], s["tokens"])
         ranked = sorted(proj.items(), key=lambda kv: (-kv[1]["tokens"]["output"], kv[0]))[:TOP_N]
-        return {"count": len(proj), "label_rule": "P- + first 8 hex of sha256(cwd); no mapping is kept",
+        return {"count": len(proj), "label_rule": "P- + first 8 hex of sha256(cwd)",
                 "top_by_output": [dict(label=k, **v) for k, v in ranked]}
 
     def _result_chars(self) -> Dict[str, Any]:
@@ -1083,12 +1096,6 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--exclude-session", default=None)
     c.add_argument("--max-line-bytes", type=int, default=DEFAULT_MAX_LINE_BYTES)
     c.add_argument("--local-tz", action="store_true")
-    s = sub.add_parser("scan")
-    s.add_argument("--targets", nargs="+", required=True)
-    s.add_argument("--out", required=True)
-    s.add_argument("--config-dir", default=None)
-    s.add_argument("--subject-name", default=None)
-    s.add_argument("--redact", action="store_true")
     return p
 
 
@@ -1097,8 +1104,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         args = build_parser().parse_args(argv)
         if args.cmd == "collect":
             return cmd_collect(args)
-        if args.cmd == "scan":
-            return cmd_scan(args)
         sys.stderr.write("argument error\n")
         return 2
     except ArgError as e:
@@ -1106,7 +1111,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 2
     except SystemExit as e:
         return int(e.code) if isinstance(e.code, int) else 2
-    except BaseException as e:  # noqa: BLE001 - 本文断片を出さないため種類名だけ出す
+    except BaseException as e:  # noqa: BLE001 - 例外メッセージは出さず種類名だけ出す
         sys.stderr.write("error: %s\n" % type(e).__name__)
         return 3
 

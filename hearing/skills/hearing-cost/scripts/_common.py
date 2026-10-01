@@ -1,4 +1,4 @@
-"""collect.py と scan.py が共有する小物。"""
+"""collect.py が使う小物。"""
 
 from __future__ import annotations
 
