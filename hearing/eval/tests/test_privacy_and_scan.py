@@ -2,6 +2,7 @@
 
 import json
 import unittest
+from unittest import mock
 
 from helpers import ConfigDir, assistant, cost_state, run, tool_result, user
 
@@ -148,6 +149,38 @@ class ScanTest(unittest.TestCase):
         d = json.loads(self.out.read_text(encoding="utf-8"))
         self.assertEqual(d["files_scanned"], 1)
         self.assertTrue(all(v["file"] == self.report.name for v in d["violations"]))
+
+    def test_forward_slash_and_single_element_paths(self) -> None:
+        self.report.write_text("A C:/Users/bob/x\nB /Users\nC /home.\nD /tmp と /etc\n"
+                               "E 1/2 2026/10/01 Read/Bash N/A /clear and/etc\nF https://example.org/x\n",
+                               encoding="utf-8")
+        d, _t, _s = self.scan()
+        by_line = {}
+        for v in d["violations"]:
+            by_line.setdefault(v["line"], set()).add(v["kind"])
+        self.assertEqual(by_line[1], {"path_windows"})
+        self.assertEqual(by_line[2], {"path_unix"})
+        self.assertEqual(by_line[3], {"path_unix"})
+        self.assertEqual(sum(v["count"] for v in d["violations"] if v["line"] == 4), 2)
+        self.assertNotIn(5, by_line)
+        self.assertEqual(by_line[6], {"url"})
+
+    def test_file_names_with_forbidden_words_are_masked(self) -> None:
+        bad = self.target / "canaryproj-notes.md"
+        bad.write_text("/opt/x/y\n", encoding="utf-8")
+        d, text, std = self.scan()
+        self.assertNotIn("canaryproj-notes", text + std)
+        self.assertIn("file-1", {v["file"] for v in d["violations"]})
+
+    def test_redact_failure_keeps_original_and_leaves_no_temp(self) -> None:
+
+        import scan as scan_mod
+
+        with mock.patch("os.replace", side_effect=OSError("boom")):
+            with self.assertRaises(OSError):
+                scan_mod._write_atomic(str(self.report), "changed")
+        self.assertEqual(self.report.read_text(encoding="utf-8"), REPORT)
+        self.assertEqual([p.name for p in self.target.iterdir()], [self.report.name])
 
     def test_missing_target_exit_2(self) -> None:
         rc, _so, _se = run(["scan", "--targets", str(self.target / "nope"), "--out", str(self.out)])

@@ -9,10 +9,14 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-SCRIPT = Path(__file__).resolve().parents[2] / "skills" / "hearing-cost" / "scripts" / "collect.py"
+sys.dont_write_bytecode = True
+SCRIPT_DIR = Path(__file__).resolve().parents[2] / "skills" / "hearing-cost" / "scripts"
+SCRIPT = SCRIPT_DIR / "collect.py"
 START = "2026-09-01T00:00:00Z"
 END = "2026-10-01T00:00:00Z"
 CWD = "/home/someone/project-x"
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
 
 def load_module() -> Any:

@@ -148,7 +148,10 @@ hearing/
 ├── README.md                  # 配布手順（配布しない）
 ├── skills/hearing-cost/            # ~/.claude/skills/ にそのままコピーする（配布物はここだけ）
 │   ├── SKILL.md               # 固定指示（先頭）と手順だけ
-│   ├── scripts/collect.py     # collect / scan。Python 標準ライブラリのみ
+│   ├── scripts/               # Python 標準ライブラリのみ
+│   │   ├── collect.py         # collect と CLI の入口
+│   │   ├── scan.py            # scan（禁止語・正規表現・伏せ字化）
+│   │   └── _common.py         # 共通の小物（行読み・JSON 書き出し等）
 │   └── references/
 │       ├── history-notes.md   # 履歴の読み方の覚え書き
 │       ├── lens-seeds.md      # 観点の種

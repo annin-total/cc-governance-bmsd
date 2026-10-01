@@ -245,6 +245,87 @@ class EffortTest(CollectTestBase):
         self.assertEqual(e["by_version"]["2.1.286"]["per_turn_effort_observed"], 1)
 
 
+class InputHardeningTest(CollectTestBase):
+    def test_out_of_range_timestamps_are_not_adopted(self) -> None:
+        self.cfg.write("p/a.jsonl", [
+            assistant("m1", SID, "1969-12-31T23:59:59Z"), assistant("m2", SID, "2019-12-31T00:00:00Z"),
+            assistant("m3", SID, "2099-01-01T00:00:00Z"), assistant("m4", SID, TS),
+            user(SID, "1970-01-01T00:00:00Z", uuid="x1")])
+        d = self.collect()
+        cov = d["coverage"]
+        self.assertEqual(cov["records_timestamp_out_of_range"], 4)
+        self.assertEqual(cov["records_timestamp_missing"], 3)
+        self.assertEqual(d["totals"]["api_calls"], 1)
+        self.assertEqual(d["history_range"]["oldest_ts"], "2026-09-10T10:00:00Z")
+
+    def test_parse_ts_and_iso_edge_cases(self) -> None:
+        m = load_module()
+        self.assertIsNone(m.parse_ts("2026-09-10T10:00:00+99:00"))
+        self.assertEqual(m.iso(-1), "1969-12-31T23:59:59Z")
+        self.assertEqual(m.iso(0), "1970-01-01T00:00:00Z")
+        self.assertIsNone(m.iso(1e18))
+
+    def test_bad_offset_in_period_args_exit_2(self) -> None:
+        rc, _so, se, _d, _t = self.cfg.collect(start="2026-09-01T00:00:00+99:00")
+        self.assertEqual(rc, 2)
+        self.assertNotIn("99", se)
+
+    def test_missing_projects_dir_is_reported(self) -> None:
+        self.cfg.projects.rmdir()
+        d = self.collect()
+        self.assertFalse(d["coverage"]["projects_dir_found"])
+        self.assertEqual(d["coverage"]["walk_errors"], 0)
+
+    def test_walk_errors_are_counted(self) -> None:
+        from unittest import mock
+
+        m = load_module()
+        col = m.Collector(str(self.cfg.root), 0.0, 1.0, None, 1000, False, 0.0)
+
+        def fake_walk(_root, onerror=None, **_kw):  # type: ignore[no-untyped-def]
+            onerror(OSError("denied"))
+            return iter(())
+
+        with mock.patch("os.walk", fake_walk):
+            col._walk(str(self.cfg.projects))
+        self.assertEqual(col.cov["walk_errors"], 1)
+
+    def test_file_kind_is_judged_by_file_name_end(self) -> None:
+        self.cfg.write("proj.orphaned-dir/a.jsonl", [assistant("m1", SID, TS)])
+        self.cfg.write("p/b.jsonl.bak", [assistant("m2", SID, TS)])
+        d = self.collect()
+        self.assertEqual(d["coverage"]["files_orphaned"], 0)
+        self.assertEqual(d["coverage"]["files_processed"], 1)
+        self.assertEqual(d["line_types"]["_unknown_file"], 1)
+        self.assertEqual(d["totals"]["api_calls"], 1)
+
+    def test_plugin_skill_walk_skips_node_modules_and_git(self) -> None:
+        for rel in ("plugins/p/skills/ok", "plugins/p/node_modules/x/skills/bad", "plugins/p/.git/skills/bad"):
+            sk = self.cfg.root / rel
+            sk.mkdir(parents=True)
+            (sk / "SKILL.md").write_text("---\nname: n\ndescription: abc\n---\n", encoding="utf-8")
+        self.cfg.write("p/a.jsonl", [assistant("m1", SID, TS)])
+        d = self.collect()
+        self.assertEqual(d["skills"]["installed"]["plugin"]["count"], 1)
+
+
+class SettingsModelTest(CollectTestBase):
+    def model(self, value: str):  # type: ignore[no-untyped-def]
+        (self.cfg.root / "settings.json").write_text(json.dumps({"model": value}))
+        self.cfg.write("p/a.jsonl", [assistant("m1", SID, TS)])
+        return self.collect()["settings"]["model"]
+
+    def test_aliases_are_not_non_claude(self) -> None:
+        self.assertEqual(self.model("sonnet[1m]"), {"alias": "sonnet", "bucket": "sonnet", "generation": None})
+        self.assertEqual(self.model("opus")["bucket"], "opus")
+        for alias in ("opusplan", "default", "best"):
+            self.assertEqual(self.model(alias), {"alias": alias, "bucket": "unknown", "generation": None})
+
+    def test_full_ids_and_foreign_models_still_classified(self) -> None:
+        self.assertEqual(self.model("claude-opus-4-8")["bucket"], "opus")
+        self.assertEqual(self.model("gpt-9")["bucket"], "non_claude")
+
+
 class ModelTest(unittest.TestCase):
     def setUp(self) -> None:
         self.m = load_module()

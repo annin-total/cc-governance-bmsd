@@ -1,7 +1,7 @@
 # 履歴の読み方の覚え書き
 
 確認日: 2026-10-01。形を確かめたのは Claude Code 2.1.286 の実機 1 台だけ。ほかの版・OS は未確認。
-読むのは `scripts/collect.py` だけ。LLM は履歴を直接開かず、`collect` が出す集計 JSON だけを読む。
+読むのは `scripts/collect.py` だけ（`scan` は `scan.py`、共通の小物は `_common.py` に分かれている）。LLM は履歴を直接開かず、`collect` が出す集計 JSON だけを読む。
 
 ## 保存先
 
@@ -41,6 +41,7 @@
 - キーは `message.id` と `requestId` の組。どちらも無ければ `uuid`（フォールバックとして件数を数える）。
 - 同じキーの行は、トークン項目ごとに最大値を取ってまとめる（途中値の行が先に来ても、順序に関係なく同じ結果になる）。
 - ファイル・サブエージェント・sidechain をまたいで 1 回だけ数える。実機では assistant 行のおよそ 3 分の 2 が重複だった。
+- 既知の限界: ストリーミング途中の行で `requestId` が片方にしか無いと別キー扱いになり、二重に数えうる。`coverage.dedup_*` で件数だけ見える。
 
 ## 巨大行
 
@@ -94,6 +95,8 @@
 | `coverage.records_out_of_period` / `records_timestamp_missing` | 期間外の件数 / timestamp が無い・読めない件数 |
 | `coverage.excluded_session_lines` / `excluded_session_records` | `--exclude-session` で外した行数・件数 |
 | `coverage.user_lines_duplicate` | 同じ uuid の user 行の重複 |
+| `coverage.records_timestamp_out_of_range` | 2020 年より前・現在の翌日より後の timestamp を採らず、不明扱いにした行数 |
+| `coverage.projects_dir_found` / `walk_errors` | `projects/` の有無 / 歩けなかったフォルダ数 |
 | `coverage.coverage_ratio` | 処理できた行／全行（巨大行・壊れた行を除いた割合）。目安 0.9 未満なら「部分的な集計」 |
 | `history_range` | `oldest_ts`・`newest_ts`（期間内外を問わず履歴全体）と `files_with_lines` |
 | `retention` | `cleanup_period_days`（設定値、無ければ既定 30 と仮定し `cleanup_period_days_source` に `default_assumed`）、`history_starts_after_period_start`、`oldest_near_cleanup_cutoff`、`suspected_gap`（両方真のとき。断定ではない） |

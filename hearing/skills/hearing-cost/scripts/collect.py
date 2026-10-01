@@ -1,25 +1,29 @@
 #!/usr/bin/env python3
-"""hearing-cost の集計スクリプト。サブコマンド collect（履歴の集計）と scan（漏洩検査）を持つ。
+"""hearing-cost の集計スクリプト。サブコマンド collect（履歴の集計）と scan（漏洩検査、scan.py）を持つ。
 
 Python 3.8 以上・標準ライブラリのみ。本文・パス・コマンド・cwd の生文字列は出力しない。
 """
 
 from __future__ import annotations
 
-import argparse
-import getpass
-import hashlib
-import json
-import os
-import re
-import socket
 import sys
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
+
+sys.dont_write_bytecode = True  # 配布先に __pycache__ を作らない
+
+import argparse  # noqa: E402
+import hashlib  # noqa: E402
+import json  # noqa: E402
+import os  # noqa: E402
+import re  # noqa: E402
+from datetime import datetime, timedelta, timezone  # noqa: E402
+from typing import Any, Dict, List, Optional, Set, Tuple  # noqa: E402
+
+from _common import (  # noqa: E402
+    DEFAULT_MAX_LINE_BYTES, ArgError, inc, iter_lines, skill_files, unescape, write_json,
+)
+from scan import cmd_scan  # noqa: E402
 
 SCHEMA_VERSION = "1.0"
-SCAN_SCHEMA_VERSION = "1.0"
-DEFAULT_MAX_LINE_BYTES = 50_000_000
 SESSION_GAP_SECONDS = 30 * 60
 TOP_N = 5
 DEFAULT_CLEANUP_DAYS = 30
@@ -48,7 +52,6 @@ RESULT_BUCKETS = ((1_000, "lt_1k"), (10_000, "1k_10k"), (50_000, "10k_50k"), (20
 RESULT_BUCKET_MAX = "ge_200k"
 LENGTH_BUCKETS = ((10, "lt_10m"), (30, "10m_30m"), (60, "30m_1h"), (180, "1h_3h"), (480, "3h_8h"))
 LENGTH_BUCKET_MAX = "ge_8h"
-SKIP_MARKERS = (".orphaned", ".superseded")
 SETTINGS_SCALAR_KEYS = {"effortLevel": "effort_level", "alwaysThinkingEnabled": "always_thinking_enabled"}
 MODEL_ALIASES = ("default", "best", "opus", "sonnet", "haiku", "fable", "opusplan")
 KNOWN_FAMILIES = ("opus", "sonnet", "haiku", "fable")
@@ -61,8 +64,10 @@ TOP_FIELDS = (
     "type", "timestamp", "sessionId", "agentId", "uuid", "cwd", "version",
     "isSidechain", "isMeta", "isCompactSummary", "message", "modelUsage",
 )
-REDACTED = "［伏せ字］"
 
+EPOCH0 = datetime(1970, 1, 1, tzinfo=timezone.utc)
+MIN_TS = datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
+TS_FUTURE_MARGIN_SECONDS = 86400
 RE_NAME = re.compile(r"^[A-Za-z0-9_:.@\-]{1,100}$")
 RE_SHORT_VALUE = re.compile(r"^[A-Za-z0-9_.\-]{1,24}$")
 RE_EXT = re.compile(r"^\.[a-z0-9]{1,10}$")
@@ -77,10 +82,6 @@ RE_NEW_FAMILY = re.compile(r"claude-([a-z]{2,20})-\d")
 RE_ARN_MODEL = re.compile(r"(?<![a-z\-])(?:foundation-model|inference-profile)/([^/\s\"]+)")
 RE_GEN_AFTER = r"{fam}-(\d{{1,2}})(?:-(\d{{1,2}}))?(?!\d)"
 RE_GEN_BEFORE = r"claude-(\d{{1,2}})(?:[-.](\d{{1,2}}))?-{fam}"
-
-
-class ArgError(Exception):
-    """引数の誤り（終了コード 2）。"""
 
 
 # ---------------------------------------------------------------- 共通の小物
@@ -107,10 +108,6 @@ def _short_value(v: Any) -> str:
     return "other"
 
 
-def _inc(d: Dict[str, int], k: str, n: int = 1) -> None:
-    d[k] = d.get(k, 0) + n
-
-
 def _zero_tokens() -> Dict[str, int]:
     return {k: 0 for k in ALL_TOKEN_KEYS}
 
@@ -131,34 +128,28 @@ def parse_ts(s: Any, naive_local: bool = False) -> Optional[float]:
     try:
         dt = datetime(int(y), int(mo), int(d), int(hh or 0), int(mm or 0), int(ss or 0),
                       int((frac or "0")[:6].ljust(6, "0")))
-    except ValueError:
+        if tz is None:
+            dt = dt.astimezone() if naive_local else dt.replace(tzinfo=timezone.utc)
+        elif tz == "Z":
+            dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            sign = 1 if tz[0] == "+" else -1
+            digits = tz[1:].replace(":", "")
+            off = timedelta(hours=int(digits[:2]), minutes=int(digits[2:]))
+            dt = dt.replace(tzinfo=timezone(sign * off))  # 24 時間以上の差は ValueError
+        return dt.timestamp()
+    except (ValueError, OverflowError, OSError):
         return None
-    if tz is None:
-        dt = dt.astimezone() if naive_local else dt.replace(tzinfo=timezone.utc)
-    elif tz == "Z":
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        sign = 1 if tz[0] == "+" else -1
-        digits = tz[1:].replace(":", "")
-        off = timedelta(hours=int(digits[:2]), minutes=int(digits[2:]))
-        dt = dt.replace(tzinfo=timezone(sign * off))
-    return dt.timestamp()
 
 
 def iso(epoch: Optional[float]) -> Optional[str]:
     if epoch is None:
         return None
-    return datetime.fromtimestamp(epoch, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _unescape(raw: str) -> str:
-    if "\\" not in raw:
-        return raw
     try:
-        v = json.loads('"' + raw + '"')
-        return v if isinstance(v, str) else ""
-    except ValueError:
-        return ""
+        return (EPOCH0 + timedelta(seconds=epoch)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    except OverflowError:
+        return None
+
 
 
 def top_fields(line: str, wanted: Tuple[str, ...] = TOP_FIELDS) -> Tuple[Dict[str, Any], Dict[str, int]]:
@@ -192,7 +183,7 @@ def top_fields(line: str, wanted: Tuple[str, ...] = TOP_FIELDS) -> Tuple[Dict[st
                     pending = key
             continue
         if pending is not None and not m.group(2):
-            vals[pending] = _unescape(m.group(1))
+            vals[pending] = unescape(m.group(1))
             pending = None
     return vals, offs
 
@@ -203,33 +194,6 @@ def decode_at(line: str, off: int) -> Any:
     except (ValueError, IndexError):
         return None
 
-
-def iter_lines(path: str, max_bytes: int) -> Iterator[Tuple[int, Optional[bytes]]]:
-    """(行番号, 行バイト列) を返す。上限超えは None。改行は除く。"""
-    with open(path, "rb") as f:
-        n = 0
-        while True:
-            raw = f.readline(max_bytes + 2)
-            if not raw:
-                return
-            n += 1
-            if raw.endswith(b"\n"):
-                body = raw.rstrip(b"\r\n")
-            elif len(raw) < max_bytes + 2:
-                body = raw.rstrip(b"\r")
-            else:
-                while True:
-                    chunk = f.readline(1 << 20)
-                    if not chunk or chunk.endswith(b"\n"):
-                        break
-                yield n, None
-                continue
-            if len(body) > max_bytes:
-                yield n, None
-                continue
-            if n == 1 and body.startswith(b"\xef\xbb\xbf"):
-                body = body[3:]
-            yield n, body
 
 
 # ---------------------------------------------------------------- モデル判別
@@ -250,7 +214,7 @@ def classify_model(model: Any) -> Dict[str, Optional[str]]:
     family = fam_m.group(1) if fam_m else None
     if family is None:
         nm = RE_NEW_FAMILY.search(s)
-        if nm and nm.group(1) not in ("instant", "v"):
+        if nm and nm.group(1) != "instant":
             family = nm.group(1)
     if family is None:
         return {"bucket": "other_claude", "family": None, "generation": None}
@@ -288,9 +252,12 @@ def read_settings(config_dir: str) -> Dict[str, Any]:
     model = data.get("model")
     if isinstance(model, str):
         alias = model.strip().lower().replace("[1m]", "")
-        cls = classify_model(model)
-        out["model"] = {"alias": alias if alias in MODEL_ALIASES else None,
-                        "bucket": cls["bucket"], "generation": cls["generation"]}
+        if alias in MODEL_ALIASES:
+            bucket = alias if alias in KNOWN_FAMILIES else "unknown"
+            out["model"] = {"alias": alias, "bucket": bucket, "generation": None}
+        else:
+            cls = classify_model(model)
+            out["model"] = {"alias": None, "bucket": cls["bucket"], "generation": cls["generation"]}
     for key, name in SETTINGS_SCALAR_KEYS.items():
         v = data.get(key)
         if isinstance(v, bool):
@@ -332,20 +299,6 @@ def _frontmatter_name(text: str) -> Optional[str]:
     return m.group(1) if m else None
 
 
-def _skill_files(root: str, recursive: bool) -> List[str]:
-    found: List[str] = []
-    if not os.path.isdir(root):
-        return found
-    if not recursive:
-        for name in sorted(os.listdir(root)):
-            p = os.path.join(root, name, "SKILL.md")
-            if os.path.isfile(p):
-                found.append(p)
-        return found
-    for dirpath, _dirs, files in os.walk(root):
-        if "SKILL.md" in files and os.path.basename(os.path.dirname(dirpath)) == "skills":
-            found.append(os.path.join(dirpath, "SKILL.md"))
-    return sorted(found)
 
 
 def _skill_stats(paths: List[str]) -> Dict[str, Any]:
@@ -364,7 +317,7 @@ def _skill_stats(paths: List[str]) -> Dict[str, Any]:
 
 def installed_skills(config_dir: str) -> Tuple[Dict[str, Any], Set[str]]:
     personal_root = os.path.join(config_dir, "skills")
-    personal = _skill_files(personal_root, False)
+    personal = skill_files(personal_root, False)
     names: Set[str] = set()
     for p in personal:
         names.add(os.path.basename(os.path.dirname(p)))
@@ -375,7 +328,7 @@ def installed_skills(config_dir: str) -> Tuple[Dict[str, Any], Set[str]]:
                 names.add(n)
         except OSError:
             continue
-    plugin = _skill_files(os.path.join(config_dir, "plugins"), True)
+    plugin = skill_files(os.path.join(config_dir, "plugins"), True)
     info = {"personal": _skill_stats(personal), "plugin": _skill_stats(plugin),
             "note": "plugin counts may include cached copies; project skills are not read"}
     return info, names
@@ -395,13 +348,14 @@ class Collector:
     """projects/ 配下の jsonl を読み、集計 JSON を作る。"""
 
     def __init__(self, config_dir: str, start: float, end: float, exclude: Optional[str],
-                 max_bytes: int, local_tz: bool) -> None:
+                 max_bytes: int, local_tz: bool, now: float) -> None:
         self.config_dir = config_dir
         self.start = start
         self.end = end
         self.exclude = exclude
         self.max_bytes = max_bytes
         self.local_tz = local_tz
+        self.max_ts = now + TS_FUTURE_MARGIN_SECONDS
         self.cov: Dict[str, Any] = {
             "files_total": 0, "files_processed": 0, "files_unreadable": 0,
             "files_orphaned": 0, "files_superseded": 0, "lines_total": 0, "lines_processed": 0,
@@ -409,6 +363,7 @@ class Collector:
             "assistant_lines": 0, "records_before_dedup": 0, "records_after_dedup": 0,
             "dedup_fallback_uuid": 0, "dedup_no_key": 0, "synthetic_lines": 0,
             "usage_missing_lines": 0, "records_out_of_period": 0, "records_timestamp_missing": 0,
+            "records_timestamp_out_of_range": 0, "projects_dir_found": False, "walk_errors": 0,
             "excluded_session_lines": 0, "excluded_session_records": 0, "user_lines_duplicate": 0,
         }
         self.line_types: Dict[str, int] = {}
@@ -428,33 +383,51 @@ class Collector:
         self.oldest: Optional[float] = None
         self.newest: Optional[float] = None
         self.files_with_lines = 0
+        self.tool_results_dir = {"files": 0, "bytes": 0}
 
     # ---- 走査
 
     def run(self) -> None:
         root = os.path.join(self.config_dir, "projects")
-        paths = []
-        for dirpath, dirs, files in os.walk(root):
-            dirs.sort()
-            for name in sorted(files):
-                if ".jsonl" in name:
-                    paths.append(os.path.join(dirpath, name))
+        self.cov["projects_dir_found"] = os.path.isdir(root)
+        paths = self._walk(root) if self.cov["projects_dir_found"] else []
         for i, p in enumerate(paths):
             self.cov["files_total"] += 1
-            rel = os.path.relpath(p, root)
-            if ".orphaned" in rel:
+            name = os.path.basename(p)
+            if ".orphaned" in name:
                 self.cov["files_orphaned"] += 1
                 continue
-            if ".superseded" in rel:
+            if ".superseded" in name:
                 self.cov["files_superseded"] += 1
                 continue
-            if not p.endswith(".jsonl"):
-                _inc(self.line_types, "_unknown_file")
+            if not name.endswith(".jsonl"):
+                inc(self.line_types, "_unknown_file")
                 continue
             self._read_file(p, i)
 
+    def _walk(self, root: str) -> List[str]:
+        """projects/ を 1 回だけ歩き、jsonl 系のパスを返しつつ tool-results/ 以下の件数とバイトも数える。"""
+        paths: List[str] = []
+
+        def on_error(_e: OSError) -> None:
+            self.cov["walk_errors"] += 1
+
+        for dirpath, dirs, files in os.walk(root, onerror=on_error):
+            dirs.sort()
+            in_results = "tool-results" in os.path.relpath(dirpath, root).split(os.sep)
+            for name in sorted(files):
+                if ".jsonl" in name:
+                    paths.append(os.path.join(dirpath, name))
+                if in_results:
+                    try:
+                        self.tool_results_dir["bytes"] += os.path.getsize(os.path.join(dirpath, name))
+                        self.tool_results_dir["files"] += 1
+                    except OSError:
+                        continue
+        return paths
+
     def _broken(self, kind: str) -> None:
-        _inc(self.cov["lines_unreadable"], kind)
+        inc(self.cov["lines_unreadable"], kind)
 
     def _read_file(self, path: str, fidx: int) -> None:
         had = False
@@ -485,6 +458,14 @@ class Collector:
         if had:
             self.files_with_lines += 1
 
+    def _ts(self, raw: Any) -> Optional[float]:
+        """timestamp を epoch 秒に。読めない・範囲外（2020 年より前、現在の翌日より後）は None。"""
+        ts = parse_ts(raw)
+        if ts is not None and not MIN_TS <= ts <= self.max_ts:
+            self.cov["records_timestamp_out_of_range"] += 1
+            return None
+        return ts
+
     def _seen_ts(self, ts: Optional[float]) -> None:
         if ts is None:
             return
@@ -497,6 +478,8 @@ class Collector:
         return ts is not None and self.start <= ts < self.end
 
     def _line(self, text: str, fidx: int, lineno: int) -> bool:
+        # assistant 行だけ全体を json.loads する。残りは数 GB の履歴や巨大行でも遅くならないよう、
+        # 深さ 1 のキーだけを正規表現で抜く（全行 json.loads はしない）。
         if RE_ASSISTANT.search(text):
             try:
                 d = json.loads(text)
@@ -507,7 +490,7 @@ class Collector:
                 self._broken("not_object")
                 return False
             if d.get("type") == "assistant":
-                _inc(self.line_types, "assistant")
+                inc(self.line_types, "assistant")
                 self._assistant(d, fidx, lineno)
                 return True
             vals = {k: d.get(k) for k in TOP_FIELDS if k in d and not isinstance(d.get(k), (dict, list))}
@@ -527,7 +510,7 @@ class Collector:
     def _assistant(self, d: Dict[str, Any], fidx: int, lineno: int) -> None:
         self.cov["assistant_lines"] += 1
         msg = d.get("message") if isinstance(d.get("message"), dict) else {}
-        ts = parse_ts(d.get("timestamp"))
+        ts = self._ts(d.get("timestamp"))
         self._seen_ts(ts)
         if msg.get("model") == "<synthetic>":
             self.cov["synthetic_lines"] += 1
@@ -553,7 +536,7 @@ class Collector:
             if isinstance(agent, str) and agent:
                 self.session_agents.setdefault(sid, set()).add(agent)
         ver = d.get("version") if isinstance(d.get("version"), str) else "unknown"
-        _inc(self.versions, _short_value(ver) if ver != "unknown" else ver)
+        inc(self.versions, _short_value(ver) if ver != "unknown" else ver)
         rec = self.records.get(key)
         if rec is None:
             rec = {"ts": None, "sid": sid, "agent": "", "side": False, "cwd": "", "model": "",
@@ -574,6 +557,8 @@ class Collector:
         for field, src in (("effort", d.get("effort")), ("pte", d.get("perTurnEffort"))):
             if src is not None:
                 v = _short_value(src) if not isinstance(src, (int, float)) else _short_value(str(src))
+                # 文字列の大小に意味はない。意味があるのは「欠落（None）か値ありか」だけで、
+                # 値が割れたときも順序に依らず同じ値になるよう最大を取る。
                 if rec[field] is None or v > rec[field]:
                     rec[field] = v
         attr = _safe_name(d.get("attributionSkill"))
@@ -581,7 +566,7 @@ class Collector:
             rec["attr"] = attr
         if attr and rec["sid"] and self._in_period(ts):
             self.attribution.setdefault(attr, set()).add(rec["sid"])
-            _inc(self.attribution_lines, attr)
+            inc(self.attribution_lines, attr)
         usage = msg.get("usage")
         if isinstance(usage, dict):
             rec["has_usage"] = True
@@ -623,7 +608,7 @@ class Collector:
         if not isinstance(ltype, str) or not ltype:
             self._broken("no_type")
             return False
-        _inc(self.line_types, ltype if ltype in TOP_LINE_TYPES else "_other")
+        inc(self.line_types, ltype if ltype in TOP_LINE_TYPES else "_other")
         sid = vals.get("sessionId") if isinstance(vals.get("sessionId"), str) else ""
         if ltype == "cost-state":
             mu = parsed.get("modelUsage") if parsed else (decode_at(text, offs["modelUsage"]) if "modelUsage" in offs else None)
@@ -632,7 +617,7 @@ class Collector:
         if self.exclude and sid and sid == self.exclude:
             self.cov["excluded_session_lines"] += 1
             return True
-        ts = parse_ts(vals.get("timestamp"))
+        ts = self._ts(vals.get("timestamp"))
         self._seen_ts(ts)
         if not self._in_period(ts) or not sid:
             return True
@@ -655,7 +640,7 @@ class Collector:
         has_result = '"tool_result"' in text
         if "<command-name>" in text:
             for name in RE_COMMAND.findall(text):
-                _inc(self.commands, name)
+                inc(self.commands, name)
         if has_result:
             msg = parsed.get("message") if parsed else (decode_at(text, offs["message"]) if "message" in offs else None)
             self._tool_results(msg, sid, ts)
@@ -784,8 +769,6 @@ class Report:
         c.cov["excluded_session_records"] = len(c.excluded_keys - set(c.records))
         for key in sorted(c.records):
             rec = c.records[key]
-            if not rec["has_usage"]:
-                rec["u"] = _zero_tokens()
             cls = classify_model(rec["model"])
             fam = cls["bucket"] or "unknown"
             sa = session_all.setdefault(rec["sid"], {}).setdefault(fam, {k: 0 for k in TOKEN_TYPES})
@@ -803,7 +786,7 @@ class Report:
             _add_tokens(totals, rec["u"])
             b = buckets.setdefault(fam, {"api_calls": 0, "generations": {}, "tokens": _zero_tokens()})
             b["api_calls"] += 1
-            _inc(b["generations"], cls["generation"] or "unknown")
+            inc(b["generations"], cls["generation"] or "unknown")
             _add_tokens(b["tokens"], rec["u"])
             ver = _short_value(rec["version"]) if rec["version"] else "unknown"
             v = by_version.setdefault(ver, {"records": 0, "effort_observed": 0, "per_turn_effort_observed": 0})
@@ -813,30 +796,30 @@ class Report:
                 if rec[field] is not None:
                     v[name + "_observed"] += 1
             lt = self._local(rec["ts"])
-            _inc(by_day, lt.strftime("%Y-%m-%d"))
-            _inc(by_hour, "%02d" % lt.hour)
+            inc(by_day, lt.strftime("%Y-%m-%d"))
+            inc(by_hour, "%02d" % lt.hour)
             s = sessions.setdefault(rec["sid"], _new_session())
             s["api_calls"] += 1
             s["sidechain_calls"] += 1 if rec["side"] else 0
             _add_tokens(s["tokens"], rec["u"])
-            _inc(s["models"], fam)
+            inc(s["models"], fam)
             if rec["cwd"]:
-                _inc(s["cwds"], rec["cwd"])
+                inc(s["cwds"], rec["cwd"])
             if rec["effort"] is not None:
-                _inc(s["effort"], rec["effort"])
+                inc(s["effort"], rec["effort"])
         for tid in sorted(c.tool_uses):
             key, name, ext, skill = c.tool_uses[tid]
             if key not in in_period_keys:
                 continue
             sid = c.records[key]["sid"]
             s = sessions.setdefault(sid, _new_session())
-            _inc(tools, name)
-            _inc(s["tools"], name)
+            inc(tools, name)
+            inc(s["tools"], name)
             if ext:
-                _inc(exts, ext)
-                _inc(s["exts"], ext)
+                inc(exts, ext)
+                inc(s["exts"], ext)
             if skill:
-                _inc(skills, skill)
+                inc(skills, skill)
             if name.startswith("mcp__"):
                 parts = name.split("__")
                 server = parts[1] if len(parts) > 2 and parts[1] else "(unparsable)"
@@ -883,7 +866,7 @@ class Report:
             "sessions": sess_out,
             "projects": self._projects(sessions),
             "tools": {"calls_by_name": _sorted_counts(tools), "file_extensions": _sorted_counts(exts),
-                      "result_chars": self._result_chars(), "tool_results_dir": self._tool_results_dir()},
+                      "result_chars": self._result_chars(), "tool_results_dir": dict(c.tool_results_dir)},
             "skills": self._skills(skills),
             "mcp": {"servers_used": len(mcp), "configured_servers_count": self.settings.get("mcp_servers_count"),
                     "servers": {k: {"calls": v["calls"], "distinct_tools": len(v["tools"])}
@@ -922,7 +905,7 @@ class Report:
             minutes, segs = session_length(s["ts"])
             s["minutes"], s["segments"] = minutes, segs
             lengths.append(minutes)
-            _inc(dist, _bucket(minutes, LENGTH_BUCKETS, LENGTH_BUCKET_MAX))
+            inc(dist, _bucket(minutes, LENGTH_BUCKETS, LENGTH_BUCKET_MAX))
             agents |= self.c.session_agents.get(sid, set())
         tops: Dict[str, List[Dict[str, Any]]] = {}
         for ttype, name in (("output", "top_by_output"), ("cache_creation", "top_by_cache_creation"),
@@ -983,26 +966,13 @@ class Report:
             count += 1
             total += n
             mx = max(mx, n)
-            _inc(dist, _bucket(n, RESULT_BUCKETS, RESULT_BUCKET_MAX))
+            inc(dist, _bucket(n, RESULT_BUCKETS, RESULT_BUCKET_MAX))
             tu = self.c.tool_uses.get(tid)
             t = by_tool.setdefault(tu[1] if tu else "(unmatched)", {"count": 0, "chars": 0})
             t["count"] += 1
             t["chars"] += n
         return {"count": count, "chars_total": total, "chars_max": mx, "buckets": dist,
                 "by_tool": dict(sorted(by_tool.items(), key=lambda kv: (-kv[1]["chars"], kv[0])))}
-
-    def _tool_results_dir(self) -> Dict[str, int]:
-        files = size = 0
-        for dirpath, _dirs, names in os.walk(os.path.join(self.c.config_dir, "projects")):
-            if os.path.basename(dirpath) != "tool-results" and os.sep + "tool-results" + os.sep not in dirpath + os.sep:
-                continue
-            for n in names:
-                try:
-                    size += os.path.getsize(os.path.join(dirpath, n))
-                    files += 1
-                except OSError:
-                    continue
-        return {"files": files, "bytes": size}
 
     def _skills(self, skill_calls: Dict[str, int]) -> Dict[str, Any]:
         cls = lambda n: classify_skill(n, self.personal)  # noqa: E731
@@ -1062,7 +1032,7 @@ def _tri_add(t: Dict[str, Any], v: Optional[str]) -> None:
         t["absent_n"] += 1
     else:
         t["observed_n"] += 1
-        _inc(t["values"], v)
+        inc(t["values"], v)
 
 
 def _sorted_counts(d: Dict[str, int]) -> Dict[str, int]:
@@ -1082,199 +1052,15 @@ def cmd_collect(args: argparse.Namespace) -> int:
     if not os.path.isdir(config_dir):
         raise ArgError("config-dir not found")
     now = datetime.now(timezone.utc).timestamp()
-    col = Collector(config_dir, start, end, args.exclude_session or None, args.max_line_bytes, args.local_tz)
+    col = Collector(config_dir, start, end, args.exclude_session or None, args.max_line_bytes, args.local_tz, now)
     col.run()
     installed, personal = installed_skills(config_dir)
     report = Report(col, read_settings(config_dir), installed, personal, now).build()
-    _write_json(args.out, report)
+    write_json(args.out, report)
     cov = report["coverage"]
     print("collect ok: files=%d processed=%d lines=%d" % (cov["files_total"], cov["files_processed"], cov["lines_total"]))
     print("api_calls_in_period=%d sessions=%d dedup_removed=%d coverage_ratio=%s" % (
         report["totals"]["api_calls"], report["sessions"]["count"], cov["dedup_removed"], cov["coverage_ratio"]))
-    return 0
-
-
-def _write_json(path: str, data: Any) -> None:
-    with open(path, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(data, f, ensure_ascii=False, indent=1, sort_keys=False)
-        f.write("\n")
-
-
-# ---------------------------------------------------------------- scan
-
-BUILTIN_TOOLS = {
-    "read", "write", "edit", "multiedit", "bash", "glob", "grep", "task", "agent", "webfetch",
-    "websearch", "todowrite", "notebookedit", "skill", "toolsearch", "askuserquestion",
-    "exitplanmode", "killshell", "bashoutput", "slashcommand", "ls",
-}
-STOP_WORDS = {
-    "home", "users", "user", "src", "usr", "var", "tmp", "opt", "mnt", "root", "documents",
-    "desktop", "downloads", "work", "workspace", "projects", "repos", "code", "dev", "git",
-    "lib", "bin", "app", "apps", "c:", "d:", "volumes", "private", "onedrive", "appdata",
-    "local", "roaming", "temp", "github", "claude", ".claude",
-}
-SCAN_PATTERNS: List[Tuple[str, "re.Pattern[str]", bool]] = [
-    ("aws_access_key", re.compile(r"(?:AKIA|ASIA)[0-9A-Z]{16}"), True),
-    ("api_key_like", re.compile(r"(?<![A-Za-z0-9])sk-[A-Za-z0-9_\-]{10,}"), True),
-    ("github_token", re.compile(r"(?:ghp|gho|ghs|ghu|ghr)_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}"), True),
-    ("slack_token", re.compile(r"xox[abposr]-[A-Za-z0-9\-]{10,}"), True),
-    ("private_key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"), True),
-    ("arn", re.compile(r"arn:aws[a-z\-]*:[A-Za-z0-9\-]*:[^\s`'\")]*"), True),
-    ("url", re.compile(r"(?:https?|ftp|file)://[^\s`'\")<>]+"), True),
-    ("email", re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"), True),
-    ("digits_12", re.compile(r"(?<![0-9])[0-9]{12}(?![0-9])"), True),
-    ("path_windows", re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:\\[^\s`'\"<>|]+|\\\\[A-Za-z0-9._\-]+\\[^\s`'\"<>|]+"), True),
-    ("path_home", re.compile(r"(?<![\w])~[/\\][^\s`'\"<>|)]*"), True),
-    ("path_unix", re.compile(r"(?<![\w/.:~\-])/(?=[^/\s]*[A-Za-z])[A-Za-z0-9_.\-]+/[A-Za-z0-9_.\-/]+"), True),
-    ("backtick_command", re.compile(r"`(?=[^`\n]*(?:\s|--|\||&&|;|\$\())[^`\n]{2,200}`"), True),
-    ("unfilled_placeholder", re.compile(r"＜[^＞\n]{0,80}＞"), False),
-]
-
-
-def _forbidden_from_config(config_dir: str) -> Set[str]:
-    words: Set[str] = set()
-    re_cwd = re.compile(r'"cwd"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"')
-    re_skill = re.compile(r'"skill"\s*:\s*"([^"\\]{2,100})"')
-    re_attr = re.compile(r'"attributionSkill"\s*:\s*"([^"\\]{2,100})"')
-    re_mcp = re.compile(r"mcp__([A-Za-z0-9_\-]+?)__")
-    for dirpath, _dirs, files in os.walk(os.path.join(config_dir, "projects")):
-        for name in files:
-            if not name.endswith(".jsonl"):
-                continue
-            try:
-                for _n, body in iter_lines(os.path.join(dirpath, name), DEFAULT_MAX_LINE_BYTES):
-                    if body is None:
-                        continue
-                    text = body.decode("utf-8", errors="replace")
-                    for raw in set(re_cwd.findall(text)):
-                        cwd = _unescape(raw)
-                        parts = [p for p in re.split(r"[\\/]+", cwd) if p]
-                        words.update(p for p in parts if len(p) >= 2 and p.lower() not in STOP_WORDS)
-                    for rx in (re_skill, re_attr, re_mcp):
-                        words.update(w for w in rx.findall(text) if len(w) >= 3)
-            except OSError:
-                continue
-    for p in _skill_files(os.path.join(config_dir, "skills"), False):
-        words.add(os.path.basename(os.path.dirname(p)))
-    return words
-
-
-def build_forbidden(config_dir: Optional[str], subject: Optional[str]) -> List["re.Pattern[str]"]:
-    words: Set[str] = set()
-    if config_dir and os.path.isdir(config_dir):
-        words |= _forbidden_from_config(config_dir)
-    for getter in (getpass.getuser, socket.gethostname):
-        try:
-            v = getter()
-        except Exception:  # noqa: BLE001 - 取れなければ使わない
-            continue
-        if v:
-            words.add(v)
-            words.add(v.split(".")[0])
-    if subject:
-        words.discard(subject)
-    words = {w for w in words if len(w) >= 2 and w.lower() not in BUILTIN_TOOLS and w.lower() not in STOP_WORDS}
-    pats = []
-    for w in sorted(words, key=len, reverse=True):
-        pats.append(re.compile(r"(?<![A-Za-z0-9_])" + re.escape(w) + r"(?![A-Za-z0-9_])", re.I))
-    return pats
-
-
-def _scan_files(targets: List[str], skip: Set[str]) -> Iterator[Tuple[str, str]]:
-    for t in targets:
-        t_abs = os.path.abspath(t)
-        if os.path.isfile(t_abs):
-            if t_abs not in skip:
-                yield t_abs, os.path.basename(t_abs)
-            continue
-        for dirpath, dirs, files in os.walk(t_abs):
-            dirs.sort()
-            for name in sorted(files):
-                p = os.path.join(dirpath, name)
-                if p not in skip:
-                    yield p, os.path.relpath(p, t_abs).replace(os.sep, "/")
-
-
-def scan_line(line: str, forbidden: List["re.Pattern[str]"]) -> Tuple[Dict[str, int], List[Tuple[int, int]]]:
-    """1 行の違反の種類別件数と、伏せ字にする範囲を返す。"""
-    counts: Dict[str, int] = {}
-    spans: List[Tuple[int, int]] = []
-    for kind, rx, redact in SCAN_PATTERNS:
-        for m in rx.finditer(line):
-            if kind == "backtick_command" and m.group(0) == "`" + REDACTED + "`":
-                continue
-            _inc(counts, kind)
-            if redact:
-                spans.append((m.start(), m.end()))
-    for rx in forbidden:
-        for m in rx.finditer(line):
-            _inc(counts, "forbidden_word")
-            spans.append((m.start(), m.end()))
-    return counts, spans
-
-
-def _apply_redaction(line: str, spans: List[Tuple[int, int]]) -> str:
-    merged: List[List[int]] = []
-    for s, e in sorted(spans):
-        if merged and s <= merged[-1][1]:
-            merged[-1][1] = max(merged[-1][1], e)
-        else:
-            merged.append([s, e])
-    out = []
-    pos = 0
-    for s, e in merged:
-        out.append(line[pos:s])
-        out.append(REDACTED)
-        pos = e
-    out.append(line[pos:])
-    return "".join(out)
-
-
-def cmd_scan(args: argparse.Namespace) -> int:
-    for t in args.targets:
-        if not os.path.exists(t):
-            raise ArgError("target not found")
-    forbidden = build_forbidden(os.path.expanduser(args.config_dir) if args.config_dir else None, args.subject_name)
-    result: Dict[str, Any] = {"schema_version": SCAN_SCHEMA_VERSION, "files_scanned": 0, "files_skipped_binary": 0,
-                              "files_unreadable": 0, "total_hits": 0, "by_kind": {}, "violations": [],
-                              "redact": bool(args.redact), "redacted_hits": 0,
-                              "note": "matched strings are never written; unfilled placeholders are reported only"}
-    for path, shown in _scan_files(args.targets, {os.path.abspath(args.out)}):
-        try:
-            with open(path, "rb") as f:
-                raw = f.read()
-        except OSError:
-            result["files_unreadable"] += 1
-            continue
-        if b"\x00" in raw:
-            result["files_skipped_binary"] += 1
-            continue
-        try:
-            text = raw.decode("utf-8-sig")
-        except UnicodeDecodeError:
-            text = raw.decode("utf-8", errors="replace")
-            decodable = False
-        else:
-            decodable = True
-        result["files_scanned"] += 1
-        lines = text.splitlines(keepends=True)
-        changed = False
-        for i, line in enumerate(lines):
-            counts, spans = scan_line(line, forbidden)
-            for kind, n in sorted(counts.items()):
-                result["violations"].append({"kind": kind, "file": shown, "line": i + 1, "count": n})
-                result["total_hits"] += n
-                _inc(result["by_kind"], kind, n)
-            if args.redact and spans and decodable:
-                lines[i] = _apply_redaction(line, spans)
-                result["redacted_hits"] += len(spans)
-                changed = True
-        if changed:
-            with open(path, "w", encoding="utf-8", newline="") as f:
-                f.write("".join(lines))
-    _write_json(args.out, result)
-    print("scan ok: files=%d hits=%d redacted=%d" % (result["files_scanned"], result["total_hits"],
-                                                     result["redacted_hits"]))
     return 0
 
 
