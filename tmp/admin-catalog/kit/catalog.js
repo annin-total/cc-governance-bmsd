@@ -1,9 +1,12 @@
 "use strict";
-// 目録のカードとタブを id で並べて、案の定義（window.IA）を組み立てる。書き方は catalog.md の「定義の書き方」。
-// 群の窓はカードの win から決まり、窓の違うカードを 1 つの群に入れるとエラーを出す。同じカードを 2 か所に置いてもエラー。
+// 目録のカードとタブを id で並べて、案の定義（window.IA）を組み立てる。書き方は README.md の「定義の書き方」。
+// 群の窓はカードの win から決まり、窓の違うカードを 1 つの群に入れるとエラーを出す。同じページに同じカードを 2 回置いてもエラー。
 (() => {
-  const { K, W, T, SAME, settings } = window.CATALOG;
-  const PERIOD = new URLSearchParams(location.search).get("period");
+  const { K, W, T, SAME, sectionPages } = window.CATALOG;
+  const KIT = window.KIT;
+  const params = new URLSearchParams(location.search);
+  const PERIOD = params.get("period");
+  const ASOF = params.get("asof");
   const LONG = PERIOD === "12m";
   const fail = (msg) => console.error(`catalog: ${msg}`);
 
@@ -12,7 +15,7 @@
     return { ...K[id], ref: id };
   }
 
-  // 群 { label, cards: [id], win?, note? } または [label, [id], { win, note }]。win は期間を固定した窓（rec7 など）
+  // 群 [見出し, [カード id], { win, note }] か { label, cards, win, note }。win は期間を固定した窓（rec7 など）
   function group(spec, i) {
     const s = Array.isArray(spec) ? { label: spec[0], cards: spec[1], ...(spec[2] || {}) } : spec;
     const cards = s.cards.map(cardOf);
@@ -20,8 +23,8 @@
     if (cards.some((c) => c.win !== base)) fail(`群「${s.label}」に窓の違うカード: ${[...new Set(cards.map((c) => c.win))].join(", ")}`);
     const winId = s.win || base;
     const w = W[winId];
-    if (!w || (w.base || winId) !== base) fail(`群「${s.label}」の窓 ${winId} はカードの窓 ${base} と合わない`);
-    const out = cards.map(({ win, ...c }) => (w.fixed && !c.long ? { ...c, long: SAME } : c));
+    if (!w || (winId !== base && w.base !== base)) fail(`群「${s.label}」の窓 ${winId} はカードの窓 ${base} と合わない`);
+    const out = cards.map((c) => (w.fixed && !c.long ? { ...c, long: SAME } : c));
     return { id: s.id || `g${i + 1}`, label: s.label, win: winId, scope: w.scope, longScope: w.fixed ? w.scope : w.longScope, data: w.data, note: s.note, cards: out };
   }
 
@@ -41,6 +44,11 @@
     return out;
   }
 
+  function noDuplicates(where, ids) {
+    const seen = new Set();
+    ids.forEach((id) => { if (seen.has(id)) fail(`${where} に同じカードが 2 回ある: ${id}`); seen.add(id); });
+  }
+
   // ページ { id, title, lead, periods, groups: [群], tabs: [id] }
   function page(def) {
     const all = (def.tabs || []).map(tabOf).filter((t) => !t.longOnly || LONG);
@@ -48,45 +56,43 @@
     const tabs = [...all.filter(shown), ...all.filter((t) => !shown(t))]; // 12 か月では出るタブを先に開く
     const ids = tabs.map((t) => (LONG && t.long && t.long !== SAME ? t.long.id : t.id));
     const groups = (def.groups || []).map(group).map((g) => ({ ...g, cards: g.cards.map((c) => resolve(c, ids)) }));
+    noDuplicates(`ページ ${def.id}`, groups.flatMap((g) => g.cards.map((c) => c.ref)));
     return { ...def, tabs, groups };
   }
 
-  // トップ { id, title, lead, refs: [{ page, cards: [id] }] }。群は窓ごとに作り（見出しは窓の名前）、カードは参照元のタブへ移る
-  function top(def, pages) {
-    const groups = new Map();
-    for (const ref of def.refs) {
-      const p = pages.find((x) => x.id === ref.page);
-      if (!p) { fail(`トップが参照するページが無い: ${ref.page}`); continue; }
-      for (const id of ref.cards) {
-        const g = p.groups.find((x) => x.cards.some((c) => c.ref === id));
-        if (!g) { fail(`ページ ${p.id} にカードが無い: ${id}`); continue; }
-        const key = g.win;
-        if (!groups.has(key)) groups.set(key, { ...g, id: `top-${key}`, label: W[key].name, cards: [] });
-        groups.get(key).cards.push(linked(g.cards.find((c) => c.ref === id), p));
-      }
-    }
-    const periods = def.periods ?? def.refs.some((r) => (pages.find((x) => x.id === r.page) || {}).periods);
-    return { ...def, periods, groups: [...groups.values()], tabs: [] };
-  }
+  // 専用ページへの URL。期間と基準日を引き継ぐ
+  const pageHref = (p) => `?page=${p.id}${p.periods && PERIOD ? `&period=${PERIOD}` : ""}${ASOF ? `&asof=${ASOF}` : ""}`;
 
   function linked(card, p) {
-    const href = (c) => `?page=${p.id}${p.periods && PERIOD ? `&period=${PERIOD}` : ""}#${c.tab}${c.chip ? `:${c.chip}` : ""}`;
-    const out = card.tab ? { ...card, href: href(card) } : { ...card };
-    if (card.long && card.long !== SAME) out.long = card.long.tab ? { ...card.long, href: href(card.long) } : card.long;
+    const out = card.tab ? { ...card, href: pageHref(p) } : { ...card };
+    if (card.long && card.long !== SAME) out.long = card.long.tab ? { ...card.long, href: pageHref(p) } : card.long;
     return out;
   }
 
-  // 案 { id, name, pages: [ページかトップ] }。データと設定のページは末尾に足す
-  function build(ia) {
-    const normal = ia.pages.filter((p) => !p.refs).map(page);
-    const seen = new Map();
-    normal.forEach((p) => p.groups.forEach((g) => g.cards.forEach((c) => {
-      if (seen.has(c.ref)) fail(`カード ${c.ref} が 2 か所にある: ${seen.get(c.ref)} と ${p.id}`);
-      seen.set(c.ref, p.id);
-    })));
-    const pages = ia.pages.map((p) => (p.refs ? top(p, normal) : normal.find((x) => x.id === p.id)));
-    return { ...ia, pages: [...pages, settings] };
+  // 概況 { id, title, lead, home: true, summary, groups: [群] }。カードは専用ページの定義をそのまま使い、押すと専用ページのタブへ移る
+  function home(def, pages) {
+    const where = (id) => pages.find((p) => p.groups.some((g) => g.cards.some((c) => c.ref === id)));
+    const look = KIT.look.get();
+    const groups = def.groups.map((spec, i) => {
+      const g = group(spec, i);
+      const from = g.cards.map((c) => where(c.ref));
+      g.cards.forEach((c, j) => { if (!from[j]) fail(`概況のカード ${c.ref} が専用ページに無い`); });
+      const cards = g.cards.map((c, j) => (from[j] ? linked(from[j].groups.flatMap((x) => x.cards).find((x) => x.ref === c.ref), from[j]) : c));
+      const owners = [...new Set(from.filter(Boolean))];
+      return { ...g, id: `home-${i + 1}`, label: look.groupTitle === "window" ? W[g.win].name : g.label, cards,
+        links: look.pageLink ? owners.map((p) => ({ title: p.title, href: pageHref(p) })) : [] };
+    });
+    noDuplicates("概況", groups.flatMap((g) => g.cards.map((c) => c.ref)));
+    return { ...def, periods: def.periods ?? true, groups, tabs: [] };
   }
 
-  Object.assign(window.CATALOG, { build, LONG });
+  // 案 { id, name, look, pages: [概況とページ] }。サマリーとデータと設定のページは末尾に足す
+  function build(ia) {
+    KIT.look.set(ia.look);
+    const normal = ia.pages.filter((p) => !p.home).map(page);
+    const pages = ia.pages.map((p) => (p.home ? home(p, normal) : normal.find((x) => x.id === p.id)));
+    return { ...ia, pages: [...pages, ...sectionPages] };
+  }
+
+  Object.assign(window.CATALOG, { build, LONG, ASOF });
 })();

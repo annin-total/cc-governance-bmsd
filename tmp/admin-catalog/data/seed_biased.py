@@ -6,6 +6,7 @@
 """
 
 import argparse
+import dataclasses
 import datetime as dt
 import json
 import random
@@ -38,8 +39,12 @@ TIERS = {
     "none": (0.0, (0, 0), 0.6, 5, 0, 0, 0, 0, 0, 0),
 }
 TIER_COUNTS = (("heavy", 6), ("regular", 12), ("light", 10), ("dormant", 8))
-QUITTERS, QUIT_AGO = 4, (35, 160)
-RECENT_SPREAD = 6  # 途絶えていない端末の、必ず記録を作る日を基準日から何日前まで散らすか  # 途中で離れる人（利用明細も記録も止まる）
+QUITTERS, QUIT_AGO = 4, (35, 160)  # 途中で離れる人（利用明細も記録も止まる）
+CSV_LAG = 2  # 利用明細の最終日は基準日の 2 日前
+RECENT_BUMP, BUMP_DAYS, BUMP_TIERS = 1.3, 7, ("heavy", "regular")  # 利用明細の最後の 7 日だけ、よく使う人と普段使う人のコストを上げる（7 日のコストを注意にする）
+# 古い版の利用者の人数（本体・プラグイン）。ほかは最新の版にそろえ、古い版がほぼ全員にならないようにする
+OLD_CORE, OLD_PLUGIN, LATEST_CORE, LATEST_PLUGIN = 5, 8, "2.1.283", "0.2.1"
+RECENT_SPREAD = 6  # 途絶えていない端末の、必ず記録を作る日を基準日から何日前まで散らすか
 
 
 def _args() -> argparse.Namespace:
@@ -171,13 +176,28 @@ def _weekend(day: int) -> bool:
     return (day + 3) % 7 >= 5  # epoch 日 0 は木曜
 
 
-def _csv_rows(rng, user: str, prof: dict, lo: int, hi: int, start, csv_cols: list) -> list:
+def _versions(terms: list) -> list:
+    """利用者ごとに版をそろえ、決めた人数だけ古い版にする（乱数は本体の流れと分ける）。"""
+    users = sorted({t.user for t in terms})
+    rng = random.Random(SEED + 1)
+    old_core, old_plugin = set(rng.sample(users, OLD_CORE)), set(rng.sample(users, OLD_PLUGIN))
+    out = []
+    for t in terms:
+        core = t.claude_code_version if t.user in old_core and t.claude_code_version != LATEST_CORE else "2.1.282" if t.user in old_core else LATEST_CORE
+        plugin = t.plugin_version if t.user in old_plugin and t.plugin_version != LATEST_PLUGIN else "0.2.0" if t.user in old_plugin else LATEST_PLUGIN
+        out.append(dataclasses.replace(t, claude_code_version=core, plugin_version=plugin))
+    return out
+
+
+def _csv_rows(rng, user: str, prof: dict, lo: int, hi: int, start, csv_cols: list, bump_from: int) -> list:
     tier = TIERS[prof["tier"]]
     out = []
     for d in range(lo, hi + 1):
         if rng.random() > tier[2] * (0.12 if _weekend(d) else 1.0):
             continue
         base = tier[3] * rng.uniform(0.5, 1.5) * (1.3 if start is None or d < start else 1.0)
+        if d >= bump_from and prof["tier"] in BUMP_TIERS:
+            base *= RECENT_BUMP
         parts = [(prof["model"], 1.0)]
         if prof["model"] == "sonnet" and rng.random() < 0.25:
             parts = [("sonnet", 0.8), ("haiku", 0.2)]
@@ -209,6 +229,7 @@ def main() -> None:
     base_ts = int(ASOF.timestamp())
     today = contract.to_day(base_ts)
     terms, not_introduced = _terminals(rng, args.users, today, args.days)
+    terms = _versions(terms)
     introduced = list(dict.fromkeys(t.user for t in terms))
     profs = _profiles(rng, introduced, not_introduced)
     hosts = {u: sum(t.user == u for t in terms) for u in introduced}
@@ -233,13 +254,13 @@ def main() -> None:
                 rows += Session(g, term, prof, ts, d >= term.start).build()
                 if last and s == 0:
                     rows.append(_row("error", Ctx(rng, term.user, ts, term=term, error=ERRORS[idx % len(ERRORS)])))
-    first, last_csv = today - args.days + 1, today - 1
+    first, last_csv = today - args.days + 1, today - CSV_LAG  # 利用明細は今日と前日の分が無い
     quit_ = {u: today - p["quit"] for u, p in profs.items() if p.get("quit")}
     spans = {t.user: (max(first, t.install - EVENT_STUDY_SPAN), min(last_csv, t.stop, quit_.get(t.user, last_csv)), t.start) for t in terms}
     spans.update({u: (first, last_csv, None) for u in not_introduced})
     costs = []
     for user, (lo, hi, start) in spans.items():
-        costs += _csv_rows(rng, user, profs[user], lo, hi, start, list(CSV_RULES))
+        costs += _csv_rows(rng, user, profs[user], lo, hi, start, list(CSV_RULES), last_csv - BUMP_DAYS + 1)
     _load(rows, costs, False)
     kinds = {k: sum(r["kind"] == k for r in rows) for k in ("event", "policy", "error")}
     print(f"users={args.users} days={args.days} {kinds} cost_daily={len(costs)}")

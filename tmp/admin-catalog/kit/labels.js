@@ -2,13 +2,15 @@
 // 画面をまたいで使う語と仕様値（サーバの labels.py・constants.py の写し）。案の定義は KIT.L・KIT.C で引く。
 (() => {
   const C = {
-    POLICY_DAYS: 30, STALE_DAYS: 14, NULL_RATE_ELEVATED: 20, NULL_RATE_HIGH: 50, EVENT_STUDY_SPAN: 14, CONTEXT_BIN: 20000,
+    POLICY_DAYS: 30, NULL_RATE_ELEVATED: 20, NULL_RATE_HIGH: 50, EVENT_STUDY_SPAN: 14, CONTEXT_BIN: 20000,
+    COST_RISE_ELEVATED: 10, COST_RISE_HIGH: 15, USERS_DROP_ELEVATED: 10, USERS_DROP_HIGH: 15,
+    USER_COST_ELEVATED: { day: 50, week: 70, month: 280 }, USER_COST_HIGH: { day: 100, week: 150, month: 600 },
     REFERENCE_KEY: "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE", REFERENCE_VALUE: "60", EFFECT_PROVIDER: "aws-bedrock",
     FORECAST_MIN_BUSINESS_DAYS: 3, LONG_MONTHS: 12,
   };
   const LONG_NAME = "12 か月";
   const L = {
-    APP: "Claude Code 利用状況",
+    APP: "Claude Code 管理",
     ASOF: "{} 時点",
     FOOTER: "端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。",
     NAV: "画面", DETAIL: "詳しい一覧", DETAIL_HINT: "タブで切り替え · カードを押すと該当する一覧が開きます",
@@ -16,6 +18,10 @@
     SPARK_TIP: "{day:md}（{day:weekday}）  {value}", SPARK_TIP_WEEK: "{day:md}〜{end:md}  {value}",
     SEARCH: "絞り込み", ALL: "すべて", EMPTY: "条件に合う行はありません。", FILTER_GROUP: "区分",
     STATE: { ok: "正常", warn: "注意", ng: "要確認", neutral: "—" },
+    STATE_FILTER: { all: "すべて", warn: "注意以上", ng: "要確認" }, STATE_FILTER_NAV: "状態",
+    DELTA_WORD: { better: "改善", worse: "悪化", neutral: "" }, DELTA_ARROW: { up: "▲", down: "▼", flat: "" }, DELTA_PREV: "（前 {}）",
+    BASE_DATE: "基準日", BASE_DATE_TAG: "基準日 {}", BASE_RESET: "今日に戻す", OPEN_PAGE: "{} へ",
+    DRAFT_LINE: "{state} · {label} {value}（{why}）", DRAFT_LINE_PLAIN: "{state} · {label} {value}",
     RECENT: "直近 {period[days]} 日", PREV: "前の {period[days]} 日",
     PERIOD_NAV: "期間", PERIOD_NAMES: { 7: "7 日", 28: "28 日", "12m": LONG_NAME },
     NOT_LONG: `${LONG_NAME}では出しません`,
@@ -31,7 +37,6 @@
     FC_UNTIL: "{} まで", FC_NO_CSV: "今月の利用明細はまだありません",
     SIDE: { before: "適用前", after: "適用後" },
     TREND: { up: "増えた", down: "減った", flat: "変わらない" },
-    AGENT: { agent: ["サブエージェントの中"], main: ["サブエージェントの外"] },
     SPAN: "{first:day}〜{last:day}",
     STAGE: {
       apply_settings: ["設定の書き込み"], collect: ["記録の収集"], send: ["送信"], identity: ["利用者の特定"],
@@ -64,13 +69,16 @@
       "env.DISABLE_UPDATES": ["更新の無効化を打ち消す", "更新"],
       "env.CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE": ["パッケージマネージャ経由の自動更新", "パッケージ"],
     },
-    USER_STATE: { off: ["ng", "未適用あり"], none: ["warn", "未導入"], stale: ["neutral", "報告停止"], ok: ["ok", "すべて適用"] },
-    TERMINAL_STATE: { off: ["ng", "未適用"], stale: ["neutral", "報告停止"], ok: ["ok", "適用"] },
+    USER_STATE: { off: ["ng", "未適用あり"], none: ["warn", "未導入"], old: ["warn", "古い版"], ok: ["ok", "すべて適用"] },
+    LIMIT_KIND: { new: "新たに該当", kept: "続けて該当", left: "該当から外れた" },
+    LIMIT_SPAN: { day: "1 日", week: "7 日", month: "28 日" },
+    DELIVERY: { silent: ["neutral", "途絶えた"], ok: ["ok", "届いている"] }, BILLED: { billed: "利用明細にいる", unbilled: "利用明細にいない" },
+    CALL_KIND: { skill: "スキル", command: "コマンド", external: "外部ツール" },
     OFF_ITEMS: "未適用 {} 項目",
     DOT: { true: "適用", false: "未適用", null: "報告なし" },
     DOT_LEGEND: { true: "配布した値", false: "違う値か未設定", null: "報告なし（未導入）" },
-    UNSET: "未設定", NO_REPORT: "報告なし", TODAY: "今日", DAYS_AGO: "{} 日前", LATEST: "最新",
-    VERSION_KIND: { plugin: "プラグイン", core: "Claude Code 本体" },
+    NO_REPORT: "報告なし", TODAY: "今日", DAYS_AGO: "{} 日前", LATEST: "最新",
+    VERSION_KIND: { core: "本体", plugin: "プラグイン" },
     BASIS: {
       csv: `利用明細（CSV）の最終日までの ${C.POLICY_DAYS} 日にコストがある`,
       policy: `直近 ${C.POLICY_DAYS} 日に設定の報告があった`,
@@ -79,7 +87,6 @@
       csv: "",
       policy: "CSV を取り込んでいないため、分母は設定の報告があった利用者だけです。プラグインを入れていない人は含みません。",
     },
-    STALE_NOTE: `報告停止 = 最後の報告から ${C.STALE_DAYS} 日以上経った端末。${C.POLICY_DAYS} 日を過ぎると一覧から外れます。`,
     UNIT: { person: "人", item: "件", terminal: "台", pt: "pt", times: "回", day: "日" },
     WEEKDAY_NAMES: { 0: "月", 1: "火", 2: "水", 3: "木", 4: "金", 5: "土", 6: "日" },
   };

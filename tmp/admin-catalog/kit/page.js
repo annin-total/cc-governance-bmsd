@@ -1,45 +1,28 @@
 "use strict";
-// 上段の群とカード、下段のタブ（サーバの screens/view.py・components/card.html・tabs.html の写し）。
+// 上段の群、下段のタブ（サーバの screens/view.py・components/tabs.html の写し）。カードは card.js。
 // 12 か月の扱い（long）: 未指定は出さない（カードは群の注記に名前、タブは「出しません」）・"same" はそのまま・オブジェクトは差し替え。
 (() => {
   const K = window.KIT;
-  const { esc, fill, lookup, parts, partsHtml } = K;
+  const { esc, fill } = K;
   const SAME = "same";
 
-  const pick = (item, long) => (!long || item.long === SAME ? item : item.long || null);
+  const pick = (item, long) => (!long || item.long === SAME ? item : item.long ? { ref: item.ref, ...item.long } : null);
 
-  function caps(card, ctx) {
-    if (card.empty && (lookup(ctx, card.empty) ?? null) === null) return card.capEmpty || [];
-    return card.cap || [];
-  }
+  const ROW = 4; // 1 行に並べられるカードの列数（格子の最小幅と本文の幅から）
+  const shownCards = (g, long) => (g.cards || []).map((c) => pick(c, long)).filter(Boolean);
+  const spanOf = (g, long) => shownCards(g, long).reduce((n, c) => n + (c.wide ? 2 : 1), 0);
 
-  function cardHtml(card, ctx) {
-    const value = card.value ? parts(card.value, ctx) : [];
-    const blank = value.length === 1 && value[0][0] === K.EM;
-    const delta = card.delta ? fill(card.delta, ctx) : "";
-    const state = card.state ? lookup(ctx, card.state) : null;
-    const viz = card.viz ? K.viz.render(card, ctx) : "";
-    const cs = caps(card, ctx).map((c) => fill(c, ctx));
-    const head = `<span class="k-label"><span>${esc(fill(card.label, ctx))}</span>${state ? K.cells.mark(state, K.L.STATE[state]) : card.tab ? `<span class="go">${K.L.OPEN_LIST}</span>` : ""}</span>`;
-    const body = (card.value ? `<span class="k-value">${partsHtml(value)}<span class="u">${esc(blank ? "" : card.unit || "")}</span></span>` : "")
-      + `<span class="k-sub">${delta && delta !== K.EM ? `<span class="change${delta.startsWith("+") ? " up" : ""}">${esc(delta)}</span>` : ""}${partsHtml(parts(card.sub || "", ctx))}</span>`
-      + `<span class="k-viz">${viz}${cs.length ? `<span class="cap">${cs.map((c) => `<span>${esc(c)}</span>`).join("")}</span>` : ""}</span>`;
-    const cls = `card${card.wide ? " wide" : ""}`;
-    if (!card.tab) return `<div class="${cls}">${head}${body}</div>`;
-    if (card.href) return `<a class="${cls}" href="${esc(card.href)}">${head}${body}</a>`; // 別のページのタブへ移る（トップ）
-    const open = card.tab + (card.chip ? `:${card.chip}` : "");
-    return `<a class="${cls}" href="#${esc(card.tab)}" data-open="${esc(open)}">${head}${body}</a>`;
-  }
-
-  function groupHtml(g, ctxOf, long) {
+  function groupHtml(g, ctxOf, long, span) {
     const ctx = ctxOf(g);
-    const cards = (g.cards || []).map((c) => pick(c, long)).filter(Boolean);
+    const cards = shownCards(g, long);
     const missing = long ? (g.cards || []).filter((c) => { const s = pick(c, true); return !s || s.label !== c.label; }).map((c) => fill(c.label, ctx)) : [];
     const scope = long ? g.longScope || K.L.LONG_SCOPE : g.scope || "";
     const note = [missing.length ? K.L.NOT_LONG_CARDS.replace("{names}", missing.join(K.L.LIST_SEP)) : "", g.note ? fill(g.note, ctx) : ""].filter(Boolean).join(" ");
     const label = fill(g.label, ctx);
-    return `<section class="group" aria-label="${esc(label)}"><h2 class="glabel">${esc(label)}<span>${esc(fill(scope, ctx))}</span></h2>`
-      + (cards.length ? `<div class="cards">${cards.map((c) => cardHtml(c, ctx)).join("")}</div>` : "")
+    const links = (g.links || []).map((l) => `<a class="glink" href="${esc(l.href)}">${esc(K.L.OPEN_PAGE.replace("{}", l.title))}</a>`).join("");
+    const style = span ? ` style="grid-column: span ${span}; --cols: ${span}"` : "";
+    return `<section class="group${span ? " packed" : ""}" aria-label="${esc(label)}"${style}><h2 class="glabel">${esc(label)}<span>${esc(fill(scope, ctx))}</span>${links}</h2>`
+      + (cards.length ? `<div class="cards">${cards.map((c) => K.card.cardHtml(c, ctx)).join("")}</div>` : "")
       + (note ? `<p class="gnote">${esc(note)}</p>` : "") + "</section>";
   }
 
@@ -65,8 +48,20 @@
       + `<div class="tabs" role="tablist">${bar}</div>${items.map(({ t, shown, ctx }) => panelHtml(shown || t, ctx, shown)).join("")}</section>`;
   }
 
+  // 窓の違う小さな群（2 列以下）が続くとき、ROW 列に収まるだけ 1 行に並べる（look.pack）。群ごとに見出しと期間の注記を持つ
+  function rows(groups, long) {
+    const out = [];
+    for (const g of groups) {
+      const n = spanOf(g, long), last = out[out.length - 1];
+      const small = K.look.get().pack && n > 0 && n <= 2;
+      if (small && last && last.small && last.n + n <= ROW) { last.push(g); last.n += n; } else out.push(Object.assign([g], { small, n }));
+    }
+    return out;
+  }
+
   function screenHtml(page, ctxOf, long) {
-    return `<div class="kpis">${(page.groups || []).map((g) => groupHtml(g, ctxOf, long)).join("")}</div>${detailHtml(page.tabs, ctxOf, long)}`;
+    return `<div class="kpis">${rows(page.groups || [], long).map((r) => (r.length > 1
+      ? `<div class="group-row">${r.map((g) => groupHtml(g, ctxOf, long, spanOf(g, long))).join("")}</div>` : groupHtml(r[0], ctxOf, long))).join("")}</div>${detailHtml(page.tabs, ctxOf, long)}`;
   }
 
   window.KIT = Object.assign(window.KIT || {}, { page: { screenHtml, pick, SAME } });

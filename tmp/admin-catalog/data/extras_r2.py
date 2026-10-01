@@ -2,7 +2,6 @@
 
 import datetime as dt
 from collections import Counter, defaultdict
-from statistics import median
 
 CONTEXT_BIN = 20000
 TOOL_EVENTS = ("PostToolUse", "PostToolUseFailure")
@@ -156,14 +155,11 @@ def period(raw, p: dict, x: dict, load) -> dict:
 
 
 def lists(p: dict) -> None:
-    """並べ替えた一覧（コストの順位のある人・記録のある人・増えた人）と、記録の無い利用者の行を足す。"""
+    """並べ替えた一覧: コストの順位のある人（`billed`）・記録のある人（`activity`）。12 か月はモデルの並びを足す。"""
     x = p["x"]
     x["billed"] = [r for r in x["people"] if r.get("rank") is not None]
     if "active" in x:
         x["activity"] = [r for r in x["people"] if r.get("active_days") is not None]
-        stopped = set(p["m"]["collection_stopped_users"])
-        p["m"]["uncollected_rows"] = [{"email": e, "reason": "billed_only"} for e in p["m"]["uncollected_billed_users"]] \
-            + [{"email": e, "reason": "stopped"} for e in sorted(stopped)]
     else:
         x["model_keys"] = [r["key"] for r in x["models"]]
 
@@ -191,9 +187,3 @@ def effect(raw, starts: dict, span: int, load) -> dict:
     before = [s for s in sess.values() if s["email"] in starts and starts[s["email"]] - span <= s["day"] < starts[s["email"]]]
     after = [s for s in sess.values() if s["email"] in starts and starts[s["email"]] < s["day"] <= starts[s["email"]] + span]
     return {"before": _size(before), "after": _size(after), "dist": _dist({"before": before, "after": after})}
-
-
-def fixed_lists(fixed: dict) -> None:
-    """端末の行に本体の版を足す。"""
-    core = {(r["email"], r["host"]): r["version"] for r in fixed["m"]["core_by_terminal"]}
-    fixed["x"]["terminals"] = [{**r, "core": core.get((r["email"], r["host"]))} for r in fixed["policy"]["terminals"]]

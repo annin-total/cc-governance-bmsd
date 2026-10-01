@@ -1,5 +1,5 @@
 "use strict";
-// 目録のタブ（catalog.md の「タブ」）。id はそのまま DOM の id とカードの開く先になる。
+// 目録のタブ（concepts.md の 2.3）。id はそのまま DOM の id とカードの開く先になる。
 // long: 12 か月の扱い（未指定は「出しません」・"same"・差し替え）。longOnly: 12 か月だけに出す。
 (() => {
   const { L } = window.KIT;
@@ -10,10 +10,8 @@
   const USER = { key: "email", kind: "user", label: "利用者" };
   const WEEK = { key: "day", kind: "week", label: "週の始まり" };
   const PROVIDERS = { key: "providers", kind: "usd", each: "cost[providers]", terms: L.PROVIDER };
-  const USAGE_NOTE = "差は直近から前の {period[days]} 日を引いた値です。増えた・減ったは呼び出し回数の差で分けます。";
-  const CALLS = [{ key: "recent_calls", kind: "num", unit: "times", label: "呼び出し回数" }, BAR("recent_calls"),
-    { key: "prev_calls", kind: "num_sub", label: L.PREV }, { key: "calls_diff", kind: "diff", label: "差" },
-    { key: "recent_users", kind: "num", unit: "person", label: "利用者数" }, { key: "users_diff", kind: "diff", label: "利用者の差" }];
+  const STATE_CHIPS = [{ id: "ng", label: L.STATE.ng, tone: "ng" }, { id: "warn", label: L.STATE.warn, tone: "warn" }];
+  const STATE = { key: "state", kind: "state", sort: "state_rank", label: "状態", quiet: true };
   const BIN = { key: "bin", kind: "bin", label: "トークン数の区間" };
   const SIZE_NOTE = "セッションごとに、応答終了（Stop）の記録のコンテキストのトークン数の最大を 1 つ数えます。応答終了の記録が無いセッションは数えません。";
 
@@ -25,38 +23,29 @@
         { key: "users", kind: "num", unit: "person", label: "利用者" }, { key: "sessions", kind: "num", unit: "item", label: "セッション" },
         { key: "prompts", kind: "num", unit: "item", label: "指示" }, BAR("prompts")],
       chipsBy: "period", chips: PERIOD_CHIPS, chart: { kind: "bars", key: "day", panels: [{ title: "利用者", field: "users" }, { title: "指示", field: "prompts" }] } },
-    days_dist: { id: "days_dist", label: "利用日数の分布", hint: "分布", title: "利用した日数ごとの人数", unit: "区間", scope: "直近 {period[days]} 日 · 記録を送った利用者",
-      rows: "x[days_dist]", cols: [{ key: "label", kind: "text", label: "利用した日数" }, { key: "count", kind: "num", unit: "person", label: "人数" }, { key: "now_share", kind: "pct", label: "割合" }, BAR("now_share", "100")],
-      chart: { kind: "hist", key: "bin", sides: ["now"], tick: "{label}" } },
-    user_use: { id: "user_use", label: "利用者ごとの使い方", hint: "{x[active][users]:num} 人 · 記録", title: "利用者ごとの使い方とセッションの大きさ", unit: "人",
-      scope: "直近 {period[days]} 日 · 記録を送った利用者 · 利用日数の多い順 · セッションの大きさはセッションごとの最大の中央", search: "利用者で絞り込み", q: "{email}",
-      rows: "x[activity]", sort: ["active_days", "desc"],
+    user_use: { id: "user_use", label: "利用者ごとの頻度とセッション", hint: "{x[active][users]:num} 人 · 記録", title: "利用者ごとの頻度とセッション", unit: "人",
+      scope: "直近 {period[days]} 日 · 記録を送った利用者 · 利用日数の多い順 · 差と増減率は前の {period[days]} 日と比べた指示 · セッションの大きさはセッションごとの最大の中央",
+      search: "利用者で絞り込み", q: "{email}", rows: "x[activity]", sort: ["active_days", "desc"],
       cols: [USER, { key: "active_days", kind: "num", unit: "day", label: "利用日数" }, { key: "sessions", kind: "num", label: "セッション" },
-        { key: "prompts", kind: "num", label: "指示" }, { key: "session_size", kind: "tok", label: "セッションの大きさ" },
-        { key: "auto_share", kind: "pct", label: "自動コンパクトに達した割合" }, { key: "bypass_rate", kind: "pct", label: "確認なしの記録" },
-        { key: "version", kind: "code", label: "本体の版" }, { key: "last_day", kind: "day", label: "最終日" }] },
+        { key: "prompts", kind: "num", label: "指示" }, { key: "prompts_diff", kind: "diff", label: "前との差" }, { key: "prompts_change", kind: "pct_change", label: "増減率" },
+        { key: "session_size", kind: "tok", label: "セッションの大きさ" }, { key: "auto_share", kind: "pct", label: "自動コンパクトに達した割合" },
+        { key: "bypass_rate", kind: "pct", label: "確認なしの記録" }, { key: "last_day", kind: "day", label: "最終日" }] },
     // ---- 呼び出し（記録）----
-    user_calls: { id: "user_calls", label: "利用者ごとのスキル・コマンド", hint: "{x[active][users]:num} 人 · 記録", title: "利用者ごとの呼び出し", unit: "人",
-      scope: "直近 {period[days]} 日 · 記録を送った利用者 · 上位は回数の多い 3 つ", search: "利用者・スキル・コマンドで絞り込み", q: "{email} {skills_top_text} {commands_top_text}",
-      rows: "x[activity]", sort: ["skill_calls", "desc"],
+    user_calls: { id: "user_calls", label: "利用者ごとの呼び出し", hint: "{x[active][users]:num} 人 · 記録", title: "利用者ごとの呼び出し", unit: "人",
+      scope: "直近 {period[days]} 日 · 記録を送った利用者 · よく使うものは回数の多い 3 つ", search: "利用者・名前で絞り込み",
+      q: "{email} {skills_top_text} {commands_top_text} {externals_top_text}", rows: "x[activity]", sort: ["skill_calls", "desc"],
       cols: [USER, { key: "skill_calls", kind: "num", label: "スキル" }, { key: "skills_top", kind: "tops", label: "よく使うスキル", sort: null },
         { key: "command_calls", kind: "num", label: "コマンド" }, { key: "commands_top", kind: "tops", label: "よく使うコマンド", sort: null },
-        { key: "external_calls", kind: "num", label: "外部ツール" }, { key: "agent_launches", kind: "num", label: "サブエージェントの起動" }] },
-    skills: { id: "skills", label: "スキル", hint: "{skills[kinds]:num} 種類 · {skills[recent]:num} 回", title: "スキルごとの呼び出し回数と利用者数", unit: "行",
-      scope: "直近 {period[days]} 日と前の {period[days]} 日 · スキルの呼び出しの記録", search: "スキル名で絞り込み", q: "{name}", note: USAGE_NOTE,
-      rows: "skills[rows]", sort: ["recent_calls", "desc"], cols: [{ key: "name", kind: "code", label: "スキル" }, ...CALLS], chipsBy: "trend", chips: chipsOf(L.TREND) },
-    commands: { id: "commands", label: "コマンド", hint: "{commands[kinds]:num} 種類 · {commands[recent]:num} 回", title: "コマンドごとの呼び出し回数と利用者数", unit: "行",
-      scope: "直近 {period[days]} 日と前の {period[days]} 日 · コマンドの呼び出しの記録 · 定義元は記録された値のまま",
-      search: "コマンド名・定義元で絞り込み", q: "{name} {source}", note: "同じコマンドでも定義元が違えば別の行です。" + USAGE_NOTE,
-      rows: "commands[rows]", sort: ["recent_calls", "desc"], cols: [{ key: "name", kind: "code", label: "コマンド" }, { key: "source", kind: "code", label: "定義元" }, ...CALLS],
-      chipsBy: "trend", chips: chipsOf(L.TREND) },
-    external_tools: { id: "external_tools", label: "外部ツール", hint: "{calls[external][kinds]:num} 種類 · {calls[external][total]:num} 回", title: "外部ツールごとの呼び出し回数と利用者数", unit: "行",
-      scope: "直近 {period[days]} 日と前の {period[days]} 日 · MCP はサーバごとにまとめる · WebSearch・WebFetch はそのまま", search: "名前で絞り込み", q: "{key}",
-      note: "組み込みのツール（Read・Edit・Bash など）とスキル・サブエージェントの起動は含みません。" + USAGE_NOTE, rows: "calls[external][rows]", sort: ["calls", "desc"],
-      cols: [{ key: "label", kind: "code", label: "名前" }, { key: "kind", kind: "tag", terms: { mcp: "MCP", web: "Web" }, label: "種類" },
-        { key: "calls", kind: "num", unit: "times", label: "呼び出し回数" }, BAR("calls"), { key: "prev", kind: "num_sub", label: L.PREV },
-        { key: "diff", kind: "diff", label: "差" }, { key: "users", kind: "num", unit: "person", label: "利用者数" }],
-      chipsBy: "kind", chips: [{ id: "mcp", label: "MCP" }, { id: "web", label: "Web" }] },
+        { key: "external_calls", kind: "num", label: "外部ツール" }, { key: "externals_top", kind: "tops", label: "よく使う外部ツール", sort: null },
+        { key: "agent_launches", kind: "num", label: "サブエージェントの起動" }] },
+    calls: { id: "calls", label: "呼び出し先", hint: "{r3[calls]:count} 行 · 記録", title: "呼び出し先ごとの回数と利用者数", unit: "行",
+      scope: "直近 {period[days]} 日と前の {period[days]} 日 · コマンドは定義元ごと · MCP はサーバごと · WebSearch・WebFetch はそのまま",
+      search: "名前で絞り込み", q: "{name} {source}", rows: "r3[calls]", sort: ["recent_calls", "desc"],
+      note: "組み込みのツール（Read・Edit・Bash など）とサブエージェントの起動は含みません。差は直近から前の {period[days]} 日を引いた値です。",
+      cols: [{ key: "kind", kind: "tag", terms: L.CALL_KIND, label: "種類" }, { key: "name", kind: "code", label: "名前" }, { key: "source", kind: "code", label: "定義元" },
+        { key: "recent_calls", kind: "num", unit: "times", label: "呼び出し回数" }, BAR("recent_calls"), { key: "prev_calls", kind: "num_sub", label: L.PREV },
+        { key: "calls_diff", kind: "diff", label: "差" }, { key: "recent_users", kind: "num", unit: "person", label: "利用者数" }, { key: "users_diff", kind: "diff", label: "利用者の差" }],
+      chipsBy: "tags", chips: [...chipsOf(L.CALL_KIND), { id: "up", label: L.TREND.up }, { id: "down", label: L.TREND.down }] },
     // ---- セッション（記録）----
     session_size: { id: "session_size", label: "セッションの大きさ", hint: "{size[sessions]:num} セッション · 記録", title: "セッションの大きさの分布", unit: "区間",
       scope: "直近 {period[days]} 日と前の {period[days]} 日 · セッションごとの最大 · 区間の幅 {CONTEXT_BIN:tok} トークン · 割合は各期間のセッションのうち",
@@ -71,14 +60,29 @@
       chipsBy: "field", chips: chipsOf(L.USAGE_FIELD) },
     // ---- コスト（利用明細）----
     user_cost: { id: "user_cost", label: "利用者ごとのコスト", hint: "{x[cost][users]:num} 人 · 利用明細", title: "利用者ごとのコストと順位", unit: "人",
-      scope: "利用明細 {x[cost][start]:day}〜{x[cost][end]:day} · コストの多い順 · 割合と累積は期間のコストのうち",
+      scope: "利用明細 {x[cost][start]:md}〜{x[cost][end]:md} と前の {period[days]} 日 · コストの多い順 · 割合と累積は期間のコストのうち · 状態は目安の判定",
       search: "利用者で絞り込み", q: "{email}", rows: "x[billed]", sort: ["cost", "desc"],
-      cols: [{ key: "rank", kind: "rank", label: "順位" }, USER, { key: "cost", kind: "usd_strong", label: "コスト" },
+      cols: [STATE, { key: "rank", kind: "rank", label: "順位" }, USER, { key: "cost", kind: "usd_strong", label: "コスト" },
+        { key: "cost_prev", kind: "usd_sub", label: "前の期間" }, { key: "cost_diff", kind: "usd", label: "前との差" }, { key: "cost_change", kind: "pct_change", label: "増減率" },
         { key: "share", kind: "pct", label: "割合" }, { key: "cum_share", kind: "pct", label: "累積" },
-        { key: "cost_prev", kind: "usd_sub", label: "前の期間" }, { key: "cost_diff", kind: "usd", label: "前との差" },
-        { key: "days", kind: "num", unit: "day", label: "日数" }, { key: "per_day", kind: "usd", label: "1 日あたり" },
+        { key: "days", kind: "num", unit: "day", label: "コストのあった日数" }, { key: "per_day", kind: "usd", label: "1 日あたり" },
         { key: "top_model", kind: "model", label: "主なモデル" }, { key: "cache_share", kind: "pct", label: "キャッシュ読み" }],
-      chipsBy: "top_model", chipTerms: L.MODEL, long: SAME },
+      chipsBy: "tags", chips: [...STATE_CHIPS, ...chipsOf(L.MODEL)],
+      long: { id: "user_cost", label: "利用者ごとのコスト", hint: "{x[cost][users]:num} 人 · 利用明細", title: "利用者ごとのコストと順位", unit: "人",
+        scope: "利用明細 {x[cost][start]:day}〜{x[cost][end]:day} · コストの多い順 · 割合と累積は期間のコストのうち · 状態は目安の判定",
+        search: "利用者で絞り込み", q: "{email}", rows: "x[billed]", sort: ["cost", "desc"],
+        cols: [STATE, { key: "rank", kind: "rank", label: "順位" }, USER, { key: "cost", kind: "usd_strong", label: "コスト" },
+          { key: "share", kind: "pct", label: "割合" }, { key: "cum_share", kind: "pct", label: "累積" },
+          { key: "days", kind: "num", unit: "day", label: "コストのあった日数" }, { key: "per_day", kind: "usd", label: "1 日あたり" },
+          { key: "top_model", kind: "model", label: "主なモデル" }, { key: "cache_share", kind: "pct", label: "キャッシュ読み" }],
+        chipsBy: "tags", chips: [...STATE_CHIPS, ...chipsOf(L.MODEL)] } },
+    over_users: { id: "over_users", label: "目安を超えた利用者", hint: "{F[r3][limit][users]:num} 人 · 利用明細", title: "目安を超えた利用者", unit: "人", data: "fixed.r3.limit", long: SAME,
+      scope: "利用明細の最終日（{end:md}）までの 7 日・28 日 · 今か前（{prev_end:md} まで）に注意以上だった人 · 1 日は 7 日のいずれかの日",
+      search: "利用者で絞り込み", q: "{email}", rows: "rows", sort: ["rank", "asc"],
+      note: "目安は 1 日 ${USER_COST_ELEVATED[day]}・${USER_COST_HIGH[day]}、7 日 ${USER_COST_ELEVATED[week]}・${USER_COST_HIGH[week]}、28 日 ${USER_COST_ELEVATED[month]}・${USER_COST_HIGH[month]}（注意・要確認、USD）。ちょうどの金額は該当します。",
+      cols: [{ key: "state", kind: "state", sort: "rank", label: "状態", quiet: true }, { key: "prev_state", kind: "state", label: "前の状態", quiet: true }, { key: "kind", kind: "tag", terms: L.LIMIT_KIND, label: "区分" },
+        USER, { key: "max_day", kind: "usd_day", at: "max_day_at", label: "最大の 1 日" }, { key: "week", kind: "usd", label: "7 日の合計" }, { key: "month", kind: "usd_strong", label: "28 日の合計" }],
+      chipsBy: "tags", chips: [...STATE_CHIPS, ...chipsOf(L.LIMIT_KIND), ...chipsOf(L.LIMIT_SPAN)] },
     cost_daily: { id: "cost_daily", label: "日ごとのコスト", hint: "直近 {period[span]} 日 · 利用明細", title: "日ごとのコスト", unit: "日",
       scope: "利用明細 {cost[spark_start]:md}〜{cost[end]:md} · 日 × 提供元（USD）· 濃い地が直近 {period[days]} 日",
       search: "日付（例: 09-2）", q: "{day:day}", rows: "cost[days]", sort: ["day", "desc"],
@@ -116,5 +120,5 @@
       long: SAME },
   };
 
-  window.CATALOG = Object.assign(window.CATALOG || {}, { T, chipsOf, BAR, USER, WEEK });
+  window.CATALOG = Object.assign(window.CATALOG || {}, { T, chipsOf, BAR, USER });
 })();

@@ -1,5 +1,5 @@
 "use strict";
-// 表のセル（サーバの components/cells.html・marks.html の写しと、足した種類 rank・user_cost・model）。
+// 表のセル（サーバの components/cells.html・marks.html の写しと、足した種類）。
 (() => {
   const K = window.KIT;
   const { esc, fill, term, termDesc, exact } = K;
@@ -33,11 +33,10 @@
     user,
     dot,
     bar: (v) => K.viz.hbar(v),
-    state: (v) => (v ? mark(v, L().STATE[v]) : sub("—")),
-    user_state: (v, row) => mark(L().USER_STATE[v][0], row.off ? L().OFF_ITEMS.replace("{}", row.off) : L().USER_STATE[v][1]),
-    terminal_state: (v, row) => mark(...L().TERMINAL_STATE[v]) + (row.stale && v !== "stale" ? " " + mark(...L().TERMINAL_STATE.stale) : ""),
-    off_keys: (v, row, col) => (v && v.length ? `<b class="num-ng">${v.length}</b> ${sub(v.map((k) => K.short(k, col.terms || L().SETTING)).join("、"))}` : sub("—")),
-    dash_num: (v) => (v ? esc(K.num(v)) : sub("—")),
+    state: (v, row, col) => (!v ? sub("—") : v === "ok" && col.quiet ? sub(L().STATE.ok) : mark(v, L().STATE[v])),
+    user_state: (v, row) => mark(L().USER_STATE[v][0], row.off ? L().OFF_ITEMS.replace("{}", row.off) : L().USER_STATE[v][1])
+      + (row.old ? " " + mark(...L().USER_STATE.old) : ""),
+    delivery: (v) => (v === "ok" ? sub(L().DELIVERY.ok[1]) : mark(...L().DELIVERY[v])),
     delete: (v, row) => `<form data-confirm="${esc(fill("{day:day}（{day:weekday}）の休日「{name}」を削除します。よろしいですか。", row))}" onsubmit="return false"><button type="submit" class="btn-quiet">削除</button></form>`,
     delete_file: (v, row) => `<form data-confirm="${esc(fill(isNone(row.first) ? "{source_file} を削除します。よろしいですか。" : "{source_file} を削除します。取り込んだ {first:day}〜{last:day} の利用明細の行も消えます。よろしいですか。", row))}" onsubmit="return false"><button type="submit" class="btn-quiet">削除</button></form>`,
     span: (v, row) => esc(fill(L().SPAN, row)),
@@ -76,7 +75,10 @@
     setting: (v, row, col) => `${esc(term(col.terms, v))} <span class="sub code key">${esc(v)}</span>`,
     ratio: (v, row) => `${esc(K.num(v))} ${sub(`/ ${K.num(row.denominator)} ${L().UNIT.person}`)}`,
     version: (v, row) => `<span class="code">${esc(v)}</span>` + (row.latest ? " " + mark("ok", L().LATEST) : ""),
-    count_of: (v, row) => `${esc(K.num(v))} ${sub(`/ ${K.num(row.total)} ${L().UNIT.terminal}`)}`,
+    count_of: (v, row) => `${esc(K.num(v))} ${sub(`/ ${K.num(row.total)} ${L().UNIT.person}`)}`,
+    usd_day: (v, row, col) => `${usdCell(v, col)} ${sub(K.md(row[col.at]))}`,
+    pct_change: (v) => esc(K.FORMATS.signed_pct(v)),
+    yes_no: (v, row, col) => (v ? esc(col.terms[0]) : sub(col.terms[1])),
     dec1: (v, row, col) => esc(K.dec1(v)) + (col.unit ? ` ${esc(col.unit)}` : ""),
     model: (v) => esc(term(L().MODEL, v)),
     text: (v) => esc(v),
@@ -87,9 +89,9 @@
     const { v, row, col } = c;
     const k = col.kind;
     if (ANY[k]) return ANY[k](v, row, col);
-    if (isNone(v)) return sub(k === "value" ? L().UNSET : "—");
+    if (isNone(v)) return sub("—");
     if (SOME[k]) return SOME[k](v, row, col);
-    if (k !== "value") console.error(`kit: 知らないセルの種類: ${k}`);
+    console.error(`kit: 知らないセルの種類: ${k}`);
     return esc(v);
   }
 

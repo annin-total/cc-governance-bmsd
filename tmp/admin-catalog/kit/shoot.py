@@ -1,4 +1,5 @@
 """案のフォルダの全ページを撮る。期間の効くページは 7・28・12m、効かないページは 1 枚。幅 1440・fullPage・下段は最初のタブ。
+加えて、概況の絞り込み「要確認」・基準日を選んだ概況・カードやマスを押した移り先・サマリーの開いた行と編集を撮る（EXTRAS）。
 
 使い方: python kit/shoot.py ideas/NN-<slug> [--out 撮った画像の置き場（既定は案のフォルダの shots/）]
 コンソールのエラー（ページの例外を含む）と横スクロールを数え、1 つでもあれば終了コード 1 で終わる。
@@ -14,6 +15,20 @@ WIDTH, HEIGHT = 1440, 900
 PERIODS = ("7", "28", "12m")
 PAGES_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods) }))"
 OVERFLOW_JS = "document.documentElement.scrollWidth > document.documentElement.clientWidth"
+ASOF = "2026-09-11"
+# (名前, URL の問い合わせ, 押す要素)。押す要素があれば、押して移った先を撮る
+EXTRAS = (
+    ("x-home-filter-ng", "?page=home&filter=ng", None),
+    ("x-home-filter-warn-12m", "?page=home&period=12m&filter=warn", None),
+    ("x-home-asof", f"?page=home&period=28&asof={ASOF}", None),
+    ("x-go-cost", f"?page=home&period=28&asof={ASOF}", "[data-ref=cost]"),
+    ("x-go-over-limit-week", f"?page=home&asof={ASOF}", "[data-ref=over_limit] a.lg-n.ng"),
+    ("x-go-off-users", "?page=home", "[data-ref=off_users]"),
+    ("x-go-core-outdated", "?page=home", "[data-ref=core_outdated]"),
+    ("x-cost-open-user-cost", "?page=cost&filter=warn", "[data-ref=per_user_bd]"),
+    ("x-summary-open", "?page=summary", "details summary"),
+    ("x-summary-edit-s2", "?page=summary_edit&id=s2", None),
+)
 
 
 def _args() -> argparse.Namespace:
@@ -23,18 +38,32 @@ def _args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def _shoot(ctx, url: str, path: Path) -> tuple:
-    """1 ページを撮り、(エラーの一覧, 横スクロールの有無) を返す。"""
+def _shoot(ctx, url: str, path: Path, click=None):
+    """1 ページを撮り（click があれば押した後）、(エラーの一覧, 横スクロールの有無) を返す。押す要素が無ければ None。"""
     page = ctx.new_page()
     errors: list = []
     page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(url)
     page.wait_for_load_state("load")
+    if click and not page.locator(f"{click} >> visible=true").count():  # 案にその要素が無ければ撮らない
+        page.close()
+        return None
+    if click:
+        page.click(click)
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(300)
     overflow = page.evaluate(OVERFLOW_JS)
     page.screenshot(path=str(path), full_page=True)
     page.close()
     return errors, overflow
+
+
+def _report(name: str, errors: list, overflow: bool) -> int:
+    print(f"{name}: {'ok' if not errors and not overflow else f'errors={len(errors)} overflow={overflow}'}")
+    for e in errors[:5]:
+        print(f"  {e}")
+    return bool(errors) + overflow
 
 
 def main() -> None:
@@ -45,8 +74,8 @@ def main() -> None:
     base = (idea / "index.html").as_uri()
     failed = 0
     with sync_playwright() as p:
-        browser = p.chromium.launch()
-        ctx = browser.new_context(viewport={"width": WIDTH, "height": HEIGHT})
+        browser = p.chromium.launch(args=["--lang=ja-JP"])
+        ctx = browser.new_context(viewport={"width": WIDTH, "height": HEIGHT}, locale="ja-JP", timezone_id="Asia/Tokyo")
         probe = ctx.new_page()
         probe.goto(base)
         pages = probe.evaluate(PAGES_JS)
@@ -55,12 +84,16 @@ def main() -> None:
             for period in PERIODS if pg["periods"] else (None,):
                 name = pg["id"] + (f"-{period}" if period else "")
                 url = f"{base}?page={pg['id']}" + (f"&period={period}" if period else "")
-                errors, overflow = _shoot(ctx, url, out / f"{name}.png")
-                failed += bool(errors) + overflow
-                status = "ok" if not errors and not overflow else f"errors={len(errors)} overflow={overflow}"
-                print(f"{name}: {status}")
-                for e in errors[:5]:
-                    print(f"  {e}")
+                failed += _report(name, *_shoot(ctx, url, out / f"{name}.png"))
+        ids = {pg["id"] for pg in pages}
+        for name, query, click in EXTRAS:
+            if query.split("page=")[1].split("&")[0] not in ids:
+                continue
+            shot = _shoot(ctx, base + query, out / f"{name}.png", click)
+            if shot is None:
+                print(f"{name}: 押す要素が無いため撮らない（{click}）")
+                continue
+            failed += _report(name, *shot)
         browser.close()
     print(f"{out}: {'すべて正常' if not failed else f'{failed} 件の問題'}")
     sys.exit(1 if failed else 0)

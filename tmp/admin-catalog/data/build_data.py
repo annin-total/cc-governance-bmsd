@@ -46,6 +46,30 @@ def _reports(conn, today: int) -> dict:
     return {"p": p, "fixed": fixed}
 
 
+def _round3(raw, data: dict, today: int) -> None:
+    """第 3 弾の値を `p[期間].r3` と `fixed.r3` に足す（extras_r3*.py・summaries.py）。"""
+    import extras_r3
+    import extras_r3_more
+    import extras_r3_policy
+    import summaries
+
+    csv_end = data["fixed"]["m"]["csv_end"]
+    limit = extras_r3.limit(raw, csv_end)
+    data["fixed"]["r3"] = {"limit": limit, "forecast": extras_r3.forecast(data["p"]["7"]["month"]),
+                           "policy": extras_r3_policy.build(raw, today, data["fixed"]["policy"]), "summaries": summaries.build(today)}
+    for key in PERIOD_KEYS:
+        p = data["p"][key]
+        long = p["period"]["long"]
+        extras_r3.billed_rows(p["x"]["billed"], limit["by_user"], long)
+        r3 = {"cost": extras_r3.cost(raw, p["x"]["cost"], long), "model_pt": None if long else extras_r3.model_pt(p["x"]["models"], p["x"]["cost"]["prev"])}
+        if not long:
+            extras_r3_more.activity_rows(raw, p)
+            r3.update(changes=extras_r3_more.changes(p), calls=extras_r3_more.calls(raw, p))
+        p["r3"] = r3
+    data["p"]["7"]["r3"].update(silent=extras_r3_more.silent(raw, today, csv_end), errors=extras_r3_more.errors(raw, data["p"]["7"]),
+                                nulls=extras_r3_more.nulls(data["p"]["7"]))
+
+
 def _rounded(v):
     """浮動小数の端数（0.1 + 0.2 の類）を落とし、data.js を読みやすく小さくする。"""
     if isinstance(v, float):
@@ -70,9 +94,7 @@ def main() -> None:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     os.environ["DB_DSN"] = f"sqlite:///{args.db.resolve()}"
     from ccgov.constants import REFERENCE_KEY, REFERENCE_VALUE
-    from ccgov.metrics import compliance
     from ccgov.store import db, queries_policy
-    from ccgov.vendor import policy
 
     import extras
     import extras_events
@@ -96,11 +118,11 @@ def main() -> None:
             p.update(extras_r2.period(raw, p["period"], p["x"], extras_events._load))
         extras_r2.lists(p)
     data["p"]["12m"]["m"].update(extras_r2.retention_12m(raw, data["p"]["12m"]["x"]["cost"]))
-    data["fixed"]["x"] = extras.fixed(raw, today, data["fixed"]["policy"])
-    data["fixed"]["m"] = extras_more.fixed(raw, today, compliance.targets(policy.SET), starts)
+    data["fixed"]["m"] = extras_more.fixed(raw, today)
     data["fixed"]["effect2"] = extras_r2.effect(raw, starts, EVENT_STUDY_SPAN, extras_events._load)
-    extras_r2.fixed_lists(data["fixed"])
-    data["meta"] = {"asof": today, "periods": list(PERIOD_KEYS), "users": extras.user_count(raw)}
+    _round3(raw, data, today)
+    first_day = raw.execute("SELECT MIN(day) FROM cost_daily").fetchone()[0]
+    data["meta"] = {"asof": today, "first_day": first_day, "periods": list(PERIOD_KEYS), "users": extras.user_count(raw)}
     text = json.dumps(_rounded(data), ensure_ascii=False, default=list, separators=(",", ":"))
     _check_emails(text)
     args.out.write_text("window.DATA = " + text + ";\n", encoding="utf-8")

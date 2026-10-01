@@ -5,7 +5,7 @@
   const { esc, fill, lookup, term } = K;
   const SCALED = new Set(["usd", "usd_strong", "usd_sub", "cum", "tok"]);
   const NUMERIC = new Set(["num", "pct", "pct_strong", "measure", "measure_sub", ...SCALED, "diff", "last_day", "ratio",
-    "count_of", "dash_num", "num_sub", "bytes", "rank"]);
+    "count_of", "num_sub", "bytes", "rank", "dec1", "pct_change", "usd_day"]);
   const COL_EACH_SUB = "{numerator:num} / {denominator:num} 人";
 
   const sortKey = (v) => (Array.isArray(v) ? v.length : v);
@@ -31,7 +31,7 @@
     const view = {
       key: col.key, item: null, kind, label: col.each ? "" : fill(col.label ?? "", ctx), sub: "", num: NUMERIC.has(kind),
       sort: col.sort === null ? null : col.sort || col.key, terms: filled(col.terms, ctx), by: col.by || "",
-      unit: K.L.UNIT[col.unit] || "", den: col.den || "",
+      unit: K.L.UNIT[col.unit] || "", den: col.den || "", at: col.at || "", quiet: Boolean(col.quiet),
       top: kind === "bar" ? Math.max(0, ...rows.map((r) => r[col.key] || 0)) : null,
     };
     if (tab.sort && view.sort === tab.sort[0]) view.aria = tab.sort[1] === "desc" ? "descending" : "ascending";

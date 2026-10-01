@@ -5,7 +5,6 @@ from statistics import median
 
 BYPASS = "bypassPermissions"
 CONTEXT_BIN = 20000
-JST = 9 * 3600
 TOOL_EVENTS = ("PostToolUse", "PostToolUseFailure")
 
 
@@ -90,35 +89,6 @@ def _daily(rows: list, cost_days: dict, start: int, end: int, recent_start: int)
     return out
 
 
-def _tools(rows: list) -> list:
-    calls, fails, users = Counter(), Counter(), defaultdict(set)
-    for r in rows:
-        if r["hook"] in TOOL_EVENTS and r["tool"]:
-            calls[r["tool"]] += 1
-            fails[r["tool"]] += r["hook"] == "PostToolUseFailure"
-            users[r["tool"]].add(r["email"])
-    total = sum(calls.values())
-    return [{"key": t, "calls": n, "failures": fails[t], "fail_rate": rate(fails[t], n), "users": len(users[t]),
-             "share": rate(n, total)} for t, n in calls.most_common()]
-
-
-def _context(rows: list, recent_start: int) -> list:
-    bins: dict = defaultdict(lambda: {"prev": 0, "recent": 0})
-    for r in rows:
-        if r["hook"] == "Stop" and r["ctx"] is not None:
-            bins[r["ctx"] // CONTEXT_BIN * CONTEXT_BIN]["recent" if r["day"] >= recent_start else "prev"] += 1
-    tp = sum(b["prev"] for b in bins.values())
-    tr = sum(b["recent"] for b in bins.values())
-    return [{"bin": k, **v, "prev_share": rate(v["prev"], tp), "recent_share": rate(v["recent"], tr)}
-            for k, v in sorted(bins.items())]
-
-
-def _hours(rows: list) -> list:
-    c = Counter((r["ts"] + JST) // 3600 % 24 for r in rows if r["hook"] == "UserPromptSubmit")
-    total = sum(c.values())
-    return [{"key": h, "prompts": c[h], "share": rate(c[h], total)} for h in range(24)]
-
-
 def _active(rows: list, users: dict, days: int) -> dict:
     n = len(users)
     prompts = sum(x["prompts"] for x in users.values())
@@ -157,16 +127,6 @@ def period(raw, p: dict, people: list) -> dict:
     days = end - recent_start + 1
     active_days = Counter(len(x["days"]) for x in users.values())
     return {"active": _active(recent, users, days), "active_prev": _active([r for r in rows if r["day"] < recent_start], prev_users, days),
-            "daily": _daily(rows, cost_days, start, end, recent_start), "tools": _tools(recent),
-            "context": _context(rows, recent_start), "hours": _hours(recent),
+            "daily": _daily(rows, cost_days, start, end, recent_start),
             "days_dist": [{"bin": d, "label": f"{d} 日", "count": active_days[d],
-                           "now_share": rate(active_days[d], len(users))} for d in range(1, days + 1)],
-            "sessions_dist": _sessions_dist(recent)}
-
-
-def _sessions_dist(rows: list) -> list:
-    per = Counter(r["session"] for r in rows if r["hook"] == "UserPromptSubmit" and r["session"])
-    c = Counter(min(n, 10) for n in per.values())
-    total = sum(c.values())
-    return [{"bin": k, "label": f"{k} 件" + ("以上" if k == 10 else ""), "count": c[k], "now_share": rate(c[k], total)}
-            for k in range(1, 11)]
+                           "now_share": rate(active_days[d], len(users))} for d in range(1, days + 1)]}

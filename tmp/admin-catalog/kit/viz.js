@@ -73,9 +73,10 @@ ${g.prev ? `<polyline class="fc-cum-prev" points="${g.prev}" vector-effect="non-
     const body = shown.map((r) => {
       const label = v.label ? fill(v.label, r) : term(v.terms, r.key);
       const right = (v.right || []).map((t, i, all) => `<span class="num${i === all.length - 1 ? " strong" : ""}">${esc(fill(t, r))}</span>`).join("");
-      return `<span class="rate"><span>${esc(label)}</span>${hbar(K.geo.pct(r[field], top))}${right}</span>`;
+      const mark = v.mark ? `<span class="rmark">${K.look.stateHtml(r[v.mark])}</span>` : "";
+      return `<span class="rate"><span>${esc(label)}</span>${hbar(K.geo.pct(r[field], top))}${right}${mark}</span>`;
     }).join("");
-    return `<span class="rates${wide ? " wide" : ""}">${body}</span>`;
+    return `<span class="rates${wide ? " wide" : ""}${v.mark ? " marks" : ""}">${body}</span>`;
   }
 
   function render(card, ctx) {

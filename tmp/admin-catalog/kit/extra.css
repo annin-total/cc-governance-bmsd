@@ -1,0 +1,71 @@
+/* 第 3 弾で足した部品の見た目（増減のチップの向き・状態の絞り込み・基準日・目安の表・行ごとの札・サマリー）。値は tokens.css の変数だけを使う */
+.change.better { background: var(--chip-up); color: var(--accent); }
+.change.worse { background: var(--chip); color: var(--ink); font-weight: 700; }
+.change.neutral { background: var(--chip); color: var(--muted); font-weight: 400; }
+.change.plain { background: none; padding: 0; color: var(--muted); font-weight: 400; }
+
+.is-dim { opacity: var(--link-dim); }
+.group.is-dim .card.is-dim { opacity: 1; }
+[hidden] { display: none !important; }
+.state-filter button { gap: var(--sp-xs); }
+.head-act .chipbar { flex: none; }
+
+.glabel { display: flex; align-items: baseline; flex-wrap: wrap; }
+.glink { margin-left: auto; font-size: var(--fs-sm); font-weight: 400; color: var(--muted); text-decoration: none; }
+.glink::after { content: " →"; }
+.glink:hover { color: var(--accent); }
+
+.asof-pick { display: inline-flex; align-items: center; gap: var(--sp-s); font-size: var(--fs-label); color: var(--ink-2); white-space: nowrap; }
+.asof-pick input { font: inherit; font-size: var(--fs-label); padding: var(--sp-3xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--card); color: var(--ink); }
+.asof-tag { display: inline-flex; align-items: baseline; gap: var(--sp-s); margin-left: var(--sp-m); font-size: var(--fs-label); font-weight: 600; letter-spacing: 0; color: var(--ink-2); vertical-align: middle; }
+.asof-tag a { font-weight: 400; color: var(--muted); }
+.asof-tag a:hover { color: var(--accent); }
+
+.k-end { display: inline-flex; align-items: baseline; gap: var(--sp-s); }
+.k-label a.go { color: var(--muted); text-decoration: none; }
+.k-label a.go:hover { color: var(--accent); }
+.lgrid { display: grid; gap: var(--sp-3xs); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.lg-row { display: grid; grid-template-columns: 1fr 4em 4em; align-items: baseline; gap: var(--sp-s); padding: var(--sp-3xs) 0; border-top: 1px solid var(--rule); color: var(--ink-2); }
+.lg-head { border-top: 0; padding: 0; font-size: var(--fs-xs); color: var(--muted); }
+.lg-head span, .lg-n { text-align: right; }
+.lg-n { font-weight: 700; color: var(--ink); text-decoration: none; }
+.lg-n.warn { color: var(--warn); } .lg-n.ng { color: var(--ng); }
+a.lg-n:hover { text-decoration: underline; }
+.lg-n.zero { font-weight: 400; color: var(--muted); }
+
+.srows { display: grid; gap: var(--sp-3xs); font-size: var(--fs-sm); }
+.srow { display: grid; grid-template-columns: 1fr auto 4.5em; align-items: baseline; gap: var(--sp-s); padding: var(--sp-3xs) 0; border-top: 1px solid var(--rule); color: var(--ink-2); }
+.srow .num { font-variant-numeric: tabular-nums; }
+.rates.wide.marks .rate { grid-template-columns: 1fr 28% 5.5em 3.6em 4em; }
+.rmark { text-align: right; }
+
+.p-head-act { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-l); }
+.p-head-act .btn { text-decoration: none; white-space: nowrap; }
+.summary-latest { margin-bottom: var(--sp-xl); }
+.sum-panel { margin-top: 0; }
+.sum-title { margin: 0; font-weight: 700; }
+.sum-body { margin: var(--sp-xs) 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sum-list .m-row { grid-template-columns: 9em minmax(0, 1fr) 5em 7em 4em; }
+.sum-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sum-open { margin: 0; padding: var(--sp-s) 0 var(--sp-m) var(--sp-l); border-bottom: 1px solid var(--rule); font-size: var(--fs-label); color: var(--ink-2); }
+.sum-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-m) var(--sp-l); margin: var(--sp-l) 0 0; }
+.sum-form label { display: grid; gap: var(--sp-2xs); font-size: var(--fs-sm); color: var(--muted); }
+.sum-form .grow { flex: 1; min-width: var(--name-w); }
+.sum-form .full { flex-basis: 100%; }
+.sum-form input, .sum-form textarea { font: inherit; font-size: var(--fs-label); padding: var(--sp-2xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); }
+.sum-form textarea { width: 100%; line-height: var(--lh); resize: vertical; }
+.sum-form input:focus, .sum-form textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--card-hover); }
+.sum-actions { display: flex; align-items: center; gap: var(--sp-m); }
+.sum-actions .btn-sub { border: 0; cursor: pointer; padding: var(--sp-s) var(--sp-l); }
+.sum-back { font-size: var(--fs-sm); color: var(--muted); }
+.tscroll td.c-user { white-space: nowrap; }
+a.card[href^="?"] .go::after { content: " →"; }
+.k-label a.go[href^="?"]::after { content: " →"; }
+.sum-form input { height: 2.4em; }
+.group-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-m); }
+.group.packed .cards { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
+.group.packed .glabel span { flex-basis: 100%; margin-left: 0; }
+@media (max-width: 960px) { .group-row { grid-template-columns: 1fr; } .group.packed { grid-column: auto !important; } }
+.group.packed { display: flex; flex-direction: column; }
+.group.packed .glabel { min-height: calc(var(--fs-label) * var(--lh) + 2 * var(--fs-sm) * var(--lh)); align-content: flex-start; }
+.group.packed .cards { flex: 1; }

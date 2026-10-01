@@ -66,7 +66,6 @@
     return [found[0], found.length > 1 ? found[1] : ""];
   }
   const term = (terms, key) => termDesc(terms, key)[0];
-  const short = (key, terms) => { const f = terms[key]; return f === undefined ? String(key) : Array.isArray(f) ? f[f.length - 1] : f; };
 
   const L = () => window.KIT.L;
   const FORMATS = {
@@ -75,6 +74,7 @@
     asof: (v) => (v === null || v === undefined ? L().FC_NO_CSV : L().FC_UNTIL.replace("{}", md(v))),
     signed1: (v) => signed(v, 1),
     signed_pct: (v) => (isNum(v) ? signed(v, 1) + "%" : EM),
+    signed_pt: (v) => (isNum(v) ? signed(v, 1) + " pt" : EM),
     field: (v) => term(L().HEALTH_ITEM, v),
     setting: (v) => term(L().SETTING, v),
     provider: (v) => term(L().PROVIDER, v),
@@ -125,6 +125,6 @@
 
   window.KIT = Object.assign(window.KIT || {}, {
     EM, esc, day, num, usd, usdFull, usd0, dec1, tok, tokUnit, signed, md, ym, mon, weekday, pct, binRange, rel, size,
-    term, termDesc, short, FORMATS, lookup, fill, parts, exact, partsHtml, WHOLE_FROM,
+    term, termDesc, FORMATS, lookup, fill, parts, exact, partsHtml, WHOLE_FROM,
   });
 })();

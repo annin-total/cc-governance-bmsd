@@ -1,4 +1,4 @@
-"""今の画面に無い指標（利用明細の側）。期間ごとの `x` と、期間に依らない `fixed.x` を作る。記録（events）の側は extras_events.py。"""
+"""今の画面に無い指標（利用明細の側）。期間ごとの `x` を作る。記録（events）の側は extras_events.py。"""
 
 import sqlite3
 from collections import defaultdict
@@ -80,18 +80,6 @@ def _people(now: dict, prev: dict) -> list:
     return rows
 
 
-def _dist(values: list, step: float, fmt) -> list:
-    """1 系列の分布（区間の下限・名前・件数・割合）。`now_share` は分布の棒の部品が読む。"""
-    if not values:
-        return []
-    top = int(max(values) // step) + 1
-    counts = [0] * top
-    for v in values:
-        counts[int(v // step)] += 1
-    return [{"bin": i * step, "label": fmt(i * step, (i + 1) * step), "count": c, "now_share": rate(c, len(values))}
-            for i, c in enumerate(counts)]
-
-
 def _cost_summary(people, prev_people, a, b) -> dict:
     total = sum(u["cost"] for u in people)
     prev_total = sum(u["cost"] for u in prev_people.values()) if prev_people else None
@@ -105,18 +93,6 @@ def _cost_summary(people, prev_people, a, b) -> dict:
             "per_person_day": total / person_days if person_days else None,
             "top10_share": rate(sum(u["cost"] for u in people[:top_n]), total), "top10_n": top_n,
             "top5_share": rate(sum(u["cost"] for u in people[:5]), total), "start": a, "end": b}
-
-
-def _weekday(raw, a, b) -> list:
-    sql = "SELECT day, SUM(cost), COUNT(DISTINCT user_email) FROM cost_daily WHERE day BETWEEN ? AND ? GROUP BY 1"
-    acc = defaultdict(lambda: [0.0, 0, 0])
-    for day, cost, users in raw.execute(sql, (a, b)):
-        w = (day + 3) % WEEK  # epoch 日 0 は木曜。月曜を 0 にする
-        acc[w][0] += cost
-        acc[w][1] += users
-        acc[w][2] += 1
-    return [{"key": w, "cost": round(acc[w][0] / acc[w][2], 2), "users": round(acc[w][1] / acc[w][2], 1)}
-            for w in range(WEEK) if acc[w][2]]
 
 
 def _months(raw, a, b) -> list:
@@ -157,33 +133,9 @@ def period(raw, p: dict, cost: dict) -> dict:
         "models": _models(raw, a, b, pa, pb),
         "tokens": _tokens(people),
         "people": people,
-        "cost_dist": _dist([u["cost"] for u in people], _nice(max((u["cost"] for u in people), default=0) / 8),
-                           lambda lo, hi: f"${lo:,.0f}–{hi:,.0f}"),
-        "weekday": _weekday(raw, a, b),
     }
     if p["long"]:
         out["months"] = _months(raw, a, b)
         return out
     out.update(ev.period(raw, p, people))
     return out
-
-
-def _nice(x: float) -> float:
-    for m in (1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000):
-        if m >= x:
-            return m
-    return 10000
-
-
-def fixed(raw, today: int, policy: dict) -> dict:
-    """期間に依らないもの: 設定の適用状況（直近 30 日）と利用明細のコストの突き合わせ。"""
-    status = {u["email"]: u["status"] for u in policy["users"]}
-    end = raw.execute("SELECT MAX(day) FROM cost_daily").fetchone()[0]
-    cost = dict(raw.execute("SELECT user_email, SUM(cost) FROM cost_daily WHERE day > ? GROUP BY 1", (end - 30,)))
-    by = defaultdict(lambda: {"users": 0, "cost": 0.0})
-    for email, s in status.items():
-        by[s]["users"] += 1
-        by[s]["cost"] += cost.get(email, 0.0)
-    total = sum(cost.values()) or 1
-    return {"policy_cost": [{"key": k, "users": v["users"], "cost": v["cost"], "share": rate(v["cost"], total)}
-                            for k, v in by.items()]}
