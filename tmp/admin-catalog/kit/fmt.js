@@ -75,6 +75,7 @@
     signed1: (v) => signed(v, 1),
     signed_pct: (v) => (isNum(v) ? signed(v, 1) + "%" : EM),
     signed_pt: (v) => (isNum(v) ? signed(v, 1) + " pt" : EM),
+    signed_usd: (v) => (isNum(v) ? (Number(v) > 0 ? "+" : "") + usd(v) : EM),
     field: (v) => term(L().HEALTH_ITEM, v),
     setting: (v) => term(L().SETTING, v),
     provider: (v) => term(L().PROVIDER, v),

@@ -63,4 +63,25 @@
         { key: "billed", kind: "yes_no", terms: ["いた", "いない"], label: "利用明細" }],
       chipsBy: "tags", chips: [...chipsOf(L.DELIVERY), ...chipsOf(L.BILLED)] },
   });
+
+  // ---- 利用者ごとの一覧（案 34）: user_cost・user_use・user_calls を 1 行に並べ、置き換える ----
+  const STATE = { key: "state", kind: "state", sort: "state_rank", label: "状態", quiet: true };
+  const BILL = [STATE, { key: "rank", kind: "rank", label: "順位" }, { key: "cost", kind: "usd_strong", label: "コスト" }];
+  const CHIPS = [{ id: "ng", label: L.STATE.ng, tone: "ng" }, { id: "warn", label: L.STATE.warn, tone: "warn" }, ...chipsOf(L.MODEL)];
+  const ALL = { label: "利用者ごとの一覧", unit: "人", search: "利用者で絞り込み", q: "{email}", rows: "x[people]", sort: ["cost", "desc"], chipsBy: "tags", chips: CHIPS };
+  T.user_all = { ...ALL, id: "user_all", replaces: ["user_cost", "user_use", "user_calls"], hint: "{x[people]:count} 人 · 利用明細と記録",
+    title: "利用者ごとのコスト・頻度・呼び出し",
+    scope: "利用明細と記録のどちらかに値のある利用者 · コストの多い順 · 差と増減率は前の {period[days]} 日と比べたコスト · 状態は目安の判定 · セッションの大きさはセッションごとの最大の中央",
+    note: "利用明細は今日と前日の分が無いため、基準日が今日なら利用明細の段は記録の段より 2 日早く終わります。片方の段にしか値の無い利用者は、もう片方の段を「—」にします。よく使う呼び出し先は、利用状況の「呼び出し先」で利用者を検索して引きます。",
+    bands: [["", 1], ["利用明細（{x[cost][start]:md}〜{x[cost][end]:md}）", 6], ["記録（{period[start]:md}〜{period[end]:md}）", 9]],
+    cols: [USER, ...BILL, { key: "cost_diff", kind: "usd", label: "前との差" }, { key: "cost_change", kind: "pct_change", label: "増減率" },
+      { key: "top_model", kind: "model", label: "主なモデル" },
+      { key: "active_days", kind: "num", unit: "day", label: "利用日数" }, { key: "prompts", kind: "num", label: "指示" }, { key: "sessions", kind: "num", label: "セッション" },
+      { key: "session_size", kind: "tok", label: "セッションの大きさ" }, { key: "skill_calls", kind: "num", label: "スキル" }, { key: "command_calls", kind: "num", label: "コマンド" },
+      { key: "external_calls", kind: "num", label: "外部ツール" }, { key: "agent_launches", kind: "num", label: "サブエージェントの起動" }, { key: "last_day", kind: "day", label: "最終日" }],
+    long: { ...ALL, id: "user_all", hint: "{x[people]:count} 人 · 利用明細", title: "利用者ごとのコスト",
+      scope: "利用明細 {x[cost][start]:day}〜{x[cost][end]:day} · コストの多い順 · 状態は目安の判定",
+      note: "12 か月では記録の段を出しません。記録から数える列は 7 日・28 日で見られます。",
+      bands: [["", 1], ["利用明細（{x[cost][start]:day}〜{x[cost][end]:day}）", 4]],
+      cols: [USER, ...BILL, { key: "top_model", kind: "model", label: "主なモデル" }] } };
 })();

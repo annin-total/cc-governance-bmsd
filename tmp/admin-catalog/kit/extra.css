@@ -69,3 +69,9 @@ a.card[href^="?"] .go::after { content: " →"; }
 .group.packed { display: flex; flex-direction: column; }
 .group.packed .glabel { min-height: calc(var(--fs-label) * var(--lh) + 2 * var(--fs-sm) * var(--lh)); align-content: flex-start; }
 .group.packed .cards { flex: 1; }
+.rates.wide.marks.diffs .rate { grid-template-columns: 1fr 22% 5em 5.5em 3.6em 4em; }
+.tscroll tr.bands th { position: static; padding-bottom: var(--sp-3xs); border-bottom: 2px solid var(--rule); font-size: var(--fs-xs); font-weight: 600; color: var(--ink-2); text-align: left; white-space: nowrap; }
+.tscroll tr.bands th.blank { border-bottom-color: transparent; }
+.tscroll tr.bands th + th { border-left: 1px solid var(--rule); }
+.tscroll tr.bands th + th { padding-left: var(--sp-s); }
+.tscroll table[data-testid="user_all"] td { white-space: nowrap; }

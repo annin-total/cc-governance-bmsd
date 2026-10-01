@@ -46,6 +46,8 @@
 | `pack` | `true` | 窓の違う小さな群（カード 2 列以下）が続くとき、4 列に収まるだけ 1 行に並べる。群ごとに見出しと期間の注記を持つ。`false` で 1 群 1 行 |
 
 案ごとに分ける・まとめるカードも目録にある: `cost_total`・`per_bd`・`top10_share`（案 32）、`applied_all`・`outdated_all`（案 33。行ごとの札を持つ `staterows`）。
+案 34 の部品: `top_spenders_diff`（内訳に前との差）・タブ `user_all`（`replaces` で `user_cost`・`user_use`・`user_calls` を開く先として置き換える。列の上の段は `bands: [[見出し, 列数]]`）。
+ページの `borrow: [タブ id]` は、ページに開く先の無いカードを押したとき、そのタブを持つ別のページへ期間と基準日を引き継いで移す。
 
 ## 撮影と検査
 

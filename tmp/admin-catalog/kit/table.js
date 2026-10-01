@@ -83,6 +83,14 @@
     return [(tab.chipsAll === false ? [] : [every]).concat(counted), tags];
   }
 
+  // 列の上の段 [見出し, 列数]。列数の合計が列と合わなければ定義の誤り
+  function bands(tab, cols, ctx) {
+    if (!tab.bands) return null;
+    const n = tab.bands.reduce((s, b) => s + b[1], 0);
+    if (n !== cols.length) console.error(`kit: 列の上の段の列数 ${n} が列 ${cols.length} と合わない: ${tab.id}`);
+    return tab.bands.map(([label, span]) => ({ label: fill(label, ctx), span }));
+  }
+
   // タブ 1 つ分の表示用の値
   function model(tab, ctx) {
     const source = [...(lookup(ctx, tab.rows) || [])];
@@ -91,7 +99,7 @@
     const [cs, tags] = chips(tab, rows, ctx);
     const key = tab.chart ? tab.chart.key || "day" : null;
     return {
-      cols, chips: cs, chipsAll: tab.chipsAll !== false, search: tab.q ? fill(tab.search || "", ctx) : "",
+      cols, bands: bands(tab, cols, ctx), chips: cs, chipsAll: tab.chipsAll !== false, search: tab.q ? fill(tab.search || "", ctx) : "",
       unit: tab.unit || "", empty: tab.empty,
       total: tab.chipsAll !== false || !cs.length ? rows.length : cs[0].count, source,
       rows: rows.map((r) => ({
@@ -110,9 +118,10 @@
   function tableHtml(t, id, withFilters = true) {
     const head = t.cols.map((c, i) => `<th scope="col" class="c-${c.kind}${c.num ? " num" : ""}"${c.aria ? ` aria-sort="${c.aria}"` : ""}>${c.sort
       ? `<button type="button" data-sort="${i}">${esc(c.label)}<i class="arrow"></i></button>` : esc(c.label)}${c.sub ? `<span class="th-sub">${esc(c.sub)}</span>` : ""}</th>`).join("");
+    const top = t.bands ? `<tr class="bands">${t.bands.map((b) => `<th scope="colgroup" colspan="${b.span}"${b.label ? "" : ' class="blank"'}>${esc(b.label)}</th>`).join("")}</tr>` : "";
     const body = t.rows.map((r) => `<tr data-tags="${esc(r.tags)}" data-q="${esc(r.q)}"${r.key !== null && r.key !== undefined ? ` data-link="${esc(r.key)}"` : ""}>${r.cells.map((c) =>
       `<td class="c-${c.col.kind}${c.col.num ? " num" : ""}" data-v="${esc(c.sort)}">${K.cells.cell(c)}</td>`).join("")}</tr>`).join("");
-    return `${withFilters ? filtersHtml(t) : ""}<div class="tscroll"><table data-testid="${esc(id)}"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+    return `${withFilters ? filtersHtml(t) : ""}<div class="tscroll"><table data-testid="${esc(id)}"><thead>${top}<tr>${head}</tr></thead><tbody>${body}</tbody></table>
 <p class="empty" data-empty${t.rows.length ? " hidden" : ""}>${esc(t.empty || K.L.EMPTY)}</p></div>`;
   }
 
