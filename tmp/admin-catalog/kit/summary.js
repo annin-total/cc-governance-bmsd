@@ -21,9 +21,9 @@
       for (const c of g.cards) {
         const t = K.card.stateOf(c, ctx);
         if (t !== "warn" && t !== "ng") continue;
-        const value = c.value ? fill(c.value, ctx) + (c.unit ? ` ${c.unit}` : "") : "";
-        const row = { state: K.L.STATE[t], label: fill(c.label, ctx), value, why: c.why ? fill(c.why, ctx) : "" };
-        lines.push(W.bullet + fill(row.why ? K.L.DRAFT_LINE : K.L.DRAFT_LINE_PLAIN, row).trim());
+        const value = c.value ? ` ${fill(c.value, ctx)}${c.unit ? ` ${c.unit}` : ""}` : "";
+        const why = c.why ? K.L.DRAFT_WHY.replace("{}", fill(c.why, ctx)) : "";
+        lines.push(W.bullet + fill(K.L.DRAFT_LINE, { state: K.L.STATE[t], label: fill(c.label, ctx), value, why }));
       }
     }
     return lines.join("\n");

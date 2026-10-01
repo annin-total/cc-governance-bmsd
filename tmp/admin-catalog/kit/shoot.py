@@ -6,6 +6,7 @@
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -16,19 +17,21 @@ PERIODS = ("7", "28", "12m")
 PAGES_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods) }))"
 OVERFLOW_JS = "document.documentElement.scrollWidth > document.documentElement.clientWidth"
 ASOF = "2026-09-11"
-# (名前, URL の問い合わせ, 押す要素)。押す要素があれば、押して移った先を撮る
+# (名前, URL の問い合わせ, 押す要素)。押す要素があれば、押して移った先を撮る。要素はカンマで候補を並べ、最初に見えるものを押す
+FIRST_CARD = "main .kpis a.card[href^='?']"
 EXTRAS = (
     ("x-home-filter-ng", "?page=home&filter=ng", None),
     ("x-home-filter-warn-12m", "?page=home&period=12m&filter=warn", None),
     ("x-home-asof", f"?page=home&period=28&asof={ASOF}", None),
-    ("x-go-cost", f"?page=home&period=28&asof={ASOF}", "[data-ref=cost]"),
+    ("x-go-cost", f"?page=home&period=28&asof={ASOF}", FIRST_CARD),
     ("x-go-over-limit-week", f"?page=home&asof={ASOF}", "[data-ref=over_limit] a.lg-n.ng"),
-    ("x-go-off-users", "?page=home", "[data-ref=off_users]"),
-    ("x-go-core-outdated", "?page=home", "[data-ref=core_outdated]"),
+    ("x-go-off-users", "?page=home", "[data-ref=off_users], [data-ref=applied_all]"),
+    ("x-go-core-outdated", "?page=home", "[data-ref=core_outdated], [data-ref=outdated_all]"),
     ("x-cost-open-user-cost", "?page=cost&filter=warn", "[data-ref=per_user_bd]"),
     ("x-summary-open", "?page=summary", "details summary"),
     ("x-summary-edit-s2", "?page=summary_edit&id=s2", None),
 )
+EXTRA_FILE = "shots.json"  # 案のフォルダに置くと、[名前, 問い合わせ, 押す要素] の並びを EXTRAS に足す
 
 
 def _args() -> argparse.Namespace:
@@ -50,7 +53,7 @@ def _shoot(ctx, url: str, path: Path, click=None):
         page.close()
         return None
     if click:
-        page.click(click)
+        page.locator(f"{click} >> visible=true").first.click()
         page.wait_for_load_state("load")
         page.wait_for_timeout(300)
     overflow = page.evaluate(OVERFLOW_JS)
@@ -86,7 +89,8 @@ def main() -> None:
                 url = f"{base}?page={pg['id']}" + (f"&period={period}" if period else "")
                 failed += _report(name, *_shoot(ctx, url, out / f"{name}.png"))
         ids = {pg["id"] for pg in pages}
-        for name, query, click in EXTRAS:
+        extra = idea / EXTRA_FILE
+        for name, query, click in EXTRAS + tuple(tuple(x) for x in (json.loads(extra.read_text(encoding="utf-8")) if extra.exists() else [])):
             if query.split("page=")[1].split("&")[0] not in ids:
                 continue
             shot = _shoot(ctx, base + query, out / f"{name}.png", click)

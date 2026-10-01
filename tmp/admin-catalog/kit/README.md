@@ -45,7 +45,11 @@
 | `pageLink` | `true` | 概況の群の見出しの右に専用ページへの入口 |
 | `pack` | `true` | 窓の違う小さな群（カード 2 列以下）が続くとき、4 列に収まるだけ 1 行に並べる。群ごとに見出しと期間の注記を持つ。`false` で 1 群 1 行 |
 
-案ごとに分ける・まとめるカードも目録にある: `cost_total`・`per_bd`・`top10_share`（案 32）、`applied_all`・`outdated_all`（案 33。行ごとの札を持つ `staterows`）。
+案ごとに分ける・まとめるカードも目録にある: `cost_total`・`per_bd`・`top10_share`・`top_spenders_only`（上位 10% を添えない。案 32）、
+`users_all`・`calls_all`・`session_all`・`applied_all`・`outdated_all`（案 33。内訳は行ごとの札を持つ `staterows`）。
+
+- 札と「一覧」の入口は両方出す（並ぶときの入口は矢印だけ）。`delta.prev` のときは添える数字から前の値を抜く。矢印は中立に付けない
+- 案のフォルダに `shots.json`（`[[名前, 問い合わせ, 押す要素], …]`）を置くと、撮影の追加分に足す
 案 34 の部品: `top_spenders_diff`（内訳に前との差）・タブ `user_all`（`replaces` で `user_cost`・`user_use`・`user_calls` を開く先として置き換える。列の上の段は `bands: [[見出し, 列数]]`）。
 ページの `borrow: [タブ id]` は、ページに開く先の無いカードを押したとき、そのタブを持つ別のページへ期間と基準日を引き継いで移す。
 

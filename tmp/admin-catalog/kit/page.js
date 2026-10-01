@@ -20,8 +20,9 @@
     const note = [missing.length ? K.L.NOT_LONG_CARDS.replace("{names}", missing.join(K.L.LIST_SEP)) : "", g.note ? fill(g.note, ctx) : ""].filter(Boolean).join(" ");
     const label = fill(g.label, ctx);
     const links = (g.links || []).map((l) => `<a class="glink" href="${esc(l.href)}">${esc(K.L.OPEN_PAGE.replace("{}", l.title))}</a>`).join("");
+    const scopeText = fill(scope, ctx) === label ? "" : fill(scope, ctx); // 見出しと同じ語なら重ねて出さない
     const style = span ? ` style="grid-column: span ${span}; --cols: ${span}"` : "";
-    return `<section class="group${span ? " packed" : ""}" aria-label="${esc(label)}"${style}><h2 class="glabel">${esc(label)}<span>${esc(fill(scope, ctx))}</span>${links}</h2>`
+    return `<section class="group${span ? " packed" : ""}" aria-label="${esc(label)}"${style}><h2 class="glabel">${esc(label)}<span>${esc(scopeText)}</span>${links}</h2>`
       + (cards.length ? `<div class="cards">${cards.map((c) => K.card.cardHtml(c, ctx)).join("")}</div>` : "")
       + (note ? `<p class="gnote">${esc(note)}</p>` : "") + "</section>";
   }

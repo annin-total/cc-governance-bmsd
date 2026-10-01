@@ -29,6 +29,7 @@ def cost(raw, x_cost: dict, long: bool) -> dict:
     now = _bill(raw, a, b, company)
     out = {**now, "start": a, "end": b}
     if long:
+        out["months"] = _months(raw, a, b, company)
         return out
     n = b - a + 1
     prev = _bill(raw, a - n, a - 1, company)
@@ -51,6 +52,21 @@ def model_pt(models: list, prev_total) -> Optional[float]:
     if not models or not prev_total or models[0].get("prev") is None:
         return None
     return round(models[0]["share"] - models[0]["prev"] / prev_total * 100, 1)
+
+
+def _months(raw, a: int, b: int, company: dict) -> list:
+    """暦月ごとの 1 営業日あたりと 1 人 1 営業日あたり（12 か月のカードの内訳）。最初の暦月は窓の始まりから数える。"""
+    import datetime as dt
+
+    epoch = dt.date(1970, 1, 1)
+    out, lo = [], a
+    while lo <= b:
+        d = epoch + dt.timedelta(days=lo)
+        nxt = (d.replace(day=28) + dt.timedelta(days=4)).replace(day=1)
+        hi = min(b, (nxt - epoch).days - 1)
+        out.append({"day": (d.replace(day=1) - epoch).days, **{k: v for k, v in _bill(raw, lo, hi, company).items() if k in ("per_bd", "per_user_bd")}})
+        lo = hi + 1
+    return out
 
 
 def forecast(month: dict) -> dict:

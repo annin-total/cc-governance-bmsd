@@ -67,6 +67,21 @@
     outdated_all: { win: "p30", label: "古い版の利用者", tabs: ["versions"], state: ["core[state]", "plugin[state]"], why: "本体 {core[outdated]:num} 人・プラグイン {plugin[outdated]:num} 人", sub: "最新 本体 {core[latest]} · プラグイン {plugin[latest]}",
       viz: { kind: "staterows", rows: [{ label: "本体", value: "{core[outdated]:num} / {core[total]:num} 人", state: "core[state]" }, { label: "プラグイン", value: "{plugin[outdated]:num} / {plugin[total]:num} 人", state: "plugin[state]" }] } },
 
+    // 案 33: 利用者・呼び出し・セッションを 1 枚にまとめたカード（行ごとの札の仕組みは applied_all と同じ。いまの行は判定を持たない）
+    users_all: { win: "bill", label: "利用明細にいた利用者", unit: "人", tabs: ["user_cost"], better: "up", value: "{r3[cost][users]:num}", state: "r3[cost][users_state]",
+      delta: { v: "r3[cost][users_change]", prev: "{r3[cost][prev_users]:num} 人" }, why: "前との率 {r3[cost][users_change]:signed_pct}", sub: "前 {r3[cost][prev_users]:num} 人",
+      viz: { kind: "staterows", rows: [{ label: "使い始めた", value: "{m[new_user_count]:num} 人" }, { label: "前の {period[days]} 日から離れた", value: "{m[left_users]:count} 人" },
+        { label: "継続率", value: "{m[retention_rate]:pct}" }] },
+      long: { label: "利用明細にいた利用者", unit: "人", tabs: ["months", "user_cost"], value: "{r3[cost][users]:num}", sub: "期間にコストがあった人",
+        viz: { kind: "staterows", rows: [{ label: "使い始めた", value: "{m[new_user_count]:num} 人" }, { label: "継続率（{m[retention_month]:ym}）", value: "{m[retention_rate]:pct}" }] } } },
+    calls_all: { win: "rec", label: "呼び出し", tabs: ["calls", "user_calls"], wide: true, sub: "回数 · 前との差 · 使った人（全 {calls[skills][all_users]:num} 人のうち）",
+      viz: { kind: "staterows", rows: [["skills", "スキル"], ["commands", "コマンド"], ["external", "外部ツール"], ["agents", "サブエージェントの起動"]].map(([k, label]) => (
+        { label, value: `{calls[${k}][total]:num} 回 · {calls[${k}][delta]:signed} · {calls[${k}][users]:num} 人` })) } },
+    session_all: { win: "rec", label: "セッション", unit: "トークン", tabs: ["session_size", "usage_modes"], wide: true, better: "down", value: "{size[median]:tok}",
+      delta: { v: CH("session_size"), prev: "{size[prev][median]:tok}" }, sub: "大きさの中央 · 前 {size[prev][median]:tok} · {size[sessions]:num} セッション",
+      viz: { kind: "staterows", rows: [{ label: "自動コンパクトに達した割合", value: "{size[auto_share]:pct}（前 {size[prev][auto_share]:pct}）" },
+        { label: "確認なしモードを使った利用者", value: "{x[active][bypass_users]:num} 人（前 {x[active_prev][bypass_users]:num} 人）" }] } },
+
     // ---- 設定の効果（前後 14 日）----
     adopters: { win: "study", label: "しきい値を守り始めた利用者", unit: "人", tabs: ["effect_daily"], value: "{adopters:num}", sub: "日ごとの対象者 {study[people_min]:num}〜{study[people_max]:num} 人" },
     effect_session_size: { win: "study", label: "セッションの大きさ（中央）", unit: "トークン", tabs: ["effect_sessions"], value: "{F[effect2][after][median]:tok}",

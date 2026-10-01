@@ -59,11 +59,14 @@
     const label = `<span>${esc(fill(card.label, ctx))}</span>`;
     const inner = Boolean(card.tab) && card.viz && card.viz.kind === "limit"; // マスに押せる先があるカードは、全体を押せるリンクにしない
     const body = (card.value ? `<span class="k-value">${partsHtml(value)}<span class="u">${esc(blank ? "" : card.unit || "")}</span></span>` : "")
-      + `<span class="k-sub">${K.look.deltaHtml(card, ctx)}${partsHtml(parts(card.sub || "", ctx))}</span>`
+      + `<span class="k-sub">${K.look.deltaHtml(card, ctx)}${partsHtml(parts(K.look.subOf(card), ctx))}</span>`
       + `<span class="k-viz">${vizHtml(card, ctx)}${cs.length ? `<span class="cap">${cs.map((c) => `<span>${esc(c)}</span>`).join("")}</span>` : ""}</span>`;
     const attrs = `class="card${card.wide ? " wide" : ""}" data-ref="${esc(card.ref || "")}" data-state="${state || ""}"`;
     if (inner) return `<div ${attrs}><span class="k-label">${label}<span class="k-end">${mark}<a class="go" ${target(card, card.chip)}>${K.L.OPEN_LIST}</a></span></span>${body}</div>`;
-    const head = `<span class="k-label">${label}${mark || (card.tab ? `<span class="go">${K.L.OPEN_LIST}</span>` : "")}</span>`;
+    const go = card.tab ? `<span class="go">${K.L.OPEN_LIST}</span>` : "";
+    // 札と入口を両方出す。並ぶときの入口は矢印だけにし、見出しの幅を空ける
+    const both = mark && go ? `<span class="k-end">${mark}<span class="go go-icon" title="${K.L.OPEN_LIST}" aria-label="${K.L.OPEN_LIST}"></span></span>` : "";
+    const head = `<span class="k-label">${label}${both || mark || go}</span>`;
     if (!card.tab) return `<div ${attrs}>${head}${body}</div>`;
     return `<a ${attrs} ${target(card, card.chip)}>${head}${body}</a>`;
   }

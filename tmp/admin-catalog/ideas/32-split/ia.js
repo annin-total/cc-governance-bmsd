@@ -16,7 +16,7 @@
         ] },
       { id: "cost", title: "コストと利用者", periods: true, lead: "いくらかかり、誰に集まり、何人が使っているか",
         groups: [
-          ["コスト", ["cost_total", "per_bd", "per_user_bd", "top10_share", "top_spenders", "model_mix", "cache_read_share"]],
+          ["コスト", ["cost_total", "per_bd", "per_user_bd", "top10_share", "top_spenders_only", "model_mix", "cache_read_share"]],
           ["今月", ["forecast"]],
           ["目安を超えた利用者", ["over_limit"]],
           ["利用者", ["billed_users", "new_users", "retention"]],

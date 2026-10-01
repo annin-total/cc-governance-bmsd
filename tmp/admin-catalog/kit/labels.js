@@ -21,7 +21,7 @@
     STATE_FILTER: { all: "すべて", warn: "注意以上", ng: "要確認" }, STATE_FILTER_NAV: "状態",
     DELTA_WORD: { better: "改善", worse: "悪化", neutral: "" }, DELTA_ARROW: { up: "▲", down: "▼", flat: "" }, DELTA_PREV: "（前 {}）",
     BASE_DATE: "基準日", BASE_DATE_TAG: "基準日 {}", BASE_RESET: "今日に戻す", OPEN_PAGE: "{} へ",
-    DRAFT_LINE: "{state} · {label} {value}（{why}）", DRAFT_LINE_PLAIN: "{state} · {label} {value}",
+    DRAFT_LINE: "{state} · {label}{value}{why}", DRAFT_WHY: "（{}）",
     RECENT: "直近 {period[days]} 日", PREV: "前の {period[days]} 日",
     PERIOD_NAV: "期間", PERIOD_NAMES: { 7: "7 日", 28: "28 日", "12m": LONG_NAME },
     NOT_LONG: `${LONG_NAME}では出しません`,

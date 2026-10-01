@@ -23,7 +23,7 @@
         { key: "users", kind: "num", unit: "person", label: "利用者" }, { key: "sessions", kind: "num", unit: "item", label: "セッション" },
         { key: "prompts", kind: "num", unit: "item", label: "指示" }, BAR("prompts")],
       chipsBy: "period", chips: PERIOD_CHIPS, chart: { kind: "bars", key: "day", panels: [{ title: "利用者", field: "users" }, { title: "指示", field: "prompts" }] } },
-    user_use: { id: "user_use", label: "利用者ごとの頻度とセッション", hint: "{x[active][users]:num} 人 · 記録", title: "利用者ごとの頻度とセッション", unit: "人",
+    user_use: { id: "user_use", label: "利用者ごとの頻度", hint: "{x[active][users]:num} 人 · 記録", title: "利用者ごとの頻度とセッション", unit: "人",
       scope: "直近 {period[days]} 日 · 記録を送った利用者 · 利用日数の多い順 · 差と増減率は前の {period[days]} 日と比べた指示 · セッションの大きさはセッションごとの最大の中央",
       search: "利用者で絞り込み", q: "{email}", rows: "x[activity]", sort: ["active_days", "desc"],
       cols: [USER, { key: "active_days", kind: "num", unit: "day", label: "利用日数" }, { key: "sessions", kind: "num", label: "セッション" },

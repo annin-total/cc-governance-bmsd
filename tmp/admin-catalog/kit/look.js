@@ -40,11 +40,20 @@
     const t = tone(v, card.better);
     const dir = Number(v) > 0 ? "up" : Number(v) < 0 ? "down" : "flat";
     let text = K.FORMATS[d.fmt || "signed_pct"](v) + (d.unit ? ` ${d.unit}` : "");
-    if (o.arrow && L.DELTA_ARROW[dir]) text = `${L.DELTA_ARROW[dir]} ${text}`;
+    if (o.arrow && t !== "neutral" && L.DELTA_ARROW[dir]) text = `${L.DELTA_ARROW[dir]} ${text}`; // 中立は向きを示さない
     if (o.word && L.DELTA_WORD[t]) text += ` ${L.DELTA_WORD[t]}`;
     if (o.prev && d.prev) text += L.DELTA_PREV.replace("{}", fill(d.prev, ctx));
     const cls = o.worseOnly && t !== "worse" ? "plain" : o.color === "none" ? "neutral" : o.color === "better" && t === "worse" ? "neutral" : t;
     return `<span class="change ${cls}" data-tone="${t}">${esc(text)}</span>`;
+  }
+
+  // 添える数字。チップに前の値を添えるときは、添える数字から前の値（delta.prev の雛形を含む部分）を抜く
+  function subOf(card) {
+    const sub = card.sub || "", prev = card.delta && card.delta.prev;
+    if (!current.delta.prev || !prev || !sub.includes(prev)) return sub;
+    const inner = sub.replace(new RegExp(`（前の? ?${prev.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}）`), "");
+    if (inner !== sub) return inner;
+    return sub.split(" · ").filter((seg) => !seg.includes(prev)).join(" · ");
   }
 
   // 見出しの右の札。正常は既定で出さない（okMark で灰の「正常」）
@@ -54,5 +63,5 @@
     return "";
   }
 
-  window.KIT = Object.assign(window.KIT || {}, { look: { set, get: () => current, tone, deltaHtml, stateHtml, DEFAULTS } });
+  window.KIT = Object.assign(window.KIT || {}, { look: { set, get: () => current, tone, deltaHtml, stateHtml, subOf, DEFAULTS } });
 })();

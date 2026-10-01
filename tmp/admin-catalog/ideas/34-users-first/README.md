@@ -13,3 +13,4 @@
 - チップは悪化だけ印を付け、改善と中立は地の文字（`look.delta.worseOnly`）。絞り込みは 31 と同じく薄くする
 - 撮影: `python kit/shoot.py ideas/34-users-first`（`shots/`）。`x-activity-*`・`x-user-all-*` は利用状況から移った先・表の右端・注意で絞った一覧
 - 検査: `python kit/check.py ideas/34-users-first`
+- 基準日を変えても値は変わらない（モックの制約。データは 09/18 の 1 時点だけ）
