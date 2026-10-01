@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="ja" data-scheme="1" data-filter="all">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 — 08 kpi-band</title>
+<style>
+/* tokens.css から写した値 */
+:root {
+  --bg: #e8e5e0; --card: #f6f4f0; --card-hover: #fbfaf8; --tabs: #dedad3; --track: #ebe7e1; --chip: #e3e0da; --chip-up: #dde6ea;
+  --ink: #2b2926; --ink-2: #4a4640; --muted: #625c53; --rule: #d6d1c9; --chip-up-ink: #2f4b58; --on-ink: #f6f4f0;
+  --accent: #4c6a78; --accent-2: #a9b9c1; --ghost: #cdc7bd;
+  --ok: #3d6b4c; --warn: #8a5a12; --ng: #9e3a2e; --neutral: #6f6a62; --ok-bg: #e2eadf; --ng-bg: #f3dfdb; --warn-2: #b0823f; --warn-3: #d6b98f;
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, .04); --shadow-raised: 0 1px 2px rgba(0, 0, 0, .1); --tab-hover: rgba(255, 255, 255, .35);
+  --sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  --fig: "Avenir Next", "Helvetica Neue", "Segoe UI", var(--sans);
+  --fs: 14px; --fs-label: 13px; --fs-sm: 12px; --fs-xs: 11px; --fs-unit: 15px; --fs-h1: 22px; --fs-h2: 16px; --fs-val: 40px; --fw-val: 600; --lh: 1.65;
+  --sp-3xs: 2px; --sp-2xs: 4px; --sp-xs: 6px; --sp-s: 8px; --sp-m: 12px; --sp-l: 16px; --sp-xl: 20px; --sp-2xl: 24px; --sp-3xl: 32px; --sp-4xl: 40px; --cell-y: 7px;
+  --r-xs: 2px; --r-s: 5px; --r-m: 7px; --r-l: 10px;
+  --wrap: 1240px; --bar-h: 56px; --card-min-h: 184px; --card-min-w: 248px; --meter-h: 10px; --hbar-h: 8px; --mark-dot: 6px; --date-w: 150px;
+  --dim: .3;
+}
+/* layout.css */
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs)/var(--lh) var(--sans); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--sp-4xl); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.top { border-bottom: 1px solid var(--rule); }
+.bar { display: flex; align-items: center; gap: var(--sp-2xl); height: var(--bar-h); }
+.brand { font-weight: 700; color: var(--ink); text-decoration: none; white-space: nowrap; }
+nav { display: flex; gap: var(--sp-3xs); }
+nav a { color: var(--ink-2); text-decoration: none; padding: var(--sp-2xs) var(--sp-s); border-radius: var(--r-m); white-space: nowrap; font-size: var(--fs-label); }
+nav a:hover, .bar-end a:hover { color: var(--accent); }
+nav a[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 700; }
+.asof { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar-end { margin-left: auto; display: flex; align-items: center; gap: var(--sp-m); }
+.bar-end a { color: var(--ink-2); text-decoration: none; padding: var(--sp-2xs) var(--sp-s); border-radius: var(--r-m); white-space: nowrap; font-size: var(--fs-label); }
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--sp-2xl); margin: var(--sp-2xl) 0 var(--sp-l); }
+h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em; line-height: 1.3; }
+.lead { margin: var(--sp-3xs) 0 0; color: var(--muted); font-size: var(--fs-sm); }
+.head-act { display: flex; align-items: center; gap: var(--sp-l); }
+.kpis { display: grid; gap: var(--sp-xl); }
+.glabel { font-size: var(--fs-label); font-weight: 700; margin: 0 0 var(--sp-s); color: var(--ink-2); }
+.glabel span { font-weight: 400; color: var(--muted); font-size: var(--fs-sm); margin-left: var(--sp-m); }
+.gnote { margin: var(--sp-s) 0 0; font-size: var(--fs-sm); color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-min-w), 1fr)); gap: var(--sp-m); }
+.foot { padding-top: var(--sp-3xl); padding-bottom: var(--sp-4xl); font-size: var(--fs-sm); color: var(--muted); }
+/* components.css（指標カード・状態の印・小さなグラフ・表） */
+.card { display: flex; flex-direction: column; min-height: var(--card-min-h); padding: var(--sp-l) var(--sp-xl) var(--sp-m); color: inherit; text-decoration: none; background: var(--card); border-radius: var(--r-l); box-shadow: var(--shadow-card); }
+.card.wide { grid-column: span 2; }
+.k-label { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-s); font-size: var(--fs-label); font-weight: 600; color: var(--ink-2); }
+.go { font-size: var(--fs-sm); font-weight: 400; color: var(--muted); text-decoration: none; white-space: nowrap; }
+.go::after { content: " →"; }
+.go:hover { color: var(--accent); }
+.k-value { font-family: var(--fig); font-size: var(--fs-val); font-weight: var(--fw-val); line-height: 1.12; margin-top: var(--sp-xs); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.k-value .u { font-family: var(--sans); font-size: var(--fs-unit); font-weight: var(--fw-val); margin-left: var(--sp-2xs); color: var(--ink-2); letter-spacing: 0; }
+.k-sub { font-size: var(--fs-sm); color: var(--muted); margin-top: var(--sp-2xs); font-variant-numeric: tabular-nums; }
+.k-viz { margin-top: auto; padding-top: var(--sp-m); display: grid; gap: var(--sp-2xs); }
+.change { display: inline-block; font-weight: 700; padding: 0 var(--sp-xs); border-radius: var(--r-s); margin-right: var(--sp-xs); background: var(--chip); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dir { font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; }
+.change.up { background: var(--chip-up); color: var(--chip-up-ink); }
+/* 増減の記号は配色ごとに出す（今の画面は符号だけ） */
+.change .arw::before { content: ""; }
+.cap { display: flex; justify-content: space-between; gap: var(--sp-s); font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.mark { display: inline-flex; align-items: center; gap: var(--sp-xs); font-size: var(--fs-sm); font-weight: 700; white-space: nowrap; }
+.mark::before { content: ""; display: inline-block; width: var(--mark-dot); height: var(--mark-dot); border-radius: 50%; background: currentColor; }
+.mark.ok { color: var(--ok); }
+.mark.neutral { color: var(--neutral); }
+.mark.warn { color: var(--warn); }
+.mark.ng { color: var(--ng); }
+.meter, .hbar { display: block; height: var(--hbar-h); background: var(--track); border-radius: var(--r-xs); overflow: hidden; }
+.meter { height: var(--meter-h); }
+.meter i, .hbar i { display: block; height: 100%; background: var(--accent); border-radius: var(--r-xs); }
+.stack { display: flex; gap: var(--sp-3xs); height: var(--meter-h); border-radius: var(--r-xs); overflow: hidden; }
+.stack i { display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--sp-3xs) var(--sp-m); font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.legend i { display: inline-block; width: var(--hbar-h); height: var(--hbar-h); border-radius: var(--r-xs); margin-right: var(--sp-xs); }
+.g-0 { background: var(--accent); } .g-1 { background: var(--accent-2); } .g-2 { background: var(--ghost); }
+.chipbar { display: flex; gap: var(--sp-3xs); background: var(--tabs); padding: var(--sp-3xs); border-radius: var(--r-m); }
+.period a { padding: var(--sp-3xs) var(--sp-m); border-radius: var(--r-s); font-size: var(--fs-label); color: var(--ink-2); text-decoration: none; white-space: nowrap; }
+.period a[aria-current="true"] { background: var(--card); color: var(--ink); font-weight: 700; box-shadow: var(--shadow-raised); }
+.asof-in { display: flex; align-items: center; gap: var(--sp-s); font-size: var(--fs-sm); color: var(--muted); }
+.asof-in input { font: inherit; font-size: var(--fs-label); padding: var(--sp-3xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--card); color: var(--ink); width: var(--date-w); }
+.tscroll { overflow: auto; margin-top: var(--sp-s); }
+.tscroll table { border-collapse: collapse; width: 100%; font-size: var(--fs-label); font-variant-numeric: tabular-nums; }
+.tscroll th { text-align: left; font-weight: 600; font-size: var(--fs-sm); color: var(--muted); padding: var(--sp-xs) var(--sp-m) var(--sp-xs) 0; border-bottom: 1px solid var(--ink-2); vertical-align: bottom; white-space: nowrap; }
+.tscroll td { padding: var(--cell-y) var(--sp-m) var(--cell-y) 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.tscroll th:last-child, .tscroll td:last-child { padding-right: 0; }
+.tscroll .num { text-align: right; white-space: nowrap; }
+.th-sub { display: block; font-weight: 400; font-size: var(--fs-xs); }
+.sub { color: var(--muted); }
+.num-link { color: var(--ink); text-decoration: underline; text-decoration-color: var(--ghost); text-underline-offset: .2em; }
+.num-link:hover { color: var(--accent); text-decoration-color: var(--accent); }
+/* サマリー（人が書く週報の最新 1 件） */
+.summary { background: var(--card); border-radius: var(--r-l); padding: var(--sp-l) var(--sp-xl); }
+.s-head { display: flex; align-items: baseline; gap: var(--sp-m); flex-wrap: wrap; }
+.s-head b { font-size: var(--fs); }
+.s-meta { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.s-head .go { margin-left: auto; }
+.s-body { margin: var(--sp-s) 0 0; white-space: pre-line; font-size: var(--fs); color: var(--ink-2); }
+.s-count { display: inline-flex; gap: var(--sp-m); }
+/* モック用: 配色の切り替えと状態での絞り込み */
+.chipbar button { border: 0; background: transparent; padding: var(--sp-3xs) var(--sp-m); border-radius: var(--r-s); font: inherit; font-size: var(--fs-label); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.chipbar button[aria-pressed="true"] { background: var(--card); color: var(--ink); font-weight: 700; box-shadow: var(--shadow-raised); }
+.chipbar .cb-label { align-self: center; padding: 0 var(--sp-xs); font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; }
+.mock-bar { background: var(--ink); color: var(--on-ink); font-size: var(--fs-sm); }
+.mock-bar .wrap { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-m); height: 34px; }
+.mock-bar .chipbar { background: rgba(255, 255, 255, .12); }
+.mock-bar .chipbar button { color: var(--on-ink); font-size: var(--fs-sm); padding: 0 var(--sp-s); }
+.mock-bar .chipbar button[aria-pressed="true"] { background: var(--on-ink); color: var(--ink); }
+.mock-note { margin-right: auto; opacity: .75; }
+.change .arw { font-style: normal; }
+[data-state] { transition: opacity .15s; }
+[data-filter="warn"] [data-state="ok"], [data-filter="warn"] [data-state="none"],
+[data-filter="ng"] [data-state="ok"], [data-filter="ng"] [data-state="none"], [data-filter="ng"] [data-state="warn"] { opacity: var(--dim); }
+.schemes { margin: var(--sp-l) 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--sp-3xs) var(--sp-l); font-size: var(--fs-sm); color: var(--muted); }
+.schemes dt { font-weight: 600; color: var(--ink-2); }
+.schemes dd { margin: 0; }
+.exact { cursor: help; text-decoration: underline dotted transparent; text-underline-offset: .2em; text-decoration-thickness: 1px; }
+.exact:hover { text-decoration-color: var(--muted); }
+.k-value .num-link { color: inherit; text-decoration: none; } .k-value .num-link:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+/* 08: 数字の横一列の帯と、その下の内訳の表 1 つ */
+.sec { margin-top: var(--sp-xl); }
+.band { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--card); border-radius: var(--r-l); padding: var(--sp-l) 0 var(--sp-m); }
+.cell { display: grid; align-content: start; gap: var(--sp-3xs); padding: 0 var(--sp-l); border-left: 1px solid var(--rule); min-width: 0; }
+.cell:first-child { border-left: 0; padding-left: var(--sp-xl); }
+.cell .k-label { font-size: var(--fs-sm); min-height: 2.6em; align-items: flex-start; }
+.cell .k-value { margin-top: 0; font-size: 28px; }
+.cell .k-sub { margin-top: 0; }
+.cell.gap-left { border-left: 1px solid var(--ink-2); }
+.panel { background: var(--card); border-radius: var(--r-l); padding: var(--sp-l) var(--sp-xl) var(--sp-m); }
+.panel td.c-bar { width: 22%; }
+.panel tr.grp td { padding-top: var(--sp-m); font-weight: 700; color: var(--ink-2); border-bottom: 1px solid var(--ink-2); font-size: var(--fs-label); }
+.panel tr.grp td .sub { font-weight: 400; font-size: var(--fs-sm); margin-left: var(--sp-m); }
+.panel tr.grp td .mark { float: right; }
+.panel .note { margin: var(--sp-s) 0 0; font-size: var(--fs-sm); color: var(--muted); }
+.cell .k-label { flex-direction: column; justify-content: flex-start; gap: 0; min-height: 3.4em; white-space: nowrap; }
+.cell .k-label .mark { min-height: 1.4em; }
+/* 配色 2「上の細線」: 帯のマスの上端に状態の線 */
+[data-scheme="2"] .cell { box-shadow: inset 0 3px 0 transparent; padding-top: var(--sp-s); }
+[data-scheme="2"] .cell[data-state="warn"] { box-shadow: inset 0 3px 0 var(--warn); }
+[data-scheme="2"] .cell[data-state="ng"] { box-shadow: inset 0 3px 0 var(--ng); }
+[data-scheme="2"] .band { padding-top: var(--sp-s); }
+/* 配色 3「マスの塗り」: 帯のマスと表の行を状態の淡い地、増減は ▲▼ */
+[data-scheme="3"] { --warn-bg: #f2e7d4; }
+[data-scheme="3"] .band { padding: 0; overflow: hidden; }
+[data-scheme="3"] .cell { padding-top: var(--sp-l); padding-bottom: var(--sp-m); }
+[data-scheme="3"] .cell[data-state="warn"], [data-scheme="3"] tr[data-state="warn"]:not(.grp) td { background: var(--warn-bg); }
+[data-scheme="3"] .cell[data-state="ng"], [data-scheme="3"] tr[data-state="ng"]:not(.grp) td { background: var(--ng-bg); }
+[data-scheme="3"] .change { background: none; padding: 0; }
+[data-scheme="3"] .change.up .arw::before { content: "▲ "; } [data-scheme="3"] .change.down .arw::before { content: "▼ "; }
+[data-scheme="3"] .change.worse .arw::before { color: var(--ng); }
+/* 配色 4「濃紺の帯」: 帯を濃い青の地に白文字、状態は札 */
+[data-scheme="4"] .band { background: var(--chip-up-ink); }
+[data-scheme="4"] .band .cell { border-left-color: rgba(255, 255, 255, .2); }
+[data-scheme="4"] .band .k-label, [data-scheme="4"] .band .k-value, [data-scheme="4"] .band .k-value .u, [data-scheme="4"] .band .dir { color: var(--on-ink); }
+[data-scheme="4"] .band .k-sub { color: var(--accent-2); }
+[data-scheme="4"] .band .change { background: rgba(255, 255, 255, .14); color: var(--on-ink); }
+[data-scheme="4"] .mark { padding: 0 var(--sp-xs); border-radius: var(--r-s); }
+[data-scheme="4"] .mark::before { display: none; }
+[data-scheme="4"] .mark.warn { background: var(--warn-3); color: var(--ink); }
+[data-scheme="4"] .mark.ng { background: var(--ng-bg); color: var(--ng); }
+[data-scheme="4"] .mark.ok { background: var(--ok-bg); color: var(--ok); font-weight: 400; }
+[data-scheme="4"] .band .cell .k-label .mark { align-self: flex-start; min-height: 0; margin-top: var(--sp-3xs); }
+.panel td.num .th-sub { color: var(--muted); line-height: 1.3; }
+/* 配色 5「標準」: 他のページと同じカードに状態の印だけ。注目は絞り込みで */
+[data-scheme="5"] .dir.worse, [data-scheme="5"] .dir.better { display: none; }
+</style>
+</head>
+<body>
+<div class="mock-bar" aria-label="モックの操作"><div class="wrap"><span class="mock-note">モック用の操作（画面には出ない）</span>
+  <span>配色（仮）</span><span class="chipbar" role="group" aria-label="配色（仮）" data-ctl="scheme"><button type="button" data-v="1" aria-pressed="true">1 今の配色</button><button type="button" data-v="2" aria-pressed="false">2 上の細線</button><button type="button" data-v="3" aria-pressed="false">3 マスの塗り</button><button type="button" data-v="4" aria-pressed="false">4 濃紺の帯</button><button type="button" data-v="5" aria-pressed="false">5 標準</button></span></div></div>
+<header class="top"><div class="wrap bar">
+  <a class="brand" href="#">Claude Code 利用状況</a>
+  <nav aria-label="画面"><a href="#" aria-current="page">概況</a><a href="#">サマリー</a><a href="#">コストと利用者</a><a href="#">ツール利用状況</a><a href="#">設定の適用状況</a><a href="#">設定の効果</a><a href="#">収集の状態</a></nav>
+  <span class="bar-end"><span class="asof">2026-10-01 時点</span><a href="#">データと設定</a></span>
+</div></header>
+<main class="wrap">
+  <div class="page-head">
+    <div><h1>概況</h1><p class="lead">コスト・利用者・設定の適用・収集の要点</p></div>
+    <div class="head-act">
+      <nav class="chipbar period" aria-label="期間"><a href="#" aria-current="true">7 日</a><a href="#">28 日</a><a href="#">12 か月</a></nav>
+      <span class="chipbar" role="group" aria-label="表示" data-ctl="filter"><span class="cb-label">表示</span><button type="button" data-v="all" aria-pressed="true">すべて</button><button type="button" data-v="warn" aria-pressed="false">注意以上</button><button type="button" data-v="ng" aria-pressed="false">要確認</button></span>
+      <label class="asof-in">基準日<input type="date" value="2026-10-01"></label>
+    </div>
+  </div>
+<section class="summary" aria-label="サマリー">
+  <div class="s-head"><b>週次サマリー（09/25〜10/01）</b><span class="s-meta">対象 09/25〜10/01 · 作成 10/01</span>
+    <span class="s-count"><span class="mark ng">要確認 3</span><span class="mark warn">注意 2</span></span><a class="go" href="#">サマリーの履歴</a></div>
+  <p class="s-body">【要確認】1 人 1 営業日あたりのコストが前の期間より 15.5% 増えた
+【要確認】9 月の月末見込みが 8 月の実績を 17.0% 上回る
+【要確認】基準を超えた利用者が日・週・月のすべてにいる。要確認の人から利用の中身を聞く
+【注意】1 営業日あたりのコストが前の期間より 12.0% 増えた
+【注意】プラグイン未導入 7 人・未適用のある利用者 10 人に、導入と適用を依頼する
+連休明けで 1 人あたりの利用が増えた。利用者の数はほぼ変わらない。
+来週は、基準を超えた人の使い方と、未導入の 7 人の端末の状況を確かめる。</p>
+</section>
+
+<section class="sec" aria-label="要点">
+  <h2 class="glabel">要点<span>コストと利用者は今期 09/23〜09/29（4 営業日）と前の期間 09/16〜09/22（3 営業日）· 利用明細</span></h2>
+  <div class="band">
+    <div data-state="none" class="cell"><span class="k-label"><span>コスト（利用明細）</span><span class="dir" aria-hidden="true">&nbsp;</span></span>
+      <span class="k-value">$4,160</span>
+      <span class="k-sub">前 $2,786</span>
+      <span class="k-sub"><span class="change up"><i class="arw"></i>+49.3%</span></span></div>
+    <div data-state="warn" class="cell"><span class="k-label"><span>1 営業日あたり</span><span class="mark warn">注意</span></span>
+      <span class="k-value"><span class="exact" title="正確な値 $1,040.00">$1,040</span></span>
+      <span class="k-sub">前 $928.67</span>
+      <span class="k-sub"><span class="change up worse"><i class="arw"></i>+12.0%</span><span class="dir worse">悪化</span></span></div>
+    <div data-state="ng" class="cell"><span class="k-label"><span>1 人 1 営業日あたり</span><span class="mark ng">要確認</span></span>
+      <span class="k-value">$8.13</span>
+      <span class="k-sub">前 $7.04</span>
+      <span class="k-sub"><span class="change up worse"><i class="arw"></i>+15.5%</span><span class="dir worse">悪化</span></span></div>
+    <div data-state="ng" class="cell"><span class="k-label"><span>月末のコスト見込み（9 月）</span><span class="mark ng">要確認</span></span>
+      <span class="k-value">$19,800</span>
+      <span class="k-sub">8 月の実績 $16,920</span>
+      <span class="k-sub"><span class="change up worse"><i class="arw"></i>+17.0%</span><span class="dir worse">悪化</span></span></div>
+    <div data-state="ok" class="cell"><span class="k-label"><span>利用明細にいた利用者</span><span class="mark ok">正常</span></span>
+      <span class="k-value">128<span class="u">人</span></span>
+      <span class="k-sub">前 132 人</span>
+      <span class="k-sub"><span class="change down worse"><i class="arw"></i>−3.0%</span><span class="dir worse">悪化</span></span></div>
+    <div data-state="ok" class="cell gap-left"><span class="k-label"><span>プラグインのエラー</span><span class="mark ok">正常</span></span>
+      <span class="k-value">0<span class="u">件</span></span>
+      <span class="k-sub">直近 7 日</span>
+      <span class="k-sub">データの届き具合 正常</span></div>
+  </div>
+  <p class="gnote">前の期間（見込みは前月の実績）と比べて、コストは +10% で注意・+15% で要確認、利用者は −10% で注意・−15% で要確認。合計は営業日数が違うため判定しない。<a class="num-link" href="#">利用者一覧（コスト順）</a></p>
+</section>
+
+<section class="sec" aria-label="内訳">
+  <h2 class="glabel">内訳<span>行ごとに数える範囲が違う</span></h2>
+  <div class="panel"><div class="tscroll"><table>
+    <thead><tr><th>項目</th><th>数える範囲</th><th class="num">要確認</th><th class="num">注意</th><th class="num">人数・割合</th><th class="c-bar"></th></tr></thead>
+    <tbody>
+      <tr class="grp" data-state="ng"><td colspan="6">基準を超えた利用者<span class="sub">個人のコスト · 基準日 10/01 まで · 期間の切り替えに連動しない</span><span class="mark ng">要確認</span></td></tr>
+      <tr data-state="ng"><td>日</td><td class="sub">7 日のいずれかの 1 日</td><td class="num c-ng"><a class="num-link" href="#">1 人</a><span class="th-sub">$100 超</span></td><td class="num c-warn"><a class="num-link" href="#">4 人</a><span class="th-sub">$50 超</span></td><td></td><td></td></tr>
+      <tr data-state="ng"><td>週</td><td class="sub">7 日の合計</td><td class="num c-ng"><a class="num-link" href="#">2 人</a><span class="th-sub">$150 超</span></td><td class="num c-warn"><a class="num-link" href="#">6 人</a><span class="th-sub">$70 超</span></td><td></td><td></td></tr>
+      <tr data-state="ng"><td>月</td><td class="sub">28 日の合計</td><td class="num c-ng"><a class="num-link" href="#">1 人</a><span class="th-sub">$600 超</span></td><td class="num c-warn"><a class="num-link" href="#">5 人</a><span class="th-sub">$280 超</span></td><td></td><td></td></tr>
+      <tr class="grp" data-state="warn"><td colspan="6">設定の適用<span class="sub">直近 30 日 · 対象 135 人</span><span class="mark warn">注意</span></td></tr>
+      <tr data-state="ok"><td>すべての設定を適用</td><td></td><td></td><td></td><td class="num"><a class="num-link" href="#">118 人</a> <span class="sub">87.4%</span></td><td class="c-bar"><span class="hbar"><i style="width:87.4%"></i></span></td></tr>
+      <tr data-state="warn"><td>未適用のある利用者</td><td class="sub">1 人以上で注意</td><td></td><td></td><td class="num"><a class="num-link" href="#">10 人</a> <span class="sub">7.4%</span></td><td class="c-bar"><span class="hbar"><i style="width:7.4%"></i></span></td></tr>
+      <tr data-state="warn"><td>プラグイン未導入</td><td class="sub">1 人以上で注意</td><td></td><td></td><td class="num"><a class="num-link" href="#">7 人</a> <span class="sub">5.2%</span></td><td class="c-bar"><span class="hbar"><i style="width:5.2%"></i></span></td></tr>
+      <tr class="grp" data-state="none"><td colspan="6">モデルの内訳<span class="sub">今期のコストに占める割合</span></td></tr>
+      <tr data-state="none"><td>Opus</td><td></td><td></td><td></td><td class="num">62%</td><td class="c-bar"><span class="hbar"><i style="width:62%"></i></span></td></tr>
+      <tr data-state="none"><td>Sonnet</td><td></td><td></td><td></td><td class="num">33%</td><td class="c-bar"><span class="hbar"><i style="width:33%"></i></span></td></tr>
+      <tr data-state="none"><td>Haiku</td><td></td><td></td><td></td><td class="num">5%</td><td class="c-bar"><span class="hbar"><i style="width:5%"></i></span></td></tr>
+    </tbody></table></div>
+    <p class="note">人数を押すと該当者の一覧が開く。基準を超えた利用者の要確認の人は、注意の人数に含めない。</p>
+  </div>
+</section>
+
+</main>
+<footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。
+<dl class="schemes"><dt>1 今の配色</dt><dd>今の画面そのまま。状態は点＋語の印、増減は change のチップ（増は青の地）</dd><dt>2 上の細線</dt><dd>帯のマスの上端に状態の色の細い線を引く。増減は今のチップ</dd><dt>3 マスの塗り</dt><dd>帯のマスと表の行の地を状態の淡い色で塗る（注意の淡い地を 1 色足す）。増減は記号 ▲▼</dd><dt>4 濃紺の帯</dt><dd>帯を濃い青の地に白文字にし、状態は淡い地の札で示す</dd><dt>5 標準</dt><dd>他のページと同じカードに状態の印だけ。注目は絞り込みで</dd></dl></footer>
+<script>
+(function () {
+  var root = document.documentElement;
+  function set(ctl, v) {
+    root.setAttribute("data-" + ctl, v);
+    document.querySelectorAll('[data-ctl="' + ctl + '"] button').forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.v === v)); });
+  }
+  document.querySelectorAll("[data-ctl] button").forEach(function (b) {
+    b.addEventListener("click", function () { set(b.parentNode.dataset.ctl, b.dataset.v); });
+  });
+  new URLSearchParams(location.hash.slice(1)).forEach(function (v, k) { if (k === "scheme" || k === "filter") set(k, v); });
+})();
+</script>
+</body>
+</html>
