@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ja" data-scheme="1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code 利用管理の仕組み</title>
+<style>
+:root, html[data-scheme="1"] {
+  --bg: #e8e5e0; --card: #f6f4f0; --inset: #ece9e3; --chip: #e3e0da; --bar: #dedad3;
+  --ink: #2b2926; --ink-2: #4a4640; --muted: #6a645b; --rule: #d6d1c9;
+  --accent: #4c6a78; --accent-2: #a9b9c1; --accent-soft: #dde6ea; --accent-ink: #2f4b58;
+  --rd: #4c6a78; --rc: #4a4640; --rv: #a9b9c1; --node: #fbfaf7;
+  --ng: #9e3a2e; --ng-bg: #f3dfdb; --ok: #3d6b4c; --ok-bg: #e2eadf;
+  --card-line: transparent; --head-bg: transparent; --head-ink: var(--accent);
+}
+html[data-scheme="2"] {
+  --bg: #eef3f4; --card: #ffffff; --inset: #eff5f7; --chip: #e7eff2; --bar: #1f4352;
+  --ink: #1b2a31; --ink-2: #33474f; --muted: #6a7a80; --rule: #d5dde0;
+  --accent: #1f4352; --accent-2: #86adba; --accent-soft: #e2eaed; --accent-ink: #1f4352;
+  --rd: #1f4352; --rc: #3a6e80; --rv: #86adba; --node: #ffffff;
+  --ng: #9e3a2e; --ng-bg: #f4e6e3; --ok: #2f5e6e; --ok-bg: #e2eef0;
+  --card-line: transparent; --head-bg: transparent; --head-ink: #3a6e80;
+}
+html[data-scheme="3"] {
+  --bg: #f4f2ee; --card: #f4f2ee; --inset: #ebe8e2; --chip: #e3e0da; --bar: #f4f2ee;
+  --ink: #2b2926; --ink-2: #4a4640; --muted: #6a645b; --rule: #cfc9bf;
+  --accent: #4c6a78; --accent-2: #a9b9c1; --accent-soft: #dde6ea; --accent-ink: #2f4b58;
+  --rd: #4c6a78; --rc: #2b2926; --rv: #9a958c; --node: #f4f2ee;
+  --ng: #9e3a2e; --ng-bg: #f3dfdb; --ok: #3d6b4c; --ok-bg: #e2eadf;
+  --card-line: #2b2926; --head-bg: #4c6a78; --head-ink: #f6f4f0;
+}
+:root { --sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif; --fig: "Avenir Next", "Helvetica Neue", "Segoe UI", var(--sans); }
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+code { font-family: ui-monospace, Menlo, monospace; font-size: .92em; background: var(--chip); padding: 0 4px; border-radius: 3px; }
+
+.top { background: var(--bar); border-bottom: 1px solid var(--rule); }
+html[data-scheme="2"] .top { color: #fff; border-bottom: 0; }
+html[data-scheme="3"] .top { border-bottom: 2px solid var(--ink); }
+.top .in { max-width: 1240px; margin: 0 auto; padding: 0 20px; height: 54px; display: flex; align-items: center; gap: 16px; }
+.top .brand { font-weight: 700; font-size: 15px; }
+.top .crumb { font-size: 12px; opacity: .75; }
+.scheme { margin-left: auto; display: flex; align-items: center; gap: 4px; font-size: 11px; opacity: .9; }
+.scheme button { font: inherit; border: 1px solid var(--rule); background: var(--card); color: var(--ink-2); border-radius: 5px; padding: 2px 8px; cursor: pointer; }
+.scheme button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+html[data-scheme="2"] .scheme button[aria-pressed="true"] { background: #86adba; border-color: #86adba; color: #1b2a31; }
+
+.wrap { max-width: 1240px; margin: 0 auto; padding: 22px 20px 40px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: .03em; }
+.lead { margin: 4px 0 18px; font-size: 13px; color: var(--ink-2); }
+
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.card { background: var(--card); border-radius: 10px; border: 1px solid var(--card-line); overflow: hidden; display: flex; flex-direction: column; }
+html[data-scheme="3"] .card { border-radius: 0; }
+.span2 { grid-column: span 2; } .span3 { grid-column: 1 / -1; }
+.ch { display: flex; align-items: baseline; gap: 10px; padding: 12px 18px 0; background: var(--head-bg); }
+html[data-scheme="3"] .ch { padding: 7px 18px; }
+.ch .no { font-family: var(--fig); font-weight: 600; font-size: 12px; color: var(--head-ink); }
+.ch h2 { margin: 0; font-size: 15px; color: var(--ink); }
+html[data-scheme="3"] .ch h2 { color: var(--head-ink); }
+.ch .sub { font-size: 12px; color: var(--muted); }
+html[data-scheme="3"] .ch .sub { color: #dce6ea; }
+.cb { padding: 12px 18px 16px; flex: 1; }
+.note { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; font-weight: 600; font-size: 12px; color: var(--muted); padding: 4px 10px 4px 0; border-bottom: 1px solid var(--ink-2); white-space: nowrap; }
+td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+td .s { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+tr.minor td { color: var(--muted); font-size: 12px; font-weight: 400; }
+
+/* 01 */
+.aims { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.aims li { background: var(--inset); border-left: 3px solid var(--accent); padding: 7px 12px; font-size: 13px; font-weight: 700; }
+.aims li span { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+.target { font-size: 13px; color: var(--ink-2); margin: 12px 0 0; }
+.target b { font-family: var(--fig); font-size: 20px; color: var(--ink); margin: 0 2px; }
+.lab { font-size: 12px; font-weight: 700; color: var(--ink-2); margin: 14px 0 6px; }
+.nots { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.nots li { background: var(--ng-bg); padding: 6px 12px; font-size: 13px; font-weight: 600; border-radius: 6px; }
+.nots li span { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+
+/* 02 */
+.fig { overflow-x: auto; }
+.fig svg { display: block; width: 100%; min-width: 620px; height: auto; font-family: var(--sans); }
+.nd { fill: var(--node); stroke: var(--rule); stroke-width: 1.3; }
+.nd.d { stroke: var(--rd); stroke-width: 1.8; } .nd.c { stroke: var(--rc); stroke-width: 1.8; }
+.nt { fill: var(--ink); font-size: 14px; font-weight: 700; text-anchor: middle; }
+.ns { fill: var(--muted); font-size: 11.5px; text-anchor: middle; }
+.ar { fill: none; stroke-width: 2.4; }
+.ar.d { stroke: var(--rd); } .ar.c { stroke: var(--rc); } .ar.v { stroke: var(--rv); stroke-width: 2; stroke-dasharray: 5 4; }
+.mk.d { fill: var(--rd); } .mk.c { fill: var(--rc); } .mk.v { fill: var(--rv); }
+.al { font-size: 12px; font-weight: 600; }
+.al.d { fill: var(--rd); } .al.c { fill: var(--rc); } .al.v { fill: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+.legend i { display: inline-block; width: 18px; border-top: 2.5px solid; vertical-align: middle; margin-right: 6px; }
+.legend .d i { border-color: var(--rd); } .legend .c i { border-color: var(--rc); } .legend .v i { border-top: 2px dashed var(--rv); }
+.stop { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 14px; align-items: baseline; margin-top: 12px; background: var(--ok-bg); border-radius: 7px; padding: 9px 14px; font-size: 13px; }
+.stop .x { color: var(--ng); font-weight: 700; }
+.stop b { color: var(--ok); white-space: nowrap; }
+.stop b.ng { color: var(--ng); }
+.roles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 12px 0 0; padding: 12px 0 0; border-top: 1px solid var(--rule); }
+.roles div { font-size: 12px; color: var(--ink-2); }
+.roles b { display: block; font-size: 12px; color: var(--ink); }
+
+/* 03 */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.steps li { font-size: 13px; }
+.steps .when { display: block; font-size: 11px; font-weight: 700; color: var(--accent); }
+.steps .s { display: block; font-size: 12px; color: var(--muted); }
+.card.d { border-top: 3px solid var(--rd); } .card.c { border-top: 3px solid var(--rc); }
+html[data-scheme="3"] .card.d, html[data-scheme="3"] .card.c { border-top-width: 1px; }
+.val { font-family: var(--fig); font-weight: 600; white-space: nowrap; }
+
+/* 04 */
+.plain { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.plain li { padding: 6px 0; border-bottom: 1px solid var(--rule); font-weight: 600; }
+.plain li .s { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { background: var(--accent-soft); color: var(--accent-ink); border-radius: 5px; padding: 1px 8px; font-size: 12px; font-weight: 600; }
+
+/* 05 */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tile { background: var(--inset); border-radius: 7px; padding: 10px 14px; border-top: 3px solid var(--accent-2); }
+html[data-scheme="3"] .tile { background: transparent; border: 1px solid var(--rule); border-top: 3px solid var(--accent); border-radius: 0; }
+.tile b { display: block; font-size: 13px; }
+.tile p { margin: 2px 0 0; font-size: 12px; color: var(--ink-2); }
+.tile p .em { font-weight: 700; color: var(--accent-ink); }
+.tile p.s { color: var(--muted); }
+.under { display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 10px; margin-top: 12px; }
+.under > div { border-radius: 7px; padding: 9px 14px; font-size: 13px; }
+.under .y { background: var(--ok-bg); } .under .n { background: var(--ng-bg); }
+.under b { display: block; font-size: 12px; }
+.under .y b { color: var(--ok); } .under .n b { color: var(--ng); }
+.under span { display: block; font-size: 12px; color: var(--muted); }
+.under dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 12px; }
+.under dt { font-weight: 700; color: var(--muted); }
+.under dd { margin: 0; }
+
+/* 06-07 */
+.who { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 7px; border-radius: 5px; background: var(--chip); color: var(--ink-2); }
+.who.admin { background: var(--accent-soft); color: var(--accent-ink); }
+.card.limits { background: transparent; border: 1px dashed var(--rule); align-self: start; }
+.ops td:nth-child(2) { white-space: nowrap; }
+.card.limits .ch { background: transparent; }
+.card.limits .ch .no { color: var(--muted); }
+.card.limits .ch h2 { color: var(--ink-2); font-size: 14px; }
+.card.limits ul { margin: 0; padding-left: 1.1em; font-size: 12px; color: var(--muted); display: grid; gap: 4px; }
+.nline { margin: 12px 0 0; padding: 8px 12px; background: var(--ng-bg); border-radius: 7px; font-size: 13px; }
+.nline b { color: var(--ng); margin-right: 10px; }
+
+.foot { font-size: 12px; color: var(--muted); margin: 18px 0 0; }
+.foot span { display: none; }
+html[data-scheme="1"] .foot [data-for="1"], html[data-scheme="2"] .foot [data-for="2"], html[data-scheme="3"] .foot [data-for="3"] { display: inline; }
+
+@media (max-width: 960px) {
+  .grid { grid-template-columns: 1fr; }
+  .span2, .span3 { grid-column: auto; }
+  .tiles, .under { grid-template-columns: 1fr; }
+  .roles { grid-template-columns: 1fr 1fr; }
+  .stop { grid-template-columns: auto 1fr; } .stop > span:last-child { grid-column: 1 / -1; }
+  .top .in { height: auto; padding: 10px 16px; flex-wrap: wrap; gap: 4px 12px; }
+  .wrap { padding: 18px 16px 32px; }
+  td:first-child { white-space: normal; }
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <span class="brand">Claude Code 利用管理</span><span class="crumb">仕組みの説明</span>
+  <div class="scheme" role="group" aria-label="配色（仮）">配色（仮）
+    <button type="button" data-s="1">1</button><button type="button" data-s="2">2</button><button type="button" data-s="3">3</button>
+  </div>
+</div></header>
+
+<main class="wrap">
+<h1>Claude Code 利用管理の仕組み</h1>
+<p class="lead">設定の配布・利用状況とコストの見える化・設定の効果の確認</p>
+
+<div class="grid">
+
+  <section class="card">
+    <div class="ch"><span class="no">01</span><h2>概要</h2></div>
+    <div class="cb">
+      <ul class="aims">
+        <li>設定の配布<span>全員の端末へ同じ設定</span></li>
+        <li>利用状況とコストの見える化<span>誰がどれだけ使い、いくらかかるか</span></li>
+        <li>設定の効果の確認<span>配った設定が効いたか</span></li>
+      </ul>
+      <p class="target">対象<b>約 200</b>名（BMSD 本部の利用者）</p>
+      <p class="nline"><b>しないこと</b>会話の本文・ツールの入出力の収集、リアルタイムの把握（設定の反映は分単位、コストは日次）</p>
+    </div>
+  </section>
+
+  <section class="card span2">
+    <div class="ch"><span class="no">02</span><h2>構成</h2><span class="sub">構成要素と 2 本の経路</span></div>
+    <div class="cb">
+      <div class="fig">
+        <svg viewBox="0 0 900 262" role="img" aria-label="管理者・配布用リポジトリ・利用者の端末・集計サーバ・AI Gateway の構成と、配る経路・集める経路">
+          <defs>
+            <marker id="m-d" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="mk d" d="M0 0 L10 5 L0 10 z"/></marker>
+            <marker id="m-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="mk c" d="M0 0 L10 5 L0 10 z"/></marker>
+            <marker id="m-v" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="mk v" d="M0 0 L10 5 L0 10 z"/></marker>
+          </defs>
+          <path class="ar d" d="M330 46 H112 V184" marker-end="url(#m-d)"/>
+          <text class="al d" x="200" y="38">リリース</text>
+          <path class="ar d" d="M210 220 H326" marker-end="url(#m-d)"/>
+          <text class="al d" x="268" y="210" text-anchor="middle">git で自動更新</text>
+          <path class="ar c" d="M510 220 H676" marker-end="url(#m-c)"/>
+          <text class="al c" x="593" y="210" text-anchor="middle">まとめて送信</text>
+          <path class="ar c" d="M680 46 H514" marker-end="url(#m-c)"/>
+          <text class="al c" x="597" y="38" text-anchor="middle">日ごとの CSV</text>
+          <path class="ar c" d="M470 74 V140 H740 V186" marker-end="url(#m-c)"/>
+          <text class="al c" x="605" y="132" text-anchor="middle">アップロード</text>
+          <path class="ar v" d="M830 188 V104 H492 V78" marker-end="url(#m-v)"/>
+          <text class="al v" x="660" y="96" text-anchor="middle">閲覧</text>
+
+          <rect class="nd" x="330" y="18" width="180" height="56" rx="7"/><text class="nt" x="420" y="43">管理者</text><text class="ns" x="420" y="62">ブラウザ</text>
+          <rect class="nd c" x="680" y="18" width="200" height="56" rx="7"/><text class="nt" x="780" y="43">AI Gateway</text><text class="ns" x="780" y="62">利用明細 CSV を日ごとに出力</text>
+          <rect class="nd d" x="14" y="188" width="196" height="60" rx="7"/><text class="nt" x="112" y="214">配布用リポジトリ</text><text class="ns" x="112" y="234">Bitbucket（社内）</text>
+          <rect class="nd d" x="330" y="188" width="180" height="60" rx="7"/><text class="nt" x="420" y="214">利用者の端末</text><text class="ns" x="420" y="234">Windows / macOS</text>
+          <rect class="nd c" x="680" y="188" width="200" height="60" rx="7"/><text class="nt" x="780" y="214">集計サーバ</text><text class="ns" x="780" y="234">AIP（または One Cloud）</text>
+        </svg>
+      </div>
+      <div class="legend"><span class="d"><i></i>配る経路</span><span class="c"><i></i>集める経路</span><span class="v"><i></i>閲覧</span></div>
+      <div class="stop">
+        <span class="x">× サーバ → 端末</span><b>経路なし</b><span>集計サーバの停止中も、設定とお知らせの配布は止まらない。止まるのは集計だけ</span>
+      </div>
+      <div class="roles">
+        <div><b>配布用リポジトリ</b>プラグイン本体・設定値・お知らせの置き場</div>
+        <div><b>利用者の端末</b>Claude Code ＋ プラグイン。設定の適用・お知らせの表示・記録と送信</div>
+        <div><b>集計サーバ</b>記録の保存（データベース）・集計・管理画面</div>
+        <div><b>利用明細 CSV</b>コストとトークン数の正本</div>
+        <div><b>管理者</b>管理画面での確認と、配布用リポジトリの更新</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card d">
+    <div class="ch"><span class="no">03</span><h2>仕組み</h2><span class="sub">配る流れ</span></div>
+    <div class="cb">
+      <ol class="steps">
+        <li><span class="when">セッション開始時</span>配られた設定値を settings.json に書き込む<span class="s">変更前の settings.json は自動でバックアップ</span></li>
+        <li><span class="when">セッション開始時</span>未読のお知らせを表示<span class="s">関連ページを 1 回だけブラウザで開くことがある</span></li>
+        <li><span class="when">利用者が変えたとき</span>次のセッション開始時に配った値へ戻る（強制）<span class="s">利用者が選ぶ方式は無い</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="card c">
+    <div class="ch"><span class="no">03</span><h2>仕組み</h2><span class="sub">集める流れ</span></div>
+    <div class="cb">
+      <ol class="steps">
+        <li><span class="when">利用中</span>イベントを端末内に記録（フック）</li>
+        <li><span class="when">セッション開始時・応答完了時</span>前回の送信から 10 分以上経っていれば、溜まった記録をまとめて裏で送信</li>
+        <li><span class="when">送れなかったとき</span>端末に残し、後でまとめて送信<span class="s">14 日・20 MB まで。超えた分は古い順に捨てる</span></li>
+      </ol>
+      <p class="note">記録・送信は裏で行い、Claude Code の操作を待たせない。エラーが起きても Claude Code は止まらない。端末には Python 3（<code>python3</code> コマンド）が必要。</p>
+    </div>
+  </section>
+
+  <section class="card d">
+    <div class="ch"><span class="no">03</span><h2>仕組み</h2><span class="sub">配っている設定値</span></div>
+    <div class="cb">
+      <table>
+        <tr><th>設定</th><th>値・狙い</th></tr>
+        <tr><td>プラグインの<br>自動更新</td><td><span class="val">有効</span><span class="s">設定値・お知らせの変更を全端末へ届ける</span></td></tr>
+        <tr><td>本体の<br>自動更新</td><td><span class="val">常に最新版</span><span class="s">全員の版をそろえる。利用者が自動更新を切っていても打ち消す</span></td></tr>
+        <tr class="minor"><td>施策の例<br>（第 1 弾）</td><td>自動コンパクトの閾値をコンテキストの 60% に。大きなコンテキストのまま払うコストを抑える</td></tr>
+      </table>
+      <p class="note">ほかに「初回だけ書き込み、以後は利用者に任せる」配り方もできる（現在は使っていない）。</p>
+    </div>
+  </section>
+
+  <section class="card span2">
+    <div class="ch"><span class="no">04</span><h2>収集範囲</h2><span class="sub">収集項目（端末から）</span></div>
+    <div class="cb">
+      <table>
+        <tr><th>項目</th><th>内容</th></tr>
+        <tr><td>利用者</td><td>会社のメールアドレス（CSV との照合用）・端末名</td></tr>
+        <tr><td>イベント</td><td>種類・イベント時刻・セッション ID<span class="s">種類はセッション開始・プロンプト送信・ツール使用・ツールのエラー・自動コンパクト・応答完了など</span></td></tr>
+        <tr><td>ツール</td><td>ツール名（MCP はサーバ名を含む）・サブエージェントによる使用か・中断か</td></tr>
+        <tr><td>スキル・コマンド</td><td>スキル名・コマンド名・その出所</td></tr>
+        <tr><td>状態</td><td>コンテキストのトークン数（自動コンパクト直前・応答完了時）・エフォート・権限モード</td></tr>
+        <tr><td>版</td><td>Claude Code 本体の版・プラグインの版</td></tr>
+        <tr><td>設定の適用結果</td><td>設定ごとの変更前の値と配った値・適用の結果</td></tr>
+        <tr><td>プラグインのエラー</td><td>処理の段階名とエラーの種類だけ（エラーメッセージは送らない）</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="ch"><span class="no">04</span><h2>収集範囲</h2><span class="sub">収集しない項目・CSV</span></div>
+    <div class="cb">
+      <p class="lab" style="margin-top:0">利用明細 CSV（AI Gateway）の項目</p>
+      <div class="chips"><span>日付</span><span>メールアドレス</span><span>モデル</span><span>コスト</span><span>トークン数</span></div>
+      <p class="note">トークン数は入力・出力・キャッシュ。Claude Code 以外の利用も含む。</p>
+      <p class="lab">収集しない項目</p>
+      <ul class="plain">
+        <li>本文<span class="s">プロンプト本文・Claude の応答本文・会話内容</span></li>
+        <li>ツールの入出力<span class="s">読み書きしたファイルの中身、実行したコマンドの中身</span></li>
+        <li>コスト<span class="s">端末では数えない。CSV から入る</span></li>
+        <li>モデル名<span class="s">端末からは取らない。CSV から入る</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card span3">
+    <div class="ch"><span class="no">05</span><h2>管理画面で分かること</h2></div>
+    <div class="cb">
+      <div class="tiles">
+        <div class="tile"><b>コストと利用者</b><p>全体のコスト・1 人あたり・月末のコスト見込み・利用者数</p><p><span class="em">利用者ごとの一覧</span>（コスト・利用状況）</p></div>
+        <div class="tile"><b>使われ方</b><p>ツール・スキル・コマンド・MCP・サブエージェントの利用</p></div>
+        <div class="tile"><b>設定の適用</b><p>設定どおりの端末・未導入者・本体とプラグインの版</p><p class="s">未導入者は CSV に利用があるのに記録が届かない人。一覧は CSV を取り込んでいる間だけ出せる</p></div>
+        <div class="tile"><b>設定の効果</b><p>配った設定の前後での使われ方の変化（コンテキストの大きさなど）</p></div>
+        <div class="tile"><b>収集の状態</b><p>データの届き具合・プラグインのエラー・記録が途絶えた端末</p></div>
+        <div class="tile"><b>状況の要約</b><p>注意・要確認の表示・管理者が書く週次のサマリー</p></div>
+      </div>
+      <div class="under">
+        <div class="y"><b>効果の根拠にする</b>使われ方の変化<span>自動コンパクトの例なら、コンテキストの大きさが小さい側へずれたか</span></div>
+        <div class="n"><b>効果の根拠にしない</b>コストの前後差<span>時期・業務量・料金など、ほかの要因でも動くため</span></div>
+        <div><dl><dt>アクセス</dt><dd>推測しにくい URL ＋ パスワード（社内 VPN の内側）</dd><dt>データの出し入れ</dt><dd>CSV のアップロード・月ごとのダウンロード</dd></dl></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card span2">
+    <div class="ch"><span class="no">06</span><h2>運用</h2></div>
+    <div class="cb">
+      <table class="ops">
+        <tr><th>担当</th><th>時機</th><th>作業</th></tr>
+        <tr><td><span class="who">利用者</span></td><td>導入時に 1 回</td><td>（Windows）<code>python3</code> の動作確認 → git の会社メールアドレスの確認 → Claude Code で 2 つのコマンドを実行 → 開き直してお知らせが出れば完了</td></tr>
+        <tr><td><span class="who">利用者</span></td><td>日常</td><td>操作なし<span class="s">更新が届かない場合だけ手動更新のコマンド 2 つ</span></td></tr>
+        <tr><td><span class="who admin">管理者</span></td><td>導入を進めるとき</td><td>案内を 2〜3 回に分け、1〜2 週ずつずらす（部署を横断して分ける）<span class="s">施策の効果を、同時期のほかの変化と区別するため</span></td></tr>
+        <tr><td><span class="who admin">管理者</span></td><td>1〜2 週に 1 回程度</td><td>AI Gateway の CSV のアップロード</td></tr>
+        <tr><td><span class="who admin">管理者</span></td><td>随時</td><td>管理画面での確認・未導入者への声かけ</td></tr>
+        <tr><td><span class="who admin">管理者</span></td><td>設定・お知らせの変更時</td><td>プラグインの版を上げて配布用リポジトリへリリース</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="card limits">
+    <div class="ch"><span class="no">07</span><h2>限界</h2></div>
+    <div class="cb">
+      <ul>
+        <li>取りこぼしは許容する（長いオフライン・端末の上限超過・エラー時の記録）。利用ログに厳密な正確性は求めない</li>
+        <li>プロジェクト単位の設定などによる上書きは、適用率に現れない</li>
+        <li>端末ごとの停止に気づけるのは、記録が途絶えて 14 日後</li>
+        <li>コストは 2 日遅れ（利用明細 CSV に今日と前日の分がまだ無い）</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<p class="foot">
+  <span data-for="1">配色 1「管理画面の配色」: 管理画面と同じ地・カード・インク・アクセントの色。</span>
+  <span data-for="2">配色 2「青緑の濃淡」: 上部の帯を濃い青緑にし、経路とカードの区別を青緑の濃淡で付ける。</span>
+  <span data-for="3">配色 3「罫線の格子」: 配色 1 をもとに、カードの塗りを外して黒の罫線で格子を引き、カードの見出し帯だけをアクセント色にする。</span>
+</p>
+</main>
+
+<script>
+(function () {
+  var root = document.documentElement, btns = document.querySelectorAll('.scheme button');
+  function set(n) {
+    if (!/^[123]$/.test(n)) n = '1';
+    root.setAttribute('data-scheme', n);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.s === n)); });
+  }
+  function fromHash() { var m = location.hash.match(/scheme=(\d)/); return m ? m[1] : null; }
+  set(fromHash() || '1');
+  btns.forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.s); history.replaceState(null, '', '#scheme=' + b.dataset.s); }); });
+  window.addEventListener('hashchange', function () { var n = fromHash(); if (n) set(n); });
+})();
+</script>
+</body>
+</html>

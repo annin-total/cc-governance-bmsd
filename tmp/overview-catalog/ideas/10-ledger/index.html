@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code 利用管理台帳</title>
+<style>
+:root{
+  --bg:#fdfdfb; --ink:#1a1a1a; --ink2:#4a4a4a; --ink3:#7a7a7a; --line:#1a1a1a; --hair:#bdbdbd;
+  --c:#1f3f73; --head:#eef0f3;
+  --sans:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  --mono:"SF Mono","Menlo","Consolas","Osaka-Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:13.5px;line-height:1.6;-webkit-text-size-adjust:100%}
+.sheet{max-width:1180px;margin:0 auto;padding:40px 40px 64px}
+.title{display:grid;grid-template-columns:1fr auto;border:1.5px solid var(--line)}
+.title h1{margin:0;padding:16px 20px;font-size:24px;font-weight:700;letter-spacing:.06em;border-right:1px solid var(--line)}
+.title h1 small{display:block;font-size:12px;font-weight:400;letter-spacing:.04em;color:var(--ink2);margin-top:4px}
+.title dl{margin:0;display:grid;grid-template-columns:auto auto;align-content:center}
+.title dt,.title dd{margin:0;padding:6px 14px;border-bottom:1px solid var(--hair);font-size:12.5px}
+.title dt{color:var(--ink2);border-right:1px solid var(--hair);background:var(--head)}
+.title dd{font-family:var(--mono);font-size:12.5px}
+.title dl > :nth-last-child(-n+2){border-bottom:0}
+.purpose{border:1.5px solid var(--line);border-top:0;display:grid;grid-template-columns:120px 1fr 1fr 1fr}
+.purpose > div{padding:10px 14px;border-left:1px solid var(--hair)}
+.purpose > div:first-child{border-left:0;background:var(--head);font-weight:700;font-size:12.5px;display:flex;align-items:center}
+.purpose .no{font-family:var(--mono);color:var(--c);font-size:12px}
+.purpose .v{font-weight:700}
+.idx{margin:18px 0 0;font-size:12px;color:var(--ink2);display:flex;flex-wrap:wrap;gap:4px 18px}
+.idx a{color:var(--ink2);text-decoration:none}
+.idx a b{font-family:var(--mono);color:var(--c);font-weight:600;margin-right:4px}
+.blk{margin-top:34px}
+.bh{display:flex;align-items:baseline;gap:12px;border-bottom:1.5px solid var(--line);padding-bottom:5px;margin-bottom:0}
+.bh .code{font-family:var(--mono);font-size:12.5px;color:#fff;background:var(--c);padding:1px 8px}
+.bh h2{margin:0;font-size:16px;font-weight:700;letter-spacing:.04em}
+.bh .rows{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink3)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;line-height:1.55}
+th,td{border:1px solid var(--hair);padding:6px 10px;text-align:left;vertical-align:top}
+thead th{background:var(--head);font-weight:700;font-size:12px;color:var(--ink2);border-bottom:1px solid var(--line);white-space:nowrap}
+table{border-left:1.5px solid var(--line);border-right:1.5px solid var(--line);border-bottom:1.5px solid var(--line)}
+td.no,th.no{font-family:var(--mono);color:var(--ink3);text-align:right;width:44px;font-size:12px}
+.num{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+.k{font-weight:600;white-space:nowrap}
+.ctr{text-align:center}
+.flag{display:inline-block;font-size:11.5px;padding:0 6px;border:1px solid var(--ink);white-space:nowrap}
+.flag.on{border-color:var(--c);color:#fff;background:var(--c)}
+.flag.off{border-color:var(--ink3);color:var(--ink3)}
+tr.grp td{border-top:1.5px solid var(--line)}
+.remark{font-size:12px;color:var(--ink3);margin:6px 0 0;line-height:1.65}
+.remark li{margin:1px 0}
+.remark ul{margin:0;padding-left:1.2em}
+.fig{border:1.5px solid var(--line);border-top:0;padding:16px 16px 10px;background:#fff}
+.fig .sc{overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:640px;height:auto}
+.fig .cap{font-size:12px;color:var(--ink3);margin-top:6px}
+.note-c{color:var(--c);font-weight:700}
+footer{margin-top:36px;border-top:1.5px solid var(--line);padding-top:8px;font-size:11.5px;color:var(--ink3);display:flex;justify-content:space-between;font-family:var(--mono)}
+@media (max-width:860px){
+  .sheet{padding:20px 16px 48px}
+  .title{grid-template-columns:1fr}
+  .title h1{border-right:0;border-bottom:1px solid var(--line);font-size:20px}
+  .purpose{grid-template-columns:1fr}
+  .purpose > div{border-left:0;border-top:1px solid var(--hair)}
+  .purpose > div:first-child{border-top:0}
+  .tw table{min-width:600px}
+  .fig svg{min-width:900px}
+}
+@media print{
+  .sheet{max-width:none;padding:0}
+  .blk{break-inside:avoid}
+  .fig svg{min-width:0}
+  .tw table{min-width:0}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<div class="title">
+  <h1>Claude Code 利用管理台帳<small>BMSD 本部 ／ 仕組みの一覧</small></h1>
+  <dl>
+    <dt>対象</dt><dd>BMSD 本部 利用者</dd>
+    <dt>対象人数</dt><dd>約 140 名</dd>
+    <dt>更新の粒度</dt><dd>設定の反映: 分単位 ／ コスト: 日次</dd>
+  </dl>
+</div>
+<div class="purpose">
+  <div>目的</div>
+  <div><span class="no">P-1</span><div class="v">設定の配布</div>全員の端末へ同じ設定値</div>
+  <div><span class="no">P-2</span><div class="v">利用状況・コストの見える化</div>管理画面へ集約</div>
+  <div><span class="no">P-3</span><div class="v">設定の効果の確認</div>施策の評価</div>
+</div>
+
+<nav class="idx" aria-label="表の一覧">
+  <a href="#t1"><b>T1</b>構成要素</a>
+  <a href="#t2"><b>T2</b>経路</a>
+  <a href="#t3"><b>T3</b>収集項目</a>
+  <a href="#t4"><b>T4</b>配布設定値</a>
+  <a href="#t5"><b>T5</b>端末処理</a>
+  <a href="#t6"><b>T6</b>管理画面</a>
+  <a href="#t7"><b>T7</b>運用</a>
+  <a href="#t8"><b>T8</b>非対象・限界</a>
+</nav>
+
+<!-- T1 -->
+<div class="blk" id="t1">
+  <div class="bh"><span class="code">T1</span><h2>構成要素</h2><span class="rows">5 件</span></div>
+  <div class="tw"><table>
+    <thead><tr><th class="no">No.</th><th>要素</th><th>置き場</th><th>役割</th></tr></thead>
+    <tbody>
+      <tr><td class="no">1</td><td class="k">配布用リポジトリ</td><td>Bitbucket（社内）</td><td>プラグイン本体・設定値・お知らせの保管。更新は端末へ自動で届く</td></tr>
+      <tr><td class="no">2</td><td class="k">利用者の端末</td><td>Windows / macOS（Claude Code ＋ プラグイン）</td><td>セッション開始時の設定適用・お知らせ表示。イベントの記録とまとめ送信</td></tr>
+      <tr><td class="no">3</td><td class="k">集計サーバ</td><td>AIP（または One Cloud）</td><td>記録の受信・データベースへの保存・集計・管理画面</td></tr>
+      <tr><td class="no">4</td><td class="k">利用明細 CSV</td><td>AI Gateway（日次出力）</td><td>コストとトークン数の正本。管理者が管理画面からアップロード</td></tr>
+      <tr><td class="no">5</td><td class="k">管理者</td><td>ブラウザ</td><td>管理画面の閲覧。設定値・お知らせの変更は配布用リポジトリを更新</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- T2 + figure -->
+<div class="blk" id="t2">
+  <div class="bh"><span class="code">T2</span><h2>経路</h2><span class="rows">3 件</span></div>
+  <div class="tw"><table>
+    <thead><tr><th class="no">No.</th><th>区分</th><th>起点</th><th>経由</th><th>終点</th><th>手段</th><th>サーバ停止時</th></tr></thead>
+    <tbody>
+      <tr><td class="no">1</td><td class="k">配る</td><td>管理者</td><td>Bitbucket</td><td>各端末</td><td>git による自動更新</td><td><span class="flag on">継続</span></td></tr>
+      <tr class="grp"><td class="no">2</td><td class="k">集める</td><td>各端末</td><td class="ctr">—</td><td>集計サーバ</td><td>ネットワーク送信</td><td><span class="flag off">停止</span> 端末に保持</td></tr>
+      <tr><td class="no">3</td><td class="k">集める</td><td>AI Gateway の CSV</td><td>管理者</td><td>集計サーバ</td><td>アップロード</td><td><span class="flag off">停止</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="fig">
+    <div class="sc">
+    <svg viewBox="0 0 1100 200" xmlns="http://www.w3.org/2000/svg" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, Yu Gothic UI, Meiryo, sans-serif" role="img" aria-label="配る経路と集める経路">
+      <defs>
+        <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1a1a1a"/></marker>
+        <marker id="mc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1f3f73"/></marker>
+      </defs>
+      <g font-size="14" text-anchor="middle">
+        <rect x="40" y="20" width="170" height="44" fill="#fff" stroke="#1a1a1a"/><text x="125" y="47">管理者</text>
+        <rect x="460" y="20" width="190" height="44" fill="#fff" stroke="#1a1a1a"/><text x="555" y="47">Bitbucket</text>
+        <rect x="890" y="20" width="170" height="160" fill="#eef0f3" stroke="#1a1a1a"/><text x="975" y="105">各端末</text>
+        <rect x="460" y="136" width="190" height="44" fill="#fff" stroke="#1f3f73" stroke-width="1.5"/><text x="555" y="163">集計サーバ</text>
+        <rect x="40" y="136" width="170" height="44" fill="#fff" stroke="#1a1a1a"/><text x="125" y="163">AI Gateway の CSV</text>
+      </g>
+      <line x1="210" y1="42" x2="456" y2="42" stroke="#1a1a1a" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#m)"/>
+      <line x1="650" y1="42" x2="886" y2="42" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#m)"/>
+      <text x="550" y="96" font-size="12" fill="#7a7a7a" text-anchor="middle">サーバ → 端末の経路なし</text>
+      <line x1="890" y1="158" x2="654" y2="158" stroke="#1f3f73" stroke-width="1.4" marker-end="url(#mc)"/>
+      <line x1="210" y1="158" x2="456" y2="158" stroke="#1f3f73" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#mc)"/>
+      <g font-size="12" fill="#4a4a4a" text-anchor="middle">
+        <text x="333" y="34">No.1 配る</text><text x="768" y="34">No.1 配る</text>
+        <text x="772" y="150" fill="#1f3f73">No.2 集める</text><text x="333" y="150" fill="#1f3f73">No.3 管理者がアップロード</text>
+      </g>
+    </svg>
+    </div>
+    <div class="cap">図 1 　経路の全体。実線は自動、破線は管理者の手作業。</div>
+  </div>
+</div>
+
+<!-- T3 -->
+<div class="blk" id="t3">
+  <div class="bh"><span class="code">T3</span><h2>収集項目</h2><span class="rows">15 件</span></div>
+  <div class="tw"><table>
+    <thead><tr><th class="no">No.</th><th>区分</th><th>出所</th><th>項目</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td class="no">1</td><td><span class="flag on">収集する</span></td><td>端末</td><td class="k">利用者</td><td>会社のメールアドレス（CSV との照合用）・端末名</td></tr>
+      <tr><td class="no">2</td><td><span class="flag on">収集する</span></td><td>端末</td><td class="k">イベント</td><td>種類（セッション開始・プロンプト送信・ツール使用・ツールのエラー・自動コンパクト・応答完了 など）・イベント時刻・セッション ID</td></tr>
+      <tr><td class="no">3</td><td><span class="flag on">収集する</span></td><td>端末</td><td class="k">ツール</td><td>ツール名（MCP はサーバ名を含む）・サブエージェントによる使用か・中断か</td></tr>
+      <tr><td class="no">4</td><td><span class="flag on">収集する</span></td><td>端末</td><td class="k">スキル・コマンド</td><td>スキル名・コマンド名・その出所</td></tr>
+      <tr><td class="no">5</td><td><span class="flag on">収集する</span></td><td>端末</td><td class="k">状態</td><td>コンテキストのトークン数（自動コンパクト直前・応答完了時）・エフォート・権限モード</td></tr>
+      <tr><td class="no">6</td><td><span class="flag on">収集する</span></td><td>端末</td><td class="k">版</td><td>Claude Code 本体の版・プラグインの版</td></tr>
+      <tr><td class="no">7</td><td><span class="flag on">収集する</span></td><td>端末</td><td class="k">設定の適用結果</td><td>設定ごとの変更前の値・配った値・適用の結果</td></tr>
+      <tr><td class="no">8</td><td><span class="flag on">収集する</span></td><td>端末</td><td class="k">プラグインのエラー</td><td>処理の段階名・エラーの種類のみ</td></tr>
+      <tr class="grp"><td class="no">9</td><td><span class="flag on">収集する</span></td><td>CSV</td><td class="k">利用明細</td><td>日付・メールアドレス・モデル・コスト・トークン数（入力・出力・キャッシュ）。Claude Code 以外の利用を含む</td></tr>
+      <tr class="grp"><td class="no">10</td><td><span class="flag off">収集しない</span></td><td>—</td><td class="k">プロンプト本文</td><td>—</td></tr>
+      <tr><td class="no">11</td><td><span class="flag off">収集しない</span></td><td>—</td><td class="k">応答本文・会話内容</td><td>—</td></tr>
+      <tr><td class="no">12</td><td><span class="flag off">収集しない</span></td><td>—</td><td class="k">ツールの入出力</td><td>読み書きしたファイルの中身・実行したコマンドの中身</td></tr>
+      <tr><td class="no">13</td><td><span class="flag off">収集しない</span></td><td>—</td><td class="k">エラーメッセージ</td><td>プラグインのエラーは段階名と種類だけ</td></tr>
+      <tr><td class="no">14</td><td><span class="flag off">端末では取らない</span></td><td>CSV</td><td class="k">コスト</td><td>正本は CSV</td></tr>
+      <tr><td class="no">15</td><td><span class="flag off">端末では取らない</span></td><td>CSV</td><td class="k">モデル名</td><td>CSV に含まれる</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- T4 -->
+<div class="blk" id="t4">
+  <div class="bh"><span class="code">T4</span><h2>配布設定値</h2><span class="rows">3 件</span></div>
+  <div class="tw"><table>
+    <thead><tr><th class="no">No.</th><th>設定</th><th>値</th><th>配り方</th><th>狙い</th></tr></thead>
+    <tbody>
+      <tr><td class="no">1</td><td class="k">自動コンパクトの閾値</td><td class="num">コンテキストの 60%</td><td>強制</td><td>大きなコンテキストのまま払うコストの抑制。<span class="note-c">効果測定の対象</span></td></tr>
+      <tr><td class="no">2</td><td class="k">プラグインの自動更新</td><td>有効</td><td>強制</td><td>設定値・お知らせの変更を全端末へ</td></tr>
+      <tr><td class="no">3</td><td class="k">Claude Code 本体の自動更新</td><td>常に最新版</td><td>強制</td><td>全員の版の統一。利用者側の無効化も打ち消す</td></tr>
+    </tbody>
+  </table></div>
+  <div class="remark"><ul>
+    <li>強制: 利用者が変えても、次のセッション開始時に配った値へ戻る。利用者が選ぶ方式は無い</li>
+    <li>別の配り方として「初回だけ書き込み、以後は利用者に任せる」も可能（現在は不使用）</li>
+  </ul></div>
+</div>
+
+<!-- T5 -->
+<div class="blk" id="t5">
+  <div class="bh"><span class="code">T5</span><h2>端末処理</h2><span class="rows">3 件</span></div>
+  <div class="tw"><table>
+    <thead><tr><th class="no">No.</th><th>時機</th><th>処理</th><th>条件・上限</th></tr></thead>
+    <tbody>
+      <tr><td class="no">1</td><td class="k">セッション開始時</td><td>設定値を settings.json へ書き込み（変更前は自動でバックアップ）。未読のお知らせを表示</td><td>関連ページをブラウザで開くことがある（1 回だけ）</td></tr>
+      <tr><td class="no">2</td><td class="k">利用中</td><td>イベントを端末内に記録（フック）</td><td>—</td></tr>
+      <tr><td class="no">3</td><td class="k">セッション開始時・応答完了時</td><td>溜まった記録をまとめて裏で送信</td><td>前回送信から <span class="num">10 分</span>以上。未送信分の保持は <span class="num">14 日</span>・<span class="num">20 MB</span> まで（超過分は古い順に破棄）</td></tr>
+    </tbody>
+  </table></div>
+  <div class="remark"><ul>
+    <li>記録・送信は裏で行い、操作を待たせない。エラーでも Claude Code は止まらない</li>
+    <li>前提: 端末に Python 3（<code>python3</code> コマンド）</li>
+  </ul></div>
+</div>
+
+<!-- T6 -->
+<div class="blk" id="t6">
+  <div class="bh"><span class="code">T6</span><h2>管理画面</h2><span class="rows">4 画面 ＋ データ管理</span></div>
+  <div class="tw"><table>
+    <thead><tr><th class="no">No.</th><th>画面</th><th>答える問い</th><th>主な中身</th></tr></thead>
+    <tbody>
+      <tr><td class="no">1</td><td class="k">概況</td><td>全体の費用と利用者</td><td>コスト・利用者数・月末のコスト見込み・データの届き具合・プラグインのエラー。期間 <span class="num">7 日 / 28 日 / 12 か月</span></td></tr>
+      <tr><td class="no">2</td><td class="k">設定の適用状況</td><td>設定どおりの端末</td><td>適用率・未導入者（CSV に利用があり記録が届かない人）・記録が途絶えた端末（<span class="num">14 日</span>以上）・本体とプラグインの版の分布</td></tr>
+      <tr><td class="no">3</td><td class="k">設定の効果</td><td>配った設定の効き目</td><td>適用開始日を起点にした前後の推移・コンテキストのトークン数の分布</td></tr>
+      <tr><td class="no">4</td><td class="k">スキル・コマンドの利用</td><td>配ったものの利用</td><td>スキル・コマンドごとの利用</td></tr>
+      <tr><td class="no">5</td><td class="k">データと設定</td><td class="ctr">—</td><td>CSV のアップロード・月ごとのダウンロード（ZIP）・会社の休日の登録</td></tr>
+    </tbody>
+  </table></div>
+  <div class="remark"><ul>
+    <li>アクセス: 推測しにくい URL ＋ パスワード（社内 VPN の内側）</li>
+    <li>効果の判定: コンテキストの大きさが小さい側へずれたか。コストの前後差は時期・業務量・料金でも動くため根拠にしない</li>
+    <li>未導入者の一覧は CSV の取り込み期間中のみ</li>
+  </ul></div>
+</div>
+
+<!-- T7 -->
+<div class="blk" id="t7">
+  <div class="bh"><span class="code">T7</span><h2>運用</h2><span class="rows">6 件</span></div>
+  <div class="tw"><table>
+    <thead><tr><th class="no">No.</th><th>担当</th><th>時機</th><th>作業</th></tr></thead>
+    <tbody>
+      <tr><td class="no">1</td><td class="k">利用者</td><td>導入時 1 回</td><td>（Windows）<code>python3</code> の動作確認 → git の会社メールアドレス確認 → Claude Code でコマンド 2 つ実行 → 開き直してお知らせ表示で完了</td></tr>
+      <tr><td class="no">2</td><td class="k">利用者</td><td>日常</td><td>操作なし。更新も自動（届かない場合のみ手動更新のコマンド 2 つ）</td></tr>
+      <tr class="grp"><td class="no">3</td><td class="k">管理者</td><td>導入の推進時</td><td>案内を 2〜3 回に分割、1〜2 週ずつずらす（部署横断）。同時期のほかの変化と効果を区別するため</td></tr>
+      <tr><td class="no">4</td><td class="k">管理者</td><td class="num">1〜2 週に 1 回程度</td><td>AI Gateway の CSV を管理画面からアップロード</td></tr>
+      <tr><td class="no">5</td><td class="k">管理者</td><td>随時</td><td>データの届き具合・エラー・未導入者の確認。未導入者への声かけ</td></tr>
+      <tr><td class="no">6</td><td class="k">管理者</td><td>設定・お知らせの変更時</td><td>プラグインの版を上げ、配布用リポジトリへリリース → 各端末へ自動で届く</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- T8 -->
+<div class="blk" id="t8">
+  <div class="bh"><span class="code">T8</span><h2>非対象・限界</h2><span class="rows">6 件</span></div>
+  <div class="tw"><table>
+    <thead><tr><th class="no">No.</th><th>区分</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td class="no">1</td><td class="k">非対象</td><td>利用者個人の監視をしない。個人ごとの操作の時系列を見る画面は無い</td></tr>
+      <tr><td class="no">2</td><td class="k">非対象</td><td>リアルタイムの表示（設定の反映は分単位、コストは日次）</td></tr>
+      <tr><td class="no">3</td><td class="k">非対象</td><td>サーバから端末への指示</td></tr>
+      <tr class="grp"><td class="no">4</td><td class="k">限界</td><td>取りこぼしの許容（長いオフライン・端末の上限超過・エラー時の記録）。利用ログに厳密な正確性は求めない</td></tr>
+      <tr><td class="no">5</td><td class="k">限界</td><td>プロジェクト単位の設定などによる上書きは、適用率に現れない</td></tr>
+      <tr><td class="no">6</td><td class="k">限界</td><td>端末ごとの停止の検知は、記録の途絶から <span class="num">14 日</span>後</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<footer><span>Claude Code 利用管理台帳</span><span>T1–T8 ／ 図 1</span></footer>
+</div>
+</body>
+</html>
