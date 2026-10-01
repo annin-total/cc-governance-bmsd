@@ -60,7 +60,8 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 .change { display: inline-block; font-weight: 700; padding: 0 var(--sp-xs); border-radius: var(--r-s); margin-right: var(--sp-xs); background: var(--chip); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dir { font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; }
 .change.up { background: var(--chip-up); color: var(--chip-up-ink); }
-.change .arw::before { content: "↑ "; } .change.down .arw::before { content: "↓ "; }
+/* 増減の記号は配色ごとに出す（今の画面は符号だけ） */
+.change .arw::before { content: ""; }
 .cap { display: flex; justify-content: space-between; gap: var(--sp-s); font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 .mark { display: inline-flex; align-items: center; gap: var(--sp-xs); font-size: var(--fs-sm); font-weight: 700; white-space: nowrap; }
 .mark::before { content: ""; display: inline-block; width: var(--mark-dot); height: var(--mark-dot); border-radius: 50%; background: currentColor; }
@@ -103,8 +104,12 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 .chipbar button { border: 0; background: transparent; padding: var(--sp-3xs) var(--sp-m); border-radius: var(--r-s); font: inherit; font-size: var(--fs-label); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
 .chipbar button[aria-pressed="true"] { background: var(--card); color: var(--ink); font-weight: 700; box-shadow: var(--shadow-raised); }
 .chipbar .cb-label { align-self: center; padding: 0 var(--sp-xs); font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; }
-.head-col { display: grid; justify-items: end; gap: var(--sp-s); }
-.scheme-bar { display: flex; justify-content: flex-end; }
+.mock-bar { background: var(--ink); color: var(--on-ink); font-size: var(--fs-sm); }
+.mock-bar .wrap { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-m); height: 34px; }
+.mock-bar .chipbar { background: rgba(255, 255, 255, .12); }
+.mock-bar .chipbar button { color: var(--on-ink); font-size: var(--fs-sm); padding: 0 var(--sp-s); }
+.mock-bar .chipbar button[aria-pressed="true"] { background: var(--on-ink); color: var(--ink); }
+.mock-note { margin-right: auto; opacity: .75; }
 .change .arw { font-style: normal; }
 [data-state] { transition: opacity .15s; }
 [data-filter="warn"] [data-state="ok"], [data-filter="warn"] [data-state="none"],
@@ -112,6 +117,9 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 .schemes { margin: var(--sp-l) 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--sp-3xs) var(--sp-l); font-size: var(--fs-sm); color: var(--muted); }
 .schemes dt { font-weight: 600; color: var(--ink-2); }
 .schemes dd { margin: 0; }
+.exact { cursor: help; text-decoration: underline dotted transparent; text-underline-offset: .2em; text-decoration-thickness: 1px; }
+.exact:hover { text-decoration-color: var(--muted); }
+.k-value .num-link { color: inherit; text-decoration: none; } .k-value .num-link:hover { text-decoration: underline; text-decoration-thickness: 2px; }
 /* 06: 主役の数字 1 つと脇の小さい数字を持つ主従カード */
 .kpis { margin-top: 0; }
 .cards.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -142,9 +150,20 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 [data-scheme="4"] .card > .k-label { padding-right: var(--sp-s); }
 [data-scheme="4"] .change { background: none; padding: 0; color: var(--ink); }
 [data-scheme="4"] .dir.worse { color: var(--ink); font-weight: 700; }
+.units { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-l); margin-top: var(--sp-s); }
+.units > div { display: grid; align-content: start; padding-top: var(--sp-s); border-top: 1px solid var(--rule); }
+.units .lbl { font-size: var(--fs-label); font-weight: 600; color: var(--ink-2); }
+.units .lbl .sub { font-weight: 400; font-size: var(--fs-sm); }
+.units .k-value { margin-top: var(--sp-2xs); }
+.units .k-sub { margin-top: 0; }
+[data-scheme="4"] .change .arw::before { content: "↑ "; } [data-scheme="4"] .change.down .arw::before { content: "↓ "; }
+[data-scheme="2"] [data-state="ng"] .units .k-value { color: var(--ng); }
+[data-scheme="3"] .units .k-value { justify-self: start; padding-bottom: var(--sp-3xs); border-bottom: 3px solid var(--ng); }
 </style>
 </head>
 <body>
+<div class="mock-bar" aria-label="モックの操作"><div class="wrap"><span class="mock-note">モック用の操作（画面には出ない）</span>
+  <span>配色（仮）</span><span class="chipbar" role="group" aria-label="配色（仮）" data-ctl="scheme"><button type="button" data-v="1" aria-pressed="true">1 今の配色</button><button type="button" data-v="2" aria-pressed="false">2 主役の色</button><button type="button" data-v="3" aria-pressed="false">3 下線</button><button type="button" data-v="4" aria-pressed="false">4 角の三角</button></span></div></div>
 <header class="top"><div class="wrap bar">
   <a class="brand" href="#">Claude Code 利用状況</a>
   <nav aria-label="画面"><a href="#" aria-current="page">概況</a><a href="#">サマリー</a><a href="#">コストと利用者</a><a href="#">ツール利用状況</a><a href="#">設定の適用状況</a><a href="#">設定の効果</a><a href="#">収集の状態</a></nav>
@@ -153,57 +172,55 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 <main class="wrap">
   <div class="page-head">
     <div><h1>概況</h1><p class="lead">コスト・利用者・設定の適用・収集の要点</p></div>
-    <div class="head-col">
-    <div class="scheme-bar"><span class="chipbar" role="group" aria-label="配色（仮）" data-ctl="scheme"><span class="cb-label">配色（仮）</span><button type="button" data-v="1" aria-pressed="true">1 今の配色</button><button type="button" data-v="2" aria-pressed="false">2 主役の色</button><button type="button" data-v="3" aria-pressed="false">3 下線</button><button type="button" data-v="4" aria-pressed="false">4 角の三角</button></span></div>
     <div class="head-act">
       <nav class="chipbar period" aria-label="期間"><a href="#" aria-current="true">7 日</a><a href="#">28 日</a><a href="#">12 か月</a></nav>
       <span class="chipbar" role="group" aria-label="表示" data-ctl="filter"><span class="cb-label">表示</span><button type="button" data-v="all" aria-pressed="true">すべて</button><button type="button" data-v="warn" aria-pressed="false">注意以上</button><button type="button" data-v="ng" aria-pressed="false">要確認</button></span>
       <label class="asof-in">基準日<input type="date" value="2026-10-01"></label>
     </div>
-    </div>
   </div>
 <div class="kpis">
-  <section aria-label="コスト">
-    <h2 class="glabel">コスト（利用明細）<span>今期 09/23〜09/29（4 営業日）· 前の期間 09/16〜09/22（3 営業日）· 前と比べて +10% で注意、+15% で要確認</span></h2>
+  <section aria-label="コストと利用者">
+    <h2 class="glabel">コストと利用者（利用明細）<span>今期 09/23〜09/29（4 営業日）· 前の期間 09/16〜09/22（3 営業日）</span></h2>
     <div class="cards four">
       <div class="card" data-state="warn"><span class="k-label"><span>1 営業日あたり</span><span class="mark warn">注意</span></span>
-        <span class="k-value">$1,040.00</span>
-        <span class="k-sub"><span class="change up worse"><i class="arw"></i>+12.0%</span><span class="dir worse">悪化</span> · 前の期間 $928.67</span>
-        <div class="side"><div><span class="lbl">合計</span><span class="val">$4,160</span></div>
-          <div><span class="lbl">合計の前の期間比</span><span class="val">+49.3%<span class="sub"> +$1,374</span></span></div></div></div>
+        <span class="k-value"><span class="exact" title="正確な値 $1,040.00">$1,040</span></span>
+        <span class="k-sub"><span class="change up worse"><i class="arw"></i>+12.0%</span><span class="dir worse">悪化</span></span>
+        <div class="side"><div><span class="lbl">前の期間</span><span class="val">$928.67</span></div>
+          <div><span class="lbl">合計 · 前 $2,786</span><span class="val">$4,160<span class="sub"> +49.3%</span></span></div></div></div>
       <div class="card" data-state="ng"><span class="k-label"><span>1 人 1 営業日あたり</span><span class="mark ng">要確認</span></span>
         <span class="k-value">$8.13</span>
-        <span class="k-sub"><span class="change up worse"><i class="arw"></i>+15.5%</span><span class="dir worse">悪化</span> · 前の期間比</span>
+        <span class="k-sub"><span class="change up worse"><i class="arw"></i>+15.5%</span><span class="dir worse">悪化</span></span>
         <div class="side"><div><span class="lbl">前の期間</span><span class="val">$7.04</span></div>
           <div><span class="lbl">一覧</span><span class="val txt"><a class="num-link" href="#">利用者（コスト順）</a></span></div></div></div>
       <div class="card" data-state="ng"><span class="k-label"><span>月末のコスト見込み（9 月）</span><span class="mark ng">要確認</span></span>
         <span class="k-value">$19,800</span>
-        <span class="k-sub"><span class="change up worse"><i class="arw"></i>+17.0%</span><span class="dir worse">悪化</span> · 8 月の実績と比べて</span>
+        <span class="k-sub"><span class="change up worse"><i class="arw"></i>+17.0%</span><span class="dir worse">悪化</span><span class="dir"> · 8 月の実績比</span></span>
         <div class="side"><div><span class="lbl">8 月の実績</span><span class="val">$16,920</span></div>
           <div><span class="lbl">9 月の利用明細</span><span class="val">09/29<span class="sub"> まで</span></span></div></div></div>
-      <div class="card" data-state="none"><span class="k-label"><span>モデルの内訳</span><a class="go" href="#">一覧</a></span>
-        <span class="k-value">62<span class="u">% Opus</span></span>
-        <span class="k-sub">今期のコストに占める割合</span>
-        <span class="stack"><i class="g-0" style="flex:62"></i><i class="g-1" style="flex:33"></i><i class="g-2" style="flex:5"></i></span>
-        <div class="side"><div><span class="lbl">Sonnet</span><span class="val">33%</span></div>
-          <div><span class="lbl">Haiku</span><span class="val">5%</span></div></div></div>
-    </div>
-  </section>
-  <section aria-label="利用者と設定">
-    <h2 class="glabel">利用者・設定・収集<span>数える範囲はカードごとに異なる</span></h2>
-    <div class="cards four">
       <div class="card" data-state="ok"><span class="k-label"><span>利用明細にいた利用者</span><span class="mark ok">正常</span></span>
-        <span class="scope-line">今期（コストと同じ範囲）</span>
         <span class="k-value">128<span class="u">人</span></span>
-        <span class="k-sub"><span class="change down worse"><i class="arw"></i>−3.0%</span><span class="dir worse">悪化</span> · −10% で注意</span>
+        <span class="k-sub"><span class="change down worse"><i class="arw"></i>−3.0%</span><span class="dir worse">悪化</span></span>
         <div class="side"><div><span class="lbl">前の期間</span><span class="val">132<span class="sub"> 人</span></span></div>
           <div><span class="lbl">差</span><span class="val">−4<span class="sub"> 人</span></span></div></div></div>
-      <div class="card" data-state="ng"><span class="k-label"><span>基準を超えた利用者</span><span class="mark ng">要確認</span></span>
-        <span class="scope-line">週 = 基準日 10/01 までの 7 日の合計</span>
-        <span class="k-value">8<span class="u">人</span></span>
-        <span class="k-sub">週 要確認 <a class="num-link" href="#">2</a> · 注意 <a class="num-link" href="#">6</a></span>
-        <div class="side"><div><span class="lbl">日（1 日）</span><span class="val"><a class="num-link" href="#">1</a><span class="sub"> · </span><a class="num-link" href="#">4</a><span class="sub"> 人</span></span></div>
-          <div><span class="lbl">月（28 日の合計）</span><span class="val"><a class="num-link" href="#">1</a><span class="sub"> · </span><a class="num-link" href="#">5</a><span class="sub"> 人</span></span></div></div></div>
+    </div>
+    <p class="gnote">前の期間（見込みは前月の実績）と比べて、コストは +10% で注意・+15% で要確認、利用者は −10% で注意・−15% で要確認。合計は営業日数が違うため判定しない。</p>
+  </section>
+  <section aria-label="基準・設定・収集">
+    <h2 class="glabel">基準・設定・収集<span>基準日 10/01 で数える · 期間の切り替えに連動しない</span></h2>
+    <div class="cards four">
+      <div class="card wide" data-state="ng"><span class="k-label"><span>基準を超えた利用者</span><span class="mark ng">要確認</span></span>
+        <span class="scope-line">個人のコスト · 大きい数字が要確認の人数</span>
+        <div class="units">
+          <div><span class="lbl">日<span class="sub"> · いずれかの 1 日</span></span>
+            <span class="k-value"><a class="num-link" href="#">1</a><span class="u">人</span></span>
+            <span class="k-sub">要確認は $100 超</span><span class="k-sub">注意 <b><a class="num-link" href="#">4</a></b> 人 · $50 超</span></div>
+          <div><span class="lbl">週<span class="sub"> · 7 日の合計</span></span>
+            <span class="k-value"><a class="num-link" href="#">2</a><span class="u">人</span></span>
+            <span class="k-sub">要確認は $150 超</span><span class="k-sub">注意 <b><a class="num-link" href="#">6</a></b> 人 · $70 超</span></div>
+          <div><span class="lbl">月<span class="sub"> · 28 日の合計</span></span>
+            <span class="k-value"><a class="num-link" href="#">1</a><span class="u">人</span></span>
+            <span class="k-sub">要確認は $600 超</span><span class="k-sub">注意 <b><a class="num-link" href="#">5</a></b> 人 · $280 超</span></div>
+        </div></div>
       <div class="card" data-state="warn"><span class="k-label"><span>すべての設定を適用</span><span class="mark warn">注意</span></span>
         <span class="scope-line">直近 30 日 · 対象者のうち</span>
         <span class="k-value">118<span class="u">/ 135 人</span></span>
@@ -211,13 +228,11 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
         <div class="side"><div><span class="lbl">未適用のある利用者</span><span class="val"><a class="num-link" href="#">10</a><span class="sub"> 人</span></span></div>
           <div><span class="lbl">プラグイン未導入</span><span class="val"><a class="num-link" href="#">7</a><span class="sub"> 人</span></span></div></div></div>
       <div class="card" data-state="ok"><span class="k-label"><span>プラグインのエラー</span><span class="mark ok">正常</span></span>
-        <span class="scope-line">直近 7 日</span>
+        <span class="scope-line">直近 7 日 · 1 件以上で注意</span>
         <span class="k-value">0<span class="u">件</span></span>
-        <span class="k-sub">1 件以上で注意</span>
         <div class="side"><div><span class="lbl">データの届き具合</span><span class="val"><span class="mark ok">正常</span></span></div>
           <div><span class="lbl">詳しく</span><span class="val txt"><a class="num-link" href="#">収集の状態</a></span></div></div></div>
     </div>
-    <p class="gnote">基準を超えた利用者: 数字は「要確認 · 注意」の順。要確認 / 注意の基準は 日 $100 / $50 · 週 $150 / $70 · 月 $600 / $280。基準日で数え、期間の切り替えに連動しない。</p>
   </section>
 </div>
 <div class="later"><section class="summary" aria-label="サマリー">
