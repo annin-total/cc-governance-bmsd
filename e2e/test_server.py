@@ -46,13 +46,38 @@ def test_ingestはトークンが正しければ保存し誤りなら401(server)
     assert server.request("POST", url, body, wrong)[0] == 401
 
 
-def test_CSV_DIRのCSVを取り込むと取込結果が出る(server):
-    rows = len(_SAMPLE_CSV.read_text(encoding="utf-8").splitlines()) - 1
+def _multipart(fields: dict, name: str, data: bytes) -> tuple:
+    """`fields` と `file` 1 つの multipart/form-data の (本文, Content-Type)。"""
+    boundary = uuid.uuid4().hex
+    parts = [
+        f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode()
+        for k, v in fields.items()
+    ]
+    head = (
+        f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
+        f'filename="{name}"\r\nContent-Type: text/csv\r\n\r\n'
+    )
+    body = b"".join(parts) + head.encode() + data + f"\r\n--{boundary}--\r\n".encode()
+    return body, f"multipart/form-data; boundary={boundary}"
+
+
+def test_データと設定の画面でCSVを受け取るとCSV_DIRに置いて取り込む(server):
+    data = _SAMPLE_CSV.read_bytes()
+    rows = len(data.decode("utf-8").splitlines()) - 1
     assert rows > 0
-    docker("cp", str(_SAMPLE_CSV), f"{server.name}:{CSV_DIR}/{_SAMPLE_CSV.name}")
-    status, body, _ = server.request("POST", server.admin_path("/import"), auth=True)
-    assert status == 200, body
-    assert f"{_SAMPLE_CSV.name}: {rows} 行" in body, body
+    _, page, _ = server.request("GET", server.admin_path("/settings"), auth=True)
+    # 画面が生成するフォームの送り先がサブパスを含むこと（CSS と同じく SCRIPT_NAME が効いている）
+    action = re.search(r'action="([^"]+)" enctype="multipart/form-data"', page)
+    assert action and action[1].startswith(server.admin_path("/")), page
+    token = re.search(r'name="csrf" value="([^"]+)"', page)
+    assert token, page
+    body, ctype = _multipart({"csrf": token[1]}, _SAMPLE_CSV.name, data)
+    status, text, _ = server.request(
+        "POST", action[1], body, {"Content-Type": ctype}, auth=True
+    )
+    assert status == 200, text
+    assert f"{_SAMPLE_CSV.name}: {rows} 行" in text, text
+    docker("exec", server.name, "test", "-f", f"{CSV_DIR}/{_SAMPLE_CSV.name}")
 
 
 def test_契約の複製が1バイト違うと起動しない(root, docker_ok):

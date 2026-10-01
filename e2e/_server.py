@@ -1,7 +1,7 @@
 """集計サーバを本番に近い形（Docker イメージ + entry.sh + BASE_PATH + Secret ファイル）で動かす。
 
 バインドマウントを使わない。Colima の既定ではホームの外（macOS の TMPDIR を含む）のマウントが
-無言で空になる（docs/knowledge/db-and-framework-facts.md）。Secret と CSV は `docker cp` で入れる。
+無言で空になる（docs/knowledge/db-and-framework-facts.md）。Secret は `docker cp` で入れる。
 公開は 127.0.0.1 の空きポートだけ。作る資源にはすべて `LABEL` を付け、片付け漏れを検出できるようにする。
 """
 

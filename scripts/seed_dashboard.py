@@ -4,7 +4,7 @@
 使い方: DB_DSN=<DSN> python3 scripts/seed_dashboard.py [--users 人数] [--days 日数] [--no-csv]
   DSN の形はサーバと同じ（`server/ccgov/store/db.py`）。契約の表に 1 行でも在る DB には入れずに止まる。
   乱数の種は固定。`--no-csv` は CSV（cost_daily）を入れない。
-  受信・取込の本体（`/ingest`・`/import` と同じ関数）を通し、行が 1 つでも捨てられたら止まる。
+  受信と取込の本体（`/ingest` の受信と `csv_import.import_all`）を通し、行が 1 つでも捨てられたら止まる。
 """
 
 import argparse

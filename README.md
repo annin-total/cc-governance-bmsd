@@ -128,7 +128,7 @@ docker compose up --build
 | `ADMIN_PASSWORD` | 管理画面の Basic 認証の共有パスワード（ユーザー名は問わない）。未設定なら起動しない | `dummy-admin-password` |
 | `DB_DSN` | DB の接続先 | `sqlite:////app/data/dev.db`、`mysql://user:pass@host/db` |
 | `BASE_PATH` | サブパスで公開するときのパス。末尾に `/` を付けない | `/<workspace_id>/cc-governance-server` |
-| `CSV_DIR` | AI Gateway の CSV を置くディレクトリ。未設定なら取り込まない | `/mnt/data/cc-governance-server/csv` |
+| `CSV_DIR` | 画面で取り込んだ AI Gateway の CSV を置くディレクトリ（アプリが書き込める場所）。未設定なら取り込まない | `/mnt/data/cc-governance-server/csv` |
 
 ## ドキュメント
 
