@@ -22,7 +22,7 @@
     const w = W[winId];
     if (!w || (w.base || winId) !== base) fail(`群「${s.label}」の窓 ${winId} はカードの窓 ${base} と合わない`);
     const out = cards.map(({ win, ...c }) => (w.fixed && !c.long ? { ...c, long: SAME } : c));
-    return { id: s.id || `g${i + 1}`, label: s.label, scope: w.scope, longScope: w.fixed ? w.scope : w.longScope, data: w.data, note: s.note, cards: out };
+    return { id: s.id || `g${i + 1}`, label: s.label, win: winId, scope: w.scope, longScope: w.fixed ? w.scope : w.longScope, data: w.data, note: s.note, cards: out };
   }
 
   function tabOf(id) {
@@ -51,7 +51,7 @@
     return { ...def, tabs, groups };
   }
 
-  // トップ { id, title, lead, refs: [{ page, cards: [id] }] }。群は参照元のページ・群ごとに作り、カードは参照元のタブへ移る
+  // トップ { id, title, lead, refs: [{ page, cards: [id] }] }。群は窓ごとに作り（見出しは窓の名前）、カードは参照元のタブへ移る
   function top(def, pages) {
     const groups = new Map();
     for (const ref of def.refs) {
@@ -60,8 +60,8 @@
       for (const id of ref.cards) {
         const g = p.groups.find((x) => x.cards.some((c) => c.ref === id));
         if (!g) { fail(`ページ ${p.id} にカードが無い: ${id}`); continue; }
-        const key = `${p.id}-${g.id}`;
-        if (!groups.has(key)) groups.set(key, { ...g, id: key, label: `${p.title} · ${g.label}`, cards: [] });
+        const key = g.win;
+        if (!groups.has(key)) groups.set(key, { ...g, id: `top-${key}`, label: W[key].name, cards: [] });
         groups.get(key).cards.push(linked(g.cards.find((c) => c.ref === id), p));
       }
     }

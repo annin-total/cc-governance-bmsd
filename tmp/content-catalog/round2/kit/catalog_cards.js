@@ -8,16 +8,16 @@
 
   // 窓。data は群の値の根、fixed は期間に依らない窓（12 か月でも同じに出す）、base は同じ種類の窓（期間を固定した写し）
   const W = {
-    rec: { scope: "直近 {period[days]} 日（{period[start]:md}〜{period[end]:md}）と前の {period[days]} 日 · 記録を送った利用者", longScope: "記録" },
-    rec7: { base: "rec", data: "p.7", fixed: true, scope: "直近 7 日（{period[start]:md}〜{period[end]:md}）と前の 7 日 · 記録を送った利用者 · 期間は選べません" },
-    bill: { scope: "利用明細 {x[cost][start]:md}〜{x[cost][end]:md} と前の {period[days]} 日 · 利用明細にコストがあった利用者",
+    rec: { name: "記録", scope: "直近 {period[days]} 日（{period[start]:md}〜{period[end]:md}）と前の {period[days]} 日 · 記録を送った利用者", longScope: "記録" },
+    rec7: { name: "受信", base: "rec", data: "p.7", fixed: true, scope: "直近 7 日（{period[start]:md}〜{period[end]:md}）と前の 7 日 · 記録を送った利用者 · 期間は選べません" },
+    bill: { name: "利用明細", scope: "利用明細 {x[cost][start]:md}〜{x[cost][end]:md} と前の {period[days]} 日 · 利用明細にコストがあった利用者",
       longScope: "利用明細 直近 {period[months]} か月（{x[cost][start]:day}〜{x[cost][end]:day}）· 週と暦月 · 前の期間と比べない" },
-    match: { scope: "利用明細の最終日までの {period[days]} 日 · 記録と利用明細の突き合わせ", longScope: "記録と利用明細の突き合わせ" },
-    match7: { base: "match", data: "p.7", fixed: true, scope: "利用明細の最終日までの 7 日 · 記録と利用明細の突き合わせ · 期間は選べません" },
-    month: { fixed: true, scope: "{month[month]:ym} · 利用明細の最終日（{month[as_of]:md}）まで · 前月と並べる" },
-    p30: { data: "fixed.policy", fixed: true, scope: "直近 {POLICY_DAYS} 日 · 端末ごとに最新の報告 1 件 · 対象は{basis:basis} {denominator:num} 人" },
-    study: { data: "fixed.effect", fixed: true, scope: "{REFERENCE_KEY:setting}を {REFERENCE_VALUE} にした前後 {EVENT_STUDY_SPAN} 日 · しきい値を守り始めた利用者 · 前後の境は各利用者が守り始めた日" },
-    now: { fixed: true, scope: "現時点 · 取り込んだ利用明細" },
+    match: { name: "照合", scope: "利用明細の最終日までの {period[days]} 日 · 記録と利用明細の突き合わせ", longScope: "記録と利用明細の突き合わせ" },
+    match7: { name: "照合", base: "match", data: "p.7", fixed: true, scope: "利用明細の最終日までの 7 日 · 記録と利用明細の突き合わせ · 期間は選べません" },
+    month: { name: "今月", fixed: true, scope: "{month[month]:ym} · 利用明細の最終日（{month[as_of]:md}）まで · 前月と並べる" },
+    p30: { name: "端末の報告", data: "fixed.policy", fixed: true, scope: "直近 {POLICY_DAYS} 日 · 端末ごとに最新の報告 1 件 · 対象は{basis:basis} {denominator:num} 人" },
+    study: { name: "しきい値の前後", data: "fixed.effect", fixed: true, scope: "{REFERENCE_KEY:setting}を {REFERENCE_VALUE} にした前後 {EVENT_STUDY_SPAN} 日 · しきい値を守り始めた利用者 · 前後の境は各利用者が守り始めた日" },
+    now: { name: "利用明細の鮮度", fixed: true, scope: "現時点 · 取り込んだ利用明細" },
   };
 
   const TREND_CAP = ["{period[prev_start]:md}", "濃い部分が直近 {period[days]} 日", "{period[end]:md}"];

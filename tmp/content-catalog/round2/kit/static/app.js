@@ -97,6 +97,7 @@
     }
     const [id, chip] = location.hash.slice(1).split(":");
     open(id, chip, Boolean(chip));
+    if (chip) section.scrollIntoView({ block: "start" });
   }
 
   // ツールチップ: カードの小さなグラフの点と丸めた値（data-tip）。文言は「見出し  値」で、2 つの空白の前を薄く、後ろを濃く出す。

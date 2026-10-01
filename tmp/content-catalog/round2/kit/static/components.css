@@ -80,7 +80,7 @@ svg text { font: var(--fs-xs) var(--sans); fill: var(--muted); font-variant-nume
 /* 分段タブと中身の枠 */
 .tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--sp-3xs); padding: var(--sp-3xs); background: var(--tabs); border-radius: var(--r-l); }
 .tabs a { border-radius: var(--r-m); padding: var(--sp-s) var(--sp-m); display: flex; flex-direction: column; line-height: 1.45; color: var(--ink-2); text-decoration: none; min-width: 0; }
-.tabs a b { white-space: nowrap; }
+.tabs a b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tabs a span { font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 .tabs a:hover { background: var(--tab-hover); }
 .tabs a[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow-raised); }
