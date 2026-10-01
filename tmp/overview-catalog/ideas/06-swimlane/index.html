@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code 利用管理の全体像</title>
+<style>
+  :root {
+    --bg: #f4f5f6;
+    --paper: #ffffff;
+    --ink: #22272b;
+    --sub: #5d656c;
+    --faint: #8b9298;
+    --rule: #dde0e3;
+    --dist: #1f6fb2;
+    --dist-pale: #e7f0f8;
+    --coll: #c46a12;
+    --coll-pale: #fbf0e3;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+    font-size: 14.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 44px 28px 72px; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-bottom: 22px; }
+  h1 { margin: 0; font-size: 26px; line-height: 1.35; }
+  .sum { margin: 6px 0 0; font-size: 14px; color: var(--sub); }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--sub); }
+  .legend span { white-space: nowrap; }
+  .legend i { display: inline-block; width: 26px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 6px; }
+  .legend .d i { border-color: var(--dist); }
+  .legend .c i { border-color: var(--coll); }
+  .legend .v i { border-top: 2px dashed var(--faint); }
+
+  .panel { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; }
+  .diagram { padding: 14px; }
+  .scroll { overflow-x: auto; }
+  .scroll svg { display: block; width: 100%; min-width: 880px; height: auto; }
+  .hint { display: none; font-size: 12px; color: var(--faint); margin: 8px 2px 0; }
+
+  .routes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .route { padding: 16px 20px; border-top: 3px solid; }
+  .route.d { border-top-color: var(--dist); }
+  .route.c { border-top-color: var(--coll); }
+  .route h2 { margin: 0 0 6px; font-size: 16px; }
+  .route.d h2 { color: var(--dist); }
+  .route.c h2 { color: var(--coll); }
+  .route .path { font-size: 13px; font-weight: 600; margin: 0 0 8px; }
+  .route ul { margin: 0; padding-left: 1.1em; font-size: 13.5px; }
+  .route li { margin-bottom: 3px; }
+  .route .note { margin-top: 8px; }
+  .note { font-size: 12.5px; color: var(--faint); margin: 6px 0 0; }
+
+  h2.sec { font-size: 18px; margin: 40px 0 12px; }
+  .roles { display: grid; grid-template-columns: 1fr 1.35fr; gap: 16px; }
+  .roles .panel { padding: 0; overflow: hidden; }
+  .roles h3 { margin: 0; padding: 10px 18px; font-size: 14.5px; background: #eceef0; border-bottom: 1px solid var(--rule); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  td { padding: 10px 18px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.when { width: 9.5em; color: var(--sub); font-size: 12.5px; white-space: nowrap; }
+  ol.steps { margin: 0; padding-left: 1.2em; }
+
+  .scope { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; }
+  .scope .panel { padding: 16px 20px; }
+  .scope h3 { margin: 0 0 10px; font-size: 14.5px; }
+  .scope dl { margin: 0; display: grid; grid-template-columns: 9.5em 1fr; gap: 5px 12px; font-size: 13px; }
+  .scope dt { font-weight: 600; }
+  .scope dd { margin: 0; color: var(--sub); }
+  .scope ul { margin: 0; padding-left: 1.1em; font-size: 13px; }
+  .scope li { margin-bottom: 4px; }
+  .scope .no { background: #eceef0; }
+  .chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 7px; border-radius: 3px; margin-right: 6px; vertical-align: 1px; }
+  .chip.c { background: var(--coll-pale); color: var(--coll); }
+  .chip.n { background: #dfe2e5; color: var(--sub); }
+
+  .foot { margin-top: 28px; font-size: 12px; color: var(--faint); }
+  .foot ul { margin: 4px 0 0; padding-left: 1.1em; }
+
+  @media (max-width: 900px) {
+    .routes, .roles, .scope { grid-template-columns: 1fr; }
+    .hint { display: block; }
+  }
+  @media (max-width: 520px) {
+    .wrap { padding: 28px 16px 56px; }
+    h1 { font-size: 21px; }
+    .diagram { padding: 8px; }
+    td { padding: 9px 12px; }
+    td.when { width: 6.5em; white-space: normal; }
+    .scope dl { grid-template-columns: 1fr; gap: 0; }
+    .scope dd { margin-bottom: 6px; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div>
+      <h1>Claude Code 利用管理の全体像</h1>
+      <p class="sum">設定を全員の端末に配り、利用状況とコストを見える化し、設定の効果を確かめる仕組み。対象は BMSD 本部の利用者（約 140 名）。</p>
+    </div>
+    <div class="legend">
+      <span class="d"><i></i>配る経路</span>
+      <span class="c"><i></i>集める経路</span>
+      <span class="v"><i></i>閲覧</span>
+    </div>
+  </header>
+
+  <section class="panel diagram" aria-label="役割別の流れ">
+    <div class="scroll">
+    <svg viewBox="0 0 1220 500" role="img" aria-label="管理者・Bitbucket・利用者の端末・集計サーバ・AI Gateway の 5 レーンの流れ図" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, Yu Gothic UI, Meiryo, sans-serif">
+      <defs>
+        <marker id="ad" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1f6fb2"/></marker>
+        <marker id="ac" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c46a12"/></marker>
+        <marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8b9298"/></marker>
+      </defs>
+
+      <!-- lanes -->
+      <rect x="0" y="0"   width="1220" height="100" fill="#eef1f6"/>
+      <rect x="0" y="100" width="1220" height="100" fill="#edf5f0"/>
+      <rect x="0" y="200" width="1220" height="100" fill="#f6f2ea"/>
+      <rect x="0" y="300" width="1220" height="100" fill="#f1eef6"/>
+      <rect x="0" y="400" width="1220" height="100" fill="#f6eef0"/>
+      <rect x="0" y="0"   width="150" height="100" fill="#e1e6ee"/>
+      <rect x="0" y="100" width="150" height="100" fill="#dfece4"/>
+      <rect x="0" y="200" width="150" height="100" fill="#ece5d8"/>
+      <rect x="0" y="300" width="150" height="100" fill="#e4dfee"/>
+      <rect x="0" y="400" width="150" height="100" fill="#eedfe3"/>
+      <g stroke="#ffffff" stroke-width="2">
+        <line x1="0" y1="100" x2="1220" y2="100"/><line x1="0" y1="200" x2="1220" y2="200"/>
+        <line x1="0" y1="300" x2="1220" y2="300"/><line x1="0" y1="400" x2="1220" y2="400"/>
+      </g>
+      <g fill="#22272b">
+        <text x="16" y="47" font-size="15" font-weight="700">管理者</text>
+        <text x="16" y="67" font-size="11.5" fill="#5d656c">ブラウザ</text>
+        <text x="16" y="147" font-size="15" font-weight="700">Bitbucket</text>
+        <text x="16" y="167" font-size="11.5" fill="#5d656c">配布用リポジトリ（社内）</text>
+        <text x="16" y="247" font-size="15" font-weight="700">利用者の端末</text>
+        <text x="16" y="267" font-size="11.5" fill="#5d656c">Windows / macOS</text>
+        <text x="16" y="347" font-size="15" font-weight="700">集計サーバ</text>
+        <text x="16" y="367" font-size="11.5" fill="#5d656c">AIP または One Cloud</text>
+        <text x="16" y="447" font-size="15" font-weight="700">AI Gateway</text>
+        <text x="16" y="467" font-size="11.5" fill="#5d656c">利用明細の出力</text>
+      </g>
+
+      <!-- callout: no server-to-terminal route -->
+      <rect x="345" y="318" width="320" height="64" rx="5" fill="#ffffff" stroke="#8b9298" stroke-dasharray="4 3"/>
+      <text x="361" y="344" font-size="12.5" font-weight="700" fill="#22272b">サーバから端末への経路は無い</text>
+      <text x="361" y="366" font-size="11.5" fill="#5d656c">サーバが止まっても、配布は止まらない</text>
+
+      <!-- arrows: distribute -->
+      <g fill="none" stroke="#1f6fb2" stroke-width="2.5">
+        <path d="M242.5 80 V118" marker-end="url(#ad)"/>
+        <path d="M315 150 H417.5 V218" marker-end="url(#ad)"/>
+      </g>
+      <text x="426" y="196" font-size="11.5" fill="#1f6fb2" font-weight="600">git で自動更新</text>
+      <!-- arrows: terminal internal -->
+      <g fill="none" stroke="#9aa1a7" stroke-width="2">
+        <path d="M490 250 H516" marker-end="url(#ag)"/>
+        <path d="M665 250 H691" marker-end="url(#ag)"/>
+      </g>
+      <!-- arrows: collect -->
+      <g fill="none" stroke="#c46a12" stroke-width="2.5">
+        <path d="M767.5 280 V318" marker-end="url(#ac)"/>
+        <path d="M1165 420 V82" marker-end="url(#ac)"/>
+        <path d="M1070 80 V350 H1019" marker-end="url(#ac)"/>
+      </g>
+      <text x="776" y="304" font-size="11.5" fill="#c46a12" font-weight="600">まとめて送信</text>
+      <text x="1062" y="196" font-size="11.5" fill="#c46a12" font-weight="600" text-anchor="end">アップロード</text>
+      <!-- arrows: view -->
+      <path d="M942.5 320 V82" fill="none" stroke="#8b9298" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+      <text x="950" y="196" font-size="11.5" fill="#5d656c">閲覧</text>
+
+      <!-- nodes -->
+      <g font-size="13" font-weight="700" fill="#22272b" text-anchor="middle">
+        <rect x="170" y="20" width="145" height="60" rx="6" fill="#fff" stroke="#1f6fb2" stroke-width="1.5"/>
+        <text x="242.5" y="45">設定の更新</text>
+        <text x="242.5" y="64" font-size="11.5" font-weight="400" fill="#5d656c">版を上げてリリース</text>
+
+        <rect x="170" y="120" width="145" height="60" rx="6" fill="#fff" stroke="#1f6fb2" stroke-width="1.5"/>
+        <text x="242.5" y="145">プラグイン</text>
+        <text x="242.5" y="164" font-size="11.5" font-weight="400" fill="#5d656c">本体・設定値・お知らせ</text>
+
+        <rect x="345" y="220" width="145" height="60" rx="6" fill="#fff" stroke="#1f6fb2" stroke-width="1.5"/>
+        <text x="417.5" y="245">プラグイン更新</text>
+        <text x="417.5" y="264" font-size="11.5" font-weight="400" fill="#5d656c">新しい版を取得</text>
+
+        <rect x="520" y="220" width="145" height="60" rx="6" fill="#fff" stroke="#1f6fb2" stroke-width="1.5"/>
+        <text x="592.5" y="245">セッション開始</text>
+        <text x="592.5" y="264" font-size="11.5" font-weight="400" fill="#5d656c">設定の適用・お知らせ</text>
+
+        <rect x="695" y="220" width="145" height="60" rx="6" fill="#fff" stroke="#c46a12" stroke-width="1.5"/>
+        <text x="767.5" y="245">利用中の記録</text>
+        <text x="767.5" y="264" font-size="11.5" font-weight="400" fill="#5d656c">イベントを端末内に</text>
+
+        <rect x="695" y="320" width="320" height="60" rx="6" fill="#fff" stroke="#c46a12" stroke-width="1.5"/>
+        <text x="855" y="345">受信・保存・集計</text>
+        <text x="855" y="364" font-size="11.5" font-weight="400" fill="#5d656c">データベースに保存し、管理画面に出す</text>
+
+        <rect x="870" y="20" width="145" height="60" rx="6" fill="#fff" stroke="#8b9298" stroke-width="1.5"/>
+        <text x="942.5" y="45">管理画面で確認</text>
+        <text x="942.5" y="64" font-size="11.5" font-weight="400" fill="#5d656c">4 画面 ＋ データと設定</text>
+
+        <rect x="1045" y="20" width="145" height="60" rx="6" fill="#fff" stroke="#c46a12" stroke-width="1.5"/>
+        <text x="1117.5" y="45">CSV のアップロード</text>
+        <text x="1117.5" y="64" font-size="11.5" font-weight="400" fill="#5d656c">1〜2 週に 1 回程度</text>
+
+        <rect x="1045" y="420" width="145" height="60" rx="6" fill="#fff" stroke="#c46a12" stroke-width="1.5"/>
+        <text x="1117.5" y="445">利用明細 CSV</text>
+        <text x="1117.5" y="464" font-size="11.5" font-weight="400" fill="#5d656c">日ごとに出力</text>
+      </g>
+    </svg>
+    </div>
+    <p class="hint">図は横にスクロールできる。</p>
+  </section>
+
+  <div class="routes">
+    <section class="panel route d">
+      <h2>配る経路</h2>
+      <p class="path">管理者 → Bitbucket → 各端末（git による自動更新）</p>
+      <ul>
+        <li>セッション開始時に設定値を settings.json へ書き込む（変更前は自動でバックアップ）</li>
+        <li>未読のお知らせを表示（関連ページを 1 回だけブラウザで開くことがある）</li>
+        <li>配る設定値: 自動コンパクトの閾値 60%・プラグインの自動更新 有効・本体の自動更新 常に最新版</li>
+      </ul>
+      <p class="note">利用者が変えても、次のセッション開始時に配った値へ戻る。設定の反映は分単位。</p>
+    </section>
+    <section class="panel route c">
+      <h2>集める経路</h2>
+      <p class="path">各端末 → 集計サーバ（ネットワーク送信）／ AI Gateway の CSV → 管理者 → 集計サーバ</p>
+      <ul>
+        <li>利用中のイベントを端末内に記録（フックで記録）</li>
+        <li>セッション開始時と応答完了時、前回の送信から 10 分以上経っていればまとめて送信</li>
+        <li>CSV はコストとトークン数の正本（コストは日次）</li>
+      </ul>
+      <p class="note">送れなかった記録は端末に残り、後でまとめて送られる（14 日・20 MB まで。超えた分は古い順に捨てる）。記録・送信は裏で行い、Claude Code の操作を待たせない。エラーが起きても Claude Code は止まらない。</p>
+    </section>
+  </div>
+
+  <h2 class="sec">役割ごとのやること</h2>
+  <div class="roles">
+    <section class="panel">
+      <h3>利用者</h3>
+      <table>
+        <tr><td class="when">導入時に 1 回</td><td>
+          <ol class="steps">
+            <li>（Windows）<code>python3</code> の動作確認</li>
+            <li>git に会社のメールアドレスが設定されているか確認</li>
+            <li>Claude Code で 2 つのコマンドを実行して導入</li>
+            <li>開き直してお知らせが出れば完了</li>
+          </ol>
+        </td></tr>
+        <tr><td class="when">日常</td><td>操作なし（更新も自動）。届かない場合だけ手動更新のコマンド 2 つ</td></tr>
+      </table>
+    </section>
+    <section class="panel">
+      <h3>管理者</h3>
+      <table>
+        <tr><td class="when">導入を進めるとき</td><td>案内を 2〜3 回に分け、1〜2 週ずつずらす（部署を横断して分ける）。施策の効果を同時期のほかの変化と区別するため</td></tr>
+        <tr><td class="when">1〜2 週に 1 回程度</td><td>AI Gateway の CSV を管理画面からアップロード</td></tr>
+        <tr><td class="when">随時</td><td>管理画面で、データの届き具合・エラー・未導入者を確認。未導入者に声をかける</td></tr>
+        <tr><td class="when">設定・お知らせの変更時</td><td>プラグインの版を上げて配布用リポジトリへリリース。各端末へ自動で届く</td></tr>
+      </table>
+    </section>
+  </div>
+  <p class="note">管理画面: 概況 / 設定の適用状況 / 設定の効果 / スキル・コマンドの利用 ＋ データと設定。社内 VPN の内側で、推測しにくい URL ＋ パスワード。効果は「コンテキストの大きさが小さい側へずれたか」で見る（コストの前後差は時期・業務量・料金でも動くため根拠にしない）。</p>
+
+  <h2 class="sec">収集範囲</h2>
+  <div class="scope">
+    <section class="panel">
+      <h3><span class="chip c">端末から</span>収集する</h3>
+      <dl>
+        <dt>利用者</dt><dd>会社のメールアドレス（CSV との照合用）・端末名</dd>
+        <dt>イベント</dt><dd>種類・イベント時刻・セッション ID</dd>
+        <dt>ツール</dt><dd>ツール名（MCP はサーバ名を含む）・サブエージェントによる使用か・中断か</dd>
+        <dt>スキル・コマンド</dt><dd>スキル名・コマンド名・出所</dd>
+        <dt>状態</dt><dd>コンテキストのトークン数（自動コンパクト直前・応答完了時）・エフォート・権限モード</dd>
+        <dt>版</dt><dd>Claude Code 本体・プラグイン</dd>
+        <dt>設定の適用結果</dt><dd>設定ごとの変更前の値・配った値・適用の結果</dd>
+        <dt>プラグインのエラー</dt><dd>処理の段階名・エラーの種類のみ</dd>
+      </dl>
+    </section>
+    <section class="panel">
+      <h3><span class="chip c">CSV から</span>取り込む</h3>
+      <ul>
+        <li>日付</li>
+        <li>メールアドレス</li>
+        <li>モデル</li>
+        <li>コスト</li>
+        <li>トークン数（入力・出力・キャッシュ）</li>
+      </ul>
+      <p class="note">CSV には Claude Code 以外の利用も含まれる。</p>
+    </section>
+    <section class="panel no">
+      <h3><span class="chip n">対象外</span>収集しない</h3>
+      <ul>
+        <li>プロンプト本文・Claude の応答本文・会話内容</li>
+        <li>ツールの入出力（ファイルの中身・実行したコマンドの中身）</li>
+        <li>エラーメッセージ</li>
+        <li>コスト・モデル名（端末からは取らない。CSV に含まれる）</li>
+      </ul>
+      <p class="note">目的は施策の評価。利用者個人の監視をしない（個人ごとの操作の時系列を見る画面は無い）。</p>
+    </section>
+  </div>
+
+  <div class="foot">
+    限界
+    <ul>
+      <li>取りこぼしは許容する（オフラインが長い・端末の上限超過・エラー時の記録）</li>
+      <li>プロジェクト単位の設定などで上書きされた場合は、適用率に現れない</li>
+      <li>端末ごとの停止に気づけるのは、記録が途絶えて 14 日経ってから</li>
+    </ul>
+  </div>
+</main>
+</body>
+</html>
