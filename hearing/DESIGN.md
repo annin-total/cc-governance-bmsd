@@ -1,4 +1,4 @@
-# /hearing スキル設計書（軽量版）
+# /hearing-cost スキル設計書（軽量版）
 
 Claude Code の利用が重い利用者の端末で実行し、ローカルの履歴から「なぜ重いか」をおおまかに推定して、
 ガバナンス課向けのヒアリング調書（Markdown 1 ファイル）を作る独立スキルの設計。
@@ -18,12 +18,12 @@ Claude Code の利用が重い利用者の端末で実行し、ローカルの�
 | 項目 | 決定 |
 |---|---|
 | 対話 | 分析 → 要約を提示 → 補足質問（固定 3〜4 問＋任意） → 調書に反映 |
-| 配布 | 単体のスキルフォルダ（`hearing/skills/hearing/` をそのままコピー）。手順は `hearing/README.md` |
+| 配布 | 単体のスキルフォルダ（`hearing/skills/hearing-cost-cost/` をそのままコピー）。手順は `hearing/README.md` |
 | 実行環境 | Python 3 のみ。検出順は `python3` → `python` → `py -3`。無ければ中止して理由を伝える（全端末に Python がある前提） |
-| 集計 | `skills/hearing/scripts/collect.py`（標準ライブラリのみ・1 本）を同梱し、サブコマンド `collect`（§5）と `scan`（§7）を持つ。重複排除・本文を出さない・巨大行・期間判定・モデル判別を毎回モデルに書かせると実行ごとにずれ、漏洩の経路にもなるため、決定的で壊れてはいけない処理だけをスクリプトにする |
+| 集計 | `skills/hearing-cost-cost/scripts/collect.py`（標準ライブラリのみ・1 本）を同梱し、サブコマンド `collect`（§5）と `scan`（§7）を持つ。重複排除・本文を出さない・巨大行・期間判定・モデル判別を毎回モデルに書かせると実行ごとにずれ、漏洩の経路にもなるため、決定的で壊れてはいけない処理だけをスクリプトにする |
 | 分析期間 | 既定は直近 30 日（引数で変更可）。保持期間による欠損の疑いは調書に明記 |
 | 深掘り | 種別ごとの上位セッション・要因が全体の約 1 割以上なら構造（ツール種別・ファイル種別・サイズ等）まで。利用者が同意した場合だけ 1 段具体化し、同意を調書に残す。具体化の上限は構造の細分化まで（例: ファイル種別→サイズ帯）。本文・パス・コマンド・固有名詞は同意があっても出さない（絶対ルールは外さない） |
-| 起動 | `/hearing` の明示起動のみ。frontmatter は `name: hearing`、description は短い 1 文、`argument-hint: "[日数\|開始日..終了日] [cleanup]"`、`disable-model-invocation: true`（効き方は未確認。公式文書の要約に基づく） |
+| 起動 | `/hearing-cost` の明示起動のみ。frontmatter は `name: hearing-cost`、description は短い 1 文、`argument-hint: "[日数\|開始日..終了日] [cleanup]"`、`disable-model-invocation: true`（効き方は未確認。公式文書の要約に基づく） |
 | 引数 | 数字だけの語は日数、`YYYY-MM-DD..YYYY-MM-DD` は期間、`cleanup` はフラグ。順不同。解釈できない語は無視し、利用者に一言確認する |
 | 版 | SKILL.md の `metadata` に版を持たせ、調書の来歴にも書く |
 | 後始末 | 既定は何もしない。`cleanup` 引数があるときだけ作業フォルダの削除を提案 |
@@ -146,7 +146,7 @@ Claude Code の利用が重い利用者の端末で実行し、ローカルの�
 hearing/
 ├── DESIGN.md                  # 本書（配布しない）
 ├── README.md                  # 配布手順（配布しない）
-├── skills/hearing/            # ~/.claude/skills/ にそのままコピーする（配布物はここだけ）
+├── skills/hearing-cost-cost/            # ~/.claude/skills/ にそのままコピーする（配布物はここだけ）
 │   ├── SKILL.md               # 固定指示（先頭）と手順だけ
 │   ├── scripts/collect.py     # collect / scan。Python 標準ライブラリのみ
 │   └── references/
@@ -161,7 +161,7 @@ hearing/
 
 | ファイル | 中身 |
 |---|---|
-| `README.md` | Windows と macOS のコピー先とコマンド。`skills/hearing/` をそのまま置き、1 階層余分にしない注意。権限の目安として `settings.json` の事前許可の断片例（使うかは利用者環境の自由） |
+| `README.md` | Windows と macOS のコピー先とコマンド。`skills/hearing-cost-cost/` をそのまま置き、1 階層余分にしない注意。権限の目安として `settings.json` の事前許可の断片例（使うかは利用者環境の自由） |
 | `history-notes.md` | 保存先、行の種類、usage の項目、重複排除キー、巨大行の上限、`cost-state`・effort・スキル記録の形と確認した版、サブエージェント・workflows の置き場所、OS 差、確認日。「実データと食い違ったら実データを優先し、必要なら Web 検索する」と書く |
 | `lens-seeds.md` | 発散のきっかけ。長時間・`/clear` しないセッション、キャッシュの失効・破壊（間隔が空く、モデルや effort の切り替え）、サブエージェント・並列実行、高いファミリーの常用、無人・自動実行、版に依存するキャッシュ異常、effort・拡張思考、大きなツール結果、MCP 定義の常駐、transcript 外の消費、スキルの使われ方（冗長なワークフローのスキルの多用、無関係なタスクでの発火、導入数・description の多さによる常駐量）。末尾に「これに縛られず発散してよい」 |
 | `report-template.md` | §6 のテンプレート |
