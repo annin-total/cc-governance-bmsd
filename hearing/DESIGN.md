@@ -37,7 +37,7 @@ Claude Code の利用コストが高い利用者の端末で実行し、「な�
 | D1 | 対話 | 分析 → 要約を提示 → 補足質問を数問（業務背景・使い方）→ 報告書に反映。事前ヒアリングはしない |
 | D2 | 配布形態 | 単体のスキルフォルダ。`~/.claude/skills/hearing/` にコピーして使う。後でプラグインにしやすい構成にする |
 | D3 | 報告書 | Markdown 1 ファイル。利用者が確認してから手動で送る。置き場は起動したセッションの作業ディレクトリ（ルート）。そこに置くのは最終成果物だけ |
-| D4 | スクリプト | 同梱しない。実行時に都度生成する。仕様・スキーマ・指標・落とし穴は `references/` の文書に持つ |
+| D4 | スクリプト | 必須レベルのスクリプトが無いので同梱しない。実行時に都度生成する。仕様・スキーマ・指標・落とし穴は、言語に依存しない形で `references/` の文書に持つ。実行環境は Node.js か Python のうち、検出できたほう（§10.1）。評価で再現性が足りないと分かった処理だけ、あとから `scripts/` に足してよい。テンプレートや素材が要るなら `assets/` を作ってよい（スキルはフォルダごと渡せるため） |
 | D5 | 分析期間 | 既定は直近 30 日（変更可）。直近 7 日と並べて比べる。保持期間による欠損は報告書に明記する |
 | D6 | 金額 | 主はトークンの実測値。金額は概算として併記する（基準日付きの料金表、手元の集計値と突き合わせる） |
 | D7 | 深掘り基準 | 全体コストの 10% 以上を占める要因・セッションを深掘りする（閾値は references で変えられる）。深掘りでも構造（ツール種別・ファイル種別・サイズ）までにとどめる |
@@ -58,7 +58,7 @@ Claude Code の利用コストが高い利用者の端末で実行し、「な�
 
 | 段階 | 入力 | 担当 | 出力（作業フォルダ内） |
 |---|---|---|---|
-| P0 準備・環境検出 | 起動引数（期間） | 監督役 | `env.json`（OS・Python コマンド・Claude Code の版・設定ディレクトリ・氏名候補・期間・自セッション ID）、`progress.md` |
+| P0 準備・環境検出 | 起動引数（期間） | 監督役 | `env.json`（OS・スクリプト実行コマンド・Claude Code の版・設定ディレクトリ・氏名候補・期間・自セッション ID）、`progress.md` |
 | P1 データ棚卸し | `env.json`、`references/schema.md` | 棚卸し担当 ×1 | `inventory.json`（ファイル一覧・サイズ・期間内か・行種の件数・版の分布）、`schema-check.md`（想定との差・測定不能になる指標） |
 | P2 測定 | `inventory.json`、`references/metrics.md`・`schema.md` | 測定担当 ×N（ファイルを分担）＋統合 ×1 | `records/part-*.jsonl`（正規化レコード）→ `measure/*.json`（重複排除後の集計） |
 | P3 観点別分析（並列） | `measure/*.json`、`references/lenses/*.md` | 分析担当 ×M（lens 群を分担） | `findings/<group>.md`（所定の形式。§6.3） |
@@ -162,7 +162,7 @@ Claude Code の利用コストが高い利用者の端末で実行し、「な�
 
 ## 7. 作業フォルダと progress.md
 
-- 作り方: P0 で検出した Python で `tempfile.mkdtemp(prefix="hearing-")` を実行し、その絶対パスを以後のすべての指示に使う。
+- 作り方: P0 で検出した実行環境で、OS 標準の一時ディレクトリに接頭辞 `hearing-` の一意なフォルダを作り（Node.js は `fs.mkdtempSync(path.join(os.tmpdir(), "hearing-"))`、Python は `tempfile.mkdtemp(prefix="hearing-")`）、その絶対パスを以後のすべての指示に使う。
 - 構成: `env.json`、`progress.md`、`inventory.json`、`schema-check.md`、`scripts/`、`records/`、`measure/`、`findings/`、`summary.md`、`answers.md`、`draft/`、`review/`。
 - OS ごとの削除の挙動は §10。
 
@@ -264,21 +264,24 @@ lens ごとに「観測 → 解釈 → 確度」の順で書く。確度は「�
 
 ## 10. OS 差と Python の検出
 
-### 10.1 Python の検出（P0）
-1. 候補を `python3` → `python` → `py -3` の順に `--version` で試す。
-2. 採用の条件: 終了コードが 0 で、出力が `Python 3.` で始まり、版が 3.8 以上であること。Windows の `python` はストアのスタブであることがあるため、出力が空のものや起動に失敗するものは捨てる（二次 [ローカル]）。
+### 10.1 実行環境の検出（P0）
+前提: 利用端末には Node.js（社内の標準セットアップで導入済み）と Python のどちらか、または両方がある。環境が違えば、使えるほうを使う。
+1. 候補を `node` → `python3` → `python` → `py -3` の順に `--version` で試す。`node` を先にするのは、コマンド名が OS で変わらず、Windows のランチャーやストアのスタブの問題がないため（推奨。順序は `references/environment.md` で変えられる）。
+2. 採用の条件: 終了コードが 0 で、`node` は v18 以上、Python は 3.8 以上であること。Windows の `python` はストアのスタブであることがあるため、出力が空のものや起動に失敗するものは捨てる（二次 [ローカル]）。
 3. どれも使えなければ中止し、理由を利用者に伝える（報告書は作らない）。
-4. 生成したスクリプトはファイルに書き、`<コマンド> <ファイル>` の形で実行する。シェルが bash か PowerShell かによるクォートの違いを避けるため（Windows ではシェルが Git Bash か PowerShell になる [公式]）。
+4. 1 回の実行では 1 つの言語に統一する（担当ごとに言語が混ざると、再計算の検証や再現が難しくなる）。検出した言語は `env.json` に書き、以後の指示に渡す。
+5. 生成したスクリプトはファイルに書き、`<コマンド> <ファイル>` の形で実行する。シェルが bash か PowerShell かによるクォートの違いを避けるため（Windows ではシェルが Git Bash か PowerShell になる [公式]）。
+6. references の記述は言語に依存しない（アルゴリズムと規則だけを書く）。言語固有の API は必要な箇所にだけ両言語の例を並べる。
 
 ### 10.2 OS 差の扱い（スクリプト生成時の規約は `references/environment.md` に置く）
 | 項目 | 方針 |
 |---|---|
 | 設定ディレクトリ | 環境変数 `CLAUDE_CONFIG_DIR` があればそれ、なければホームの `.claude`（Windows は `%USERPROFILE%\.claude`）[公式]。`~/.config/claude` が今も使われるかは未確認なので、見つかったら利用者に尋ねる |
-| パス | `pathlib` で扱い、区切り文字を決め打ちしない。プロジェクトのディレクトリ名は元のパスに戻せないので使わない [ローカル] |
-| 文字コード | `encoding="utf-8-sig"` で読み、`errors="replace"` にする。Windows で CRLF が混じるかは未確認なので、行末を正規化する |
+| パス | 標準のパス API（Node.js は `path`、Python は `pathlib`）で扱い、区切り文字を決め打ちしない。プロジェクトのディレクトリ名は元のパスに戻せないので使わない [ローカル] |
+| 文字コード | UTF-8 として読み、BOM と不正なバイト列を許容する（Python は `utf-8-sig`＋`errors="replace"`、Node.js は先頭の BOM を除去）。Windows で CRLF が混じるかは未確認なので、行末を正規化する。大きな jsonl は一括で読まず、行ごとに処理する |
 | 標準出力 | コンソールの文字コードの違いを避けるため、結果はファイルに書く。標準出力には ASCII の短い要約だけを出す |
-| 時刻 | timestamp は UTC [ローカル]。日別の集計は端末のローカルタイムゾーンで行い、そのことを報告書に書く。`Z` 付き ISO8601 は 3.11 未満で置換してから解釈する |
-| 氏名 | `getpass.getuser()` で取る。社員番号などの ID であることもあるため、P8 で利用者に確認・修正してもらう |
+| 時刻 | timestamp は UTC [ローカル]。日別の集計は端末のローカルタイムゾーンで行い、そのことを報告書に書く。`Z` 付き ISO8601 は Python 3.11 未満では置換してから解釈する |
+| 氏名 | OS のアカウント名を標準 API で取る（Node.js は `os.userInfo().username`、Python は `getpass.getuser()`）。社員番号などの ID であることもあるため、P8 で利用者に確認・修正してもらう |
 | 一時ディレクトリ | `tempfile` に任せる。macOS・Linux は定期的に掃除されることが多いが、Windows の `%TEMP%` が自動で消えるかは設定次第（未確認）。このため `cleanup` 引数があるときだけ P8 で削除を提案する（既定は何もしない。中間物は数値・種別・ラベルだけで本文を含まない） |
 | WSL | WSL とネイティブ Windows の履歴は別物（一般論で未確認）。両方の痕跡を検出したら P4 で尋ねる |
 
@@ -326,6 +329,8 @@ hearing/
 ├── skill/                       # この下の hearing/ を ~/.claude/skills/ にコピーする
 │   └── hearing/
 │       ├── SKILL.md             # 手順だけ（段階、各段階で読む references、禁止事項）
+│       ├── (scripts/)           # 任意。評価で再現性が足りないと分かった処理だけ足す。当初は作らない
+│       ├── (assets/)            # 任意。報告書の素材などが必要になったときだけ作る
 │       └── references/
 │           ├── environment.md  schema.md  metrics.md  pricing.md
 │           ├── privacy.md  orchestration.md  questions.md
