@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概況 — 03 小さい図が主役</title>
+<!-- 推移・割合・3 つの帯 -->
+<style>
+/* 見た目の値の置き場。色・文字の大きさ・余白・角丸・格子の最小幅は、ここの変数だけを使う */
+:root {
+  /* 色: 面 */
+  --bg: #e8e5e0;
+  --card: #f6f4f0;
+  --card-hover: #fbfaf8;
+  --tabs: #dedad3;
+  --track: #ebe7e1;
+  --chip: #e3e0da;
+  --chip-up: #dde6ea;
+  /* 色: 文字と線。--muted は --card・--bg・--tabs のどの面でも WCAG AA（4.5:1）を満たす */
+  --ink: #2b2926;
+  --ink-2: #4a4640;
+  --muted: #625c53;
+  --rule: #d6d1c9;
+  --chip-up-ink: #2f4b58;
+  --on-ink: #f6f4f0;
+  /* 色: 強調とグラフ */
+  --accent: #4c6a78;
+  --accent-2: #a9b9c1;
+  --ghost: #cdc7bd;
+  /* 色: 状態（4 区分）と、その段階 */
+  --ok: #3d6b4c;
+  --warn: #8a5a12;
+  --ng: #9e3a2e;
+  --neutral: #6f6a62;
+  --ok-bg: #e2eadf;
+  --ng-bg: #f3dfdb;
+  --warn-2: #b0823f;
+  --warn-3: #d6b98f;
+  /* 影 */
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, .04);
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, .1);
+  --tab-hover: rgba(255, 255, 255, .35);
+  --shadow-tip: 0 2px 8px rgba(0, 0, 0, .08);
+  /* グラフと表の連動で、当てていない棒を薄くする度合いと、途中の週の棒の薄さ */
+  --link-dim: .35;
+  --partial-opacity: .45;
+
+  /* 文字 */
+  --sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  --fig: "Avenir Next", "Helvetica Neue", "Segoe UI", var(--sans);
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --fs: 14px;
+  --fs-label: 13px;
+  --fs-sm: 12px;
+  --fs-xs: 11px;
+  --fs-unit: 15px;
+  --fs-h1: 22px;
+  --fs-h2: 16px;
+  --fs-val: 40px;
+  --fw-val: 600;
+  --lh: 1.65;
+
+  /* 余白 */
+  --sp-3xs: 2px;
+  --sp-2xs: 4px;
+  --sp-xs: 6px;
+  --sp-s: 8px;
+  --sp-m: 12px;
+  --sp-l: 16px;
+  --sp-xl: 20px;
+  --sp-2xl: 24px;
+  --sp-3xl: 32px;
+  --sp-4xl: 40px;
+  --cell-y: 7px;
+
+  /* 角丸 */
+  --r-xs: 2px;
+  --r-s: 5px;
+  --r-m: 7px;
+  --r-l: 10px;
+
+  /* 大きさと格子 */
+  --wrap: 1240px;
+  --bar-h: 56px;
+  --card-min-h: 184px;
+  --card-min-w: 248px;
+  --spark-h: 48px;
+  --meter-h: 10px;
+  --hbar-h: 8px;
+  --mark-dot: 6px;
+  --on-dot: 10px;
+  --col-bar: 26%;
+  --col-state: 132px;
+  --col-on: 100px;
+  --cell-max: 320px;
+  --search-w: 240px;
+  --table-max-h: 560px;
+  --tip-max-w: 320px;
+  --fc-cum-h: 28px;
+  --ln-w: 18px;
+  --cum-line: 2px;
+  --cum-dash: 5 4;
+  --date-w: 150px;
+  --name-w: 240px;
+  --caret-h: 4px;
+  --caret-w: 5px;
+  --month-cols: minmax(0, 1fr) 9em 7em var(--col-bar) 7.5em;
+  --month-table-cols: 9.5em 6em minmax(0, 1fr);
+}
+
+/* 画面の配置: 見出し帯・ページ見出し・カードの格子・下段・足もと */
+* { box-sizing: border-box; }
+html { background: var(--bg); scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs)/var(--lh) var(--sans); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--sp-4xl); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.top { border-bottom: 1px solid var(--rule); }
+.bar { display: flex; align-items: center; gap: var(--sp-3xl); height: var(--bar-h); }
+.brand { font-weight: 700; color: var(--ink); text-decoration: none; white-space: nowrap; }
+nav { display: flex; gap: var(--sp-2xs); }
+nav a { color: var(--ink-2); text-decoration: none; padding: var(--sp-2xs) var(--sp-m); border-radius: var(--r-m); white-space: nowrap; }
+nav a:hover { color: var(--accent); }
+nav a[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 700; }
+.asof { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar-end { margin-left: auto; display: flex; align-items: center; gap: var(--sp-l); }
+.bar-end a { color: var(--ink-2); text-decoration: none; padding: var(--sp-2xs) var(--sp-m); border-radius: var(--r-m); white-space: nowrap; }
+.bar-end a:hover { color: var(--accent); }
+.bar-end a[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 700; }
+
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--sp-2xl); margin: var(--sp-2xl) 0 var(--sp-l); }
+h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em; line-height: 1.3; }
+.lead { margin: var(--sp-3xs) 0 0; color: var(--muted); font-size: var(--fs-sm); }
+.head-act { display: flex; align-items: center; gap: var(--sp-2xl); }
+
+.kpis { display: grid; gap: var(--sp-xl); }
+.glabel { font-size: var(--fs-label); font-weight: 700; margin: 0 0 var(--sp-s); color: var(--ink-2); }
+.glabel span { font-weight: 400; color: var(--muted); font-size: var(--fs-sm); margin-left: var(--sp-m); }
+.gnote { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+.cards + .gnote { margin-top: var(--sp-s); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-min-w), 1fr)); gap: var(--sp-m); }
+.detail { margin-top: var(--sp-3xl); scroll-margin-top: var(--sp-m); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4xl); }
+.foot { padding-top: var(--sp-3xl); padding-bottom: var(--sp-4xl); font-size: var(--fs-sm); color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+/* 幅の境目は CSS 変数にできない（メディアクエリの中では変数を読めない） */
+@media (max-width: 960px) {
+  .wrap { padding: 0 var(--sp-l); }
+  .bar { flex-wrap: wrap; height: auto; padding: var(--sp-m) 0; gap: var(--sp-s) var(--sp-l); }
+  .page-head, .head-act { flex-wrap: wrap; }
+  .card.wide { grid-column: auto; }
+  .two { grid-template-columns: 1fr; }
+  .tabs { grid-auto-flow: row; }
+}
+
+/* 部品の見た目。値は tokens.css の変数だけを使う */
+button { font: inherit; color: inherit; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.btn { background: var(--ink); color: var(--on-ink); border: 0; border-radius: var(--r-m); font-weight: 700; font-size: var(--fs-sm); padding: var(--sp-s) var(--sp-l); cursor: pointer; }
+.notice { margin: 0 0 var(--sp-m); padding: var(--sp-s) var(--sp-l); border-radius: var(--r-m); font-size: var(--fs-sm); }
+.notice.ok { background: var(--ok-bg); color: var(--ok); }
+.notice.ng { background: var(--ng-bg); color: var(--ng); }
+.btn-quiet { background: none; border: 1px solid var(--rule); border-radius: var(--r-s); font-size: var(--fs-sm); color: var(--ink-2); padding: var(--sp-3xs) var(--sp-s); cursor: pointer; }
+.btn-quiet:hover { color: var(--ng); border-color: var(--ng); }
+
+/* 指標カード */
+.card {
+  display: flex; flex-direction: column; min-height: var(--card-min-h); padding: var(--sp-l) var(--sp-xl) var(--sp-m); color: inherit; text-decoration: none;
+  background: var(--card); border-radius: var(--r-l); box-shadow: var(--shadow-card); transition: background .15s, box-shadow .15s;
+}
+.card.wide { grid-column: span 2; }
+.card:hover { background: var(--card-hover); }
+.card.is-open { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.k-label { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-s); font-size: var(--fs-label); font-weight: 600; color: var(--ink-2); }
+.k-label .go { font-size: var(--fs-sm); font-weight: 400; color: var(--muted); }
+.k-label .go::after { content: " ↓"; }
+.card:hover .go { color: var(--accent); }
+.k-value { font-family: var(--fig); font-size: var(--fs-val); font-weight: var(--fw-val); line-height: 1.12; margin-top: var(--sp-xs); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.k-value .u { font-family: var(--sans); font-size: var(--fs-unit); font-weight: var(--fw-val); margin-left: var(--sp-2xs); color: var(--ink-2); letter-spacing: 0; }
+.k-sub { font-size: var(--fs-sm); color: var(--muted); margin-top: var(--sp-2xs); font-variant-numeric: tabular-nums; }
+.k-viz { margin-top: auto; padding-top: var(--sp-m); display: grid; gap: var(--sp-2xs); }
+.change { display: inline-block; font-weight: 700; padding: 0 var(--sp-xs); border-radius: var(--r-s); margin-right: var(--sp-xs); background: var(--chip); color: var(--ink); }
+.change.up { background: var(--chip-up); color: var(--chip-up-ink); }
+.cap { display: flex; justify-content: space-between; gap: var(--sp-s); font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* 小さなグラフ */
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { font: var(--fs-xs) var(--sans); fill: var(--muted); font-variant-numeric: tabular-nums; }
+.spark { height: var(--spark-h); }
+.spark-shade { fill: var(--track); }
+.spark-area { fill: var(--accent-2); opacity: .4; }
+.spark-old { fill: none; stroke: var(--muted); stroke-width: 1.3; }
+.spark-new { fill: none; stroke: var(--accent); stroke-width: 2; }
+.spark-dot, .bar-hi, .series-0 { fill: var(--accent); }
+.bar-old { fill: var(--ghost); }
+.series-1 { fill: var(--accent-2); }
+.series-2 { fill: var(--ghost); }
+.axis, .gridline { stroke: var(--rule); }
+.meter, .hbar { display: block; height: var(--hbar-h); background: var(--track); border-radius: var(--r-xs); overflow: hidden; }
+.meter { height: var(--meter-h); }
+.meter i, .hbar i { display: block; height: 100%; background: var(--accent); border-radius: var(--r-xs); }
+.meter.ok i { background: var(--ok); }
+.meter.warn i { background: var(--warn); }
+.meter.ng i { background: var(--ng); }
+.meter.neutral i { background: var(--neutral); }
+.hbar.ghost i { background: var(--ghost); }
+.stack { display: flex; gap: var(--sp-3xs); height: var(--meter-h); border-radius: var(--r-xs); overflow: hidden; }
+.stack i { display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--sp-3xs) var(--sp-m); font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.k-viz .legend { min-height: calc(2 * var(--fs-xs) * var(--lh)); align-content: flex-start; }
+.legend i { display: inline-block; width: var(--hbar-h); height: var(--hbar-h); border-radius: var(--r-xs); margin-right: var(--sp-xs); }
+.warn-0 { background: var(--warn); } .warn-1 { background: var(--warn-2); } .warn-2 { background: var(--warn-3); }
+.accent-0 { background: var(--accent); } .accent-1 { background: var(--accent-2); } .accent-2 { background: var(--ghost); }
+.legend .series-0, .legend .bar-hi { background: var(--accent); } .legend .series-1 { background: var(--accent-2); } .legend .series-2, .legend .bar-old { background: var(--ghost); }
+.pair { display: grid; grid-template-columns: 5.5em 1fr; align-items: center; gap: var(--sp-s); font-size: var(--fs-xs); color: var(--muted); line-height: 1.5; }
+.rates { display: grid; gap: var(--sp-3xs); }
+.rate { display: grid; grid-template-columns: 1fr 38% 3.6em; align-items: center; gap: var(--sp-m); font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.55; }
+.rates.wide .rate { grid-template-columns: 1fr 34% 5.5em 3.6em; }
+.rate > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rate .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.rate .num.strong { color: var(--ink); font-weight: 700; }
+
+/* 状態の印（点＋語）と適用の点 */
+.mark { display: inline-flex; align-items: center; gap: var(--sp-xs); font-size: var(--fs-sm); font-weight: 700; white-space: nowrap; }
+.mark::before, .dot { content: ""; display: inline-block; width: var(--mark-dot); height: var(--mark-dot); border-radius: 50%; background: currentColor; }
+.mark.ok, .dot.ok { color: var(--ok); }
+.mark.warn, .dot.warn { color: var(--warn); }
+.mark.ng, .dot.ng { color: var(--ng); }
+.mark.neutral, .dot.neutral { color: var(--neutral); }
+.on { display: inline-block; width: var(--on-dot); height: var(--on-dot); border-radius: 50%; vertical-align: -1px; }
+.on.yes { background: var(--accent); }
+.on.no { border: 1.5px solid var(--ng); }
+.on.none { width: var(--sp-m); height: 1px; border-radius: 0; background: var(--ghost); vertical-align: 3px; }
+
+/* 分段タブと中身の枠 */
+.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--sp-3xs); padding: var(--sp-3xs); background: var(--tabs); border-radius: var(--r-l); }
+.tabs a { border-radius: var(--r-m); padding: var(--sp-s) var(--sp-m); display: flex; flex-direction: column; line-height: 1.45; color: var(--ink-2); text-decoration: none; min-width: 0; }
+.tabs a b { white-space: nowrap; }
+.tabs a span { font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.tabs a:hover { background: var(--tab-hover); }
+.tabs a[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow-raised); }
+.panel { background: var(--card); border-radius: var(--r-l); padding: var(--sp-xl) var(--sp-2xl); margin-top: var(--sp-m); }
+.js .panel[hidden] { display: none; }
+.p-head h2 { font-size: var(--fs-h2); font-weight: 700; margin: 0; }
+.scope { margin: var(--sp-3xs) 0 0; font-size: var(--fs-sm); color: var(--muted); }
+.dot-key { margin-left: var(--sp-m); }
+.p-chart { margin-top: var(--sp-l); }
+.p-chart h3 { font-size: var(--fs-label); font-weight: 600; margin: 0 0 var(--sp-2xs); color: var(--ink-2); }
+.p-chart .legend { margin-top: var(--sp-xs); font-size: var(--fs-sm); }
+.note { font-size: var(--fs-sm); color: var(--muted); margin: var(--sp-m) 0 0; }
+.na { margin: var(--sp-l) 0 0; padding: var(--sp-2xl) 0 var(--sp-s); border-top: 1px solid var(--rule); font-size: var(--fs-label); color: var(--muted); }
+
+/* データと設定: 節と、期間でまとめて足すフォーム */
+.section { margin-top: 0; }
+.section + .section { margin-top: var(--sp-2xl); }
+.section .notice { margin: var(--sp-m) 0 0; }
+.holiday-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-m); margin: var(--sp-l) 0 0; }
+.holiday-form label { display: grid; gap: var(--sp-2xs); font-size: var(--fs-sm); color: var(--muted); }
+.holiday-form input { font: inherit; font-size: var(--fs-label); padding: var(--sp-2xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); width: var(--date-w); }
+.holiday-form .grow input { width: var(--name-w); }
+.holiday-form input:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--card-hover); }
+.upload-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-l); margin: var(--sp-l) 0 0; }
+.upload-form label { display: grid; gap: var(--sp-2xs); font-size: var(--fs-sm); color: var(--muted); }
+.upload-form input[type="file"] { font: inherit; font-size: var(--fs-label); color: var(--ink); }
+.upload-form input[type="file"]::file-selector-button { font: inherit; margin-right: var(--sp-s); padding: var(--sp-2xs) var(--sp-m); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn-sub { display: inline-block; background: var(--chip); color: var(--ink); border-radius: var(--r-m); font-size: var(--fs-sm); font-weight: 600; padding: var(--sp-3xs) var(--sp-m); text-decoration: none; white-space: nowrap; }
+.btn-sub:hover { background: var(--tabs); }
+
+/* 書き出す: 月の一覧。行（summary）を押すと、同じ地のまま表ごとの行数と列が開く */
+.months { margin-top: var(--sp-s); font-size: var(--fs-label); font-variant-numeric: tabular-nums; }
+.m-row { display: grid; grid-template-columns: var(--month-cols); align-items: center; gap: var(--sp-m); padding: var(--cell-y) 0; border-bottom: 1px solid var(--rule); }
+.m-head { font-size: var(--fs-sm); font-weight: 600; color: var(--muted); padding-top: var(--sp-xs); border-bottom-color: var(--ink-2); }
+.months .num { text-align: right; white-space: nowrap; }
+.m-item summary { cursor: pointer; list-style: none; }
+.m-item summary::-webkit-details-marker { display: none; }
+.m-item summary:hover .m-month { color: var(--accent); }
+.m-month { white-space: nowrap; }
+.m-month::before { content: ""; display: inline-block; margin: 0 var(--sp-xs) 1px 0; border-style: solid; border-width: var(--caret-h) 0 var(--caret-h) var(--caret-w); border-color: transparent transparent transparent var(--muted); vertical-align: middle; transition: transform .15s; }
+.m-item[open] .m-month::before { transform: rotate(90deg); }
+.m-item[open] summary { font-weight: 600; border-bottom-style: dashed; }
+.m-item[open] summary .sub { font-weight: 400; }
+.m-tables { margin: 0; padding: var(--sp-2xs) 0 var(--sp-s) var(--sp-l); border-bottom: 1px solid var(--rule); font-size: var(--fs-sm); }
+.m-tables > div { display: grid; grid-template-columns: var(--month-table-cols); gap: var(--sp-m); align-items: baseline; padding: var(--sp-xs) 0; }
+.m-tables > div + div { border-top: 1px dotted var(--rule); }
+.m-tables dt b { font-weight: 600; color: var(--ink-2); }
+.m-tables dt .code { display: block; font-size: var(--fs-xs); color: var(--muted); }
+.m-tables dd { margin: 0; color: var(--ink-2); }
+.m-tables dd.code { font-size: var(--fs-xs); line-height: 1.6; overflow-wrap: anywhere; }
+
+/* 絞り込み */
+.filters { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-s) var(--sp-l); margin: var(--sp-l) 0 var(--sp-s); }
+.filters[hidden] { display: none; }
+.search input { width: var(--search-w); font: inherit; font-size: var(--fs-label); padding: var(--sp-2xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); }
+.search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--card-hover); }
+.chipbar { display: flex; gap: var(--sp-3xs); background: var(--tabs); padding: var(--sp-3xs); border-radius: var(--r-m); }
+.chipbar button { display: inline-flex; align-items: center; gap: var(--sp-xs); border: 0; background: transparent; padding: var(--sp-3xs) var(--sp-s); border-radius: var(--r-s); font-size: var(--fs-label); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.chipbar button b { font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chipbar button[aria-pressed="true"] { background: var(--card); color: var(--ink); font-weight: 700; box-shadow: var(--shadow-raised); }
+.chipbar button[aria-pressed="true"] b { color: var(--ink); }
+/* 期間の切り替え（絞り込みの区分と同じ見た目のリンク） */
+.period a { padding: var(--sp-3xs) var(--sp-m); border-radius: var(--r-s); font-size: var(--fs-label); color: var(--ink-2); text-decoration: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.period a:hover { color: var(--ink); }
+.period a[aria-current="true"] { background: var(--card); color: var(--ink); font-weight: 700; box-shadow: var(--shadow-raised); }
+.count { margin-left: auto; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.count b { color: var(--ink); }
+
+/* 並べ替えつきの表 */
+.tscroll { overflow: auto; max-height: var(--table-max-h); margin-top: var(--sp-s); }
+.tscroll table { border-collapse: collapse; width: 100%; font-size: var(--fs-label); font-variant-numeric: tabular-nums; }
+.tscroll th { text-align: left; font-weight: 600; font-size: var(--fs-sm); color: var(--muted); padding: var(--sp-xs) var(--sp-m) var(--sp-xs) 0; border-bottom: 1px solid var(--ink-2); background: var(--card); position: sticky; top: 0; z-index: 1; vertical-align: bottom; white-space: nowrap; }
+.tscroll th button { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: inherit; }
+.tscroll th button:hover { color: var(--ink); }
+.arrow::after { content: "↕"; margin-left: var(--sp-3xs); opacity: .35; font-style: normal; }
+.tscroll th[aria-sort="ascending"], .tscroll th[aria-sort="descending"] { color: var(--ink); }
+th[aria-sort="ascending"] .arrow::after { content: "↑"; opacity: 1; }
+th[aria-sort="descending"] .arrow::after { content: "↓"; opacity: 1; }
+.tscroll td { padding: var(--cell-y) var(--sp-m) var(--cell-y) 0; border-bottom: 1px solid var(--rule); vertical-align: middle; max-width: var(--cell-max); overflow-wrap: anywhere; }
+.tscroll th:last-child, .tscroll td:last-child { padding-right: 0; }
+.tscroll .num { text-align: right; white-space: nowrap; }
+.tscroll .c-date, .tscroll .c-code { white-space: nowrap; }
+.tscroll .c-bar { width: var(--col-bar); }
+.tscroll .c-user_state, .tscroll .c-terminal_state { width: var(--col-state); }
+.tscroll .c-dot { width: var(--col-on); text-align: center; padding-left: var(--sp-xs); padding-right: var(--sp-xs); }
+.th-sub { display: block; font-weight: 400; font-size: var(--fs-xs); }
+.sub { color: var(--muted); }
+.sub.key { display: block; font-size: var(--fs-xs); }
+.late { color: var(--warn); font-weight: 700; }
+.code { font-family: var(--mono); font-size: var(--fs-sm); }
+.u-id { font-weight: 600; }
+.num-ng { color: var(--ng); }
+.empty { color: var(--muted); font-size: var(--fs-label); padding: var(--sp-l) 0; margin: 0; }
+.empty[hidden] { display: none; }
+
+/* ツールチップ（カードの小さなグラフの点と、丸めた値） */
+.tip { position: fixed; z-index: 10; max-width: var(--tip-max-w); pointer-events: none; padding: var(--sp-2xs) var(--sp-s); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-s); box-shadow: var(--shadow-tip); font-size: var(--fs-sm); line-height: 1.5; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tip[hidden] { display: none; }
+.tip span { margin-right: var(--sp-s); }
+.tip b { font-weight: 600; color: var(--ink); }
+svg .hit { fill: transparent; }
+.spark-guide { stroke: var(--ink-2); stroke-width: 1; visibility: hidden; }
+.spark-guide.is-on { visibility: visible; }
+
+/* 下段のグラフと表の連動: 当てた棒と行を強調し、ほかの棒を薄くする */
+.is-linking svg g.col:not(.is-hot) rect:not(.hit) { opacity: var(--link-dim); }
+.tscroll tbody tr.is-hot td { background: var(--tabs); }
+
+/* 丸めた値: 当てると点線の下線と、正確な値のツールチップ */
+.exact { cursor: help; text-decoration: underline dotted transparent; text-underline-offset: .2em; text-decoration-thickness: 1px; }
+.exact:hover { text-decoration-color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .card, .m-month::before { transition: none; } }
+
+/* 見込みのカード・累積のグラフ・週ごとの棒の月の行。値は tokens.css の変数だけを使う */
+
+/* 見込みのカード: 営業日あたりと 1 人 1 営業日あたりを 2 列に並べ、下端に低い累積の線 */
+.fc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-m); }
+.fc-stat { display: grid; min-width: 0; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.fc-label, .fc-prev { font-size: var(--fs-sm); color: var(--muted); white-space: nowrap; }
+.fc-now { display: flex; align-items: center; gap: var(--sp-xs); font-family: var(--fig); font-size: var(--fs-label); font-weight: 600; color: var(--ink); white-space: nowrap; }
+.fc-now .change { margin-right: 0; font-family: var(--sans); font-size: var(--fs-sm); }
+.fc-cum { height: var(--fc-cum-h); margin-top: var(--sp-xs); }
+.fc-cum polyline, .cum polyline { fill: none; stroke-linejoin: round; }
+.fc-cum polyline { stroke-width: 1.5; }
+.fc-cum-now, .cum .cum-now { stroke: var(--accent); }
+.fc-cum-fc, .cum .cum-fc { stroke: var(--accent); stroke-dasharray: var(--cum-dash); }
+.fc-cum-prev, .cum .cum-prev { stroke: var(--ghost); }
+
+/* 今月のコストの累積: 今月の実績・見込みの破線・前月と、休みの日の帯 */
+.cum polyline { stroke-width: var(--cum-line); }
+.cum .dot-now { fill: var(--accent); }
+.cum .dot-fc { fill: var(--card); stroke: var(--accent); stroke-width: 1.5; }
+.cum .dot-prev { fill: var(--ghost); visibility: hidden; }
+.cum .guide { stroke: var(--muted); stroke-width: 1; visibility: hidden; }
+.cum g.col.is-hot .guide, .cum g.col.is-hot .dot-prev { visibility: visible; }
+.cum g.col.is-hot circle { r: 4.5; }
+.cum .off, .legend i.off { fill: var(--chip); background: var(--chip); }
+.legend i.off { width: var(--sp-m); height: var(--sp-m); vertical-align: -1px; }
+.legend .ln { width: var(--ln-w); height: 0; border-radius: 0; vertical-align: middle; border-top: var(--cum-line) solid var(--accent); }
+.legend .ln.fc { border-top-style: dashed; }
+.legend .ln.prev { border-top-color: var(--ghost); }
+.js [data-when][hidden] { display: none; }
+
+/* 週ごとの棒: 途中の週は薄く、軸の下に暦月の名前と合計 */
+.chart .is-partial rect:not(.hit) { opacity: var(--partial-opacity); }
+.chart .month-sep { stroke: var(--rule); }
+.chart .month-name { fill: var(--muted); }
+.chart .month-total { fill: var(--ink-2); font-weight: 600; }
+
+:root {
+  --accent: var(--ink); --accent-2: var(--ghost);
+  --chip-up: var(--chip); --chip-up-ink: var(--ink);
+  --ok: var(--neutral); --ok-bg: var(--chip);
+}
+
+/* このモックで足した部品（値は tokens の変数だけ） */
+nav a:hover, .bar-end a:hover, .card:hover .go { color: var(--ink); }
+.basis { display: flex; align-items: center; gap: var(--sp-s); font-size: var(--fs-sm); color: var(--muted); }
+.basis input { font: inherit; font-size: var(--fs-label); padding: var(--sp-3xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--card); color: var(--ink); width: var(--date-w); }
+.change.worse { font-weight: 700; }
+.change.better { background: none; font-weight: 400; color: var(--muted); padding-left: 0; }
+.change.raw { background: none; font-weight: 400; color: var(--ink-2); padding-left: 0; }
+.summary { background: var(--card); border-radius: var(--r-l); padding: var(--sp-l) var(--sp-xl); box-shadow: var(--shadow-card); }
+.summary .s-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-m); font-size: var(--fs-label); font-weight: 600; color: var(--ink-2); }
+.summary .s-head .counts { display: inline-flex; gap: var(--sp-m); margin-left: var(--sp-m); }
+.summary .s-title { margin: var(--sp-xs) 0 0; font-size: var(--fs); font-weight: 700; color: var(--ink); }
+.summary .s-meta { font-size: var(--fs-sm); color: var(--muted); }
+.summary .s-body { margin: var(--sp-s) 0 0; white-space: pre-wrap; font: inherit; color: var(--ink); }
+.lnk { text-decoration: underline dotted var(--muted); text-underline-offset: .2em; text-decoration-thickness: 1px; }
+.summary + .kpis, .summary + div { margin-top: var(--sp-xl); }
+.more { font-size: var(--fs-sm); color: var(--muted); text-decoration: none; white-space: nowrap; }
+.more::after { content: " →"; }
+.more:hover { color: var(--ink); }
+.kpis.rows { grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: var(--sp-m); }
+.kpis.rows > .group { grid-column: span var(--span, 4); min-width: 0; }
+.kpis.rows .cards { grid-template-columns: repeat(var(--span, 4), minmax(0, 1fr)); }
+.kpis.rows .glabel span { margin-left: var(--sp-s); }
+.kpis.rows .glabel { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mtx { display: grid; grid-template-columns: auto 1fr 1fr; gap: 0 var(--sp-l); font-size: var(--fs-sm); color: var(--ink-2); font-variant-numeric: tabular-nums; align-items: baseline; }
+.mtx > * { padding: var(--sp-3xs) 0; border-top: 1px solid var(--rule); }
+.mtx .h { color: var(--muted); border-top: 0; font-size: var(--fs-xs); }
+.mtx b { font-family: var(--fig); font-size: var(--fs-h2); font-weight: var(--fw-val); color: var(--ink); margin-right: var(--sp-2xs); }
+.mtx .t { color: var(--muted); }
+.mtx a { color: inherit; text-decoration: none; }
+.band { display: flex; gap: var(--sp-3xs); height: var(--meter-h); border-radius: var(--r-xs); overflow: hidden; }
+.band i { display: block; }
+.g0 { background: var(--ink); } .g1 { background: var(--muted); } .g2 { background: var(--ghost); } .g3 { background: var(--track); }
+.legend .g0, .legend .g1, .legend .g2, .legend .g3 { display: inline-block; }
+.statrows { display: grid; gap: var(--sp-2xs); margin-top: var(--sp-s); }
+.statrow { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: var(--sp-m); padding-top: var(--sp-2xs); border-top: 1px solid var(--rule); font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.statrow .v { font-family: var(--fig); font-size: var(--fs-label); font-weight: 600; color: var(--ink); }
+.statrow .r { display: flex; align-items: baseline; gap: var(--sp-s); white-space: nowrap; }
+.statrow .change { margin-right: 0; font-size: var(--fs-sm); }
+
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap bar">
+  <a class="brand" href="#">Claude Code 利用状況</a>
+  <nav aria-label="画面"><a href="#" aria-current="page">概況</a><a href="#">サマリー</a><a href="#">コストと利用者</a><a href="#">ツール利用状況</a><a href="#">設定の適用状況</a><a href="#">設定の効果</a><a href="#">収集の状態</a></nav>
+  <span class="bar-end"><a href="#">データと設定</a></span>
+</div></header>
+<main class="wrap">
+  <div class="page-head">
+    <div><h1>概況</h1><p class="lead">コスト・利用者・設定の適用・データの届き具合の要点</p></div>
+    <div class="head-act"><nav class="chipbar period" aria-label="期間"><a href="#" aria-current="true">7 日</a><a href="#">28 日</a><a href="#">12 か月</a></nav>
+    <label class="basis">基準日<input type="date" value="2026-10-01"></label></div>
+  </div>
+<style>
+.m03 { --spark-h: 72px; }
+.m03 .stack, .m03 .band { height: 18px; }
+.bdbars { display: flex; align-items: flex-end; gap: var(--sp-2xs); height: 72px; }
+.bdbars i { flex: 1; display: block; border-radius: var(--r-xs) var(--r-xs) 0 0; }
+.ppl { display: grid; gap: var(--sp-s); }
+.pr { display: grid; grid-template-columns: 1fr 9em 11em; align-items: center; gap: var(--sp-m); font-size: var(--fs-sm); color: var(--ink-2); }
+.pr .t { color: var(--muted); }
+.sq { display: flex; gap: var(--sp-3xs); }
+.sq i { width: 12px; height: 12px; border-radius: var(--r-xs); display: block; }
+.pr .num { display: flex; gap: var(--sp-xs); align-items: baseline; justify-content: flex-end; color: var(--ink); text-decoration: none; font-variant-numeric: tabular-nums; }
+.pr .num b { font-family: var(--fig); font-size: var(--fs-h2); margin-right: var(--sp-s); }
+.big-legend { display: flex; justify-content: space-between; gap: var(--sp-m); font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.big-legend b { display: block; font-family: var(--fig); font-size: var(--fs-h2); color: var(--ink); }
+.big-legend i { display: inline-block; width: var(--hbar-h); height: var(--hbar-h); border-radius: var(--r-xs); margin-right: var(--sp-xs); }
+</style><div class="m03"><div class="kpis rows"><section class="group"><h2 class="glabel">コスト<span>09/23〜09/29（4 営業日）· 前の期間 09/16〜09/22（3 営業日）· 利用明細（CSV）は 09/29 まで</span></h2><div class="cards"><a class="card" href="#"><span class="k-label"><span>コスト（利用明細）</span><span class="go">一覧</span></span><span class="k-value">$4,160<span class="u"></span></span><span class="k-sub"><span class="change raw">+$1,374 · +49.3%</span>前の 7 日 $2,786</span><span class="k-viz"><svg class="spark" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"><rect class="spark-shade" x="107.7" y="0" width="92.3" height="48"/><path class="spark-area" d="M107.7,48 L107.7,43.5 L123.1,5.9 L138.5,4.0 L153.8,43.7 L169.2,43.7 L184.6,6.3 L200.0,4.0 L200,48 Z"/><polyline class="spark-old" points="0.0,9.3 15.4,7.8 30.8,11.2 46.2,43.5 61.5,43.7 76.9,43.6 92.3,43.8 107.7,43.5" vector-effect="non-scaling-stroke"/><polyline class="spark-new" points="107.7,43.5 123.1,5.9 138.5,4.0 153.8,43.7 169.2,43.7 184.6,6.3 200.0,4.0" vector-effect="non-scaling-stroke"/><circle class="spark-dot" cx="200.0" cy="4.0" r="3"/></svg><span class="cap"><span>09/16</span><span>日ごと · 濃い地が直近 7 日</span><span>09/29</span></span></span></a><a class="card" href="#"><span class="k-label"><span>1 営業日あたり</span><span class="mark warn">注意</span></span><span class="k-value"><span class="exact" title="$1,040.00">$1,040</span><span class="u"></span></span><span class="k-sub"><span class="change worse">↑ +12.0% 悪化</span>前の 7 日 $928.67</span><span class="k-viz"><span class="bdbars"><i class="g2" style="height: 87%"></i><i class="g2" style="height: 91%"></i><i class="g2" style="height: 82%"></i><i class="g0" style="height: 95%"></i><i class="g0" style="height: 100%"></i><i class="g0" style="height: 94%"></i><i class="g0" style="height: 100%"></i></span><span class="cap"><span>前の 3 営業日</span><span>直近 4 営業日</span></span></span></a><a class="card" href="#"><span class="k-label"><span>1 人 1 営業日あたり</span><span class="mark ng">要確認</span></span><span class="k-value">$8.13<span class="u"></span></span><span class="k-sub"><span class="change worse">↑ +15.5% 悪化</span>前の 7 日 $7.04</span><span class="k-viz"><span class="pair"><span>前の 7 日</span><span class="hbar ghost"><i style="width: 86.6%"></i></span></span><span class="pair"><span>直近 7 日</span><span class="hbar"><i style="width: 100%"></i></span></span><span class="more">利用者一覧（コスト順）</span></span></a><a class="card" href="#"><span class="k-label"><span>月末のコスト見込み（9 月）</span><span class="mark ng">要確認</span></span><span class="k-value">$19,800<span class="u"></span></span><span class="k-sub"><span class="change worse">↑ +17.0% 悪化</span>8 月の実績 $16,920</span><span class="k-viz"><svg class="fc-cum" style="height: 56px" viewBox="0 0 200 56" preserveAspectRatio="none" aria-hidden="true"><polyline class="fc-cum-prev" points="0.0,54.0 10.0,51.8 20.0,49.6 30.0,47.3 40.0,45.1 50.0,42.9 60.0,40.7 70.0,38.4 80.0,36.2 90.0,34.0 100.0,31.8 110.0,29.6 120.0,27.3 130.0,25.1 140.0,22.9 150.0,20.7 160.0,18.5 170.0,16.2 180.0,14.0 190.0,11.8 200.0,9.6" vector-effect="non-scaling-stroke"/><polyline class="fc-cum-fc" points="189.5,4.7 200,2.0" vector-effect="non-scaling-stroke"/><polyline class="fc-cum-now" points="0.0,54.0 10.5,51.3 21.1,48.5 31.6,45.8 42.1,43.1 52.6,40.3 63.2,37.6 73.7,34.8 84.2,32.1 94.7,29.4 105.3,26.6 115.8,23.9 126.3,21.2 136.8,18.4 147.4,15.7 157.9,12.9 168.4,10.2 178.9,7.5 189.5,4.7" vector-effect="non-scaling-stroke"/><circle class="spark-dot" cx="189.5" cy="4.7" r="2.5"/></svg><span class="legend"><span><i class="ln now"></i>9 月の実績</span><span><i class="ln fc"></i>月末までの見込み</span><span><i class="ln prev"></i>8 月</span></span></span></a></div></section><section class="group" style="--span: 1"><h2 class="glabel">利用者<span>直近 7 日 · 利用明細</span></h2><div class="cards"><a class="card" href="#"><span class="k-label"><span>利用明細にいた利用者</span><span class="mark ok">正常</span></span><span class="k-value">128<span class="u">人</span></span><span class="k-sub"><span class="change worse">↓ −3.0% 悪化</span>前の 7 日 132 人</span><span class="k-viz"><span class="pair"><span>前の 7 日</span><span class="hbar ghost"><i style="width: 100%"></i></span></span><span class="pair"><span>直近 7 日</span><span class="hbar"><i style="width: 97%"></i></span></span></span></a></div></section><section class="group" style="--span: 2"><h2 class="glabel">基準を超えた利用者<span>基準日 10/01 まで · 期間のタブに連動しない</span></h2><div class="cards"><a class="card wide" href="#"><span class="k-label"><span>1 人を 1 つの四角で</span><span class="mark ng">要確認</span></span><span class="k-sub">濃い四角が要確認、薄い四角が注意 · 人数を押すと該当者の一覧</span><span class="k-viz"><span class="ppl"><span class="pr"><span>日 <span class="t">いずれかの 1 日 · $50 / $100 超</span></span><span class="sq"><i class="g0"></i><i class="g2"></i><i class="g2"></i><i class="g2"></i><i class="g2"></i></span><span class="num"><span class="mark ng">要確認</span> <b class="lnk">1</b> <span class="mark warn">注意</span> <b class="lnk">4</b></span></span><span class="pr"><span>週 <span class="t">7 日の合計 · $70 / $150 超</span></span><span class="sq"><i class="g0"></i><i class="g0"></i><i class="g2"></i><i class="g2"></i><i class="g2"></i><i class="g2"></i><i class="g2"></i><i class="g2"></i></span><span class="num"><span class="mark ng">要確認</span> <b class="lnk">2</b> <span class="mark warn">注意</span> <b class="lnk">6</b></span></span><span class="pr"><span>月 <span class="t">28 日の合計 · $280 / $600 超</span></span><span class="sq"><i class="g0"></i><i class="g2"></i><i class="g2"></i><i class="g2"></i><i class="g2"></i><i class="g2"></i></span><span class="num"><span class="mark ng">要確認</span> <b class="lnk">1</b> <span class="mark warn">注意</span> <b class="lnk">5</b></span></span></span></span></a></div></section><section class="group" style="--span: 1"><h2 class="glabel">モデルの内訳<span>直近 7 日</span></h2><div class="cards"><a class="card" href="#"><span class="k-label"><span>モデル別のコストの割合</span><span class="go">一覧</span></span><span class="k-viz"><span class="band"><i class="g0" style="flex: 62"></i><i class="g1" style="flex: 33"></i><i class="g2" style="flex: 5"></i></span><span class="big-legend"><span><i class="g0"></i>Opus<b>62%</b></span><span><i class="g1"></i>Sonnet<b>33%</b></span><span><i class="g2"></i>Haiku<b>5%</b></span></span></span></a></div></section><section class="group" style="--span: 2"><h2 class="glabel">設定の適用<span>直近 30 日 · 対象 135 人</span></h2><div class="cards"><a class="card wide" href="#"><span class="k-label"><span>対象者の内訳</span><span class="mark warn">注意</span></span><span class="k-sub">3 つで対象者全員</span><span class="k-viz"><span class="band"><i class="g3" style="flex: 118"></i><i class="g1" style="flex: 10"></i><i class="g0" style="flex: 7"></i></span><span class="big-legend"><span><i class="g3"></i>すべての設定を適用<b>118 人</b></span><span><i class="g1"></i>未適用のある利用者<b>10 人</b></span><span><i class="g0"></i>プラグイン未導入<b>7 人</b></span></span></span></a></div></section><section class="group" style="--span: 2"><h2 class="glabel">収集の状態<span>直近 7 日と、その前の 7 日</span></h2><div class="cards"><a class="card" href="#"><span class="k-label"><span>プラグインのエラー</span><span class="mark ok">正常</span></span><span class="k-value">0<span class="u">件</span></span><span class="k-sub">データの届き具合 <span class="mark ok">正常</span></span></a></div></section></div></div><div style="margin-top: var(--sp-xl)"><section class="summary" aria-label="サマリー"><div class="s-head"><span>サマリー<span class="counts"><span class="mark ng">要確認</span> 3 <span class="mark warn">注意</span> 2</span></span><a class="more" href="#">これまでのサマリー</a></div><p class="s-title">週次サマリー（09/25〜10/01）</p><span class="s-meta">対象 09/25〜10/01 · 作成 10/01</span><pre class="s-body">・1 人 1 営業日あたり $8.13 が前の期間より 15.5% 増え、要確認
+・月末のコスト見込み（9 月）$19,800 が 8 月の実績より 17.0% 多く、要確認
+・1 営業日あたり $1,040.00 が前の期間より 12.0% 増え、注意
+・基準を超えた利用者が日・週・月のすべてで要確認にいる（週は 2 人）
+・プラグイン未導入が 7 人。所属に導入を依頼した
+Opus の割合が 6 割を超えており、1 人あたりの増加はこの影響が大きいとみられる。
+利用者は 128 人と微減で、使う人が減ったのではなく 1 人あたりが伸びている。</pre></section></div>
+</main>
+<footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。</footer>
+</body>
+</html>
