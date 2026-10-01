@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="ja" data-scheme="1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code 利用管理の仕組み</title>
+<style>
+:root, [data-scheme="1"] {
+  --bg:#e8e5e0; --card:#f6f4f0; --tile:#ece9e4; --ink:#2b2926; --ink2:#4a4640; --muted:#625c53; --rule:#d6d1c9;
+  --acc:#4c6a78; --acc2:#a9b9c1; --acc-soft:#dde6ea; --on:#f6f4f0;
+  --ng:#9e3a2e; --ng-soft:#f3dfdb;
+  --l1:#2f4b58; --l2:#4c6a78; --l3:#a9b9c1; --l1s:#dfe5e8; --l2s:#e5eaec; --l3s:#edf0f1; --onl3:#22343c;
+}
+[data-scheme="2"] {
+  --bg:#f3f6f6; --card:#ffffff; --tile:#eef4f5; --ink:#1b2a31; --ink2:#33464e; --muted:#5b6d73; --rule:#d5dfe2;
+  --acc:#2f6f7e; --acc2:#86adba; --acc-soft:#e2edf0; --on:#ffffff;
+  --ng:#9e3a2e; --ng-soft:#f6e7e4;
+  --l1:#1f4352; --l2:#3a6e80; --l3:#86adba; --l1s:#e2eaed; --l2s:#e8f0f2; --l3s:#f0f6f7; --onl3:#12303b;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.65 "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", sans-serif; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p { margin: 0; }
+h3 { font-size: 13px; color: var(--ink2); margin: 20px 0 8px; }
+.note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+code { font-family: ui-monospace, Menlo, monospace; font-size: .92em; background: var(--tile); padding: 0 4px; border-radius: 3px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; font-weight: 600; font-size: 12px; color: var(--muted); padding: 6px 14px 6px 0; border-bottom: 1px solid var(--ink2); }
+td { padding: 7px 14px 7px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+td .s { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+tr.ex td { font-size: 12px; color: var(--muted); }
+tr.ex td:first-child { font-weight: 600; }
+.ex-tag { display: inline-block; font-size: 11px; font-weight: 600; color: var(--muted); border: 1px solid var(--rule); border-radius: 3px; padding: 0 5px; margin-left: 6px; }
+.val { font-weight: 700; white-space: nowrap; }
+.lead { font-size: 15px; font-weight: 600; line-height: 1.7; }
+.roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 10px; padding: 0; list-style: none; }
+.roles li { background: var(--tile); border-radius: 7px; padding: 10px 14px; border-top: 3px solid var(--acc); }
+.roles b { display: block; font-size: 14px; }
+.roles span { font-size: 12px; color: var(--muted); }
+.target { font-size: 13px; color: var(--ink2); }
+.target b { font-size: 16px; }
+.nots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.nots li { background: var(--ng-soft); border-radius: 7px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+.nots li::before { content: "×"; color: var(--ng); margin-right: 6px; }
+.nots .s { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+.routes { display: grid; gap: 10px; }
+.route { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: center; }
+.rtag { font-size: 12px; font-weight: 700; border-radius: 5px; padding: 6px 8px; text-align: center; color: var(--on); background: var(--acc); }
+.route.take .rtag { background: var(--ink2); }
+.route.none .rtag { background: transparent; color: var(--ng); border: 1px dashed var(--ng); }
+.chain { display: grid; grid-template-columns: 1fr 104px 1fr 104px 1fr; align-items: center; }
+.node { background: var(--tile); border: 1px solid var(--rule); border-radius: 7px; padding: 8px 12px; }
+.node b { display: block; font-size: 13px; }
+.node span { font-size: 12px; color: var(--muted); }
+.route.give .node { border-left: 3px solid var(--acc); }
+.route.take .node { border-left: 3px solid var(--ink2); }
+.c5 { grid-column: 5; }
+.arw { position: relative; text-align: center; font-size: 11px; color: var(--muted); padding: 0 8px 14px; line-height: 1.35; }
+.arw.long { grid-column: 2 / 5; }
+.arw::after { content: ""; position: absolute; left: 8px; right: 12px; bottom: 6px; border-top: 2px solid currentColor; }
+.arw::before { content: ""; position: absolute; right: 6px; bottom: 2px; border: 5px solid transparent; border-left: 7px solid currentColor; border-right: 0; }
+.route.give .arw { color: var(--acc); }
+.route.take .arw { color: var(--ink2); }
+.arw.x { color: var(--ng) !important; font-weight: 700; }
+.arw.x::after { border-top-style: dashed; }
+.stop { margin-top: 12px; font-size: 13px; background: var(--acc-soft); border-radius: 7px; padding: 9px 14px; }
+.stop b { margin-right: 8px; }
+.steps { display: grid; grid-template-columns: repeat(var(--n, 2), 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.steps > li { background: var(--tile); border-radius: 7px; padding: 10px 14px; }
+.when { font-size: 12px; font-weight: 700; color: var(--acc); }
+.steps b { display: block; font-size: 13px; margin: 1px 0 4px; }
+.steps ul { margin: 0; padding-left: 1.1em; font-size: 12.5px; color: var(--ink2); }
+.two { display: grid; grid-template-columns: 1.6fr 1fr; gap: 24px; }
+.nolist { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.nolist li { padding: 6px 0 6px 18px; border-bottom: 1px solid var(--rule); position: relative; }
+.nolist li::before { content: "×"; position: absolute; left: 2px; color: var(--ng); font-weight: 700; }
+.nolist .s { display: block; font-size: 12px; color: var(--muted); }
+.box { background: var(--tile); border-radius: 7px; padding: 10px 14px; font-size: 13px; }
+.box .s { display: block; font-size: 12px; color: var(--muted); }
+.key { margin-top: 10px; border-left: 3px solid var(--acc); padding: 4px 0 4px 12px; font-size: 13px; }
+.key b { color: var(--acc); margin-right: 6px; }
+.limits { margin: 0; padding-left: 1.1em; font-size: 12px; color: var(--muted); }
+.ops td:nth-child(2) { white-space: nowrap; color: var(--ink2); }
+.ops ol { margin: 0; padding-left: 1.2em; }
+.scheme { position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: 4px 6px 4px 10px; font-size: 11px; color: var(--muted); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.scheme button { font: 600 12px/1 "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", sans-serif; width: 26px; height: 24px; border: 1px solid var(--rule); background: transparent; color: var(--ink2); border-radius: 5px; cursor: pointer; }
+.scheme button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.foot { font-size: 11px; color: var(--muted); padding: 20px 0 32px; }
+.foot [data-s] { display: none; }
+[data-scheme="1"] .foot [data-s="1"], [data-scheme="2"] .foot [data-s="2"], [data-scheme="3"] .foot [data-s="3"] { display: inline; }
+@media (max-width: 760px) {
+  .roles, .nots, .steps, .two { grid-template-columns: 1fr; }
+  .route { grid-template-columns: 1fr; gap: 6px; }
+  .rtag { justify-self: start; }
+  .chain { grid-template-columns: 1fr; }
+  .c5, .arw.long { grid-column: auto; }
+  .arw { text-align: left; padding: 2px 0 2px 22px; }
+  .arw::after { left: 8px; right: auto; top: 0; bottom: 4px; border-top: 0; border-left: 2px solid currentColor; }
+  .arw::before { right: auto; left: 4px; bottom: 0; border: 5px solid transparent; border-top: 7px solid currentColor; border-bottom: 0; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  thead { display: none; }
+  tr { border-bottom: 1px solid var(--rule); padding: 6px 0; }
+  td { border: 0; padding: 1px 0; }
+  td:first-child { white-space: normal; }
+  .ops td:nth-child(2) { white-space: normal; }
+  .scheme { position: absolute; top: 8px; right: 8px; }
+}
+
+h3.first { margin-top: 0; }
+[data-l="1"] { --lc: var(--l1); --ls: var(--l1s); --lon: var(--on); }
+[data-l="2"] { --lc: var(--l2); --ls: var(--l2s); --lon: var(--on); }
+[data-l="3"] { --lc: var(--l3); --ls: var(--l3s); --lon: var(--onl3); }
+.chip { display: inline-block; font-size: 11px; font-weight: 700; color: var(--lon); background: var(--lc); border-radius: 4px; padding: 1px 8px; letter-spacing: .04em; }
+.blk { border-left: 3px solid var(--lc); padding: 2px 0 2px 18px; margin-bottom: 22px; }
+.blk:last-child { margin-bottom: 0; }
+.blk h3 { margin-top: 12px; }
+.blk .chip + h3 { margin-top: 8px; }
+.layer .node { border-left: 3px solid var(--lc); }
+.layer .arw { color: var(--lc); }
+[data-l="3"] .arw, .layer[data-l="3"] .node { color: var(--ink2); }
+[data-l="3"] .arw { color: var(--l2); }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 32px; }
+.top { padding-top: 44px; padding-bottom: 20px; }
+.eye { font-size: 12px; font-weight: 700; color: var(--acc); letter-spacing: .08em; }
+h1 { font-size: 27px; letter-spacing: .03em; margin-top: 4px; }
+.idx { display: grid; grid-template-columns: 1fr 34px 1fr 34px 1fr; align-items: stretch; margin-top: 22px; }
+.tile-l { display: block; background: var(--ls); border-top: 4px solid var(--lc); border-radius: 10px; padding: 14px 18px 16px; color: var(--ink); text-decoration: none; transition: transform .12s; }
+.tile-l:hover { transform: translateY(-2px); box-shadow: 0 3px 10px rgba(0,0,0,.08); }
+.tile-l small { font-size: 11px; font-weight: 700; color: var(--lc); letter-spacing: .1em; }
+.tile-l b { display: block; font-size: 26px; line-height: 1.3; letter-spacing: .06em; }
+.tile-l .ln { display: block; font-size: 13px; color: var(--ink2); margin-bottom: 10px; }
+.tile-l .to { display: block; font-size: 12px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 6px; }
+.tile-l .to i { font-style: normal; font-weight: 700; color: var(--ink2); margin-right: 4px; }
+[data-l="3"].tile-l small { color: var(--l2); }
+.idx-arw { align-self: center; justify-self: center; width: 0; height: 0; border: 8px solid transparent; border-left: 11px solid var(--acc2); border-right: 0; }
+.common { margin-top: 12px; font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.common a { color: var(--ink2); text-decoration: none; background: var(--card); border: 1px solid var(--rule); border-radius: 5px; padding: 2px 9px; }
+.lbar { position: sticky; top: 0; z-index: 40; background: var(--bg); border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+.lbar .wrap { display: flex; gap: 6px; align-items: center; padding-top: 8px; padding-bottom: 8px; padding-right: 190px; overflow-x: auto; }
+.lbar a { flex: none; font-size: 12px; text-decoration: none; color: var(--ink2); padding: 3px 10px; border-radius: 5px; border: 1px solid transparent; }
+.lbar a[data-l] { border-color: var(--lc); color: var(--ink); }
+.lbar a.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.lbar a[data-l].on { background: var(--lc); color: var(--lon); border-color: var(--lc); }
+.lbar .sep { color: var(--rule); }
+.doc { background: var(--card); border-radius: 10px; padding: 22px 28px 24px; margin-bottom: 14px; scroll-margin-top: 56px; }
+.blk { scroll-margin-top: 56px; }
+.doc h2 { font-size: 17px; margin: 0 0 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.doc h2 .no { font-size: 13px; font-weight: 700; color: var(--acc); }
+.doc.small { padding: 16px 28px; }
+.doc.small h2 { font-size: 14px; margin-bottom: 8px; }
+[data-scheme="3"] { --l3:#7d97a2; --onl3:#ffffff; }
+[data-scheme="3"] .tile-l { background: var(--lc); color: var(--lon); border-top-color: transparent; }
+[data-scheme="3"] .tile-l small, [data-scheme="3"] .tile-l .ln, [data-scheme="3"] .tile-l .to, [data-scheme="3"] .tile-l .to i { color: inherit; opacity: .92; }
+[data-scheme="3"] .tile-l .to { border-top-color: rgba(255,255,255,.3); }
+[data-scheme="3"] .idx-arw { border-left-color: var(--ink2); }
+[data-scheme="3"] .lbar { background: var(--ink); border-bottom-color: var(--ink); }
+[data-scheme="3"] .lbar a { color: #e8e5e0; }
+[data-scheme="3"] .lbar a[data-l] { border-color: rgba(255,255,255,.28); }
+[data-scheme="3"] .lbar a.on { background: #f6f4f0; color: var(--ink); }
+[data-scheme="3"] .lbar a[data-l].on { background: var(--lc); color: #fff; border-color: var(--lc); }
+[data-scheme="3"] .lbar .sep { color: #6f6a62; }
+@media (max-width: 760px) {
+  .wrap { padding: 0 16px; }
+  .top { padding-top: 48px; }
+  .idx { grid-template-columns: 1fr; gap: 8px; }
+  .idx-arw { transform: rotate(90deg); }
+  .lbar .wrap { padding-right: 16px; }
+  .doc { padding: 18px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="scheme" role="group" aria-label="配色（仮）">配色（仮）<button type="button" data-n="1" title="管理画面の配色">1</button><button type="button" data-n="2" title="青緑の濃淡">2</button><button type="button" data-n="3" title="濃色の目次">3</button></div>
+<header class="top wrap"><p class="eye">BMSD 本部</p><h1>Claude Code 利用管理の仕組み</h1>
+<nav class="idx" aria-label="3 層の目次"><a class="tile-l" data-l="1" href="#s3a"><small>層 1</small><b>配る</b><span class="ln">設定とお知らせを全端末へ</span><span class="to"><i>3</i>仕組み: 配る流れ・設定値</span></a><span class="idx-arw" aria-hidden="true"></span><a class="tile-l" data-l="2" href="#s3b"><small>層 2</small><b>集める</b><span class="ln">使われ方の記録とコストをサーバへ</span><span class="to"><i>3</i>仕組み: 集める流れ<br><i>4</i>収集範囲</span></a><span class="idx-arw" aria-hidden="true"></span><a class="tile-l" data-l="3" href="#s5"><small>層 3</small><b>見る</b><span class="ln">状況と効果を管理画面で</span><span class="to"><i>5</i>管理画面の内容</span></a></nav>
+<p class="common">共通の節 <a href="#s1">1 概要</a><a href="#s2">2 構成</a><a href="#s6">6 運用</a><a href="#s7">7 限界</a></p></header>
+<nav class="lbar" aria-label="節"><div class="wrap"><a href="#s1" data-k="s1">1 概要</a><a href="#s2" data-k="s2">2 構成</a><span class="sep">|</span><a href="#s3a" data-l="1" data-k="L1">層 1 配る</a><a href="#s3b" data-l="2" data-k="L2">層 2 集める</a><a href="#s5" data-l="3" data-k="L3">層 3 見る</a><span class="sep">|</span><a href="#s6" data-k="s6">6 運用</a><a href="#s7" data-k="s7">7 限界</a></div></nav>
+<main class="wrap"><section class="doc" id="s1" data-k="s1"><h2><span class="no">01</span>概要</h2>
+<p class="lead">社内で使う Claude Code について、設定を全員の端末に配り、利用状況とコストを見える化し、その設定の効果を確かめる仕組み。</p>
+<ul class="roles">
+  <li><b>設定の配布</b><span>全員の端末へ同じ設定</span></li>
+  <li><b>見える化</b><span>利用状況とコスト</span></li>
+  <li><b>効果の確認</b><span>配った設定の効果</span></li>
+</ul>
+<p class="target">対象: BMSD 本部の利用者（<b>約 200 名</b>）</p>
+<h3>しないこと</h3>
+<ul class="nots">
+  <li>本文・ツールの入出力は集めない<span class="s">対象は使われ方の記録だけ</span></li>
+  <li>リアルタイムには見ない<span class="s">設定の反映は分単位、コストは日次</span></li>
+</ul>
+</section>
+<section class="doc" id="s2" data-k="s2"><h2><span class="no">02</span>構成</h2>
+<div class="routes">
+  <div class="route give"><div class="rtag">配る経路</div><div class="chain">
+    <div class="node"><b>管理者</b><span>ブラウザ</span></div>
+    <div class="arw">リリース</div>
+    <div class="node"><b>配布用リポジトリ</b><span>Bitbucket（社内）</span></div>
+    <div class="arw">git で自動更新</div>
+    <div class="node"><b>利用者の端末</b><span>Windows / macOS</span></div>
+  </div></div>
+  <div class="route take"><div class="rtag">集める経路</div><div class="chain">
+    <div class="node"><b>利用者の端末</b><span>Claude Code ＋ プラグイン</span></div>
+    <div class="arw long">ネットワーク送信</div>
+    <div class="node c5"><b>集計サーバ</b><span>AIP（または One Cloud）</span></div>
+  </div></div>
+  <div class="route take"><div class="rtag">集める経路<br>（CSV）</div><div class="chain">
+    <div class="node"><b>利用明細 CSV</b><span>AI Gateway</span></div>
+    <div class="arw">日ごとに出力</div>
+    <div class="node"><b>管理者</b><span>ブラウザ</span></div>
+    <div class="arw">アップロード</div>
+    <div class="node"><b>集計サーバ</b><span>データベース</span></div>
+  </div></div>
+  <div class="route none"><div class="rtag">無い経路</div><div class="chain">
+    <div class="node"><b>集計サーバ</b></div>
+    <div class="arw long x">× 端末への指示</div>
+    <div class="node c5"><b>利用者の端末</b></div>
+  </div></div>
+</div>
+<p class="stop"><b>集計サーバの停止時</b>設定とお知らせの配布は止まらない。止まるのは集計だけ。</p>
+<h3>構成要素</h3>
+<table>
+  <thead><tr><th>要素</th><th>役割</th></tr></thead>
+  <tbody>
+    <tr><td>配布用リポジトリ</td><td>プラグイン本体・配る設定値・お知らせの置き場</td></tr>
+    <tr><td>利用者の端末</td><td>設定の適用・お知らせの表示・イベントの記録と送信</td></tr>
+    <tr><td>集計サーバ</td><td>記録の保存（データベース）・集計・管理画面</td></tr>
+    <tr><td>利用明細 CSV</td><td>コストとトークン数の正本</td></tr>
+    <tr><td>管理者</td><td>管理画面での確認・配布用リポジトリの更新</td></tr>
+  </tbody>
+</table>
+</section>
+<section class="doc" id="s3"><h2><span class="no">03</span>仕組み</h2><div class="blk" data-l="1" data-k="L1" id="s3a"><span class="chip" data-l="1">層 1 配る</span><h3>配る流れ</h3>
+<ul class="steps" style="--n:1">
+  <li><span class="when">セッション開始時</span><b>設定の適用・お知らせの表示</b>
+    <ul><li>配られた設定値を settings.json に書き込む（変更前の settings.json は自動でバックアップ）</li>
+    <li>未読のお知らせを表示（関連ページを 1 回だけブラウザで開くことがある）</li></ul></li>
+</ul>
+<h3>配布中の設定値</h3>
+<table>
+  <thead><tr><th>設定</th><th>値</th><th>狙い</th></tr></thead>
+  <tbody>
+    <tr><td>プラグインの自動更新</td><td class="val">有効</td><td>設定値・お知らせの変更を全端末へ届ける</td></tr>
+    <tr><td>Claude Code 本体の自動更新</td><td class="val">常に最新版</td><td>全員の版をそろえる<span class="s">利用者が自動更新を切っていても打ち消す</span></td></tr>
+    <tr class="ex"><td>自動コンパクトの閾値<span class="ex-tag">施策の例（第 1 弾）</span></td><td>コンテキストの 60%</td><td>大きなコンテキストのまま払うコストを抑える</td></tr>
+  </tbody>
+</table>
+<p class="note">配り方は強制。利用者が変えても、次のセッション開始時に配った値へ戻る（利用者が選ぶ方式は無い）。「初回だけ書き込み、以後は利用者に任せる」配り方も可能（現在は不使用）。</p>
+</div><div class="blk" data-l="2" data-k="L2" id="s3b"><span class="chip" data-l="2">層 2 集める</span><h3>集める流れ</h3>
+<ul class="steps">
+  <li><span class="when">利用中</span><b>イベントの記録</b>
+    <ul><li>フックで端末内に記録</li></ul></li>
+  <li><span class="when">セッション開始時・応答完了時</span><b>まとめて送信</b>
+    <ul><li>前回の送信から 10 分以上経っていれば、溜まった記録を裏で送る</li>
+    <li>送れなかった記録は端末に残し、後で送る（14 日・20 MB まで。超えた分は古い順に捨てる）</li></ul></li>
+</ul>
+<p class="note">記録・送信は裏で行い、Claude Code の操作を待たせない。エラーが起きても Claude Code は止まらない。</p>
+</div></section>
+<section class="doc" id="s4" data-k="L2"><h2><span class="no">04</span>収集範囲<span class="chip" data-l="2">層 2 集める</span></h2><div class="two"><div><h3 class="first">端末からの収集項目</h3>
+<table>
+  <thead><tr><th>項目</th><th>内容</th></tr></thead>
+  <tbody>
+    <tr><td>利用者</td><td>会社のメールアドレス（AI Gateway の CSV と照合するため）・端末名</td></tr>
+    <tr><td>イベント</td><td>種類（セッション開始・プロンプト送信・ツール使用・ツールのエラー・自動コンパクト・応答完了 など）・イベント時刻・セッション ID</td></tr>
+    <tr><td>ツール</td><td>ツール名（MCP はサーバ名を含む）・サブエージェントによる使用か・中断か</td></tr>
+    <tr><td>スキル・コマンド</td><td>スキル名・コマンド名・出所</td></tr>
+    <tr><td>状態</td><td>コンテキストのトークン数（自動コンパクト直前・応答完了時）・エフォート・権限モード</td></tr>
+    <tr><td>版</td><td>Claude Code 本体の版・プラグインの版</td></tr>
+    <tr><td>設定の適用結果</td><td>設定ごとの変更前の値・配った値・適用の結果</td></tr>
+    <tr><td>プラグインのエラー</td><td>処理の段階名とエラーの種類だけ（エラーメッセージは送らない）</td></tr>
+  </tbody>
+</table>
+</div>
+<div><h3 class="first">CSV からの項目（AI Gateway）</h3>
+<div class="box">日付・メールアドレス・モデル・コスト・トークン数（入力・出力・キャッシュ）<span class="s">Claude Code 以外の利用も含む</span></div>
+<h3>収集しない項目</h3>
+<ul class="nolist">
+  <li>プロンプト本文・Claude の応答本文・会話内容</li>
+  <li>ツールの入出力<span class="s">読み書きしたファイルの中身・実行したコマンドの中身</span></li>
+  <li>コスト<span class="s">端末では数えない。CSV から入る</span></li>
+  <li>モデル名<span class="s">端末からは取らない。CSV に含まれる</span></li>
+</ul>
+</div></div></section>
+<section class="doc" id="s5" data-k="L3"><h2><span class="no">05</span>管理画面の内容<span class="chip" data-l="3">層 3 見る</span></h2>
+<table>
+  <thead><tr><th>分かること</th><th>中身</th></tr></thead>
+  <tbody>
+    <tr><td>コストと利用者</td><td>全体のコスト・1 人あたり・月末のコスト見込み・利用者数・利用者ごとの一覧（コスト・利用状況）</td></tr>
+    <tr><td>使われ方</td><td>ツール・スキル・コマンド・MCP・サブエージェントの利用</td></tr>
+    <tr><td>設定の適用</td><td>誰の端末が設定どおりか・未導入者（CSV に利用があるのに記録が届かない人）・本体とプラグインの版</td></tr>
+    <tr><td>設定の効果</td><td>配った設定の前後での使われ方（コンテキストの大きさなど）の変化</td></tr>
+    <tr><td>収集の状態</td><td>データの届き具合・プラグインのエラー・記録が途絶えた端末</td></tr>
+    <tr><td>状況の要約</td><td>注意・要確認の表示・管理者が書く週次のサマリー</td></tr>
+  </tbody>
+</table>
+<p class="key"><b>効果の読み方</b>コストの前後差は時期・業務量・料金でも動くため、効果の根拠にしない。効果は使われ方の変化で見る（自動コンパクトの例なら、コンテキストの大きさが小さい側へずれたか）。</p>
+<p class="note">アクセスは推測しにくい URL ＋ パスワード（社内 VPN の内側）。月ごとのデータのダウンロードもここで行う。未導入者の一覧は CSV を取り込んでいる間だけ出せる。</p>
+</section>
+<section class="doc" id="s6" data-k="s6"><h2><span class="no">06</span>運用</h2>
+<table class="ops">
+  <thead><tr><th>誰</th><th>いつ</th><th>何を</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="2">利用者</td><td>導入時に 1 回</td><td><ol>
+      <li>（Windows）<code>python3</code> の動作確認（端末に Python 3 が必要）</li>
+      <li>git に会社のメールアドレスが設定されているかの確認</li>
+      <li>Claude Code で 2 つのコマンドを実行して導入</li>
+      <li>開き直してお知らせが出れば完了</li></ol></td></tr>
+    <tr><td>日常</td><td>操作なし（更新も自動）。届かない場合だけ手動更新のコマンド 2 つ</td></tr>
+    <tr><td rowspan="4">管理者</td><td>導入を進めるとき</td><td>案内を 2〜3 回に分け、1〜2 週ずつずらす（部署を横断して分ける）<span class="s">施策の効果を、同時期のほかの変化と区別するため</span></td></tr>
+    <tr><td>1〜2 週に 1 回</td><td>AI Gateway の CSV を管理画面からアップロード</td></tr>
+    <tr><td>随時</td><td>管理画面での確認（届き具合・エラー・未導入者）と、未導入者への声かけ</td></tr>
+    <tr><td>設定・お知らせの変更時</td><td>プラグインの版を上げて配布用リポジトリへリリース（各端末へ自動で届く）</td></tr>
+  </tbody>
+</table>
+</section>
+<section class="doc small" id="s7" data-k="s7"><h2><span class="no">07</span>限界</h2>
+<ul class="limits">
+  <li>取りこぼしは許容する（オフラインが長い・端末の上限超過・エラー時の記録）。利用ログに厳密な正確性は求めない</li>
+  <li>プロジェクト単位の設定などで上書きされた場合は、適用率に現れない</li>
+  <li>端末ごとの停止に気づけるのは、記録が途絶えて 14 日経ってから</li>
+  <li>利用明細 CSV には今日と前日の分がまだ無い（コストは 2 日遅れ）</li>
+</ul>
+</section>
+</main>
+<footer class="foot wrap"><span data-s="1">配色 1「管理画面の配色」: 管理画面と同じ地・カード・インク・アクセントの色を使う</span><span data-s="2">配色 2「青緑の濃淡」: 青緑 1 系統の濃淡で節と層を区別する</span><span data-s="3">配色 3「濃色の目次」: 管理画面の配色をもとに、3 層の目次と上部の帯だけを濃色の地にする</span></footer>
+
+<script>
+(function () {
+  var root = document.documentElement, btns = document.querySelectorAll('.scheme button');
+  function set(n, push) {
+    root.setAttribute('data-scheme', n);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.n === n)); });
+    if (push) history.replaceState(null, '', '#scheme=' + n);
+  }
+  var m = location.hash.match(/scheme=([123])/);
+  set(m ? m[1] : '1', false);
+  btns.forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.n, true); }); });
+})();
+</script>
+
+<script>
+(function () {
+  var links = document.querySelectorAll('.lbar a');
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var k = e.target.dataset.k;
+      links.forEach(function (a) { a.classList.toggle('on', a.dataset.k === k); });
+    });
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  document.querySelectorAll('[data-k]:not(a)').forEach(function (s) { io.observe(s); });
+})();
+</script>
+
+</body>
+</html>
