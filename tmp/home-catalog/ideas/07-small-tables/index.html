@@ -158,11 +158,13 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 [data-scheme="4"] .tcard th:last-child { padding-right: var(--sp-s); }
 [data-scheme="4"] .tcard td.c-state { padding-right: 0; }
 .tcard td.num .th-sub { color: var(--muted); }
+/* 配色 5「標準」: 他のページと同じカードに状態の印だけ。注目は絞り込みで */
+[data-scheme="5"] .dir.worse, [data-scheme="5"] .dir.better { display: none; }
 </style>
 </head>
 <body>
 <div class="mock-bar" aria-label="モックの操作"><div class="wrap"><span class="mock-note">モック用の操作（画面には出ない）</span>
-  <span>配色（仮）</span><span class="chipbar" role="group" aria-label="配色（仮）" data-ctl="scheme"><button type="button" data-v="1" aria-pressed="true">1 今の配色</button><button type="button" data-v="2" aria-pressed="false">2 左端の線</button><button type="button" data-v="3" aria-pressed="false">3 セルの塗り</button><button type="button" data-v="4" aria-pressed="false">4 青の見出し行</button></span></div></div>
+  <span>配色（仮）</span><span class="chipbar" role="group" aria-label="配色（仮）" data-ctl="scheme"><button type="button" data-v="1" aria-pressed="true">1 今の配色</button><button type="button" data-v="2" aria-pressed="false">2 左端の線</button><button type="button" data-v="3" aria-pressed="false">3 セルの塗り</button><button type="button" data-v="4" aria-pressed="false">4 青の見出し行</button><button type="button" data-v="5" aria-pressed="false">5 標準</button></span></div></div>
 <header class="top"><div class="wrap bar">
   <a class="brand" href="#">Claude Code 利用状況</a>
   <nav aria-label="画面"><a href="#" aria-current="page">概況</a><a href="#">サマリー</a><a href="#">コストと利用者</a><a href="#">ツール利用状況</a><a href="#">設定の適用状況</a><a href="#">設定の効果</a><a href="#">収集の状態</a></nav>
@@ -254,7 +256,7 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 
 </main>
 <footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。
-<dl class="schemes"><dt>1 今の配色</dt><dd>今の画面そのまま。状態は点＋語の印、増減は change のチップ（増は青の地）</dd><dt>2 左端の線</dt><dd>表の行とカードの左端に状態の色の線を引く。増減は今のチップ</dd><dt>3 セルの塗り</dt><dd>注意・要確認に当たるセルを状態の淡い地で塗る（注意の淡い地を 1 色足す）。増減は地を外し語だけ太字</dd><dt>4 青の見出し行</dt><dd>表の見出しの行を淡い青にし、状態の印を行末の列にそろえる</dd></dl></footer>
+<dl class="schemes"><dt>1 今の配色</dt><dd>今の画面そのまま。状態は点＋語の印、増減は change のチップ（増は青の地）</dd><dt>2 左端の線</dt><dd>表の行とカードの左端に状態の色の線を引く。増減は今のチップ</dd><dt>3 セルの塗り</dt><dd>注意・要確認に当たるセルを状態の淡い地で塗る（注意の淡い地を 1 色足す）。増減は地を外し語だけ太字</dd><dt>4 青の見出し行</dt><dd>表の見出しの行を淡い青にし、状態の印を行末の列にそろえる</dd><dt>5 標準</dt><dd>他のページと同じカードに状態の印だけ。注目は絞り込みで</dd></dl></footer>
 <script>
 (function () {
   var root = document.documentElement;

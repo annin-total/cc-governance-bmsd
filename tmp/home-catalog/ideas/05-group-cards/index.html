@@ -162,11 +162,13 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 .th-line .num { display: grid; justify-items: end; line-height: 1.4; }
 .th-line .num .th-sub { color: var(--muted); }
 .th-line { grid-template-columns: 2em minmax(0, 1fr) 5em 5em; }
+/* 配色 5「標準」: 他のページと同じカードに状態の印だけ。注目は絞り込みで */
+[data-scheme="5"] .dir.worse, [data-scheme="5"] .dir.better { display: none; }
 </style>
 </head>
 <body>
 <div class="mock-bar" aria-label="モックの操作"><div class="wrap"><span class="mock-note">モック用の操作（画面には出ない）</span>
-  <span>配色（仮）</span><span class="chipbar" role="group" aria-label="配色（仮）" data-ctl="scheme"><button type="button" data-v="1" aria-pressed="true">1 今の配色</button><button type="button" data-v="2" aria-pressed="false">2 青の帯</button><button type="button" data-v="3" aria-pressed="false">3 数字の色</button><button type="button" data-v="4" aria-pressed="false">4 墨と朱</button></span></div></div>
+  <span>配色（仮）</span><span class="chipbar" role="group" aria-label="配色（仮）" data-ctl="scheme"><button type="button" data-v="1" aria-pressed="true">1 今の配色</button><button type="button" data-v="2" aria-pressed="false">2 青の帯</button><button type="button" data-v="3" aria-pressed="false">3 数字の色</button><button type="button" data-v="4" aria-pressed="false">4 墨と朱</button><button type="button" data-v="5" aria-pressed="false">5 標準</button></span></div></div>
 <header class="top"><div class="wrap bar">
   <a class="brand" href="#">Claude Code 利用状況</a>
   <nav aria-label="画面"><a href="#" aria-current="page">概況</a><a href="#">サマリー</a><a href="#">コストと利用者</a><a href="#">ツール利用状況</a><a href="#">設定の適用状況</a><a href="#">設定の効果</a><a href="#">収集の状態</a></nav>
@@ -264,7 +266,7 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 
 </main>
 <footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。
-<dl class="schemes"><dt>1 今の配色</dt><dd>今の画面そのまま。状態は点＋語の印、増減は change のチップ（増は青の地）</dd><dt>2 青の帯</dt><dd>大きなカードの見出しを淡い青の帯にする。状態は行末の印のまま</dd><dt>3 数字の色</dt><dd>状態を統計の数字の文字色で示し、印は小さく残す。増減のチップは悪化を赤・改善を緑の淡い地にする</dd><dt>4 墨と朱</dt><dd>図と増のチップを無彩色に寄せる。色は状態の印と悪化のチップだけ</dd></dl></footer>
+<dl class="schemes"><dt>1 今の配色</dt><dd>今の画面そのまま。状態は点＋語の印、増減は change のチップ（増は青の地）</dd><dt>2 青の帯</dt><dd>大きなカードの見出しを淡い青の帯にする。状態は行末の印のまま</dd><dt>3 数字の色</dt><dd>状態を統計の数字の文字色で示し、印は小さく残す。増減のチップは悪化を赤・改善を緑の淡い地にする</dd><dt>4 墨と朱</dt><dd>図と増のチップを無彩色に寄せる。色は状態の印と悪化のチップだけ</dd><dt>5 標準</dt><dd>他のページと同じカードに状態の印だけ。注目は絞り込みで</dd></dl></footer>
 <script>
 (function () {
   var root = document.documentElement;

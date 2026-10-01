@@ -462,10 +462,12 @@ svg .hit { fill: transparent; }
 [data-scheme="4"] .card[data-state="warn"] { box-shadow: inset 0 4px 0 var(--warn); }
 [data-scheme="4"] .card[data-state="ng"] { box-shadow: inset 0 4px 0 var(--ng); }
 
+/* 配色 5「標準」: 他のページと同じカードに状態の印だけ。注目は絞り込みで */
+[data-scheme="5"] .sq .ng-sq { background: var(--accent); } [data-scheme="5"] .sq .warn-2 { background: var(--accent-2); }
 </style>
 </head>
 <body>
-<div class="wrap mockbar">配色（仮）<div class="chipbar scheme"><button type="button" data-set="scheme=1">今の配色</button><button type="button" data-set="scheme=2">青い折れ線</button><button type="button" data-set="scheme=3">灰の図</button><button type="button" data-set="scheme=4">青い図の地</button></div></div>
+<div class="wrap mockbar">配色（仮）<div class="chipbar scheme"><button type="button" data-set="scheme=1">今の配色</button><button type="button" data-set="scheme=2">青い折れ線</button><button type="button" data-set="scheme=3">灰の図</button><button type="button" data-set="scheme=4">青い図の地</button><button type="button" data-set="scheme=5">標準</button></div></div>
 <header class="top"><div class="wrap bar">
   <a class="brand" href="#">Claude Code 利用状況</a>
   <nav aria-label="画面"><a href="#" aria-current="page">概況</a><a href="#">サマリー</a><a href="#">コストと利用者</a><a href="#">ツール利用状況</a><a href="#">設定の適用状況</a><a href="#">設定の効果</a><a href="#">収集の状態</a></nav>
@@ -501,7 +503,7 @@ Opus の割合が 6 割を超えており、1 人あたりの増加はこの影�
 利用者は 128 人と微減で、使う人が減ったのではなく 1 人あたりが伸びている。</pre></section></div>
 </main>
 <footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。
-<dl class="schemes"><dt>1. 今の配色</dt><dd>今の画面そのまま。状態は点＋語の印、増減は今のチップ</dd><dt>2. 青い折れ線</dt><dd>図の線は今の青のまま、警告のカードの点だけ状態の色</dd><dt>3. 灰の図</dt><dd>図を灰にし、悪化した区間（直近）だけ状態の色 · 増減は ▲▼</dd><dt>4. 青い図の地</dt><dd>図の地を淡い青 · 状態はカード上端の太い線</dd></dl></footer>
+<dl class="schemes"><dt>1. 今の配色</dt><dd>今の画面そのまま。状態は点＋語の印、増減は今のチップ</dd><dt>2. 青い折れ線</dt><dd>図の線は今の青のまま、警告のカードの点だけ状態の色</dd><dt>3. 灰の図</dt><dd>図を灰にし、悪化した区間（直近）だけ状態の色 · 増減は ▲▼</dd><dt>4. 青い図の地</dt><dd>図の地を淡い青 · 状態はカード上端の太い線</dd><dt>5. 標準</dt><dd>他のページと同じカードに状態の印だけ。注目は絞り込みで</dd></dl></footer>
 <script>
 (function () {
   var root = document.documentElement;

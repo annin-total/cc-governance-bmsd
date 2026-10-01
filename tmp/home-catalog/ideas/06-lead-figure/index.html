@@ -159,11 +159,14 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 [data-scheme="4"] .change .arw::before { content: "↑ "; } [data-scheme="4"] .change.down .arw::before { content: "↓ "; }
 [data-scheme="2"] [data-state="ng"] .units .k-value { color: var(--ng); }
 [data-scheme="3"] .units .k-value { justify-self: start; padding-bottom: var(--sp-3xs); border-bottom: 3px solid var(--ng); }
+/* 配色 5「標準」: 他のページと同じカードに状態の印だけ。注目は絞り込みで */
+[data-scheme="5"] .dir.worse, [data-scheme="5"] .dir.better { display: none; }
+:root:not([data-scheme="5"]) .dir.sep::before { content: " · "; }
 </style>
 </head>
 <body>
 <div class="mock-bar" aria-label="モックの操作"><div class="wrap"><span class="mock-note">モック用の操作（画面には出ない）</span>
-  <span>配色（仮）</span><span class="chipbar" role="group" aria-label="配色（仮）" data-ctl="scheme"><button type="button" data-v="1" aria-pressed="true">1 今の配色</button><button type="button" data-v="2" aria-pressed="false">2 主役の色</button><button type="button" data-v="3" aria-pressed="false">3 下線</button><button type="button" data-v="4" aria-pressed="false">4 角の三角</button></span></div></div>
+  <span>配色（仮）</span><span class="chipbar" role="group" aria-label="配色（仮）" data-ctl="scheme"><button type="button" data-v="1" aria-pressed="true">1 今の配色</button><button type="button" data-v="2" aria-pressed="false">2 主役の色</button><button type="button" data-v="3" aria-pressed="false">3 下線</button><button type="button" data-v="4" aria-pressed="false">4 角の三角</button><button type="button" data-v="5" aria-pressed="false">5 標準</button></span></div></div>
 <header class="top"><div class="wrap bar">
   <a class="brand" href="#">Claude Code 利用状況</a>
   <nav aria-label="画面"><a href="#" aria-current="page">概況</a><a href="#">サマリー</a><a href="#">コストと利用者</a><a href="#">ツール利用状況</a><a href="#">設定の適用状況</a><a href="#">設定の効果</a><a href="#">収集の状態</a></nav>
@@ -194,7 +197,7 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
           <div><span class="lbl">一覧</span><span class="val txt"><a class="num-link" href="#">利用者（コスト順）</a></span></div></div></div>
       <div class="card" data-state="ng"><span class="k-label"><span>月末のコスト見込み（9 月）</span><span class="mark ng">要確認</span></span>
         <span class="k-value">$19,800</span>
-        <span class="k-sub"><span class="change up worse"><i class="arw"></i>+17.0%</span><span class="dir worse">悪化</span><span class="dir"> · 8 月の実績比</span></span>
+        <span class="k-sub"><span class="change up worse"><i class="arw"></i>+17.0%</span><span class="dir worse">悪化</span><span class="dir sep">8 月の実績比</span></span>
         <div class="side"><div><span class="lbl">8 月の実績</span><span class="val">$16,920</span></div>
           <div><span class="lbl">9 月の利用明細</span><span class="val">09/29<span class="sub"> まで</span></span></div></div></div>
       <div class="card" data-state="ok"><span class="k-label"><span>利用明細にいた利用者</span><span class="mark ok">正常</span></span>
@@ -250,7 +253,7 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 
 </main>
 <footer class="wrap foot">端末から送られた値です。コストとトークンは全社の利用明細（CSV）の値を正とします。
-<dl class="schemes"><dt>1 今の配色</dt><dd>今の画面そのまま。状態は点＋語の印、増減は change のチップ（増は青の地）</dd><dt>2 主役の色</dt><dd>注意・要確認のカードは主役の数字を状態の色にする。増減は今のチップ</dd><dt>3 下線</dt><dd>主役の数字の下に状態の色の細い線を引く。増減はチップの地を外し、悪化・改善を文字色で分ける</dd><dt>4 角の三角</dt><dd>注意・要確認のカードの右上の角に状態の色の三角を置く。増減は地のない矢印と語</dd></dl></footer>
+<dl class="schemes"><dt>1 今の配色</dt><dd>今の画面そのまま。状態は点＋語の印、増減は change のチップ（増は青の地）</dd><dt>2 主役の色</dt><dd>注意・要確認のカードは主役の数字を状態の色にする。増減は今のチップ</dd><dt>3 下線</dt><dd>主役の数字の下に状態の色の細い線を引く。増減はチップの地を外し、悪化・改善を文字色で分ける</dd><dt>4 角の三角</dt><dd>注意・要確認のカードの右上の角に状態の色の三角を置く。増減は地のない矢印と語</dd><dt>5 標準</dt><dd>他のページと同じカードに状態の印だけ。注目は絞り込みで</dd></dl></footer>
 <script>
 (function () {
   var root = document.documentElement;
