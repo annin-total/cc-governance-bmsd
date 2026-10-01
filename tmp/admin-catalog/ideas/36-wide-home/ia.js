@@ -1,5 +1,5 @@
 "use strict";
-// 案 36 概況を広く（concepts.md 6 章）。概況に 4 枚足して窓ごとの群にし、正常の札と前の値を出す。専用ページは案 31 と同じ。
+// 案 36 概況を広く（concepts.md 6 章）。概況に 4 枚足して窓ごとの群にし、正常の札と前の値を出す。専用ページは基準を超えた利用者の見せ方のほかは案 31 と同じ。
 (() => {
   const { build } = window.CATALOG;
   window.IA = build({
@@ -10,7 +10,7 @@
         groups: [
           ["コストと利用者", ["cost", "per_user_bd", "model_mix", "billed_users"]],
           ["今月", ["forecast"]],
-          ["目安を超えた利用者", ["over_limit"]],
+          ["基準を超えた利用者", ["over_day_band", "over_week_band", "over_month_band"], { ownTitle: true }],
           ["利用状況", ["prompts_per_person_day", "skill_calls"]],
           ["設定の適用", ["all_applied", "off_users", "not_introduced", "core_outdated", "plugin_outdated"]],
           ["収集", ["plugin_errors"], { win: "rec7" }],
@@ -19,7 +19,7 @@
         groups: [
           ["コスト", ["cost", "per_user_bd", "top_spenders", "model_mix", "cache_read_share"]],
           ["今月", ["forecast"]],
-          ["目安を超えた利用者", ["over_limit"]],
+          ["基準を超えた利用者", ["over_day_band", "over_week_band", "over_month_band"]],
           ["利用者", ["billed_users", "new_users", "retention"]],
         ],
         tabs: ["user_cost", "over_users", "cost_daily", "models", "month", "months"] },

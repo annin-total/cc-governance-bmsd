@@ -18,7 +18,7 @@
     const lines = [];
     for (const g of home ? home.groups : []) {
       const ctx = K.contextOf(g.data || "p.{period}", "7");
-      for (const c of g.cards) {
+      for (const c of g.cards.filter((x) => !x.only || x.only.includes("7"))) {
         const t = K.card.stateOf(c, ctx);
         if (t !== "warn" && t !== "ng") continue;
         const value = c.value ? ` ${fill(c.value, ctx)}${c.unit ? ` ${c.unit}` : ""}` : "";

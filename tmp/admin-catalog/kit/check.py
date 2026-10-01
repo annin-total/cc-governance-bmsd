@@ -1,4 +1,5 @@
-"""案の検査: (1) 同じページに同じカードが 2 回出ない (2) 設計 2 章の全カード・全タブが目録にある (3) 状態の判定が閾値の「以上」で動き、データの札が判定と合う。
+"""案の検査: (1) 同じページに同じカードが 2 回出ない (2) 基準を超えた利用者の区分が期間のタブに合う (3) 設計 2 章の全カード・全タブが目録にある
+(4) 状態の判定が閾値の「以上」で動き、データの札が判定と合う。
 
 使い方: python kit/check.py ideas/NN-<slug>（playwright の入った Python で）。1 つでも外れたら終了コード 1。
 """
@@ -16,8 +17,13 @@ sys.path.insert(0, str(ROOT / "data"))
 import judge  # noqa: E402
 
 PERIODS = ("7", "28", "12m")
-IA_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods) }))"
+IA_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods), over: (p.groups || []).some((g) => g.cards.some((c) => /^over_/.test(c.ref))) }))"
 REFS_JS = "Array.from(document.querySelectorAll('main .card[data-ref]')).map((c) => c.dataset.ref)"
+# 基準を超えた利用者: 期間ごとに出してよい区分（7 日＝日次・週次、28 日＝月次、12 か月は出さない）。区分を 1 枚にまとめたカードは行の見出しで見る
+OVER_SPANS = {"7": {"day", "week"}, "28": {"month"}, "12m": set()}
+OVER_REF = re.compile(r"^over_(day|week|month)")
+OVER_ROWS_JS = "Array.from(document.querySelectorAll('main .card[data-ref=over_rows] .srow > span:first-child')).map((s) => s.textContent)"
+OVER_ROW_SPAN = {"日次": "day", "週次": "week", "月次": "month"}
 CATALOG_JS = "({ cards: Object.keys(window.CATALOG.K), tabs: Object.values(window.CATALOG.T).flatMap((t) => [t.id, (t.long || {}).id]).filter(Boolean) })"
 
 
@@ -44,9 +50,13 @@ def _dom(idea: Path) -> list:
         for pg in pages:
             for period in PERIODS if pg["periods"] else (None,):
                 page.goto(f"{base}?page={pg['id']}" + (f"&period={period}" if period else ""))
-                dup = [k for k, n in Counter(page.evaluate(REFS_JS)).items() if n > 1]
+                refs = page.evaluate(REFS_JS)
+                dup = [k for k, n in Counter(refs).items() if n > 1]
                 if dup:
                     problems.append(f"{pg['id']} {period or ''}: 同じカードが 2 回: {dup}")
+                spans = {m.group(1) for m in map(OVER_REF.match, refs) if m} | {OVER_ROW_SPAN[t] for t in page.evaluate(OVER_ROWS_JS)}
+                if period and spans != (OVER_SPANS[period] if pg["over"] else set()):
+                    problems.append(f"{pg['id']} {period}: 基準を超えた利用者の区分が期間に合わない: {sorted(spans)}")
         browser.close()
     cards, tabs = _design_ids()
     for kind, want, have in (("カード", cards, catalog["cards"]), ("タブ", tabs, catalog["tabs"])):
@@ -83,10 +93,22 @@ def _data() -> list:
                 out.append(f"p.{key} {state} が {rate} と合わない")
         if c["users_state"] != judge.drop(c["users_change"], judge.USERS_DROP):
             out.append(f"p.{key} users_state が合わない")
-    for r in d["fixed"]["r3"]["limit"]["rows"]:
-        tones = [judge.over(r[k], judge.USER_COST_ELEVATED[s], judge.USER_COST_HIGH[s]) for k, s in (("max_day", "day"), ("week", "week"), ("month", "month"))]
-        if r["kind"] != "left" and r["state"] != judge.worst(tones):
-            out.append(f"over_users の {r['email']} の状態が金額と合わない")
+    for key, spans in (("7", ("day", "week")), ("28", ("month",))):
+        over = d["p"][key]["r3"]["over"]
+        if over["spans"] != list(spans) or "12m" in d["p"] and "over" in d["p"]["12m"]["r3"]:
+            out.append(f"p.{key} の基準を超えた利用者の区分が期間に合わない: {over['spans']}")
+        for r in over["rows"]:
+            if r["state"] != judge.over(r["value"], judge.USER_COST_ELEVATED[r["span"]], judge.USER_COST_HIGH[r["span"]]):
+                out.append(f"p.{key} over_users の {r['email']}（{r['span']}）の状態が金額と合わない")
+        for s in spans:
+            c = over[s]
+            if c["users"] != c["ng"] + c["warn"] or c["delta"] != c["users"] - c["prev_users"] or c["prev_users"] != c["prev_ng"] + c["prev_warn"]:
+                out.append(f"p.{key} {s} の人数が内訳と合わない")
+            rows = [r for r in over["rows"] if r["span"] == s]  # 一覧を基準で絞ったときの人数が、カードの人数と合うか
+            got = {"new": sum(r["kind"] == "new" for r in rows), "left": sum(r["kind"] == "left" for r in rows),
+                   "ng": sum(r["state"] == judge.NG for r in rows), "warn": sum(r["state"] == judge.WARN for r in rows)}
+            if any(got[k] != c[k] for k in got):
+                out.append(f"p.{key} {s}: 一覧の区分と人数 {got} がカードと合わない")
     return out
 
 

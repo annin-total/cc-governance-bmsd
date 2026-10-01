@@ -10,7 +10,7 @@
         groups: [
           ["コスト", ["cost", "per_user_bd"]],
           ["今月", ["forecast"]],
-          ["目安を超えた利用者", ["over_limit"]],
+          ["基準を超えた利用者", ["over_rows"]],
           ["利用者", ["users_all"]],
           ["設定の適用", ["applied_all", "outdated_all"]],
         ] },
@@ -18,7 +18,7 @@
         groups: [
           ["コスト", ["cost", "per_user_bd", "top_spenders", "model_mix", "cache_read_share"]],
           ["今月", ["forecast"]],
-          ["目安を超えた利用者", ["over_limit"]],
+          ["基準を超えた利用者", ["over_rows"]],
           ["利用者", ["users_all"]],
         ],
         tabs: ["user_cost", "over_users", "cost_daily", "models", "month", "months"] },

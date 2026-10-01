@@ -28,7 +28,7 @@ $SP/venv/bin/python data/build_data.py --server $SP/server --db $SP/biased.db
 | 呼び出し・モデル・セッション | スキルは一部の人だけ、コマンドは `compact`・`clear`・`resume` が多い。Opus はよく使う人の約 7 割。しきい値を守る前後で自動コンパクトに達する大きさが変わる |
 | 暦日 | 週末は記録が平日の 15%、利用明細が 12% の確率で出る |
 
-注意・要確認が出るカード（7 日）: `cost`（注意）・`over_limit`（要確認）・`off_users`（要確認）・`not_introduced`・`core_outdated`・`plugin_outdated`・`plugin_errors`（注意）。
+注意・要確認が出るカード（7 日）: `cost`（注意）・`over_day`（注意）・`over_week`（要確認）・`off_users`（要確認）・`not_introduced`・`core_outdated`・`plugin_outdated`・`plugin_errors`（注意）。
 正常: `per_user_bd`・`forecast`・`billed_users`・`null_rate`。
 
 ## 構造
@@ -37,13 +37,13 @@ $SP/venv/bin/python data/build_data.py --server $SP/server --db $SP/biased.db
 | --- | --- |
 | `meta` | `asof`（今日）・`first_day`（利用明細の最初の日）・`periods`・`users` |
 | `p[7・28・12m]` | サーバの概況とスキル・コマンドの集計（`period`・`cost`・`month`・`events`・`errors`・`nulls`・`health`・`usage`・`reconciliation` など）に、次を足したもの |
-| `p[k].x` | `cost`（合計・人数・上位 10% など）・`models`・`tokens`・`people`・`billed`（`user_cost` の行。`state`・`cost_change`・`tags` を足す）。7・28 日は `active`・`active_prev`・`daily`・`days_dist`・`activity`（`user_use`・`user_calls` の行）。12 か月は `months`・`model_keys` |
+| `p[k].x` | `cost`（合計・人数・1 人あたりなど）・`models`・`tokens`・`people`・`billed`（`user_cost` の行。`state`〔期間の基準の判定。12 か月は null〕・`cost_change`・`tags` を足す）。7・28 日は `active`・`active_prev`・`daily`・`days_dist`・`activity`（`user_use`・`user_calls` の行）。12 か月は `months`・`model_keys` |
 | `p[k].m` | `new_user_count`・`retention_rate`・`left_users`（12 か月は暦月の `retention_rows` など） |
 | `p[k].calls`・`p[k].size` | 呼び出し 4 種の合計と上位・セッションの大きさ（7・28 日） |
 | `p[k].r3.cost` | `bill` の窓の `total`・`bd`（営業日数）・`per_bd`・`users`・`per_user_bd` と前の期間の `prev_*`、`*_change`（率）、`state`（1 営業日あたりの率）・`per_user_state`・`users_state`（減った率）、`daily`（日ごとの人数）。12 か月は前と状態が無い |
 | `p[k].r3` | `model_pt`（最も多いモデルの割合の差）。7・28 日は `changes`（利用状況と受信のカードの増減）と `calls`（呼び出し先の行。`tags` は種類と増減） |
+| `p[7・28].r3.over` | 基準を超えた利用者（`extras_r3_over.py`）。区分（7 日は `day`・`week`、28 日は `month`）ごとに `users`・`prev_users`・`delta`・`new`・`left`・`ng`・`warn`・`prev_*`・`ng_delta`・`ok`・`all_users`・`user_share`・`cost_share`・`state`・`top`（上位 3 人）。`spans`・`state`（区分の最も重いもの）・`rows`（`over_users` の行。利用者 × 区分）・`row_users` |
 | `p.7.r3` | `silent`（`went_silent` の人数・前・差と `user_delivery` の行）・`errors`（利用者数の行と状態）・`nulls`（状態） |
-| `fixed.r3.limit` | 目安を超えた利用者。`grid`（1 日・7 日・28 日 × 注意・要確認の人数）・`users`・`prev_users`・`delta`・`new`・`left`・`state`・`rows`（`over_users` の行）・`by_user` |
 | `fixed.r3.forecast` | 月末の見込みの前月の実績との `change`・`state` |
 | `fixed.r3.policy` | 利用者単位の適用状況。`users`（状態・設定ごとの点・最も古い本体とプラグインの版・`tags`）・`items`（`off_users` を足す）・`counts`・`states`・`core`・`plugin`（`latest`・`outdated`・`parts`・`state`）・`versions` |
 | `fixed.r3.summaries` | サマリーの見本 3 件（`summaries.py`）。`body` が null の 1 件は、キットが概況から下書きを作る |

@@ -95,8 +95,8 @@
   function model(tab, ctx) {
     const source = [...(lookup(ctx, tab.rows) || [])];
     const rows = tab.sort ? sorted(source, tab.sort) : source;
-    const cols = tab.cols.flatMap((c) => columns(c, tab, rows, ctx));
-    const [cs, tags] = chips(tab, rows, ctx);
+    const cols = tab.cols.filter(K.page.fits).flatMap((c) => columns(c, tab, rows, ctx));
+    const [cs, tags] = chips({ ...tab, chips: tab.chips && tab.chips.filter(K.page.fits) }, rows, ctx);
     const key = tab.chart ? tab.chart.key || "day" : null;
     return {
       cols, bands: bands(tab, cols, ctx), chips: cs, chipsAll: tab.chipsAll !== false, search: tab.q ? fill(tab.search || "", ctx) : "",

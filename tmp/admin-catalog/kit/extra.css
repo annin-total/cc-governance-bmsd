@@ -1,4 +1,4 @@
-/* 第 3 弾で足した部品の見た目（増減のチップの向き・状態の絞り込み・基準日・目安の表・行ごとの札・サマリー）。値は tokens.css の変数だけを使う */
+/* 第 3 弾で足した部品の見た目（増減のチップの向き・状態の絞り込み・基準日・行ごとの札・サマリー）。値は tokens.css の変数だけを使う（比較用の色は over.css） */
 .change.better { background: var(--chip-up); color: var(--accent); }
 .change.worse { background: var(--chip); color: var(--ink); font-weight: 700; }
 .change.neutral { background: var(--chip); color: var(--muted); font-weight: 400; }
@@ -22,16 +22,6 @@
 .asof-tag a:hover { color: var(--accent); }
 
 .k-end { display: inline-flex; align-items: baseline; gap: var(--sp-xs); white-space: nowrap; flex: none; }
-.k-label a.go { color: var(--muted); text-decoration: none; }
-.k-label a.go:hover { color: var(--accent); }
-.lgrid { display: grid; gap: var(--sp-3xs); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
-.lg-row { display: grid; grid-template-columns: 1fr 4em 4em; align-items: baseline; gap: var(--sp-s); padding: var(--sp-3xs) 0; border-top: 1px solid var(--rule); color: var(--ink-2); }
-.lg-head { border-top: 0; padding: 0; font-size: var(--fs-xs); color: var(--muted); }
-.lg-head span, .lg-n { text-align: right; }
-.lg-n { font-weight: 700; color: var(--ink); text-decoration: none; }
-.lg-n.warn { color: var(--warn); } .lg-n.ng { color: var(--ng); }
-a.lg-n:hover { text-decoration: underline; }
-.lg-n.zero { font-weight: 400; color: var(--muted); }
 
 .srows { display: grid; gap: var(--sp-3xs); font-size: var(--fs-sm); }
 .srow { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: var(--sp-s); padding: var(--sp-3xs) 0; border-top: 1px solid var(--rule); color: var(--ink-2); }
@@ -60,7 +50,6 @@ a.lg-n:hover { text-decoration: underline; }
 .sum-back { font-size: var(--fs-sm); color: var(--muted); }
 .tscroll td.c-user { white-space: nowrap; }
 a.card[href^="?"] .go::after { content: " →"; }
-.k-label a.go[href^="?"]::after { content: " →"; }
 .sum-form input { height: 2.4em; }
 .group-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-m); }
 .group.packed .cards { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
@@ -68,13 +57,13 @@ a.card[href^="?"] .go::after { content: " →"; }
 @media (max-width: 960px) { .group-row { grid-template-columns: 1fr; } .group.packed { grid-column: auto !important; } }
 .group.packed { display: flex; flex-direction: column; }
 .group.packed .glabel { min-height: calc(var(--fs-label) * var(--lh) + 2 * var(--fs-sm) * var(--lh)); align-content: flex-start; }
-.group.packed .cards { align-items: start; }
+.group.packed .cards { flex: 1; align-items: stretch; }
 .rates.wide.marks.diffs .rate { grid-template-columns: 1fr 22% 5em 5.5em 3.6em 4em; }
 .tscroll tr.bands th { position: static; padding-bottom: var(--sp-3xs); border-bottom: 2px solid var(--rule); font-size: var(--fs-xs); font-weight: 600; color: var(--ink-2); text-align: left; white-space: nowrap; }
 .tscroll tr.bands th.blank { border-bottom-color: transparent; }
 .tscroll tr.bands th + th { border-left: 1px solid var(--rule); }
 .tscroll tr.bands th + th { padding-left: var(--sp-s); }
-.tscroll table[data-testid="user_all"] td { white-space: nowrap; }
+.tscroll table[data-testid="user_all"] td, .tscroll table[data-testid="user_cost"] td { white-space: nowrap; }
 .k-sub { text-wrap: pretty; }
 .k-label .go-icon::after { content: "↓"; }
 a.card[href^="?"] .go-icon::after { content: "→"; }

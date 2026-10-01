@@ -91,7 +91,8 @@
       g.cards.forEach((c, j) => { if (!from[j]) fail(`概況のカード ${c.ref} が専用ページに無い`); });
       const cards = g.cards.map((c, j) => (from[j] ? linked(from[j].groups.flatMap((x) => x.cards).find((x) => x.ref === c.ref), from[j]) : c));
       const owners = [...new Set(from.filter(Boolean))];
-      return { ...g, id: `home-${i + 1}`, label: look.groupTitle === "window" ? W[g.win].name : g.label, cards,
+      const own = (Array.isArray(spec) ? spec[2] || {} : spec).ownTitle; // ownTitle: groupTitle が window でも群の名前を見出しにする
+      return { ...g, id: `home-${i + 1}`, label: look.groupTitle === "window" && !own ? W[g.win].name : g.label, cards,
         links: look.pageLink ? owners.map((p) => ({ title: p.title, href: pageHref(p) })) : [] };
     });
     noDuplicates("概況", groups.flatMap((g) => g.cards.map((c) => c.ref)));
@@ -100,7 +101,7 @@
 
   // 案 { id, name, look, pages: [概況とページ] }。サマリーとデータと設定のページは末尾に足す
   function build(ia) {
-    KIT.look.set(ia.look);
+    KIT.look.set(ia.compare ? KIT.compare.look(ia.look) : ia.look); // compare: 比較用の切り替え（compare.js）
     const normal = ia.pages.filter((p) => !p.home).map((p) => page(p, ia.pages));
     const pages = ia.pages.map((p) => (p.home ? home(p, normal) : normal.find((x) => x.id === p.id)));
     return { ...ia, pages: [...pages, ...sectionPages] };

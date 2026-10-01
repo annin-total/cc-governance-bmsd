@@ -17,9 +17,10 @@
     if (whole === undefined || whole === null) whole = Math.abs(Number(v.toFixed(digits))) >= WHOLE_FROM;
     return whole ? grouped(halfUp(v), 0) : grouped(v, digits);
   }
-  const usd = (v, whole) => (isNum(v) ? (Number(v) < 0 ? "-$" : "$") + scaled(Math.abs(Number(v)), 2, whole) : EM);
+  const MINUS = "−"; // 負の符号は増減率（signed）と同じマイナス記号（U+2212）
+  const usd = (v, whole) => (isNum(v) ? (Number(v) < 0 ? MINUS + "$" : "$") + scaled(Math.abs(Number(v)), 2, whole) : EM);
   const usdFull = (v) => usd(v, false);
-  const usd0 = (v) => (isNum(v) ? "$" + grouped(Number(v), 0) : EM);
+  const usd0 = (v) => (isNum(v) ? (Number(v) < 0 ? MINUS + "$" : "$") + grouped(Math.abs(Number(v)), 0) : EM);
   const dec1 = (v, whole) => (isNum(v) ? scaled(Number(v), 1, whole) : EM);
   const tokUnit = (top) => (halfUp(top / K) >= K ? "M" : top >= K ? "k" : "");
   function tok(v, unit) {
@@ -39,7 +40,7 @@
     const n = Number(v);
     const body = grouped(Math.abs(n), digits);
     if (Number(n.toFixed(digits)) === 0) return "±" + body;
-    return (n > 0 ? "+" : "−") + body;
+    return (n > 0 ? "+" : MINUS) + body;
   }
   const md = (v) => { const t = day(v); return t === EM ? t : t.slice(5).replace("-", "/"); };
   const ym = (v) => { const t = day(v); return t === EM ? t : t.slice(0, 7); };
@@ -51,7 +52,7 @@
     const lo = Math.floor(v / 1000), hi = Math.floor((Number(v) + size) / 1000);
     return `${lo === 0 ? "0" : lo + "k"}–${hi}k`;
   }
-  const rel = (v) => (!isNum(v) ? EM : v < 0 ? `−${-v} 日` : v > 0 ? `+${v} 日` : "0 日");
+  const rel = (v) => (!isNum(v) ? EM : v < 0 ? `${MINUS}${-v} 日` : v > 0 ? `+${v} 日` : "0 日");
   function size(v) {
     if (!isNum(v)) return EM;
     if (halfUp(v / 1000) >= 1000) return grouped(v / 1e6, 1) + " MB";

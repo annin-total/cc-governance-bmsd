@@ -13,8 +13,6 @@
     bill: { name: "利用明細", scope: "利用明細 {r3[cost][start]:md}〜{r3[cost][end]:md} と前の {period[days]} 日 · 利用明細にコストがあった利用者",
       longScope: "利用明細 直近 {period[months]} か月（{r3[cost][start]:day}〜{r3[cost][end]:day}）· 週と暦月 · 前の期間と比べない" },
     month: { name: "今月", fixed: true, scope: "{month[month]:ym} · 利用明細の最終日（{month[as_of]:md}）まで · 前月の実績と比べる" },
-    limit: { name: "目安", data: "fixed.r3.limit", fixed: true,
-      scope: "利用明細の最終日（{end:md}）までの 7 日・28 日 · 前は 7 日前（{prev_end:md}）までの同じ判定 · 期間は選べません" },
     rec: { name: "記録", scope: "直近 {period[days]} 日（{period[start]:md}〜{period[end]:md}）と前の {period[days]} 日 · 記録を送った利用者", longScope: "記録" },
     rec7: { name: "受信", base: "rec", data: "p.7", fixed: true, scope: "直近 7 日（{period[start]:md}〜{period[end]:md}）と前の 7 日 · 記録を送った利用者 · 期間は選べません" },
     match7: { name: "照合", data: "p.7", fixed: true, scope: "利用明細の最終日までの 7 日 · 記録と利用明細の突き合わせ · 期間は選べません" },
@@ -42,12 +40,12 @@
       viz: { kind: "pair", src: "r3[cost]", terms: { prev_per_user_bd: PREV, per_user_bd: RECENT } },
       long: { label: "1 人 1 営業日あたり", tabs: ["user_cost"], value: `{${C3("per_user_bd")}:usd}`, sub: `{${C3("users")}:num} 人 · {${C3("bd")}} 営業日` + NO_PREV,
         viz: { kind: "bars", src: C3("months"), field: "per_user_bd", fmt: "usd", tipLabel: "{day:ym}" }, cap: ["暦月ごと"] } },
-    top_spenders: { win: "bill", label: "コストの多い利用者", tabs: ["user_cost"], wide: true, sub: "上位 10%（{x[cost][top10_n]:num} 人）が {x[cost][top10_share]:pct} · 割合は期間のコストのうち",
+    top_spenders: { win: "bill", label: "コストの多い利用者", tabs: ["user_cost"], wide: true, sub: "上位 5 人 · 割合は期間のコストのうち",
       viz: { kind: "rates", src: "x[billed]", field: "cost", den: "max", label: "{email}", limit: 5, mark: "state", right: ["{cost:usd}", "{share:pct}"] }, long: SAME },
-    top_spenders_diff: { win: "bill", label: "コストの多い利用者", tabs: ["user_cost"], wide: true, sub: "上位 10%（{x[cost][top10_n]:num} 人）が {x[cost][top10_share]:pct} · 割合は期間のコストのうち",
+    top_spenders_diff: { win: "bill", label: "コストの多い利用者", tabs: ["user_cost"], wide: true, sub: "上位 5 人 · 割合は期間のコストのうち",
       viz: { kind: "rates", src: "x[billed]", field: "cost", den: "max", label: "{email}", limit: 5, mark: "state", cls: "diffs", right: ["{cost_diff:signed_usd}", "{cost:usd}", "{share:pct}"] },
       cap: ["前との差 · コスト · 割合"],
-      long: { label: "コストの多い利用者", tabs: ["user_cost"], wide: true, sub: "上位 10%（{x[cost][top10_n]:num} 人）が {x[cost][top10_share]:pct} · 割合は期間のコストのうち",
+      long: { label: "コストの多い利用者", tabs: ["user_cost"], wide: true, sub: "上位 5 人 · 割合は期間のコストのうち",
         viz: { kind: "rates", src: "x[billed]", field: "cost", den: "max", label: "{email}", limit: 5, mark: "state", right: ["{cost:usd}", "{share:pct}"] } } },
     model_mix: { win: "bill", label: "モデル別の内訳", unit: "%", tabs: ["models"], wide: true, better: "", value: "{x[models][0][share]:dec1}",
       delta: { v: "r3[model_pt]", fmt: "signed_pt" }, sub: "最も多いのは {x[models][0][key]:model} · 使った人 {x[models][0][users]:num} 人",
@@ -61,10 +59,6 @@
       sub: "前月（{month[prev_month]:mon} 月）の実績 {month[prev_actual]:usd}", viz: { kind: "forecast", src: "month", stats: [] },
       cap: ["実績 {month[actual]:usd} · {month[elapsed]:num} / {month[business_days]:num} 営業日", "{month[as_of]:asof}"],
       empty: "month[as_of]", capEmpty: ["今月（{month[month]:mon} 月）の利用明細はまだありません"] },
-    over_limit: { win: "limit", label: "コストが目安を超えた利用者", unit: "人", tabs: ["over_users"], wide: true, better: "down", value: "{users:num}", state: "state",
-      delta: { v: "delta", fmt: "signed", unit: "人", prev: "{prev_users:num} 人" }, why: "要確認 {ng:num} 人・注意 {warn:num} 人",
-      sub: "新たに該当 {new:num} 人 · 該当から外れた {left:num} 人", viz: { kind: "limit", src: "grid", rule: "${e} / ${h}" },
-      cap: ["目安の金額は 注意 / 要確認（USD）· 1 日は 7 日のいずれかの日"] },
     billed_users: { win: "bill", label: "利用明細にいた利用者", unit: "人", tabs: ["user_cost"], better: "up", value: `{${C3("users")}:num}`, state: C3("users_state"),
       delta: { v: C3("users_change"), prev: `{${C3("prev_users")}:num} 人` }, why: `前との率 {${C3("users_change")}:signed_pct}`,
       sub: `前 {${C3("prev_users")}:num} 人（{${C3("users_diff")}:signed} 人）`, viz: { kind: "bars", src: C3("daily"), field: "users" }, cap: ["日ごとの人数 · 濃い棒が直近 {period[days]} 日"],
@@ -76,7 +70,7 @@
       long: { label: "継続率", unit: "%", tabs: ["months", "user_cost"], value: "{m[retention_rate]:dec1}", sub: "{m[retention_month]:ym} · 前の月から離れた {m[left_users]:count} 人",
         viz: { kind: "bars", src: "m[retention_rows]", field: "rate", fmt: "dec1", tipLabel: "{day:ym}" }, cap: ["暦月ごと · 前の月の利用者のうち、その月も使った割合"] } },
 
-    // ---- 案ごとの分け方（案 32: 合計と 1 営業日あたり、上位と集中度を別のカードに）----
+    // ---- 案ごとの分け方（案 32: 合計と 1 営業日あたりを別のカードに）----
     cost_total: { win: "bill", label: "コスト（利用明細）", tabs: ["cost_daily", "user_cost"], better: "down", value: `{${C3("total")}:usd}`,
       delta: { v: C3("total_change"), prev: `{${C3("prev_total")}:usd}` }, sub: `前 {${C3("prev_total")}:usd}`,
       viz: { kind: "bars", src: "cost[days]", field: "total", fmt: "usd" }, cap: [DAILY_CAP],
@@ -86,10 +80,6 @@
       sub: `前 {${C3("prev_per_bd")}:usd} · {${C3("prev_bd")}} → {${C3("bd")}} 営業日`, viz: { kind: "pair", src: "r3[cost]", terms: { prev_per_bd: PREV, per_bd: RECENT } },
       long: { label: "1 営業日あたりのコスト", tabs: ["cost_weeks"], value: `{${C3("per_bd")}:usd}`, sub: `営業日 {${C3("bd")}} 日` + NO_PREV,
         viz: { kind: "bars", src: C3("months"), field: "per_bd", fmt: "usd", tipLabel: "{day:ym}" }, cap: ["暦月ごと"] } },
-    top_spenders_only: { win: "bill", label: "コストの多い利用者", tabs: ["user_cost"], wide: true, sub: "上位 5 人 · 割合は期間のコストのうち",
-      viz: { kind: "rates", src: "x[billed]", field: "cost", den: "max", label: "{email}", limit: 5, mark: "state", right: ["{cost:usd}", "{share:pct}"] }, long: SAME },
-    top10_share: { win: "bill", label: "上位 10% の占める割合", unit: "%", tabs: ["user_cost"], value: "{x[cost][top10_share]:dec1}", sub: "上位 {x[cost][top10_n]:num} 人 · 上位 5 人は {x[cost][top5_share]:pct}",
-      viz: { kind: "meter", src: "x[cost][top10_share]", den: 100 }, long: SAME },
   };
 
   window.CATALOG = Object.assign(window.CATALOG || {}, { K, W, SAME });

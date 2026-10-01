@@ -86,13 +86,11 @@ def _cost_summary(people, prev_people, a, b) -> dict:
     n, pn = len(people), len(prev_people) if prev_people else None
     per = total / n if n else None
     pper = prev_total / pn if pn else None
-    top_n = max(1, round(n * 0.1)) if n else 0
     person_days = sum(u.get("days", 0) for u in people)
     return {"total": total, "prev": prev_total, "change": change(total, prev_total), "users": n, "users_prev": pn,
             "per_user": per, "per_user_prev": pper, "per_user_change": change(per, pper),
             "per_person_day": total / person_days if person_days else None,
-            "top10_share": rate(sum(u["cost"] for u in people[:top_n]), total), "top10_n": top_n,
-            "top5_share": rate(sum(u["cost"] for u in people[:5]), total), "start": a, "end": b}
+            "start": a, "end": b}
 
 
 def _months(raw, a, b) -> list:

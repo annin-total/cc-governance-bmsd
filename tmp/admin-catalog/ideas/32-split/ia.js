@@ -1,5 +1,5 @@
 "use strict";
-// 案 32 分けて並べる（concepts.md の 6 章）。合計と 1 営業日あたり、上位と集中度を別のカードにする。チップは矢印付きで改善だけ青。
+// 案 32 分けて並べる（concepts.md の 6 章）。合計と 1 営業日あたりを別のカードにし、基準を超えた利用者は要確認と注意を別々の大きな数字で並べる。チップは矢印付きで改善だけ青。
 (() => {
   const { build } = window.CATALOG;
   window.IA = build({
@@ -10,15 +10,15 @@
         groups: [
           ["コスト", ["cost_total", "per_bd", "per_user_bd"]],
           ["今月", ["forecast"]],
-          ["目安を超えた利用者", ["over_limit"]],
+          ["基準を超えた利用者", ["over_day_duo", "over_week_duo", "over_month_duo"]],
           ["利用者", ["billed_users"]],
           ["設定の適用", ["all_applied", "off_users", "not_introduced", "core_outdated", "plugin_outdated"]],
         ] },
       { id: "cost", title: "コストと利用者", periods: true, lead: "いくらかかり、誰に集まり、何人が使っているか",
         groups: [
-          ["コスト", ["cost_total", "per_bd", "per_user_bd", "top10_share", "top_spenders_only", "model_mix", "cache_read_share"]],
+          ["コスト", ["cost_total", "per_bd", "per_user_bd", "top_spenders", "model_mix", "cache_read_share"]],
           ["今月", ["forecast"]],
-          ["目安を超えた利用者", ["over_limit"]],
+          ["基準を超えた利用者", ["over_day_duo", "over_week_duo", "over_month_duo"]],
           ["利用者", ["billed_users", "new_users", "retention"]],
         ],
         tabs: ["user_cost", "over_users", "cost_daily", "models", "month", "months"] },

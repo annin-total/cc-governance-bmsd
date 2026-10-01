@@ -7,17 +7,23 @@
   const SAME = "same";
 
   const pick = (item, long) => (!long || item.long === SAME ? item : item.long ? { ref: item.ref, ...item.long } : null);
+  const fits = (item) => !item.only || item.only.includes(K.period); // only: 出す期間（K.period は boot.js が描く前に決める）
 
   const ROW = 4; // 1 行に並べられるカードの列数（格子の最小幅と本文の幅から）
-  const shownCards = (g, long) => (g.cards || []).map((c) => pick(c, long)).filter(Boolean);
+  const shownCards = (g, long) => (g.cards || []).filter(fits).map((c) => pick(c, long)).filter(Boolean);
   const spanOf = (g, long) => shownCards(g, long).reduce((n, c) => n + (c.wide ? 2 : 1), 0);
 
   function groupHtml(g, ctxOf, long, span) {
     const ctx = ctxOf(g);
     const cards = shownCards(g, long);
-    const missing = long ? (g.cards || []).filter((c) => { const s = pick(c, true); return !s || s.label !== c.label; }).map((c) => fill(c.label, ctx)) : [];
+    const missing = long ? (g.cards || []).filter((c) => { const s = pick(c, true); return !s || s.label !== c.label; }) : [];
+    const whys = [...new Set(missing.map((c) => c.longWhy || K.L.NOT_LONG_WHY))];
+    // 理由を持つカード（longWhy）が群ごと出ないときは、カード名を並べず群の見出しで断る
+    const whole = missing.length === (g.cards || []).length && missing.every((c) => c.longWhy);
+    const names = (why) => (whole ? fill(g.label, ctx) : missing.filter((c) => (c.longWhy || K.L.NOT_LONG_WHY) === why).map((c) => fill(c.label, ctx)).join(K.L.LIST_SEP));
+    const notLong = whys.map((why) => K.L.NOT_LONG_CARDS.replace("{why}", why).replace("{names}", names(why)));
     const scope = long ? g.longScope || K.L.LONG_SCOPE : g.scope || "";
-    const note = [missing.length ? K.L.NOT_LONG_CARDS.replace("{names}", missing.join(K.L.LIST_SEP)) : "", g.note ? fill(g.note, ctx) : ""].filter(Boolean).join(" ");
+    const note = [...notLong, g.note ? fill(g.note, ctx) : ""].filter(Boolean).join(" ");
     const label = fill(g.label, ctx);
     const links = (g.links || []).map((l) => `<a class="glink" href="${esc(l.href)}">${esc(K.L.OPEN_PAGE.replace("{}", l.title))}</a>`).join("");
     const scopeText = fill(scope, ctx) === label ? "" : fill(scope, ctx); // 見出しと同じ語なら重ねて出さない
@@ -65,5 +71,5 @@
       ? `<div class="group-row">${r.map((g) => groupHtml(g, ctxOf, long, spanOf(g, long))).join("")}</div>` : groupHtml(r[0], ctxOf, long))).join("")}</div>${detailHtml(page.tabs, ctxOf, long)}`;
   }
 
-  window.KIT = Object.assign(window.KIT || {}, { page: { screenHtml, pick, SAME } });
+  window.KIT = Object.assign(window.KIT || {}, { page: { screenHtml, pick, fits, SAME } });
 })();

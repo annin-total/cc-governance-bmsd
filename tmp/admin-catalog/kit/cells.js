@@ -76,7 +76,7 @@
     ratio: (v, row) => `${esc(K.num(v))} ${sub(`/ ${K.num(row.denominator)} ${L().UNIT.person}`)}`,
     version: (v, row) => `<span class="code">${esc(v)}</span>` + (row.latest ? " " + mark("ok", L().LATEST) : ""),
     count_of: (v, row) => `${esc(K.num(v))} ${sub(`/ ${K.num(row.total)} ${L().UNIT.person}`)}`,
-    usd_day: (v, row, col) => `${usdCell(v, col)} ${sub(K.md(row[col.at]))}`,
+    usd_day: (v, row, col) => usdCell(v, col) + (isNone(row[col.at]) ? "" : ` ${sub(K.md(row[col.at]))}`),
     pct_change: (v) => esc(K.FORMATS.signed_pct(v)),
     yes_no: (v, row, col) => (v ? esc(col.terms[0]) : sub(col.terms[1])),
     dec1: (v, row, col) => esc(K.dec1(v)) + (col.unit ? ` ${esc(col.unit)}` : ""),

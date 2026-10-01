@@ -9,7 +9,6 @@ COST_RISE = (10, 15)  # COST_RISE_ELEVATED・COST_RISE_HIGH（%）
 USERS_DROP = (10, 15)  # USERS_DROP_ELEVATED・USERS_DROP_HIGH（%）
 USER_COST_ELEVATED = {"day": 50, "week": 70, "month": 280}  # USD
 USER_COST_HIGH = {"day": 100, "week": 150, "month": 600}
-USER_COST_SPANS = (7, 28)
 CORE_OUTDATED_ELEVATED = PLUGIN_OUTDATED_ELEVATED = 1  # 人
 ERROR_COUNT_ELEVATED = 1  # 件
 NON_COMPLIANT_USERS_HIGH = 1  # 人
@@ -19,6 +18,10 @@ NULL_RATE_ELEVATED, NULL_RATE_HIGH = 20, 50  # %
 
 def change(now, prev) -> Optional[float]:
     return None if now is None or not prev else round((now - prev) / prev * 100, 1)
+
+
+def share(part, whole) -> Optional[float]:
+    return None if not whole else round(part / whole * 100, 1)
 
 
 def over(value, elevated, high=None) -> Optional[str]:

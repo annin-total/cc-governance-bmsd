@@ -50,19 +50,21 @@ def _round3(raw, data: dict, today: int) -> None:
     """第 3 弾の値を `p[期間].r3` と `fixed.r3` に足す（extras_r3*.py・summaries.py）。"""
     import extras_r3
     import extras_r3_more
+    import extras_r3_over
     import extras_r3_policy
     import summaries
 
     csv_end = data["fixed"]["m"]["csv_end"]
-    limit = extras_r3.limit(raw, csv_end)
-    data["fixed"]["r3"] = {"limit": limit, "forecast": extras_r3.forecast(data["p"]["7"]["month"]),
+    data["fixed"]["r3"] = {"forecast": extras_r3.forecast(data["p"]["7"]["month"]),
                            "policy": extras_r3_policy.build(raw, today, data["fixed"]["policy"]), "summaries": summaries.build(today)}
     for key in PERIOD_KEYS:
         p = data["p"][key]
         long = p["period"]["long"]
-        extras_r3.billed_rows(p["x"]["billed"], limit["by_user"], long)
         r3 = {"cost": extras_r3.cost(raw, p["x"]["cost"], long), "model_pt": None if long else extras_r3.model_pt(p["x"]["models"], p["x"]["cost"]["prev"])}
+        over = {} if long else extras_r3_over.build(raw, key, r3["cost"])
+        extras_r3.billed_rows(p["x"]["billed"], over.pop("by_user", {}), long)
         if not long:
+            r3["over"] = over
             extras_r3_more.activity_rows(raw, p)
             r3.update(changes=extras_r3_more.changes(p), calls=extras_r3_more.calls(raw, p))
         p["r3"] = r3

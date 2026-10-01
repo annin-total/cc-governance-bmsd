@@ -8,7 +8,7 @@
     pages: [
       { id: "home", title: "概況", home: true, summary: true, lead: "コスト・利用者・設定の適用の要点と、注意・要確認の点",
         groups: [
-          ["目安を超えた利用者", ["over_limit"]],
+          ["基準を超えた利用者", ["over_day_top", "over_week_top", "over_month_top"]],
           ["コストの多い利用者", ["top_spenders_diff"]],
           ["コスト", ["cost", "per_user_bd"]],
           ["今月", ["forecast"]],
@@ -17,7 +17,7 @@
         ] },
       { id: "cost", title: "コストと利用者", periods: true, lead: "いくらかかり、誰に集まり、何人が使っているか",
         groups: [
-          ["目安を超えた利用者", ["over_limit"]],
+          ["基準を超えた利用者", ["over_day_top", "over_week_top", "over_month_top"]],
           ["コスト", ["cost", "per_user_bd", "top_spenders_diff", "model_mix", "cache_read_share"]],
           ["今月", ["forecast"]],
           ["利用者", ["billed_users", "new_users", "retention"]],

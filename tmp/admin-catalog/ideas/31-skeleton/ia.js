@@ -1,15 +1,15 @@
 "use strict";
-// 案 31 骨組みのまま（concepts.md の 1 章・3 章）。見せ方はキットの既定（look を書かない）。
+// 案 31 骨組みのまま（concepts.md の 1 章・3 章）。見せ方はキットの既定（look を書かない）。compare で増減のチップの見せ方を切り替える（比較用）。
 (() => {
   const { build } = window.CATALOG;
   window.IA = build({
-    id: "31-skeleton", name: "案 31 骨組みのまま",
+    id: "31-skeleton", name: "案 31 骨組みのまま", compare: true,
     pages: [
       { id: "home", title: "概況", home: true, summary: true, lead: "コスト・利用者・設定の適用の要点と、注意・要確認の点",
         groups: [
           ["コスト", ["cost", "per_user_bd"]],
           ["今月", ["forecast"]],
-          ["目安を超えた利用者", ["over_limit"]],
+          ["基準を超えた利用者", ["over_day", "over_week", "over_month"]],
           ["利用者", ["billed_users"]],
           ["設定の適用", ["all_applied", "off_users", "not_introduced", "core_outdated", "plugin_outdated"]],
         ] },
@@ -17,7 +17,7 @@
         groups: [
           ["コスト", ["cost", "per_user_bd", "top_spenders", "model_mix", "cache_read_share"]],
           ["今月", ["forecast"]],
-          ["目安を超えた利用者", ["over_limit"]],
+          ["基準を超えた利用者", ["over_day", "over_week", "over_month"]],
           ["利用者", ["billed_users", "new_users", "retention"]],
         ],
         tabs: ["user_cost", "over_users", "cost_daily", "models", "month", "months"] },

@@ -11,6 +11,7 @@
       word: false, // 値の後ろに「改善」「悪化」を添える
       worseOnly: false, // 悪化だけチップにし、改善と中立は地の文字にする
       prev: false, // 前の値を添える（「+12.3%（前 $1,040）」）
+      palette: "", // 比較用の色の組（compare.js）。"" は tone の色のまま
     },
     okMark: false, // 正常にも灰の「正常」の札を出す
     filter: "dim", // 絞り込みで該当しないカードを dim（薄くする）か hide（隠す）
@@ -43,8 +44,14 @@
     if (o.arrow && t !== "neutral" && L.DELTA_ARROW[dir]) text = `${L.DELTA_ARROW[dir]} ${text}`; // 中立は向きを示さない
     if (o.word && L.DELTA_WORD[t]) text += ` ${L.DELTA_WORD[t]}`;
     if (o.prev && d.prev) text += L.DELTA_PREV.replace("{}", fill(d.prev, ctx));
+    return chipHtml(text, t);
+  }
+
+  // 増減のチップの部品。t は better・worse・neutral（基準を超えた利用者の「新たに該当」「外れた」も使う）
+  function chipHtml(text, t) {
+    const o = current.delta;
     const cls = o.worseOnly && t !== "worse" ? "plain" : o.color === "none" ? "neutral" : o.color === "better" && t === "worse" ? "neutral" : t;
-    return `<span class="change ${cls}" data-tone="${t}">${esc(text)}</span>`;
+    return `<span class="change ${cls}${o.palette ? ` p-${o.palette}` : ""}" data-tone="${t}">${esc(text)}</span>`;
   }
 
   // 添える数字。チップに前の値を添えるときは、添える数字から前の値（delta.prev の雛形を含む部分）を抜く
@@ -63,5 +70,5 @@
     return "";
   }
 
-  window.KIT = Object.assign(window.KIT || {}, { look: { set, get: () => current, tone, deltaHtml, stateHtml, subOf, DEFAULTS } });
+  window.KIT = Object.assign(window.KIT || {}, { look: { set, get: () => current, tone, deltaHtml, chipHtml, stateHtml, subOf, DEFAULTS } });
 })();

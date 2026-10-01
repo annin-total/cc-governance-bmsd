@@ -65,6 +65,7 @@
     const asked = params.get("period") || DEFAULT_PERIOD;
     const period = page.periods && window.DATA.meta.periods.includes(asked) ? asked : DEFAULT_PERIOD;
     const long = Boolean(page.periods) && period === "12m";
+    K.period = period;
     const pageData = page.data || "p.{period}";
     const ctxOf = (item) => contextOf(item.data || pageData, period);
     const ctx = ctxOf(page);
@@ -73,7 +74,7 @@
     const act = [stateFilter(page), page.home ? baseDate(page) : "", switcher(page, period)].filter(Boolean).join("");
     document.title = `${page.title} — ${ia.name || K.L.APP}`;
     document.body.innerHTML = nav(ia, page, period)
-      + `<main class="wrap"><div class="page-head"><div><h1>${esc(page.title)}${page.home ? "" : baseDate(page)}</h1><p class="lead">${esc(fill(page.lead || "", ctx))}</p></div>`
+      + `<main class="wrap">${ia.compare ? K.compare.html() : ""}<div class="page-head"><div><h1>${esc(page.title)}${page.home ? "" : baseDate(page)}</h1><p class="lead">${esc(fill(page.lead || "", ctx))}</p></div>`
       + `${act ? `<div class="head-act">${act}</div>` : ""}</div>${content}</main>`
       + `<footer class="wrap foot">${esc(ia.footer || K.L.FOOTER)}</footer>`;
   }
