@@ -38,11 +38,13 @@ def assistant(mid: Optional[str], sid: str, ts: Optional[str], *, rid: Optional[
               model: str = "claude-opus-5-5", u: Any = "default", uuid: Optional[str] = None,
               version: str = "2.1.286", effort: Optional[str] = None, pte: Optional[str] = None,
               side: bool = False, agent: Optional[str] = None, content: Optional[List[Any]] = None,
-              cwd: str = CWD, attr: Optional[str] = None) -> Dict[str, Any]:
+              cwd: str = CWD, attr: Optional[str] = None, stop: Optional[str] = None) -> Dict[str, Any]:
     msg: Dict[str, Any] = {"model": model, "type": "message", "role": "assistant",
                            "content": content if content is not None else [{"type": "text", "text": "hello"}]}
     if mid is not None:
         msg["id"] = mid
+    if stop is not None:
+        msg["stop_reason"] = stop
     if u == "default":
         msg["usage"] = usage()
     elif u is not None:

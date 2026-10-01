@@ -551,8 +551,8 @@ class Collector:
         rec = self.records.get(key)
         if rec is None:
             rec = {"ts": None, "sid": sid, "agent": "", "side": False, "cwd": "", "model": "",
-                   "effort": None, "pte": None, "version": "", "u": _zero_tokens(), "has_usage": False,
-                   "tools": set(), "attr": None}
+                   "effort": None, "pte": None, "version": "", "u": _zero_tokens(),
+                   "final": False, "tools": set(), "attr": None}
             self.records[key] = rec
         self._merge(rec, d, msg, ts, key)
 
@@ -578,9 +578,10 @@ class Collector:
         if attr and rec["sid"] and self._in_period(ts):
             self.attribution.setdefault(attr, set()).add(rec["sid"])
             inc(self.attribution_lines, attr)
+        if isinstance(msg.get("stop_reason"), str) and msg["stop_reason"]:
+            rec["final"] = True  # サブエージェントの行は stop_reason が null のまま output_tokens が開始時の値で止まる
         usage = msg.get("usage")
         if isinstance(usage, dict):
-            rec["has_usage"] = True
             u = rec["u"]
             for k, f in USAGE_FIELDS.items():
                 u[k] = max(u[k], _int(usage.get(f)))
@@ -795,10 +796,15 @@ class Report:
             api_calls += 1
             side_calls += 1 if rec["side"] else 0
             _add_tokens(totals, rec["u"])
-            b = buckets.setdefault(fam, {"api_calls": 0, "generations": {}, "tokens": _zero_tokens()})
+            b = buckets.setdefault(fam, {"api_calls": 0, "generations": {}, "tokens": _zero_tokens(),
+                                         "by_role": {"main": _new_role(), "sidechain": _new_role()}})
             b["api_calls"] += 1
             inc(b["generations"], cls["generation"] or "unknown")
             _add_tokens(b["tokens"], rec["u"])
+            role = b["by_role"]["sidechain" if rec["side"] else "main"]
+            role["api_calls"] += 1
+            role["output_unfinalized_calls"] += 0 if rec["final"] else 1
+            _add_tokens(role["tokens"], rec["u"])
             ver = _short_value(rec["version"]) if rec["version"] else "unknown"
             v = by_version.setdefault(ver, {"records": 0, "effort_observed": 0, "per_turn_effort_observed": 0})
             v["records"] += 1
@@ -971,9 +977,10 @@ class Report:
     def _result_chars(self) -> Dict[str, Any]:
         dist: Dict[str, int] = {}
         by_tool: Dict[str, Dict[str, int]] = {}
+        max_by_tool: Dict[str, int] = {}
         total = count = mx = 0
         for tid in sorted(self.c.tool_results):
-            n, ts, sid = self.c.tool_results[tid]
+            n, ts, _sid = self.c.tool_results[tid]
             if not self.c._in_period(ts):
                 continue
             count += 1
@@ -981,10 +988,14 @@ class Report:
             mx = max(mx, n)
             inc(dist, _bucket(n, RESULT_BUCKETS, RESULT_BUCKET_MAX))
             tu = self.c.tool_uses.get(tid)
-            t = by_tool.setdefault(tu[1] if tu else "(unmatched)", {"count": 0, "chars": 0})
+            name = tu[1] if tu else "(unmatched)"
+            t = by_tool.setdefault(name, {"count": 0, "chars": 0})
             t["count"] += 1
             t["chars"] += n
+            max_by_tool[name] = max(max_by_tool.get(name, 0), n)
+        top_max = sorted(max_by_tool.items(), key=lambda kv: (-kv[1], kv[0]))[:TOP_N]
         return {"count": count, "chars_total": total, "chars_max": mx, "buckets": dist,
+                "top_max_by_tool": [{"tool": k, "chars_max": v} for k, v in top_max],
                 "by_tool": dict(sorted(by_tool.items(), key=lambda kv: (-kv[1]["chars"], kv[0])))}
 
     def _skills(self, skill_calls: Dict[str, int]) -> Dict[str, Any]:
@@ -1028,7 +1039,13 @@ class Report:
         return {"confidence": "estimate", "sessions_with_snapshot": n, "by_family": by_family,
                 "note": "last snapshot per session (largest cumulative) minus deduplicated assistant usage of "
                         "the same sessions over all history; resume/fork behaviour unconfirmed; "
-                        "money fields are discarded"}
+                        "sidechain output_tokens in transcripts is often a start-of-stream value "
+                        "(see models.buckets.*.by_role.sidechain.output_unfinalized_calls), so a large "
+                        "output gap is expected; money fields are discarded"}
+
+
+def _new_role() -> Dict[str, Any]:
+    return {"api_calls": 0, "output_unfinalized_calls": 0, "tokens": _zero_tokens()}
 
 
 def _new_session() -> Dict[str, Any]:

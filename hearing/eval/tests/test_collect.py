@@ -207,8 +207,47 @@ class FilesTest(CollectTestBase):
         self.assertEqual(d["tools"]["result_chars"]["chars_total"], 12000)
         self.assertEqual(d["tools"]["result_chars"]["buckets"], {"10k_50k": 1})
         self.assertEqual(d["tools"]["result_chars"]["by_tool"]["Read"]["count"], 1)
+        self.assertEqual(d["tools"]["result_chars"]["top_max_by_tool"], [{"tool": "Read", "chars_max": 12000}])
         self.assertEqual(d["tools"]["tool_results_dir"], {"files": 1, "bytes": 300})
         self.assertEqual(d["tools"]["file_extensions"], {".py": 1})
+
+
+    def test_result_chars_top_max_by_tool_is_ranked_and_limited(self) -> None:
+        names = ["Read", "Bash", "Grep", "Glob", "Edit", "Write", "Task"]
+        uses = [{"type": "tool_use", "id": "t%d" % i, "name": n, "input": {}} for i, n in enumerate(names)]
+        rows = [assistant("m1", SID, TS, content=uses)]
+        rows += [tool_result(SID, TS, "t%d" % i, "x" * (100 * (i + 1))) for i in range(len(names))]
+        rows += [tool_result(SID, TS, "t0", "x" * 50)]  # 同じ tool の小さい結果は最大値を変えない
+        self.cfg.write("p/%s.jsonl" % SID, rows)
+        top = self.collect()["tools"]["result_chars"]["top_max_by_tool"]
+        self.assertEqual([t["tool"] for t in top], ["Task", "Write", "Edit", "Glob", "Grep"])
+        self.assertEqual(top[0]["chars_max"], 700)
+
+
+class RoleSplitTest(CollectTestBase):
+    def test_main_and_sidechain_tokens_by_family(self) -> None:
+        self.cfg.write("p/%s.jsonl" % SID, [
+            assistant("m1", SID, TS, u=usage(inp=1, out=100, cc=10, cr=20, c5=4, c1=6), stop="end_turn"),
+            assistant("m2", SID, TS, model="claude-sonnet-5-5", u=usage(inp=2, out=7, cc=0, cr=0)),
+        ])
+        self.cfg.write("p/%s/subagents/agent-a.jsonl" % SID, [
+            assistant("m3", SID, TS, side=True, agent="a", u=usage(inp=3, out=8, cc=30, cr=40, c5=0, c1=30)),
+            assistant("m3", SID, TS, side=True, agent="a", u=usage(inp=3, out=9, cc=30, cr=40, c5=0, c1=30)),
+            assistant("m4", SID, TS, side=True, agent="a", u=usage(inp=1, out=50), stop="tool_use"),
+        ])
+        b = self.collect()["models"]["buckets"]
+        opus = b["opus"]["by_role"]
+        self.assertEqual(opus["main"]["tokens"]["output"], 100)
+        self.assertEqual(opus["main"]["tokens"]["cache_creation_5m"], 4)
+        self.assertEqual(opus["main"]["output_unfinalized_calls"], 0)
+        self.assertEqual(opus["sidechain"]["api_calls"], 2)
+        self.assertEqual(opus["sidechain"]["tokens"]["output"], 59)
+        self.assertEqual(opus["sidechain"]["tokens"]["cache_creation_1h"], 30)
+        self.assertEqual(opus["sidechain"]["output_unfinalized_calls"], 1)
+        self.assertEqual(b["sonnet"]["by_role"]["main"]["output_unfinalized_calls"], 1)
+        self.assertEqual(b["sonnet"]["by_role"]["sidechain"]["api_calls"], 0)
+        for k in ("input", "output", "cache_creation", "cache_read"):
+            self.assertEqual(opus["main"]["tokens"][k] + opus["sidechain"]["tokens"][k], b["opus"]["tokens"][k])
 
 
 class CostStateTest(CollectTestBase):

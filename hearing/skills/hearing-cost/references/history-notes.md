@@ -18,7 +18,7 @@
 実機で見えたもの: `assistant`・`user`・`attachment`・`system`・`cost-state`・`queue-operation`・`last-prompt`・`ai-title`・`atis-latch`・`mode`。
 ほかに `summary`・`file-history-snapshot` などがあるとされる。未知の型は `_other` として件数だけ数える。
 
-- `assistant` 行だけ全体を JSON として読む。1 回の API 応答が content ブロックごとに複数行に分かれて書かれ、各行に同じ `message.id`・`requestId` と（途中値を含む）`usage` が付く。
+- `assistant` 行だけ全体を JSON として読む。1 回の API 応答が content ブロックごとに複数行に分かれて書かれ、各行に同じ `message.id`・`requestId` と `usage` が付く。`stop_reason` が入る本体の行は最終値だが、サブエージェント（sidechain）の行は `stop_reason` が null のまま `output_tokens` が応答の開始時の値（数〜十数）で止まり、後から更新されない（実機 2.1.286 で確認）。
 - `assistant` 以外の行は全体を読まず、深さ 1 のキー（`type`・`timestamp`・`sessionId`・`agentId`・`uuid`・`isSidechain`・`isMeta` 等）だけを抜く。`attachment` の中身にも `type` キーがあるので、深さを見て取り違えないようにしている。
 - `user` 行のうち tool 結果を含むものは `message` だけ読んで文字数を数える。スラッシュ起動は `<command-name>` の名前だけを正規表現で抜く。
 - `timestamp` は UTC の ISO8601（例 `2026-09-10T10:00:00.000Z`）。`cost-state`・`ai-title` 等には無い。
@@ -28,7 +28,7 @@
 | 項目 | 意味 |
 |---|---|
 | `input_tokens` | 新規入力（キャッシュ外） |
-| `output_tokens` | 出力（thinking を含む） |
+| `output_tokens` | 出力（thinking を含む。内訳は `output_tokens_details.thinking_tokens` だが読まない） |
 | `cache_creation_input_tokens` | キャッシュ書き込み |
 | `cache_read_input_tokens` | キャッシュ読み込み |
 | `cache_creation.ephemeral_5m_input_tokens` / `ephemeral_1h_input_tokens` | 書き込みの TTL 別内訳 |
@@ -39,7 +39,7 @@
 ## 重複排除
 
 - キーは `message.id` と `requestId` の組。どちらも無ければ `uuid`（フォールバックとして件数を数える）。
-- 同じキーの行は、トークン項目ごとに最大値を取ってまとめる（途中値の行が先に来ても、順序に関係なく同じ結果になる）。
+- 同じキーの行は、トークン項目ごとに最大値を取ってまとめる（値が小さい行が先に来ても、順序に関係なく同じ結果になる）。
 - ファイル・サブエージェント・sidechain をまたいで 1 回だけ数える。実機では assistant 行のおよそ 3 分の 2 が重複だった。
 - 既知の限界: ストリーミング途中の行で `requestId` が片方にしか無いと別キー扱いになり、二重に数えうる。`coverage.dedup_*` で件数だけ見える。
 
@@ -54,6 +54,7 @@
 - セッション内の累積値のスナップショットが何度も書かれる。`collect` は sessionId ごとに合計が最大のもの（＝最後）を採る。
 - assistant 行に出ない補助モデル（実機では Haiku）がここにだけ出る。金額フィールド（`costUSD`・`totalCostUSD`）は読んでも出力しない。
 - 再開・分岐での累積の振る舞いは未確認。進行中のセッションでは transcript より古いことがあり、差が負になる。
+- `outside_transcript` の出力差の読み方（推定）: `thinkingTokens` は `outputTokens` の内数で、assistant 行の `output_tokens` も thinking を含むので、thinking の別カウントは原因ではない。実機では opus で cost-state が transcript の約 60 倍あったが、最終値の行が残る本体のセッションでは両者が近く、差は sidechain の行の開始時の値（上記）に集中していた。サブエージェントが多いセッションでは output の差が大きく出るのが普通で、「transcript が過小」「transcript の外で消費」と断定せず、`by_role.sidechain.output_unfinalized_calls` と合わせて読む。input・cache は開始時にほぼ確定するので差は小さい。
 
 ## effort
 
@@ -103,7 +104,7 @@
 | `settings` | `settings.json` の `found`・`cleanup_period_days`・`model`（`alias`・`bucket`・`generation` のみ）・`effort_level`・`always_thinking_enabled`・`mcp_servers_count` |
 | `line_types` / `versions` | 行の種類別件数 / assistant 行の版別件数 |
 | `totals` | 期間内の `api_calls`（重複排除後の件数）、`sidechain_api_calls`、`tokens_by_type`、`active_days` |
-| `models.buckets.<名前>` | 名前はファミリー（`opus` 等や新しい語）・`other_claude`・`non_claude`・`unknown`。各々 `api_calls`、`generations`（世代別件数、例 `5-5`）、`tokens` |
+| `models.buckets.<名前>` | 名前はファミリー（`opus` 等や新しい語）・`other_claude`・`non_claude`・`unknown`。各々 `api_calls`、`generations`（世代別件数、例 `5-5`）、`tokens`、`by_role.main` / `by_role.sidechain`（本体 / サブエージェントごとの `api_calls`・`output_unfinalized_calls`（`stop_reason` が無く output が開始時の値の可能性がある件数）・`tokens`（5m/1h 内訳を含む）） |
 | `effort.effort` / `effort.per_turn_effort` | `observed_n`（記録あり）、`absent_n`（記録なし。0 ではない）、`values`（値別件数） |
 | `effort.by_version.<版>` | `records`、`effort_observed`、`per_turn_effort_observed` |
 | `sessions.count` / `subagents_distinct` | 期間内のセッション数（sessionId）/ サブエージェント数（agentId） |
@@ -112,7 +113,7 @@
 | `sessions.details.<S-ラベル>` | 上位に出たセッションの `project`、`api_calls`、`turns`（人の入力）、`active_minutes`、`segments`、`subagents`、`sidechain_ratio`、`tokens`、`model_buckets`、`effort`、`tools`、`file_extensions` |
 | `projects` | `count` と `top_by_output`（`label`・`sessions`・`api_calls`・`tokens`） |
 | `tools.calls_by_name` / `file_extensions` | tool 名別の呼び出し数 / ファイル系ツールの拡張子別件数（`(none)`・`(other)` あり） |
-| `tools.result_chars` | tool 結果の文字数: `count`・`chars_total`・`chars_max`・`buckets`・`by_tool` |
+| `tools.result_chars` | tool 結果の文字数: `count`・`chars_total`・`chars_max`・`buckets`・`by_tool`（`count`・`chars`）・`top_max_by_tool`（最大文字数の上位 5 ツール `{tool, chars_max}`） |
 | `tools.tool_results_dir` | `tool-results/` のファイル数と合計バイト |
 | `skills.skill_tool.<名前>` | Skill ツールの呼び出し数と `classification` |
 | `skills.slash_commands.<名前>` | `<command-name>` の件数と `classification`（組み込みコマンドを含む） |
