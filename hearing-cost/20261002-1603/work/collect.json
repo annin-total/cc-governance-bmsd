@@ -1,0 +1,2259 @@
+{
+ "schema_version": "1.0",
+ "generated_at": "2026-10-02T07:04:05Z",
+ "params": {
+  "start": "2026-09-02T07:03:57Z",
+  "end": "2026-10-02T07:03:57Z",
+  "timezone": "local",
+  "utc_offset_minutes": 540,
+  "exclude_session_given": false,
+  "max_line_bytes": 50000000
+ },
+ "coverage": {
+  "files_total": 1386,
+  "files_processed": 1386,
+  "files_unreadable": 0,
+  "files_orphaned": 0,
+  "files_superseded": 0,
+  "lines_total": 195868,
+  "lines_processed": 195764,
+  "lines_unreadable": {
+   "no_type": 104
+  },
+  "lines_oversize_skipped": 0,
+  "lines_invalid_utf8": 0,
+  "assistant_lines": 63774,
+  "records_before_dedup": 63686,
+  "records_after_dedup": 30665,
+  "dedup_fallback_uuid": 0,
+  "dedup_no_key": 0,
+  "synthetic_lines": 88,
+  "usage_missing_lines": 0,
+  "records_out_of_period": 1780,
+  "records_timestamp_missing": 0,
+  "records_timestamp_out_of_range": 0,
+  "projects_dir_found": true,
+  "walk_errors": 0,
+  "excluded_session_lines": 0,
+  "excluded_session_records": 0,
+  "user_lines_duplicate": 1637,
+  "coverage_ratio": 0.9995,
+  "dedup_removed": 33021
+ },
+ "history_range": {
+  "oldest_ts": "2026-08-01T14:15:04Z",
+  "newest_ts": "2026-10-02T07:04:04Z",
+  "files_with_lines": 1385
+ },
+ "retention": {
+  "cleanup_period_days": 30,
+  "cleanup_period_days_source": "default_assumed",
+  "history_starts_after_period_start": false,
+  "oldest_near_cleanup_cutoff": false,
+  "suspected_gap": false,
+  "note": "suspicion only; older history may have been removed by retention or never existed"
+ },
+ "settings": {
+  "found": true,
+  "cleanup_period_days": null,
+  "model": {
+   "alias": "opus",
+   "bucket": "opus",
+   "generation": null
+  },
+  "effort_level": "medium",
+  "always_thinking_enabled": null,
+  "mcp_servers_count": null,
+  "auto_compact_pct_override": null,
+  "auto_compact_enabled": null
+ },
+ "line_types": {
+  "_other": 5774,
+  "agent-name": 630,
+  "ai-title": 3999,
+  "assistant": 63774,
+  "atis-latch": 5594,
+  "attachment": 56451,
+  "cost-state": 820,
+  "custom-title": 936,
+  "file-history-snapshot": 574,
+  "last-prompt": 5785,
+  "mode": 3317,
+  "pr-link": 1818,
+  "queue-operation": 5013,
+  "system": 3234,
+  "user": 38045
+ },
+ "versions": {
+  "2.1.219": 3582,
+  "2.1.251": 645,
+  "2.1.263": 400,
+  "2.1.267": 478,
+  "2.1.278": 20509,
+  "2.1.280": 688,
+  "2.1.281": 2793,
+  "2.1.282": 10235,
+  "2.1.283": 17339,
+  "2.1.284": 2225,
+  "2.1.285": 89,
+  "2.1.286": 3122,
+  "2.1.287": 1581
+ },
+ "totals": {
+  "api_calls": 28885,
+  "sidechain_api_calls": 19319,
+  "tokens_by_type": {
+   "input": 60472,
+   "output": 14598549,
+   "cache_creation": 141035567,
+   "cache_read": 4292391846,
+   "cache_creation_5m": 98875253,
+   "cache_creation_1h": 42160314
+  },
+  "active_days": 15,
+  "note": "token types are listed separately on purpose; do not add them up"
+ },
+ "models": {
+  "buckets": {
+   "fable": {
+    "api_calls": 20,
+    "generations": {
+     "5-1": 20
+    },
+    "tokens": {
+     "input": 264,
+     "output": 23291,
+     "cache_creation": 278945,
+     "cache_read": 4245214,
+     "cache_creation_5m": 0,
+     "cache_creation_1h": 278945
+    },
+    "by_role": {
+     "main": {
+      "api_calls": 20,
+      "output_unfinalized_calls": 0,
+      "tokens": {
+       "input": 264,
+       "output": 23291,
+       "cache_creation": 278945,
+       "cache_read": 4245214,
+       "cache_creation_5m": 0,
+       "cache_creation_1h": 278945
+      }
+     },
+     "sidechain": {
+      "api_calls": 0,
+      "output_unfinalized_calls": 0,
+      "tokens": {
+       "input": 0,
+       "output": 0,
+       "cache_creation": 0,
+       "cache_read": 0,
+       "cache_creation_5m": 0,
+       "cache_creation_1h": 0
+      }
+     }
+    }
+   },
+   "haiku": {
+    "api_calls": 219,
+    "generations": {
+     "4-5": 219
+    },
+    "tokens": {
+     "input": 1906,
+     "output": 101346,
+     "cache_creation": 1684302,
+     "cache_read": 8899300,
+     "cache_creation_5m": 809949,
+     "cache_creation_1h": 874353
+    },
+    "by_role": {
+     "main": {
+      "api_calls": 71,
+      "output_unfinalized_calls": 0,
+      "tokens": {
+       "input": 682,
+       "output": 20264,
+       "cache_creation": 874353,
+       "cache_read": 1765563,
+       "cache_creation_5m": 0,
+       "cache_creation_1h": 874353
+      }
+     },
+     "sidechain": {
+      "api_calls": 148,
+      "output_unfinalized_calls": 26,
+      "tokens": {
+       "input": 1224,
+       "output": 81082,
+       "cache_creation": 809949,
+       "cache_read": 7133737,
+       "cache_creation_5m": 809949,
+       "cache_creation_1h": 0
+      }
+     }
+    }
+   },
+   "opus": {
+    "api_calls": 22735,
+    "generations": {
+     "5": 4941,
+     "4-7": 2647,
+     "5-5": 15147
+    },
+    "tokens": {
+     "input": 46427,
+     "output": 12193974,
+     "cache_creation": 119921900,
+     "cache_read": 3601765121,
+     "cache_creation_5m": 80593026,
+     "cache_creation_1h": 39328874
+    },
+    "by_role": {
+     "main": {
+      "api_calls": 9146,
+      "output_unfinalized_calls": 7,
+      "tokens": {
+       "input": 19074,
+       "output": 8372076,
+       "cache_creation": 53424063,
+       "cache_read": 1926218967,
+       "cache_creation_5m": 14095189,
+       "cache_creation_1h": 39328874
+      }
+     },
+     "sidechain": {
+      "api_calls": 13589,
+      "output_unfinalized_calls": 10115,
+      "tokens": {
+       "input": 27353,
+       "output": 3821898,
+       "cache_creation": 66497837,
+       "cache_read": 1675546154,
+       "cache_creation_5m": 66497837,
+       "cache_creation_1h": 0
+      }
+     }
+    }
+   },
+   "sonnet": {
+    "api_calls": 5911,
+    "generations": {
+     "5": 5717,
+     "5-5": 194
+    },
+    "tokens": {
+     "input": 11875,
+     "output": 2279938,
+     "cache_creation": 19150420,
+     "cache_read": 677482211,
+     "cache_creation_5m": 17472278,
+     "cache_creation_1h": 1678142
+    },
+    "by_role": {
+     "main": {
+      "api_calls": 329,
+      "output_unfinalized_calls": 1,
+      "tokens": {
+       "input": 709,
+       "output": 307901,
+       "cache_creation": 1678142,
+       "cache_read": 59787827,
+       "cache_creation_5m": 0,
+       "cache_creation_1h": 1678142
+      }
+     },
+     "sidechain": {
+      "api_calls": 5582,
+      "output_unfinalized_calls": 2735,
+      "tokens": {
+       "input": 11166,
+       "output": 1972037,
+       "cache_creation": 17472278,
+       "cache_read": 617694384,
+       "cache_creation_5m": 17472278,
+       "cache_creation_1h": 0
+      }
+     }
+    }
+   }
+  }
+ },
+ "effort": {
+  "effort": {
+   "observed_n": 28666,
+   "absent_n": 219,
+   "values": {
+    "medium": 22532,
+    "high": 3487,
+    "xhigh": 2647
+   }
+  },
+  "per_turn_effort": {
+   "observed_n": 15361,
+   "absent_n": 13524,
+   "values": {
+    "medium": 15361
+   }
+  },
+  "by_version": {
+   "2.1.251": {
+    "records": 330,
+    "effort_observed": 330,
+    "per_turn_effort_observed": 0
+   },
+   "2.1.263": {
+    "records": 221,
+    "effort_observed": 221,
+    "per_turn_effort_observed": 0
+   },
+   "2.1.267": {
+    "records": 208,
+    "effort_observed": 208,
+    "per_turn_effort_observed": 0
+   },
+   "2.1.278": {
+    "records": 9094,
+    "effort_observed": 8918,
+    "per_turn_effort_observed": 1
+   },
+   "2.1.280": {
+    "records": 359,
+    "effort_observed": 359,
+    "per_turn_effort_observed": 145
+   },
+   "2.1.281": {
+    "records": 1312,
+    "effort_observed": 1312,
+    "per_turn_effort_observed": 763
+   },
+   "2.1.282": {
+    "records": 5021,
+    "effort_observed": 5021,
+    "per_turn_effort_observed": 3612
+   },
+   "2.1.283": {
+    "records": 8971,
+    "effort_observed": 8962,
+    "per_turn_effort_observed": 7808
+   },
+   "2.1.284": {
+    "records": 1135,
+    "effort_observed": 1135,
+    "per_turn_effort_observed": 969
+   },
+   "2.1.285": {
+    "records": 54,
+    "effort_observed": 54,
+    "per_turn_effort_observed": 13
+   },
+   "2.1.286": {
+    "records": 1412,
+    "effort_observed": 1412,
+    "per_turn_effort_observed": 1357
+   },
+   "2.1.287": {
+    "records": 768,
+    "effort_observed": 734,
+    "per_turn_effort_observed": 693
+   }
+  },
+  "note": "absent_n means not recorded (e.g. older version), not zero or low"
+ },
+ "sessions": {
+  "count": 774,
+  "subagents_distinct": 585,
+  "length_definition": "split when the gap between lines exceeds 30 minutes; sum active time",
+  "active_minutes": {
+   "total": 12003.7,
+   "median": 0.6,
+   "p90": 3.0,
+   "max": 840.9
+  },
+  "length_buckets": {
+   "lt_10m": 713,
+   "10m_30m": 14,
+   "30m_1h": 6,
+   "ge_8h": 6,
+   "1h_3h": 18,
+   "3h_8h": 17
+  },
+  "top_by_output": [
+   {
+    "session": "S-476f10d0",
+    "session_id": "9df31f20-df2e-4b46-8852-f198ee41dbef",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-cc-governance/9df31f20-df2e-4b46-8852-f198ee41dbef.jsonl",
+    "value": 1869928,
+    "share": 0.1281
+   },
+   {
+    "session": "S-b442eb8a",
+    "session_id": "1ce5f81e-052f-4e95-837a-99eafae62daf",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-cc-governance/1ce5f81e-052f-4e95-837a-99eafae62daf.jsonl",
+    "value": 867270,
+    "share": 0.0594
+   },
+   {
+    "session": "S-408b6f71",
+    "session_id": "f742e071-1d07-4a4c-96a5-103d927a52fc",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-cc-governance/f742e071-1d07-4a4c-96a5-103d927a52fc.jsonl",
+    "value": 820632,
+    "share": 0.0562
+   },
+   {
+    "session": "S-07b01468",
+    "session_id": "f6a4aaa1-2032-4c1d-a50e-9e6a24a67704",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-cc-governance/f6a4aaa1-2032-4c1d-a50e-9e6a24a67704.jsonl",
+    "value": 803860,
+    "share": 0.0551
+   },
+   {
+    "session": "S-e73b7eae",
+    "session_id": "a650028c-2253-403e-b340-c0b4f4856c51",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-cc-governance/a650028c-2253-403e-b340-c0b4f4856c51.jsonl",
+    "value": 643757,
+    "share": 0.0441
+   }
+  ],
+  "top_by_cache_creation": [
+   {
+    "session": "S-6780511b",
+    "session_id": "a91519bb-fd71-4a04-b704-43987df92a9e",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance-work-wt-a/a91519bb-fd71-4a04-b704-43987df92a9e.jsonl",
+    "value": 16422145,
+    "share": 0.1164
+   },
+   {
+    "session": "S-d41a829d",
+    "session_id": "734c1639-80a7-4a31-bec6-5ecd642ed9f0",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance/734c1639-80a7-4a31-bec6-5ecd642ed9f0.jsonl",
+    "value": 9524705,
+    "share": 0.0675
+   },
+   {
+    "session": "S-476f10d0",
+    "session_id": "9df31f20-df2e-4b46-8852-f198ee41dbef",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-cc-governance/9df31f20-df2e-4b46-8852-f198ee41dbef.jsonl",
+    "value": 7971644,
+    "share": 0.0565
+   },
+   {
+    "session": "S-f92ffd7d",
+    "session_id": "08f5f2f5-54bf-491d-8d06-29b2218b2f0c",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance/08f5f2f5-54bf-491d-8d06-29b2218b2f0c.jsonl",
+    "value": 6216717,
+    "share": 0.0441
+   },
+   {
+    "session": "S-6a3ce9c7",
+    "session_id": "2191ff3b-9cf9-4b09-99a9-46149144418d",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance/2191ff3b-9cf9-4b09-99a9-46149144418d.jsonl",
+    "value": 5843092,
+    "share": 0.0414
+   }
+  ],
+  "top_by_input": [
+   {
+    "session": "S-6780511b",
+    "session_id": "a91519bb-fd71-4a04-b704-43987df92a9e",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance-work-wt-a/a91519bb-fd71-4a04-b704-43987df92a9e.jsonl",
+    "value": 6252,
+    "share": 0.1034
+   },
+   {
+    "session": "S-476f10d0",
+    "session_id": "9df31f20-df2e-4b46-8852-f198ee41dbef",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-cc-governance/9df31f20-df2e-4b46-8852-f198ee41dbef.jsonl",
+    "value": 4910,
+    "share": 0.0812
+   },
+   {
+    "session": "S-3aa13bfb",
+    "session_id": "5b9498fe-c6af-4170-a3b1-a6a40f9a1875",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance/5b9498fe-c6af-4170-a3b1-a6a40f9a1875.jsonl",
+    "value": 3804,
+    "share": 0.0629
+   },
+   {
+    "session": "S-f92ffd7d",
+    "session_id": "08f5f2f5-54bf-491d-8d06-29b2218b2f0c",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance/08f5f2f5-54bf-491d-8d06-29b2218b2f0c.jsonl",
+    "value": 3068,
+    "share": 0.0507
+   },
+   {
+    "session": "S-d41a829d",
+    "session_id": "734c1639-80a7-4a31-bec6-5ecd642ed9f0",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance/734c1639-80a7-4a31-bec6-5ecd642ed9f0.jsonl",
+    "value": 2922,
+    "share": 0.0483
+   }
+  ],
+  "top_by_cache_read": [
+   {
+    "session": "S-6780511b",
+    "session_id": "a91519bb-fd71-4a04-b704-43987df92a9e",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance-work-wt-a/a91519bb-fd71-4a04-b704-43987df92a9e.jsonl",
+    "value": 591422215,
+    "share": 0.1378
+   },
+   {
+    "session": "S-476f10d0",
+    "session_id": "9df31f20-df2e-4b46-8852-f198ee41dbef",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-cc-governance/9df31f20-df2e-4b46-8852-f198ee41dbef.jsonl",
+    "value": 303814446,
+    "share": 0.0708
+   },
+   {
+    "session": "S-d41a829d",
+    "session_id": "734c1639-80a7-4a31-bec6-5ecd642ed9f0",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance/734c1639-80a7-4a31-bec6-5ecd642ed9f0.jsonl",
+    "value": 279148293,
+    "share": 0.065
+   },
+   {
+    "session": "S-3aa13bfb",
+    "session_id": "5b9498fe-c6af-4170-a3b1-a6a40f9a1875",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-bmsd-governance/5b9498fe-c6af-4170-a3b1-a6a40f9a1875.jsonl",
+    "value": 275804713,
+    "share": 0.0643
+   },
+   {
+    "session": "S-b442eb8a",
+    "session_id": "1ce5f81e-052f-4e95-837a-99eafae62daf",
+    "file": "projects/-Users-terasawayuki-Documents-program-Development-cc-governance/1ce5f81e-052f-4e95-837a-99eafae62daf.jsonl",
+    "value": 237038423,
+    "share": 0.0552
+   }
+  ],
+  "details": {
+   "S-07b01468": {
+    "project": "P-74646471",
+    "api_calls": 711,
+    "turns": 2,
+    "active_minutes": 184.9,
+    "segments": 2,
+    "subagents": 24,
+    "sidechain_ratio": 0.9986,
+    "tokens": {
+     "input": 1732,
+     "output": 803860,
+     "cache_creation": 3274588,
+     "cache_read": 83263431,
+     "cache_creation_5m": 3272618,
+     "cache_creation_1h": 1970
+    },
+    "model_buckets": {
+     "opus": 526,
+     "sonnet": 135,
+     "haiku": 50
+    },
+    "effort": {
+     "high": 526,
+     "medium": 135
+    },
+    "tools": {
+     "Bash": 571,
+     "Edit": 109,
+     "WebFetch": 36,
+     "Read": 29,
+     "SubagentHandback": 26,
+     "Write": 8,
+     "Monitor": 6,
+     "ToolSearch": 5,
+     "WebSearch": 5,
+     "Agent": 3,
+     "TaskStop": 2
+    },
+    "file_extensions": {
+     ".md": 138,
+     ".txt": 6,
+     "(none)": 1,
+     ".py": 1
+    }
+   },
+   "S-3aa13bfb": {
+    "project": "P-d7f64f1d",
+    "api_calls": 1833,
+    "turns": 24,
+    "active_minutes": 427.8,
+    "segments": 5,
+    "subagents": 29,
+    "sidechain_ratio": 0.8822,
+    "tokens": {
+     "input": 3804,
+     "output": 595957,
+     "cache_creation": 5467218,
+     "cache_read": 275804713,
+     "cache_creation_5m": 4167338,
+     "cache_creation_1h": 1299880
+    },
+    "model_buckets": {
+     "sonnet": 1517,
+     "opus": 294,
+     "haiku": 22
+    },
+    "effort": {
+     "medium": 1811
+    },
+    "tools": {
+     "Bash": 1474,
+     "Read": 128,
+     "Edit": 119,
+     "Write": 43,
+     "SubagentHandback": 35,
+     "Agent": 29,
+     "AskUserQuestion": 18,
+     "WebFetch": 12,
+     "SendMessage": 7,
+     "ListAgents": 2,
+     "Skill": 1,
+     "ToolSearch": 1
+    },
+    "file_extensions": {
+     ".md": 113,
+     ".py": 108,
+     ".json": 23,
+     ".sh": 14,
+     ".toml": 9,
+     "(none)": 5,
+     ".sql": 4,
+     ".txt": 4,
+     ".csv": 3,
+     ".env": 2,
+     ".png": 2,
+     ".yaml": 2,
+     ".ini": 1
+    }
+   },
+   "S-408b6f71": {
+    "project": "P-d4c15b6f",
+    "api_calls": 434,
+    "turns": 5,
+    "active_minutes": 307.9,
+    "segments": 5,
+    "subagents": 24,
+    "sidechain_ratio": 0.9908,
+    "tokens": {
+     "input": 1148,
+     "output": 820632,
+     "cache_creation": 3032423,
+     "cache_read": 43006715,
+     "cache_creation_5m": 3027388,
+     "cache_creation_1h": 5035
+    },
+    "model_buckets": {
+     "opus": 389,
+     "haiku": 45
+    },
+    "effort": {
+     "high": 389
+    },
+    "tools": {
+     "Bash": 293,
+     "Edit": 74,
+     "WebFetch": 47,
+     "Read": 37,
+     "SubagentHandback": 26,
+     "Write": 12,
+     "Agent": 2,
+     "ToolSearch": 2,
+     "WebSearch": 2,
+     "AskUserQuestion": 1
+    },
+    "file_extensions": {
+     ".md": 110,
+     ".txt": 12,
+     ".py": 1
+    }
+   },
+   "S-476f10d0": {
+    "project": "P-5e0c1741",
+    "api_calls": 2403,
+    "turns": 0,
+    "active_minutes": 579.6,
+    "segments": 4,
+    "subagents": 51,
+    "sidechain_ratio": 1.0,
+    "tokens": {
+     "input": 4910,
+     "output": 1869928,
+     "cache_creation": 7971644,
+     "cache_read": 303814446,
+     "cache_creation_5m": 7971644,
+     "cache_creation_1h": 0
+    },
+    "model_buckets": {
+     "sonnet": 1872,
+     "opus": 515,
+     "haiku": 16
+    },
+    "effort": {
+     "medium": 2334,
+     "high": 53
+    },
+    "tools": {
+     "Bash": 1808,
+     "Edit": 328,
+     "Read": 233,
+     "Write": 132,
+     "SubagentHandback": 64,
+     "WebFetch": 12,
+     "ToolSearch": 1
+    },
+    "file_extensions": {
+     ".py": 447,
+     ".md": 166,
+     ".sh": 21,
+     ".html": 18,
+     ".json": 14,
+     "(none)": 10,
+     ".txt": 9,
+     ".toml": 5,
+     ".diff": 1,
+     ".output": 1
+    }
+   },
+   "S-6780511b": {
+    "project": "P-d7f64f1d",
+    "api_calls": 3066,
+    "turns": 57,
+    "active_minutes": 840.9,
+    "segments": 10,
+    "subagents": 51,
+    "sidechain_ratio": 0.8904,
+    "tokens": {
+     "input": 6252,
+     "output": 528040,
+     "cache_creation": 16422145,
+     "cache_read": 591422215,
+     "cache_creation_5m": 12817062,
+     "cache_creation_1h": 3605083
+    },
+    "model_buckets": {
+     "opus": 3019,
+     "sonnet": 47
+    },
+    "effort": {
+     "medium": 3066
+    },
+    "tools": {
+     "Bash": 2251,
+     "Read": 678,
+     "Write": 243,
+     "SubagentHandback": 54,
+     "Agent": 51,
+     "Edit": 19,
+     "SendMessage": 14,
+     "AskUserQuestion": 12,
+     "Skill": 8,
+     "ToolSearch": 5,
+     "Monitor": 1,
+     "TaskStop": 1
+    },
+    "file_extensions": {
+     ".png": 602,
+     ".js": 115,
+     ".py": 95,
+     ".md": 55,
+     ".css": 31,
+     ".html": 22,
+     ".txt": 19,
+     ".output": 1
+    }
+   },
+   "S-6a3ce9c7": {
+    "project": "P-b9fd1993",
+    "api_calls": 802,
+    "turns": 9,
+    "active_minutes": 313.7,
+    "segments": 7,
+    "subagents": 12,
+    "sidechain_ratio": 0.798,
+    "tokens": {
+     "input": 1638,
+     "output": 227197,
+     "cache_creation": 5843092,
+     "cache_read": 178974724,
+     "cache_creation_5m": 4323849,
+     "cache_creation_1h": 1519243
+    },
+    "model_buckets": {
+     "opus": 802
+    },
+    "effort": {
+     "medium": 802
+    },
+    "tools": {
+     "Bash": 534,
+     "Read": 479,
+     "Write": 35,
+     "SubagentHandback": 17,
+     "Agent": 12,
+     "AskUserQuestion": 6,
+     "SendMessage": 6,
+     "Edit": 4,
+     "ListAgents": 1
+    },
+    "file_extensions": {
+     ".png": 456,
+     ".md": 30,
+     ".js": 17,
+     ".py": 8,
+     ".txt": 7
+    }
+   },
+   "S-b442eb8a": {
+    "project": "P-5e0c1741",
+    "api_calls": 731,
+    "turns": 47,
+    "active_minutes": 692.5,
+    "segments": 6,
+    "subagents": 4,
+    "sidechain_ratio": 0.1149,
+    "tokens": {
+     "input": 1466,
+     "output": 867270,
+     "cache_creation": 2396408,
+     "cache_read": 237038423,
+     "cache_creation_5m": 380644,
+     "cache_creation_1h": 2015764
+    },
+    "model_buckets": {
+     "opus": 640,
+     "sonnet": 91
+    },
+    "effort": {
+     "medium": 662,
+     "high": 69
+    },
+    "tools": {
+     "Bash": 549,
+     "Agent": 55,
+     "SendMessage": 23,
+     "Read": 17,
+     "AskUserQuestion": 7,
+     "SubagentHandback": 4,
+     "Skill": 2,
+     "ToolSearch": 2,
+     "ReadNotifications": 1
+    },
+    "file_extensions": {
+     ".md": 10,
+     ".output": 7
+    }
+   },
+   "S-d41a829d": {
+    "project": "P-d7f64f1d",
+    "api_calls": 1383,
+    "turns": 42,
+    "active_minutes": 739.3,
+    "segments": 12,
+    "subagents": 33,
+    "sidechain_ratio": 0.7426,
+    "tokens": {
+     "input": 2922,
+     "output": 421007,
+     "cache_creation": 9524705,
+     "cache_read": 279148293,
+     "cache_creation_5m": 6149433,
+     "cache_creation_1h": 3375272
+    },
+    "model_buckets": {
+     "opus": 1374,
+     "haiku": 9
+    },
+    "effort": {
+     "medium": 1374
+    },
+    "tools": {
+     "Bash": 1157,
+     "Read": 46,
+     "SubagentHandback": 41,
+     "Agent": 37,
+     "Write": 21,
+     "AskUserQuestion": 12,
+     "Edit": 12,
+     "WebFetch": 11,
+     "SendMessage": 9,
+     "ToolSearch": 4,
+     "TaskStop": 3,
+     "Monitor": 2,
+     "CronCreate": 1,
+     "CronDelete": 1,
+     "CronList": 1
+    },
+    "file_extensions": {
+     ".md": 32,
+     ".txt": 25,
+     ".py": 16,
+     "(none)": 4,
+     ".output": 1,
+     ".png": 1
+    }
+   },
+   "S-e73b7eae": {
+    "project": "P-d4c15b6f",
+    "api_calls": 339,
+    "turns": 29,
+    "active_minutes": 392.8,
+    "segments": 7,
+    "subagents": 4,
+    "sidechain_ratio": 0.3746,
+    "tokens": {
+     "input": 678,
+     "output": 643757,
+     "cache_creation": 2109136,
+     "cache_read": 88460637,
+     "cache_creation_5m": 659121,
+     "cache_creation_1h": 1450015
+    },
+    "model_buckets": {
+     "opus": 339
+    },
+    "effort": {
+     "high": 339
+    },
+    "tools": {
+     "Bash": 271,
+     "Agent": 26,
+     "AskUserQuestion": 12,
+     "Write": 9,
+     "SendMessage": 8,
+     "Read": 5,
+     "SubagentHandback": 4,
+     "Skill": 1,
+     "ToolSearch": 1
+    },
+    "file_extensions": {
+     ".md": 14
+    }
+   },
+   "S-f92ffd7d": {
+    "project": "P-d7f64f1d",
+    "api_calls": 1324,
+    "turns": 86,
+    "active_minutes": 702.0,
+    "segments": 9,
+    "subagents": 22,
+    "sidechain_ratio": 0.7424,
+    "tokens": {
+     "input": 3068,
+     "output": 394079,
+     "cache_creation": 6216717,
+     "cache_read": 207081746,
+     "cache_creation_5m": 3441346,
+     "cache_creation_1h": 2775371
+    },
+    "model_buckets": {
+     "opus": 1230,
+     "sonnet": 75,
+     "fable": 19
+    },
+    "effort": {
+     "medium": 1324
+    },
+    "tools": {
+     "Bash": 1042,
+     "Agent": 52,
+     "Write": 31,
+     "Edit": 26,
+     "SubagentHandback": 23,
+     "AskUserQuestion": 12,
+     "Read": 12,
+     "SendMessage": 4,
+     "ToolSearch": 4,
+     "ListAgents": 1,
+     "Monitor": 1,
+     "Skill": 1,
+     "TaskStop": 1
+    },
+    "file_extensions": {
+     ".md": 43,
+     ".py": 21,
+     ".sql": 2,
+     ".txt": 2,
+     "(none)": 1
+    }
+   }
+  }
+ },
+ "context_ops": {
+  "definition": "compact は system 行 compact_boundary の trigger（manual/auto）。clear・resume・model は <command-name> の起動回数（model_command は切り替えなしの起動を含む）。model_change は 本体の隣り合う assistant 記録でモデルが変わった回数",
+  "ops": {
+   "compact_manual": {
+    "total": 9,
+    "sessions": 8,
+    "per_session": 0.012
+   },
+   "compact_auto": {
+    "total": 8,
+    "sessions": 5,
+    "per_session": 0.01
+   },
+   "clear": {
+    "total": 17,
+    "sessions": 10,
+    "per_session": 0.022
+   },
+   "resume_command": {
+    "total": 1,
+    "sessions": 1,
+    "per_session": 0.001
+   },
+   "model_command": {
+    "total": 21,
+    "sessions": 15,
+    "per_session": 0.027
+   },
+   "model_change": {
+    "total": 9,
+    "sessions": 5,
+    "per_session": 0.012
+   }
+  },
+  "auto_compact_pre_tokens": {
+   "observed_n": 8,
+   "median": 377352.5,
+   "max": 689620
+  },
+  "longest_sessions": [
+   {
+    "session": "S-6780511b",
+    "active_minutes": 840.9,
+    "ops": {
+     "compact_manual": 1,
+     "compact_auto": 0,
+     "clear": 1,
+     "resume_command": 0,
+     "model_command": 0,
+     "model_change": 0
+    }
+   },
+   {
+    "session": "S-d41a829d",
+    "active_minutes": 739.3,
+    "ops": {
+     "compact_manual": 1,
+     "compact_auto": 0,
+     "clear": 0,
+     "resume_command": 0,
+     "model_command": 0,
+     "model_change": 0
+    }
+   },
+   {
+    "session": "S-f92ffd7d",
+    "active_minutes": 702.0,
+    "ops": {
+     "compact_manual": 1,
+     "compact_auto": 0,
+     "clear": 0,
+     "resume_command": 0,
+     "model_command": 2,
+     "model_change": 2
+    }
+   },
+   {
+    "session": "S-b442eb8a",
+    "active_minutes": 692.5,
+    "ops": {
+     "compact_manual": 0,
+     "compact_auto": 2,
+     "clear": 0,
+     "resume_command": 0,
+     "model_command": 2,
+     "model_change": 2
+    }
+   },
+   {
+    "session": "S-476f10d0",
+    "active_minutes": 579.6,
+    "ops": {
+     "compact_manual": 0,
+     "compact_auto": 0,
+     "clear": 0,
+     "resume_command": 0,
+     "model_command": 0,
+     "model_change": 0
+    }
+   }
+  ],
+  "by_version": {
+   "2.1.251": {
+    "sessions": 1,
+    "compact_manual": 0,
+    "compact_auto": 0,
+    "clear": 0,
+    "resume_command": 0,
+    "model_command": 0,
+    "model_change": 0
+   },
+   "2.1.263": {
+    "sessions": 4,
+    "compact_manual": 0,
+    "compact_auto": 0,
+    "clear": 0,
+    "resume_command": 0,
+    "model_command": 0,
+    "model_change": 0
+   },
+   "2.1.267": {
+    "sessions": 1,
+    "compact_manual": 0,
+    "compact_auto": 0,
+    "clear": 0,
+    "resume_command": 0,
+    "model_command": 0,
+    "model_change": 0
+   },
+   "2.1.278": {
+    "sessions": 223,
+    "compact_manual": 3,
+    "compact_auto": 8,
+    "clear": 1,
+    "resume_command": 0,
+    "model_command": 13,
+    "model_change": 5
+   },
+   "2.1.280": {
+    "sessions": 11,
+    "compact_manual": 0,
+    "compact_auto": 0,
+    "clear": 0,
+    "resume_command": 0,
+    "model_command": 0,
+    "model_change": 0
+   },
+   "2.1.281": {
+    "sessions": 17,
+    "compact_manual": 0,
+    "compact_auto": 0,
+    "clear": 0,
+    "resume_command": 0,
+    "model_command": 2,
+    "model_change": 0
+   },
+   "2.1.282": {
+    "sessions": 146,
+    "compact_manual": 1,
+    "compact_auto": 0,
+    "clear": 0,
+    "resume_command": 0,
+    "model_command": 3,
+    "model_change": 2
+   },
+   "2.1.283": {
+    "sessions": 205,
+    "compact_manual": 3,
+    "compact_auto": 0,
+    "clear": 3,
+    "resume_command": 0,
+    "model_command": 1,
+    "model_change": 1
+   },
+   "2.1.284": {
+    "sessions": 25,
+    "compact_manual": 0,
+    "compact_auto": 0,
+    "clear": 0,
+    "resume_command": 1,
+    "model_command": 0,
+    "model_change": 0
+   },
+   "2.1.285": {
+    "sessions": 6,
+    "compact_manual": 0,
+    "compact_auto": 0,
+    "clear": 1,
+    "resume_command": 0,
+    "model_command": 0,
+    "model_change": 0
+   },
+   "2.1.286": {
+    "sessions": 17,
+    "compact_manual": 0,
+    "compact_auto": 0,
+    "clear": 3,
+    "resume_command": 0,
+    "model_command": 0,
+    "model_change": 0
+   },
+   "2.1.287": {
+    "sessions": 36,
+    "compact_manual": 2,
+    "compact_auto": 0,
+    "clear": 9,
+    "resume_command": 0,
+    "model_command": 2,
+    "model_change": 1
+   }
+  },
+  "not_detected": [
+   "rewind",
+   "resume_cli_flags",
+   "branch"
+  ],
+  "note": "by_version で 0 件の版は記録が無い版かもしれない。0 回と記録なしを区別して読む"
+ },
+ "automation": {
+  "entrypoint": {
+   "by_entrypoint": {
+    "cli": {
+     "sessions": 95,
+     "api_calls": 26021,
+     "tokens": {
+      "input": 54513,
+      "output": 12979317,
+      "cache_creation": 123310744,
+      "cache_read": 4192409996,
+      "cache_creation_5m": 84422733,
+      "cache_creation_1h": 38888011
+     }
+    },
+    "sdk-cli": {
+     "sessions": 218,
+     "api_calls": 217,
+     "tokens": {
+      "input": 952,
+      "output": 52176,
+      "cache_creation": 3387206,
+      "cache_read": 4749333,
+      "cache_creation_5m": 114903,
+      "cache_creation_1h": 3272303
+     }
+    },
+    "sdk-py": {
+     "sessions": 461,
+     "api_calls": 2647,
+     "tokens": {
+      "input": 5007,
+      "output": 1567056,
+      "cache_creation": 14337617,
+      "cache_read": 95232517,
+      "cache_creation_5m": 14337617,
+      "cache_creation_1h": 0
+     }
+    }
+   },
+   "mixed_sessions": 0,
+   "note": "セッションの値は期間内で最も早い行の entrypoint。記録の無いセッションは not_recorded（0 件ではない）。tokens は種別ごとで合算しない"
+  },
+  "turn_origin": {
+   "turn_origin": {
+    "observed_n": 1835,
+    "absent_n": 490,
+    "values": {
+     "sdk": 681,
+     "peer": 495,
+     "human": 458,
+     "task_notification": 195,
+     "scheduled": 6
+    }
+   },
+   "prompt_source": {
+    "observed_n": 1829,
+    "absent_n": 496,
+    "values": {
+     "system": 722,
+     "sdk": 679,
+     "typed": 291,
+     "queued": 136,
+     "suggestion_accepted": 1
+    }
+   },
+   "by_version": {
+    "2.1.251": {
+     "user_lines": 19,
+     "turn_origin_observed": 0,
+     "prompt_source_observed": 11
+    },
+    "2.1.263": {
+     "user_lines": 25,
+     "turn_origin_observed": 0,
+     "prompt_source_observed": 8
+    },
+    "2.1.267": {
+     "user_lines": 4,
+     "turn_origin_observed": 0,
+     "prompt_source_observed": 1
+    },
+    "2.1.278": {
+     "user_lines": 626,
+     "turn_origin_observed": 495,
+     "prompt_source_observed": 467
+    },
+    "2.1.280": {
+     "user_lines": 21,
+     "turn_origin_observed": 21,
+     "prompt_source_observed": 21
+    },
+    "2.1.281": {
+     "user_lines": 109,
+     "turn_origin_observed": 90,
+     "prompt_source_observed": 89
+    },
+    "2.1.282": {
+     "user_lines": 412,
+     "turn_origin_observed": 360,
+     "prompt_source_observed": 359
+    },
+    "2.1.283": {
+     "user_lines": 776,
+     "turn_origin_observed": 650,
+     "prompt_source_observed": 638
+    },
+    "2.1.284": {
+     "user_lines": 65,
+     "turn_origin_observed": 50,
+     "prompt_source_observed": 51
+    },
+    "2.1.285": {
+     "user_lines": 22,
+     "turn_origin_observed": 11,
+     "prompt_source_observed": 11
+    },
+    "2.1.286": {
+     "user_lines": 93,
+     "turn_origin_observed": 66,
+     "prompt_source_observed": 80
+    },
+    "2.1.287": {
+     "user_lines": 153,
+     "turn_origin_observed": 92,
+     "prompt_source_observed": 93
+    }
+   },
+   "note": "対象は tool 結果・sidechain 以外の user 行。absent_n は記録なし（古い版や、記録が付かない行）で 0 件ではない"
+  },
+  "schedule": {
+   "tools": {
+    "ScheduleWakeup": {
+     "calls": 2,
+     "sessions": 1
+    },
+    "CronCreate": {
+     "calls": 1,
+     "sessions": 1
+    },
+    "CronDelete": {
+     "calls": 1,
+     "sessions": 1
+    },
+    "CronList": {
+     "calls": 1,
+     "sessions": 1
+    }
+   },
+   "commands": {
+    "loop": 8,
+    "schedule": 0
+   }
+  }
+ },
+ "projects": {
+  "count": 83,
+  "label_rule": "P- + first 8 hex of sha256(cwd)",
+  "top_by_output": [
+   {
+    "label": "P-5e0c1741",
+    "sessions": 67,
+    "api_calls": 3873,
+    "tokens": {
+     "input": 7867,
+     "output": 3520108,
+     "cache_creation": 13384263,
+     "cache_read": 667731226,
+     "cache_creation_5m": 10462098,
+     "cache_creation_1h": 2922165
+    }
+   },
+   {
+    "label": "P-d7f64f1d",
+    "sessions": 124,
+    "api_calls": 9582,
+    "tokens": {
+     "input": 20042,
+     "output": 2851413,
+     "cache_creation": 47603416,
+     "cache_read": 1554074193,
+     "cache_creation_5m": 33212115,
+     "cache_creation_1h": 14391301
+    }
+   },
+   {
+    "label": "P-d4c15b6f",
+    "sessions": 19,
+    "api_calls": 1368,
+    "tokens": {
+     "input": 2934,
+     "output": 2008094,
+     "cache_creation": 7618167,
+     "cache_read": 244871238,
+     "cache_creation_5m": 3995284,
+     "cache_creation_1h": 3622883
+    }
+   },
+   {
+    "label": "P-74646471",
+    "sessions": 4,
+    "api_calls": 715,
+    "tokens": {
+     "input": 1740,
+     "output": 805205,
+     "cache_creation": 3359063,
+     "cache_read": 83333316,
+     "cache_creation_5m": 3272618,
+     "cache_creation_1h": 86445
+    }
+   },
+   {
+    "label": "P-24ee1e02",
+    "sessions": 11,
+    "api_calls": 1812,
+    "tokens": {
+     "input": 3698,
+     "output": 425404,
+     "cache_creation": 7842585,
+     "cache_read": 184736877,
+     "cache_creation_5m": 7066730,
+     "cache_creation_1h": 775855
+    }
+   }
+  ]
+ },
+ "tools": {
+  "calls_by_name": {
+   "Bash": 21064,
+   "Read": 4009,
+   "Edit": 1176,
+   "Write": 980,
+   "SubagentHandback": 621,
+   "Agent": 609,
+   "Grep": 399,
+   "StructuredOutput": 394,
+   "WebFetch": 220,
+   "AskUserQuestion": 212,
+   "Glob": 140,
+   "SendMessage": 119,
+   "Skill": 99,
+   "ToolSearch": 97,
+   "mcp__claude-in-chrome__computer": 44,
+   "mcp__claude-in-chrome__javascript_tool": 28,
+   "Artifact": 24,
+   "mcp__claude-in-chrome__navigate": 24,
+   "Monitor": 22,
+   "TaskStop": 22,
+   "ListAgents": 10,
+   "WebSearch": 10,
+   "mcp__claude-in-chrome__tabs_context_mcp": 10,
+   "mcp__claude-in-chrome__tabs_close_mcp": 9,
+   "ReadNotifications": 7,
+   "mcp__context7__query-docs": 5,
+   "mcp__claude-in-chrome__read_console_messages": 4,
+   "mcp__claude-in-chrome__resize_window": 3,
+   "mcp__context7__resolve-library-id": 3,
+   "ScheduleWakeup": 2,
+   "mcp__claude-in-chrome__tabs_create_mcp": 2,
+   "mcp__claude_ai_Gmail__get_thread": 2,
+   "mcp__github__update_pull_request": 2,
+   "CronCreate": 1,
+   "CronDelete": 1,
+   "CronList": 1,
+   "mcp__claude-in-chrome__read_page": 1,
+   "mcp__claude_ai_Gmail__search_threads": 1,
+   "mcp__github__create_pull_request": 1,
+   "mcp__github__list_releases": 1
+  },
+  "file_extensions": {
+   ".py": 2224,
+   ".md": 1650,
+   ".png": 1403,
+   ".html": 184,
+   ".js": 181,
+   ".txt": 164,
+   ".json": 117,
+   ".sh": 82,
+   "(none)": 60,
+   ".css": 45,
+   ".toml": 23,
+   ".output": 12,
+   ".yaml": 10,
+   ".sql": 8,
+   ".tsx": 5,
+   ".env": 4,
+   ".ini": 4,
+   ".out": 4,
+   ".csv": 3,
+   ".after": 1,
+   ".diff": 1,
+   ".jsonl": 1,
+   ".lua": 1,
+   ".sha256": 1
+  },
+  "result_chars": {
+   "count": 30368,
+   "chars_total": 63241631,
+   "chars_max": 86965,
+   "buckets": {
+    "1k_10k": 10828,
+    "10k_50k": 1373,
+    "lt_1k": 18155,
+    "50k_200k": 12
+   },
+   "top_max_by_tool": [
+    {
+     "tool": "Read",
+     "chars_max": 86965
+    },
+    {
+     "tool": "WebFetch",
+     "chars_max": 45186
+    },
+    {
+     "tool": "Bash",
+     "chars_max": 29182
+    },
+    {
+     "tool": "Grep",
+     "chars_max": 17447
+    },
+    {
+     "tool": "Glob",
+     "chars_max": 15823
+    }
+   ],
+   "by_tool": {
+    "Bash": {
+     "count": 21058,
+     "chars": 44989245
+    },
+    "Read": {
+     "count": 4006,
+     "chars": 14625167
+    },
+    "WebFetch": {
+     "count": 220,
+     "chars": 1673475
+    },
+    "Agent": {
+     "count": 608,
+     "chars": 663109
+    },
+    "Grep": {
+     "count": 399,
+     "chars": 405152
+    },
+    "Edit": {
+     "count": 1176,
+     "chars": 238327
+    },
+    "Write": {
+     "count": 980,
+     "chars": 217573
+    },
+    "AskUserQuestion": {
+     "count": 212,
+     "chars": 87968
+    },
+    "Glob": {
+     "count": 140,
+     "chars": 77242
+    },
+    "SubagentHandback": {
+     "count": 621,
+     "chars": 38617
+    },
+    "Artifact": {
+     "count": 24,
+     "chars": 34358
+    },
+    "WebSearch": {
+     "count": 10,
+     "chars": 27480
+    },
+    "TaskStop": {
+     "count": 22,
+     "chars": 26532
+    },
+    "mcp__context7__query-docs": {
+     "count": 5,
+     "chars": 23161
+    },
+    "SendMessage": {
+     "count": 118,
+     "chars": 19910
+    },
+    "StructuredOutput": {
+     "count": 394,
+     "chars": 15550
+    },
+    "mcp__claude-in-chrome__computer": {
+     "count": 44,
+     "chars": 13097
+    },
+    "ListAgents": {
+     "count": 10,
+     "chars": 11800
+    },
+    "mcp__claude-in-chrome__navigate": {
+     "count": 24,
+     "chars": 9233
+    },
+    "mcp__claude_ai_Gmail__get_thread": {
+     "count": 2,
+     "chars": 8725
+    },
+    "mcp__claude-in-chrome__javascript_tool": {
+     "count": 28,
+     "chars": 6776
+    },
+    "Monitor": {
+     "count": 22,
+     "chars": 6640
+    },
+    "mcp__claude_ai_Gmail__search_threads": {
+     "count": 1,
+     "chars": 4478
+    },
+    "mcp__claude-in-chrome__tabs_context_mcp": {
+     "count": 10,
+     "chars": 4320
+    },
+    "mcp__context7__resolve-library-id": {
+     "count": 3,
+     "chars": 4091
+    },
+    "Skill": {
+     "count": 99,
+     "chars": 3951
+    },
+    "mcp__claude-in-chrome__read_console_messages": {
+     "count": 4,
+     "chars": 1421
+    },
+    "mcp__claude-in-chrome__resize_window": {
+     "count": 3,
+     "chars": 948
+    },
+    "mcp__claude-in-chrome__tabs_close_mcp": {
+     "count": 9,
+     "chars": 822
+    },
+    "mcp__claude-in-chrome__tabs_create_mcp": {
+     "count": 2,
+     "chars": 618
+    },
+    "ToolSearch": {
+     "count": 97,
+     "chars": 469
+    },
+    "ScheduleWakeup": {
+     "count": 2,
+     "chars": 341
+    },
+    "mcp__claude-in-chrome__read_page": {
+     "count": 1,
+     "chars": 264
+    },
+    "mcp__github__update_pull_request": {
+     "count": 2,
+     "chars": 172
+    },
+    "CronCreate": {
+     "count": 1,
+     "chars": 171
+    },
+    "ReadNotifications": {
+     "count": 7,
+     "chars": 168
+    },
+    "mcp__github__list_releases": {
+     "count": 1,
+     "chars": 133
+    },
+    "mcp__github__create_pull_request": {
+     "count": 1,
+     "chars": 86
+    },
+    "CronDelete": {
+     "count": 1,
+     "chars": 23
+    },
+    "CronList": {
+     "count": 1,
+     "chars": 18
+    }
+   }
+  },
+  "tool_results_dir": {
+   "files": 288,
+   "bytes": 20578425
+  }
+ },
+ "skills": {
+  "skill_tool": {
+   "anthropic-skills:reply-drafting": {
+    "calls": 1,
+    "classification": "plugin"
+   },
+   "claude-in-chrome": {
+    "calls": 1,
+    "classification": "builtin_or_unknown"
+   },
+   "e2e": {
+    "calls": 5,
+    "classification": "builtin_or_unknown"
+   },
+   "frontend-design": {
+    "calls": 6,
+    "classification": "personal"
+   },
+   "grill-me": {
+    "calls": 1,
+    "classification": "personal"
+   },
+   "handoff": {
+    "calls": 2,
+    "classification": "personal"
+   },
+   "karpathy-guidelines": {
+    "calls": 1,
+    "classification": "personal"
+   },
+   "my-add-debug-logs": {
+    "calls": 28,
+    "classification": "personal"
+   },
+   "my-operation-check-pr": {
+    "calls": 2,
+    "classification": "personal"
+   },
+   "my-operation-check-pr-skill-diag0001": {
+    "calls": 1,
+    "classification": "builtin_or_unknown"
+   },
+   "nonexistent:not-a-real-skill": {
+    "calls": 1,
+    "classification": "plugin"
+   },
+   "plan-implement": {
+    "calls": 6,
+    "classification": "builtin_or_unknown"
+   },
+   "plugin-authoring": {
+    "calls": 1,
+    "classification": "builtin_or_unknown"
+   },
+   "refactor": {
+    "calls": 4,
+    "classification": "builtin_or_unknown"
+   },
+   "revise-docs": {
+    "calls": 1,
+    "classification": "builtin_or_unknown"
+   },
+   "skill-creator": {
+    "calls": 6,
+    "classification": "personal"
+   },
+   "superpowers:brainstorming": {
+    "calls": 13,
+    "classification": "plugin"
+   },
+   "superpowers:dispatching-parallel-agents": {
+    "calls": 1,
+    "classification": "plugin"
+   },
+   "superpowers:subagent-driven-development": {
+    "calls": 1,
+    "classification": "plugin"
+   },
+   "superpowers:systematic-debugging": {
+    "calls": 9,
+    "classification": "plugin"
+   },
+   "superpowers:test-driven-development": {
+    "calls": 2,
+    "classification": "plugin"
+   },
+   "superpowers:verification-before-completion": {
+    "calls": 3,
+    "classification": "plugin"
+   },
+   "superpowers:writing-plans": {
+    "calls": 1,
+    "classification": "plugin"
+   },
+   "webapp-testing": {
+    "calls": 2,
+    "classification": "personal"
+   }
+  },
+  "slash_commands": {
+   "allowed-cmd": {
+    "count": 4,
+    "classification": "builtin_or_unknown"
+   },
+   "anthropic-skills:skill-creator": {
+    "count": 1,
+    "classification": "plugin"
+   },
+   "claim-credit": {
+    "count": 1,
+    "classification": "builtin_or_unknown"
+   },
+   "clear": {
+    "count": 17,
+    "classification": "builtin_or_unknown"
+   },
+   "compact": {
+    "count": 9,
+    "classification": "builtin_or_unknown"
+   },
+   "config": {
+    "count": 2,
+    "classification": "builtin_or_unknown"
+   },
+   "copy": {
+    "count": 1,
+    "classification": "builtin_or_unknown"
+   },
+   "effort": {
+    "count": 12,
+    "classification": "builtin_or_unknown"
+   },
+   "export": {
+    "count": 2,
+    "classification": "builtin_or_unknown"
+   },
+   "fetch-probe": {
+    "count": 1,
+    "classification": "builtin_or_unknown"
+   },
+   "goal": {
+    "count": 4,
+    "classification": "builtin_or_unknown"
+   },
+   "governance:apply": {
+    "count": 1,
+    "classification": "plugin"
+   },
+   "governance:setup": {
+    "count": 1,
+    "classification": "plugin"
+   },
+   "governance:status": {
+    "count": 2,
+    "classification": "plugin"
+   },
+   "handoff": {
+    "count": 11,
+    "classification": "personal"
+   },
+   "hearing-cost": {
+    "count": 1,
+    "classification": "personal"
+   },
+   "karpathy-guidelines": {
+    "count": 10,
+    "classification": "personal"
+   },
+   "login": {
+    "count": 3,
+    "classification": "builtin_or_unknown"
+   },
+   "loop": {
+    "count": 8,
+    "classification": "builtin_or_unknown"
+   },
+   "mcp": {
+    "count": 1,
+    "classification": "builtin_or_unknown"
+   },
+   "model": {
+    "count": 21,
+    "classification": "builtin_or_unknown"
+   },
+   "mods-probe": {
+    "count": 6,
+    "classification": "builtin_or_unknown"
+   },
+   "my-add-debug-logs": {
+    "count": 5,
+    "classification": "personal"
+   },
+   "plugin": {
+    "count": 4,
+    "classification": "builtin_or_unknown"
+   },
+   "refactor": {
+    "count": 1,
+    "classification": "builtin_or_unknown"
+   },
+   "reload-skills": {
+    "count": 2,
+    "classification": "builtin_or_unknown"
+   },
+   "resume": {
+    "count": 1,
+    "classification": "builtin_or_unknown"
+   },
+   "review": {
+    "count": 2,
+    "classification": "builtin_or_unknown"
+   },
+   "skill-creator": {
+    "count": 2,
+    "classification": "personal"
+   },
+   "store-race": {
+    "count": 6,
+    "classification": "builtin_or_unknown"
+   },
+   "usage:flush": {
+    "count": 6,
+    "classification": "plugin"
+   },
+   "usage:setup": {
+    "count": 1,
+    "classification": "plugin"
+   },
+   "usage:status": {
+    "count": 2,
+    "classification": "plugin"
+   }
+  },
+  "attribution_skill": {
+   "claude-in-chrome": {
+    "sessions": 1,
+    "lines": 145,
+    "classification": "builtin_or_unknown"
+   },
+   "e2e": {
+    "sessions": 4,
+    "lines": 235,
+    "classification": "builtin_or_unknown"
+   },
+   "governance:apply": {
+    "sessions": 1,
+    "lines": 6,
+    "classification": "plugin"
+   },
+   "governance:setup": {
+    "sessions": 1,
+    "lines": 4,
+    "classification": "plugin"
+   },
+   "governance:status": {
+    "sessions": 2,
+    "lines": 5,
+    "classification": "plugin"
+   },
+   "grill-me": {
+    "sessions": 1,
+    "lines": 458,
+    "classification": "personal"
+   },
+   "handoff": {
+    "sessions": 7,
+    "lines": 105,
+    "classification": "personal"
+   },
+   "hearing-cost": {
+    "sessions": 1,
+    "lines": 49,
+    "classification": "personal"
+   },
+   "karpathy-guidelines": {
+    "sessions": 1,
+    "lines": 13,
+    "classification": "personal"
+   },
+   "loop": {
+    "sessions": 1,
+    "lines": 12,
+    "classification": "builtin_or_unknown"
+   },
+   "my-add-debug-logs": {
+    "sessions": 6,
+    "lines": 18,
+    "classification": "personal"
+   },
+   "my-operation-check-pr": {
+    "sessions": 3,
+    "lines": 18,
+    "classification": "personal"
+   },
+   "my-operation-check-pr-skill-diag0001": {
+    "sessions": 1,
+    "lines": 6,
+    "classification": "builtin_or_unknown"
+   },
+   "plan-implement": {
+    "sessions": 4,
+    "lines": 927,
+    "classification": "builtin_or_unknown"
+   },
+   "plugin-authoring": {
+    "sessions": 1,
+    "lines": 126,
+    "classification": "builtin_or_unknown"
+   },
+   "refactor": {
+    "sessions": 4,
+    "lines": 216,
+    "classification": "builtin_or_unknown"
+   },
+   "reply-drafting": {
+    "sessions": 1,
+    "lines": 6,
+    "classification": "builtin_or_unknown"
+   },
+   "revise-docs": {
+    "sessions": 1,
+    "lines": 247,
+    "classification": "builtin_or_unknown"
+   },
+   "skill-creator": {
+    "sessions": 9,
+    "lines": 1382,
+    "classification": "personal"
+   },
+   "superpowers:brainstorming": {
+    "sessions": 5,
+    "lines": 155,
+    "classification": "plugin"
+   },
+   "superpowers:dispatching-parallel-agents": {
+    "sessions": 1,
+    "lines": 113,
+    "classification": "plugin"
+   },
+   "superpowers:subagent-driven-development": {
+    "sessions": 2,
+    "lines": 102,
+    "classification": "plugin"
+   },
+   "superpowers:systematic-debugging": {
+    "sessions": 3,
+    "lines": 175,
+    "classification": "plugin"
+   },
+   "superpowers:test-driven-development": {
+    "sessions": 1,
+    "lines": 245,
+    "classification": "plugin"
+   },
+   "superpowers:verification-before-completion": {
+    "sessions": 2,
+    "lines": 546,
+    "classification": "plugin"
+   },
+   "superpowers:writing-plans": {
+    "sessions": 2,
+    "lines": 653,
+    "classification": "plugin"
+   },
+   "usage:flush": {
+    "sessions": 6,
+    "lines": 13,
+    "classification": "plugin"
+   },
+   "usage:setup": {
+    "sessions": 1,
+    "lines": 4,
+    "classification": "plugin"
+   },
+   "usage:status": {
+    "sessions": 2,
+    "lines": 8,
+    "classification": "plugin"
+   },
+   "webapp-testing": {
+    "sessions": 1,
+    "lines": 26,
+    "classification": "personal"
+   }
+  },
+  "attribution_note": "sessions = distinct (sessionId, skill); lines are not invocation counts; counted from lines whose timestamp is in the period",
+  "classification_rule": "':' in name = plugin; matches config-dir/skills = personal; otherwise builtin_or_unknown",
+  "installed": {
+   "personal": {
+    "count": 48,
+    "skill_md_bytes_total": 317601,
+    "skill_md_bytes_max": 33168,
+    "description_chars_total": 15888,
+    "description_chars_max": 950
+   },
+   "plugin": {
+    "count": 326,
+    "skill_md_bytes_total": 4475926,
+    "skill_md_bytes_max": 101724,
+    "description_chars_total": 127466,
+    "description_chars_max": 1068
+   },
+   "note": "plugin counts may include cached copies; project skills are not read"
+  }
+ },
+ "mcp": {
+  "servers_used": 4,
+  "configured_servers_count": null,
+  "servers": {
+   "claude-in-chrome": {
+    "calls": 125,
+    "distinct_tools": 9
+   },
+   "claude_ai_Gmail": {
+    "calls": 3,
+    "distinct_tools": 2
+   },
+   "context7": {
+    "calls": 8,
+    "distinct_tools": 2
+   },
+   "github": {
+    "calls": 4,
+    "distinct_tools": 3
+   }
+  }
+ },
+ "cost_state": {
+  "confidence": "estimate",
+  "sessions_with_snapshot": 713,
+  "by_family": {
+   "fable": {
+    "cost_state": {
+     "input": 2,
+     "output": 119,
+     "cache_creation": 37636,
+     "cache_read": 25122
+    },
+    "transcript": {
+     "input": 264,
+     "output": 23291,
+     "cache_creation": 278945,
+     "cache_read": 4245214
+    },
+    "outside_transcript": {
+     "input": -262,
+     "output": -23172,
+     "cache_creation": -241309,
+     "cache_read": -4220092
+    },
+    "only_in_cost_state": false
+   },
+   "haiku": {
+    "cost_state": {
+     "input": 6895803,
+     "output": 232803,
+     "cache_creation": 2808960,
+     "cache_read": 10368801
+    },
+    "transcript": {
+     "input": 1906,
+     "output": 101346,
+     "cache_creation": 1684302,
+     "cache_read": 8899300
+    },
+    "outside_transcript": {
+     "input": 6893897,
+     "output": 131457,
+     "cache_creation": 1124658,
+     "cache_read": 1469501
+    },
+    "only_in_cost_state": false
+   },
+   "opus": {
+    "cost_state": {
+     "input": 7577239,
+     "output": 17222910,
+     "cache_creation": 95654999,
+     "cache_read": 3217011858
+    },
+    "transcript": {
+     "input": 43115,
+     "output": 11694547,
+     "cache_creation": 111669950,
+     "cache_read": 3342901526
+    },
+    "outside_transcript": {
+     "input": 7534124,
+     "output": 5528363,
+     "cache_creation": -16014951,
+     "cache_read": -125889668
+    },
+    "only_in_cost_state": false
+   },
+   "sonnet": {
+    "cost_state": {
+     "input": 1597945,
+     "output": 3535063,
+     "cache_creation": 17349473,
+     "cache_read": 782659225
+    },
+    "transcript": {
+     "input": 11252,
+     "output": 2117916,
+     "cache_creation": 17685616,
+     "cache_read": 631191857
+    },
+    "outside_transcript": {
+     "input": 1586693,
+     "output": 1417147,
+     "cache_creation": -336143,
+     "cache_read": 151467368
+    },
+    "only_in_cost_state": false
+   }
+  },
+  "note": "last snapshot per session (largest cumulative) minus deduplicated assistant usage of the same sessions over all history; resume/fork behaviour unconfirmed; sidechain output_tokens in transcripts is often a start-of-stream value (see models.buckets.*.by_role.sidechain.output_unfinalized_calls), so a large output gap is expected; money fields are discarded"
+ },
+ "timeline": {
+  "timezone": "local",
+  "by_day": {
+   "2026-09-08": 384,
+   "2026-09-09": 167,
+   "2026-09-20": 707,
+   "2026-09-21": 1956,
+   "2026-09-22": 4625,
+   "2026-09-23": 2131,
+   "2026-09-24": 642,
+   "2026-09-25": 4199,
+   "2026-09-26": 3495,
+   "2026-09-27": 2289,
+   "2026-09-28": 3834,
+   "2026-09-29": 1127,
+   "2026-09-30": 1136,
+   "2026-10-01": 1297,
+   "2026-10-02": 896
+  },
+  "by_hour": {
+   "00": 1702,
+   "01": 1121,
+   "02": 1393,
+   "03": 1181,
+   "04": 2012,
+   "05": 1890,
+   "06": 770,
+   "07": 1469,
+   "08": 800,
+   "09": 353,
+   "10": 316,
+   "11": 460,
+   "12": 910,
+   "13": 397,
+   "14": 872,
+   "15": 1108,
+   "16": 1134,
+   "17": 1048,
+   "18": 1131,
+   "19": 1471,
+   "20": 2215,
+   "21": 1319,
+   "22": 1845,
+   "23": 1968
+  }
+ }
+}
