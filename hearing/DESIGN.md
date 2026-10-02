@@ -153,7 +153,14 @@ hearing/
 ├── skills/hearing-cost/       # ~/.claude/skills/ にそのままコピーする（配布物はここだけ）
 │   ├── SKILL.md               # 守ること（先頭）と手順だけ
 │   ├── scripts/               # Python 標準ライブラリのみ
-│   │   ├── collect.py         # collect と CLI の入口
+│   │   ├── collect.py         # CLI の入口
+│   │   ├── _collector.py      # 履歴の走査と行の振り分け
+│   │   ├── _records.py        # 行の種類ごとの処理
+│   │   ├── _report.py         # 集計 JSON の組み立て
+│   │   ├── _report_sections.py # 集計 JSON のセクション（セッション・プロジェクト・スキル等）
+│   │   ├── _settings.py       # 設定と導入済みスキルの読み取り
+│   │   ├── _parse.py          # 時刻・行の読み取り・モデル判別
+│   │   ├── _base.py           # 定数と汎用の小物
 │   │   ├── _context_ops.py    # 区切り・切り替え操作の集計
 │   │   └── _common.py         # 共通の小物（行読み・JSON 書き出し等）
 │   └── references/
