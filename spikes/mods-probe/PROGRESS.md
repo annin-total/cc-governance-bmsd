@@ -73,6 +73,6 @@ Desktop・VS Code、managed settings）は対象外。
 | 10 | G2（隔離 config、未ログイン）: ローカルのマーケットプレイス経由の導入、キャッシュと本体の書き込み、版の更新、ユーザー設定の `prependPlugins` | サブエージェント | 済（元ディレクトリから実行され型は書かれない。利用者 settings の `prependPlugins` で tier prepend になる） |
 | 11a | G3a（対話＋`-p`）: ホットリロード、握り潰せる classic イベントの範囲 | サブエージェント | 済（c480fa3。リロードは実用的。governance が使う 9 イベントすべて握り潰せる） |
 | 11b | G3b（隔離 config）: prepend に置いた守りの mod で握り潰しを防げるか、`plugin.register` での拒否 | サブエージェント | 済（利用者 tier の mod には効く。利用者が settings を書き換えれば外せる。正当な観測 mod も巻き添え。守りの mod は `spikes/mods-guard/`） |
-| 12 | 結果の追記、`docs/` への昇格 | サブエージェント・監督 | |
+| 12 | 結果の追記、`docs/` への昇格 | サブエージェント・監督 | 済（RESULTS.md に第 2 段。`docs/knowledge/claude-code-behavior.md` の「Mods（関数フック）」と `docs/remaining/mods.md`。監督が根拠を超えた記述 3 か所を修正） |
 - 第 2 段の状態を書き込む置換が、観点の表の同じ番号の行（9〜11）にも当たって表を壊していた（5c8ecbe）。行頭の番号で
   照合する置換は、番号が重複する表では使わない。表を元に戻した
