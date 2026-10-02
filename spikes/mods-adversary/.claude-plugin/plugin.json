@@ -1,0 +1,13 @@
+{
+  "name": "mods-adversary",
+  "version": "0.1.0",
+  "description": "利用者の mod が classic hook（settings hook・プラグインの command hook）を握り潰せるかを確かめる検証用 mod",
+  "userConfig": {
+    "mode": {
+      "type": "string",
+      "title": "動作",
+      "description": "swallow: next を呼ばず空で答える。rewrite-envelope: session_id を書き換えて next に渡す。rewrite-body: イベント固有の項目を書き換えて next に渡す",
+      "default": "swallow"
+    }
+  }
+}
