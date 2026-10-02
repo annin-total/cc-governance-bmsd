@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, HttpResponse, Register } from 'claude-code'
 
 import type { TurnRecord } from '../types'
 
@@ -22,11 +22,16 @@ async function _flush($: EngineInterface, endpoint: string): Promise<string> {
   if (endpoint === '' || buffer.length === 0) {
     return `skipped (endpoint=${endpoint || 'none'}, buffered=${buffer.length})`
   }
-  const res = await $.http.fetch(endpoint, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(buffer),
-  })
+  let res: HttpResponse
+  try {
+    res = await $.http.fetch(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(buffer),
+    })
+  } catch (error) {
+    return `failed: ${error instanceof Error ? error.message : String(error)}, records=${buffer.length}`
+  }
   if (res.ok) {
     await $.store.set(BUFFER_KEY, [])
   }

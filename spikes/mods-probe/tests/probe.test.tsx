@@ -58,6 +58,17 @@ test('ターンの使用量を貯め、flush で POST して空にする', { opt
   expect(posted[0]).toContain('"cacheReadTokens":30')
 })
 
+test('送信が例外で失敗したら failed を見せて貯めたままにする', { options: { endpoint: ENDPOINT } }, async ($, on) => {
+  _world(on)
+  on('http.fetch', () => {
+    throw new Error('ECONNREFUSED')
+  })
+  await $.turn.complete(TURN as never)
+  const out = await $.command.run({ command: 'mods-probe', args: 'flush' } as never)
+  expect(out.text).toMatch(/lastFlush=failed: .*records=1/)
+  expect(out.text).toMatch(/buffered=1/)
+})
+
 test('送信先が空なら送らずに貯めたままにする', async ($, on) => {
   _world(on)
   await $.turn.complete(TURN as never)
