@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple  # noqa: E402
 from _common import (  # noqa: E402
     DEFAULT_MAX_LINE_BYTES, ArgError, inc, iter_lines, skill_files, unescape, write_json,
 )
+from _context_ops import ContextOps  # noqa: E402
 
 SCHEMA_VERSION = "1.0"
 SESSION_GAP_SECONDS = 30 * 60
@@ -52,6 +53,7 @@ RESULT_BUCKET_MAX = "ge_200k"
 LENGTH_BUCKETS = ((10, "lt_10m"), (30, "10m_30m"), (60, "30m_1h"), (180, "1h_3h"), (480, "3h_8h"))
 LENGTH_BUCKET_MAX = "ge_8h"
 SETTINGS_SCALAR_KEYS = {"effortLevel": "effort_level", "alwaysThinkingEnabled": "always_thinking_enabled"}
+AUTOCOMPACT_ENV = "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 MODEL_ALIASES = ("default", "best", "opus", "sonnet", "haiku", "fable", "opusplan")
 KNOWN_FAMILIES = ("opus", "sonnet", "haiku", "fable")
 TOP_LINE_TYPES = {
@@ -61,7 +63,7 @@ TOP_LINE_TYPES = {
 }
 TOP_FIELDS = (
     "type", "timestamp", "sessionId", "agentId", "uuid", "cwd", "version",
-    "isSidechain", "isMeta", "isCompactSummary", "message", "modelUsage",
+    "isSidechain", "isMeta", "isCompactSummary", "message", "modelUsage", "subtype", "compactMetadata",
 )
 
 EPOCH0 = datetime(1970, 1, 1, tzinfo=timezone.utc)
@@ -250,7 +252,8 @@ def read_settings(config_dir: str) -> Dict[str, Any]:
     data = _load_json_file(os.path.join(config_dir, "settings.json"))
     out: Dict[str, Any] = {"found": isinstance(data, dict), "cleanup_period_days": None, "model": None,
                            "effort_level": None, "always_thinking_enabled": None,
-                           "mcp_servers_count": None}
+                           "mcp_servers_count": None, "auto_compact_pct_override": None,
+                           "auto_compact_enabled": None}
     if not isinstance(data, dict):
         return out
     cpd = data.get("cleanupPeriodDays")
@@ -271,6 +274,12 @@ def read_settings(config_dir: str) -> Dict[str, Any]:
             out[name] = v
         elif v is not None:
             out[name] = _short_value(v)
+    env = data.get("env")
+    pct = env.get(AUTOCOMPACT_ENV) if isinstance(env, dict) else None
+    if isinstance(pct, (int, float, str)) and not isinstance(pct, bool) and re.fullmatch(r"\d{1,3}", str(pct).strip()):
+        out["auto_compact_pct_override"] = int(str(pct).strip())
+    if isinstance(data.get("autoCompactEnabled"), bool):
+        out["auto_compact_enabled"] = data["autoCompactEnabled"]
     mcp = data.get("mcpServers")
     if isinstance(mcp, dict):
         out["mcp_servers_count"] = len(mcp)
@@ -381,6 +390,7 @@ class Collector:
         self.tool_results: Dict[str, Tuple[int, float, str]] = {}
         self.seen_user: Set[str] = set()
         self.commands: Dict[str, int] = {}
+        self.ctx = ContextOps()
         self.session_ts: Dict[str, List[float]] = {}
         self.session_agents: Dict[str, Set[str]] = {}
         self.session_turns: Dict[str, int] = {}
@@ -639,6 +649,11 @@ class Collector:
             self.session_agents.setdefault(sid, set()).add(agent)
         if ltype == "user":
             self._user(vals, offs, text, parsed, sid, ts)  # type: ignore[arg-type]
+        elif ltype == "system" and vals.get("subtype") == "compact_boundary":
+            meta = parsed.get("compactMetadata") if parsed else (
+                decode_at(text, offs["compactMetadata"]) if "compactMetadata" in offs else None)
+            ver = _short_value(vals.get("version")) if vals.get("version") else "unknown"
+            self.ctx.add_boundary(str(vals.get("uuid") or ""), sid, ver, meta)
         return True
 
     def _user(self, vals: Dict[str, Any], offs: Dict[str, int], text: str,
@@ -651,8 +666,10 @@ class Collector:
             self.seen_user.add(uid)
         has_result = '"tool_result"' in text
         if "<command-name>" in text:
+            ver = _short_value(vals.get("version")) if vals.get("version") else "unknown"
             for name in RE_COMMAND.findall(text):
                 inc(self.commands, name)
+                self.ctx.add_command(name, sid, ver)
         if has_result:
             msg = parsed.get("message") if parsed else (decode_at(text, offs["message"]) if "message" in offs else None)
             self._tool_results(msg, sid, ts)
@@ -777,6 +794,8 @@ class Report:
         mcp: Dict[str, Dict[str, Any]] = {}
         api_calls = side_calls = 0
         in_period_keys: Set[str] = set()
+        model_rows: Dict[str, List[Tuple[float, str, str, str]]] = {}
+        sess_versions: Dict[str, Set[str]] = {}
         c.cov["records_after_dedup"] = len(c.records)
         c.cov["excluded_session_records"] = len(c.excluded_keys - set(c.records))
         for key in sorted(c.records):
@@ -815,6 +834,10 @@ class Report:
             lt = self._local(rec["ts"])
             inc(by_day, lt.strftime("%Y-%m-%d"))
             inc(by_hour, "%02d" % lt.hour)
+            if rec["sid"]:
+                sess_versions.setdefault(rec["sid"], set()).add(ver)
+                if not rec["side"] and rec["model"]:
+                    model_rows.setdefault(rec["sid"], []).append((rec["ts"], key, rec["model"], ver))
             s = sessions.setdefault(rec["sid"], _new_session())
             s["api_calls"] += 1
             s["sidechain_calls"] += 1 if rec["side"] else 0
@@ -846,14 +869,15 @@ class Report:
         for sid, ts_list in c.session_ts.items():
             s = sessions.setdefault(sid, _new_session())
             s["ts"] = ts_list
+        c.ctx.add_model_changes(model_rows)
         return self._assemble(totals, buckets, sessions, session_all, effort, by_version, by_day,
-                              by_hour, tools, exts, skills, mcp, api_calls, side_calls)
+                              by_hour, tools, exts, skills, mcp, api_calls, side_calls, sess_versions)
 
     def _assemble(self, totals: Dict[str, int], buckets: Dict[str, Any], sessions: Dict[str, Any],
                   session_all: Dict[str, Any], effort: Dict[str, Any], by_version: Dict[str, Any],
                   by_day: Dict[str, int], by_hour: Dict[str, int], tools: Dict[str, int],
                   exts: Dict[str, int], skills: Dict[str, int], mcp: Dict[str, Any],
-                  api_calls: int, side_calls: int) -> Dict[str, Any]:
+                  api_calls: int, side_calls: int, sess_versions: Dict[str, Set[str]]) -> Dict[str, Any]:
         c = self.c
         cov = dict(c.cov)
         bad = sum(cov["lines_unreadable"].values()) + cov["lines_oversize_skipped"]
@@ -881,6 +905,7 @@ class Report:
                        "by_version": dict(sorted(by_version.items())),
                        "note": "absent_n means not recorded (e.g. older version), not zero or low"},
             "sessions": sess_out,
+            "context_ops": c.ctx.report(len(sessions), sess_versions, self._longest(sessions)),
             "projects": self._projects(sessions),
             "tools": {"calls_by_name": _sorted_counts(tools), "file_extensions": _sorted_counts(exts),
                       "result_chars": self._result_chars(), "tool_results_dir": dict(c.tool_results_dir)},
@@ -948,6 +973,11 @@ class Report:
         out.update(tops)
         out["details"] = dict(sorted(details.items()))
         return out
+
+    @staticmethod
+    def _longest(sessions: Dict[str, Any]) -> List[Tuple[str, float, str]]:
+        ranked = sorted(sessions.items(), key=lambda kv: (-kv[1]["minutes"], kv[0]))
+        return [(sid, s["minutes"], _label("S", sid)) for sid, s in ranked]
 
     def _session_detail(self, sid: str, s: Dict[str, Any]) -> Dict[str, Any]:
         cwd = max(sorted(s["cwds"]), key=lambda k: s["cwds"][k]) if s["cwds"] else ""

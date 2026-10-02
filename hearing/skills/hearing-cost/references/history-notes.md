@@ -1,7 +1,7 @@
 # 履歴の読み方の覚え書き
 
-確認日: 2026-10-01。形を確かめたのは Claude Code 2.1.286 の実機 1 台だけ。ほかの版・OS は未確認。
-スクリプトは `scripts/collect.py`（集計本体）と `scripts/_common.py`（共通の小物）の 2 つ。数値の集計（重複排除・期間・トークン種別・ファミリー判別）は `collect` が決定的に行う。
+確認日: 2026-10-01（文脈の区切り・切り替え操作の記録は 2026-10-02）。形を確かめたのは Claude Code 2.1.286 の実機 1 台（履歴には 2.1.219 以降の版が混在）だけ。ほかの OS は未確認。
+スクリプトは `scripts/collect.py`（集計本体）・`scripts/_context_ops.py`（区切り・切り替え操作の集計）・`scripts/_common.py`（共通の小物）の 3 つ。数値の集計（重複排除・期間・トークン種別・ファミリー判別）は `collect` が決定的に行う。
 
 ## 保存先
 
@@ -69,6 +69,20 @@
 - MCP ツール名は `mcp__<サーバ名>__<ツール名>`。assistant 行には `attributionMcpServer` もある（未使用）。
 - 分類は `collect` が付ける: 名前に `:` を含む＝plugin、`<設定ディレクトリ>/skills/` の個人定義と一致＝personal、それ以外＝builtin_or_unknown。
 
+## 文脈の区切り・切り替え操作
+
+確認日 2026-10-02。実機の履歴で形を確かめたもの:
+- compact: `type:"system"`・`subtype:"compact_boundary"` の行に `compactMetadata` がある。`trigger` は `manual` / `auto`、`preTokens`（圧縮直前の文脈量）、`postTokens` ほか。手動 `/compact` の `<command-name>` の数と manual の件数が一致した。`collect` は trigger で分け、`preTokens` は auto だけ中央値・最大を出す。
+- `/clear`・`/resume`・`/model`: user 行の `<command-name>/clear</command-name>` 等（上記「スキル・MCP の記録」と同じ形）。`/clear` は新しいセッション（新しい jsonl）の先頭付近に現れる。`/model` の起動は切り替えなしでも記録されるので、`message.model` が本体の隣り合う記録で変わった回数（`model_change`）も別に数える。
+- 分岐・再開で別ファイルへ行がコピーされると、同じ `uuid` の行が複数のファイルに現れる（`forkedFrom` が付く）。`collect` は `uuid` で 1 回だけ数える。
+
+確認できなかったもの（検出しない）:
+- `/rewind`: 専用の行・コマンド記録が見つからない。同じ `parentUuid` に user 行が複数ぶら下がる例はあるが、巻き戻し以外（割り込み・やり直し）との区別がつかない。公式ドキュメントにも記録の形の記載がない。
+- `--continue`・`--resume`（起動オプション）による再開: 目印が見つからない。数えるのはセッション内の `/resume` の起動だけ。
+- `/branch`・`--fork-session`: `forkedFrom` の行コピーは見えるが、操作の回数としては数えない。
+- compact の記録が無い古い版: 版別に「セッション数」と各操作の件数を並べ（`context_ops.by_version`）、記録の有無を読み分ける。件数 0 でセッションがある版は「0 件」か「記録なし」かを断定できない。
+- 設定: `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`（1〜100 の整数だけを採る）と `autoCompactEnabled`（真偽）を `settings.json` から読む。実機の設定には両方とも無かった（値なし＝既定）。`autoCompactEnabled` は公式では `settings.json` 以外（グローバル設定）に置く可能性があり、`settings.json` に無くても無効とは限らない。
+
 ## OS 差
 
 - 文字コードは UTF-8 で読み、BOM・不正バイト・CRLF を許容する。出力も UTF-8 を明示する（日本語 Windows の既定 cp932 を避ける）。標準出力には ASCII だけを出す。
@@ -101,7 +115,7 @@
 | `coverage.coverage_ratio` | 処理できた行／全行（巨大行・壊れた行を除いた割合）。目安 0.9 未満なら「部分的な集計」 |
 | `history_range` | `oldest_ts`・`newest_ts`（期間内外を問わず履歴全体）と `files_with_lines` |
 | `retention` | `cleanup_period_days`（設定値、無ければ既定 30 と仮定し `cleanup_period_days_source` に `default_assumed`）、`history_starts_after_period_start`、`oldest_near_cleanup_cutoff`、`suspected_gap`（両方真のとき。断定ではない） |
-| `settings` | `settings.json` の `found`・`cleanup_period_days`・`model`（`alias`・`bucket`・`generation` のみ）・`effort_level`・`always_thinking_enabled`・`mcp_servers_count` |
+| `settings` | `settings.json` の `found`・`cleanup_period_days`・`model`（`alias`・`bucket`・`generation` のみ）・`effort_level`・`always_thinking_enabled`・`mcp_servers_count`・`auto_compact_pct_override`（数値。無ければ null）・`auto_compact_enabled`（真偽。無ければ null） |
 | `line_types` / `versions` | 行の種類別件数 / assistant 行の版別件数 |
 | `totals` | 期間内の `api_calls`（重複排除後の件数）、`sidechain_api_calls`、`tokens_by_type`、`active_days` |
 | `models.buckets.<名前>` | 名前はファミリー（`opus` 等や新しい語）・`other_claude`・`non_claude`・`unknown`。各々 `api_calls`、`generations`（世代別件数、例 `5-5`）、`tokens`、`by_role.main` / `by_role.sidechain`（本体 / サブエージェントごとの `api_calls`・`output_unfinalized_calls`（`stop_reason` が無く output が開始時の値の可能性がある件数）・`tokens`（5m/1h 内訳を含む）） |
@@ -111,6 +125,11 @@
 | `sessions.active_minutes` / `length_buckets` | 稼働分の合計・中央値・p90・最大 / 長さの分布。定義は `length_definition`（間隔 30 分超で分割し稼働時間を足す） |
 | `sessions.top_by_output` ほか | `top_by_output`・`top_by_cache_creation`・`top_by_input`・`top_by_cache_read`。各 5 件まで `{session, session_id, file, value, share}`（`session_id` は生の ID、`file` は設定ディレクトリからの相対パスで親セッションの jsonl（サブエージェントのファイルではない。複数ファイルなら最大寄与のもの）、share は種別の全体に対する寄与率） |
 | `sessions.details.<S-ラベル>` | 上位に出たセッションの `project`、`api_calls`、`turns`（人の入力）、`active_minutes`、`segments`、`subagents`、`sidechain_ratio`、`tokens`、`model_buckets`、`effort`、`tools`、`file_extensions` |
+| `context_ops.ops.<操作>` | 操作は `compact_manual`・`compact_auto`・`clear`・`resume_command`・`model_command`・`model_change`。各々 `total`（期間内の合計）・`sessions`（発生したセッション数）・`per_session`（合計／期間内のセッション数） |
+| `context_ops.auto_compact_pre_tokens` | `observed_n`・`median`・`max`（自動 compact の直前の文脈量。無ければ null） |
+| `context_ops.longest_sessions` | 稼働分が長い順の上位 5 件 `{session, active_minutes, ops}`（`ops` は操作別の回数） |
+| `context_ops.by_version` | 版ごとの `sessions` と操作別の件数。件数 0 の版は「記録なし」と「0 件」を区別できない |
+| `context_ops.not_detected` | 検出していない操作（`rewind`・`resume_cli_flags`・`branch`） |
 | `projects` | `count` と `top_by_output`（`label`・`sessions`・`api_calls`・`tokens`） |
 | `tools.calls_by_name` / `file_extensions` | tool 名別の呼び出し数 / ファイル系ツールの拡張子別件数（`(none)`・`(other)` あり） |
 | `tools.result_chars` | tool 結果の文字数: `count`・`chars_total`・`chars_max`・`buckets`・`by_tool`（`count`・`chars`）・`top_max_by_tool`（最大文字数の上位 5 ツール `{tool, chars_max}`） |
