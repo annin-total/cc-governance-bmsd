@@ -22,11 +22,9 @@ Mods（関数フック、Claude Code v2.1.287 で GA）を governance プラグ�
 | 6 | `classic.Stop` | 既存の settings hook | 併走して `next(e)` で既存 hook を止めないか |
 | 7 | `$.store` ＋ `$.http.fetch` ＋ `$.clock.every` | spool ＋ sender | 貯めて送れるか、送信失敗で止まらないか |
 | 8 | `$.ui.status` ＋ `$.session.usage()` | statusline.js | 外部プロセスなしで状態行を出せるか |
-| 9 | `ui.render`（AbovePrompt）＋ `$.state` | なし（新規） | バンドの表示と操| 済（3c5ed48。利用者の mod が classic hook を握り潰し・本文を偽れる、`$.store` の同一キーは並行で更新が消える） |
-| 10 | `userConfig` | config.json | 設定値の受け渡| 済（ディレクトリ型は元ディレクトリから実行、型は書かれない、利用者 settings の `prependPlugins` で tier prepend） |
-| 11 | `-p`（非対話）での発火 | CLAUDE_CODE_ENTRYPOINT での判別 | 非対話でも hook が動く| G3a に含めた |
-| 11a | G3a（対話＋`-p`）: ホットリロード、握り潰せる classic イベントの範囲 | サブエージェント | 済（c480fa3。リロードは実用的。governance が使う 9 イベントすべて握り潰せる） |
-| 11b | G3b（隔離 config）: prepend の守りの mod で握り潰しを防げるか、`plugin.register` での拒否 | サブエージェント | |
+| 9 | `ui.render`（AbovePrompt）＋ `$.state` | なし（新規） | バンドの表示と操作 |
+| 10 | `userConfig` | config.json | 設定値の受け渡し |
+| 11 | `-p`（非対話）での発火 | CLAUDE_CODE_ENTRYPOINT での判別 | 非対話でも hook が動くか |
 
 ## ワークフロー
 
@@ -76,3 +74,5 @@ Desktop・VS Code、managed settings）は対象外。
 | 11a | G3a（対話＋`-p`）: ホットリロード、握り潰せる classic イベントの範囲 | サブエージェント | 済（c480fa3。リロードは実用的。governance が使う 9 イベントすべて握り潰せる） |
 | 11b | G3b（隔離 config）: prepend に置いた守りの mod で握り潰しを防げるか、`plugin.register` での拒否 | サブエージェント | 済（利用者 tier の mod には効く。利用者が settings を書き換えれば外せる。正当な観測 mod も巻き添え。守りの mod は `spikes/mods-guard/`） |
 | 12 | 結果の追記、`docs/` への昇格 | サブエージェント・監督 | |
+- 第 2 段の状態を書き込む置換が、観点の表の同じ番号の行（9〜11）にも当たって表を壊していた（5c8ecbe）。行頭の番号で
+  照合する置換は、番号が重複する表では使わない。表を元に戻した
