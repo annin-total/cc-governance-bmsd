@@ -38,7 +38,7 @@ metadata:
 
 | 段階 | やること | 完了条件 |
 |---|---|---|
-| 1 準備・環境検出 | 引数を解釈し、Python・設定ディレクトリ・期間・開始時刻（UTC）・自セッション ID（取れれば）・氏名を取る。`init` で実行フォルダ `<run>` と `<work>` を作り、`references/progress-template.md` から `<work>/progress.md` を置く | 上記が決まり、`<run>`・`<work>` と progress.md がある |
+| 1 準備・環境検出 | 引数を解釈し、Python・設定ディレクトリ・期間・開始時刻（UTC）・氏名を取る。`init` で実行フォルダ `<run>` と `<work>` を作り、`references/progress-template.md` から `<work>/progress.md` を置く | 上記が決まり、`<run>`・`<work>` と progress.md がある |
 | 2 集計 | `collect` を実行する | 集計 JSON とカバー率が `<work>` にある。`coverage.coverage_ratio` が 0.9 未満なら「結論の冒頭に『部分的な集計』と書く」を progress.md に記録した |
 | 3 観点別分析 | 集計 JSON をもとに観点を発散させ、重そうな要因を選ぶ。必要なら履歴を読む（下記） | 重い寄りの要因が大きい順に 1〜数件、確度付きで `analysis.md` にある。無ければ「目立つ要因なし」と書いてある |
 | 4 要約提示とヒアリング | 要約を見せ、固定質問から始めて、回答と所見に応じて深掘りの質問を続ける | 重い要因ごとに「業務上必要そう／避けられそう／判断できない」を判断できる材料が得られ、答えの要点を記録した（答えたくない・分からない場合はその旨を記録して次へ） |
@@ -52,7 +52,7 @@ metadata:
 
 **段階 4**: このスキルの本体は、履歴の数字では分からない「なぜその使い方か」を本人に聞くこと。質問は必要な作業なので、必要なだけ尋ねる。ただし 1 回に 1〜3 問、短く答えやすくする。分析中に履歴だけでは判断できないことが出たら、その場で尋ねてもよい。進め方と質問の例は `references/interview-questions.md`。回答は長い逐語引用を避け、要点を一般用語で「利用者談」として記録する。必要なら固有名詞を最小限含めてよい。回答が得られなかった項目は、調書の制約欄にその旨を書く（「利用者談」と書かない）。WSL とネイティブの履歴が両方あるように見えたら、どちらを対象にするか尋ねる。
 
-**段階 5**: 見出しと文章の細部は任せる。冗長にせず 1〜2 ページを目安にする。書き方は `references/report-template.md` の指針に従う（基本は一般用語で具体的に。抽象化しすぎない）。末尾の来歴にはスキル版（frontmatter の `metadata.version`）、Claude Code 版（集計 JSON の `versions`）、参照情報の確認日を書く。
+**段階 5**: 見出しと文章の細部は任せる。冗長にせず 1〜2 ページを目安にする。書き方は `references/report-template.md` の指針に従う（基本は一般用語で具体的に。抽象化しすぎない）。集計 JSON に無い観測（jsonl で確かめたことなど）は、根拠を本文に一言添える（検証役には集計 JSON と下書きしか渡らないため）。末尾の来歴にはスキル版（frontmatter の `metadata.version`）、Claude Code 版（集計 JSON の `versions`）、参照情報の確認日を書く。
 
 **段階 6**: 検証役の指摘を直す（再検証は最大 1 回）。秘密の混入は必ず消してから配置する。それ以外で残った指摘は調書末尾の注意書きに残す。
 
@@ -87,12 +87,11 @@ metadata:
 
 標準出力の 1 行 JSON から `run_dir`（`<run>`）と `work_dir`（`<work>`）を取る。`<run>` は `<root>/hearing-cost/<YYYYMMDD-HHMM>/`（同名があれば `-2` …）で、`<root>/hearing-cost/.gitignore`（`*`）が無ければ作られる。終了コード 2 なら `<root>` に作れない（`hearing-cost` が別物など）ので、理由を伝えて利用者に置き場を尋ねる。
 `<start>` は日数なら `<end>` から N 日前の UTC 時刻、期間なら開始日 `YYYY-MM-DDT00:00:00`（ローカル。`--local-tz` で解釈される）。期間の終了日の翌日 0 時が `<end>` より前ならそれを終端にする。
-`${CLAUDE_SESSION_ID}` が実際の ID に置換されていれば（空、または `${` を含むままなら未置換）`--exclude-session` に渡す。未置換でも開始時刻での打ち切りで足りる。
 
 **collect**（引数はパスと値だけにする）:
 
 ```
-<py> <skill>/scripts/collect.py collect --config-dir <cfg> --start <start> --end <end> --out <work>/collect.json --local-tz [--exclude-session ${CLAUDE_SESSION_ID}]
+<py> <skill>/scripts/collect.py collect --config-dir <cfg> --start <start> --end <end> --out <work>/collect.json --local-tz
 ```
 
 検証を終えた下書きを、段階 7 で `<run>` へコピーする（`<work>` にも残るが、`<run>` 直下の調書が正本）。

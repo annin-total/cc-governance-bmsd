@@ -42,6 +42,7 @@
 - 同じキーの行は、トークン項目ごとに最大値を取ってまとめる（値が小さい行が先に来ても、順序に関係なく同じ結果になる）。
 - ファイル・サブエージェント・sidechain をまたいで 1 回だけ数える。実機では assistant 行のおよそ 3 分の 2 が重複だった。
 - 既知の限界: ストリーミング途中の行で `requestId` が片方にしか無いと別キー扱いになり、二重に数えうる。`coverage.dedup_*` で件数だけ見える。
+- 再開したセッション: 元の会話が新しいセッションの jsonl に複製され、重複排除で本体の行が片方（先に見た側）に寄る。合計は正しいが、元のセッションが `turns: 0` かつ `sidechain_ratio: 1.0` になる。元の jsonl に user 行があれば再開を疑い、「人の入力がない自動実行」と読まない。
 
 ## 巨大行
 
@@ -108,7 +109,7 @@
 | `coverage.dedup_fallback_uuid` / `dedup_no_key` | uuid で代用した行数 / キーが無く 1 行 1 件とした数 |
 | `coverage.synthetic_lines` / `usage_missing_lines` | 除外した `<synthetic>` 行 / usage が無い・壊れた行（0 とみなす） |
 | `coverage.records_out_of_period` / `records_timestamp_missing` | 期間外の件数 / timestamp が無い・読めない件数 |
-| `coverage.excluded_session_lines` / `excluded_session_records` | `--exclude-session` で外した行数・件数 |
+| `coverage.excluded_session_lines` / `excluded_session_records` | `--exclude-session` で外した行数・件数（スキルの手順では使わない） |
 | `coverage.user_lines_duplicate` | 同じ uuid の user 行の重複 |
 | `coverage.records_timestamp_out_of_range` | 2020 年より前・現在の翌日より後の timestamp を採らず、不明扱いにした行数 |
 | `coverage.projects_dir_found` / `walk_errors` | `projects/` の有無 / 歩けなかったフォルダ数 |
@@ -131,7 +132,7 @@
 | `context_ops.by_version` | 版ごとの `sessions` と操作別の件数。件数 0 の版は「記録なし」と「0 件」を区別できない |
 | `context_ops.not_detected` | 検出していない操作（`rewind`・`resume_cli_flags`・`branch`） |
 | `projects` | `count` と `top_by_output`（`label`・`sessions`・`api_calls`・`tokens`） |
-| `tools.calls_by_name` / `file_extensions` | tool 名別の呼び出し数 / ファイル系ツールの拡張子別件数（`(none)`・`(other)` あり） |
+| `tools.calls_by_name` / `file_extensions` | tool 名別の呼び出し数 / 入力に `file_path`・`notebook_path` を持つツールすべて（Read・Write・Edit など）の拡張子別件数。読み込みと書き込みを区別しない（`(none)`・`(other)` あり） |
 | `tools.result_chars` | tool 結果の文字数: `count`・`chars_total`・`chars_max`・`buckets`・`by_tool`（`count`・`chars`）・`top_max_by_tool`（最大文字数の上位 5 ツール `{tool, chars_max}`） |
 | `tools.tool_results_dir` | `tool-results/` のファイル数と合計バイト |
 | `skills.skill_tool.<名前>` | Skill ツールの呼び出し数と `classification` |
