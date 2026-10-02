@@ -60,3 +60,16 @@ Mods（関数フック、Claude Code v2.1.287 で GA）を governance プラグ�
     「no command.run hook answered it」という誤解を招く文言になる。セッションは壊れず、buffer も残る → 段階 5b で修正
   - `$.store` は `~/.claude/plugins/store/<plugin>_<id>-<hash>.json` の 1 ファイル。`-p` のプロセスを跨いで残る
   - `--plugin-dir` で読むと、エンジンが mod 直下に `tsconfig.json` を書く。`tsc -p .` がそのまま通るのでリポジトリに含める
+
+## 第 2 段（未検証事項のうち、この Mac で今すぐ確かめられるもの）
+
+方針: 本物の `~/.claude` は書き換えない方法を優先する（`--plugin-dir`・`--settings`・隔離 `CLAUDE_CONFIG_DIR`）。
+書き換えが必要になったら、先に `~/.claude` 全体の複製を取る。この Mac では確かめられないもの（Bedrock 認証、Windows、
+Desktop・VS Code、managed settings）は対象外。
+
+| 段階 | 内容 | 担当 | 状態 |
+|---|---|---|---|
+| 9 | G1（`-p`、実 config）: ツール失敗の計数、サブエージェントのターンと usage、localhost 以外への fetch、`disableAllHooks`、利用者の mod による classic hook の握り潰し・改変、`$.store` の並行書き込み、`e.usage` と transcript の usage の一致 | サブエージェント | |
+| 10 | G2（隔離 config、未ログイン）: ローカルのマーケットプレイス経由の導入、キャッシュと本体の書き込み、版の更新、ユーザー設定の `prependPlugins` | サブエージェント | |
+| 11 | G3（対話、tmux）: ホットリロード | サブエージェント | |
+| 12 | 結果の追記、`docs/` への昇格 | サブエージェント・監督 | |
