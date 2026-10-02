@@ -1,10 +1,6 @@
-/* 基準を超えた利用者のカードの下段（over.js）と、比較用のチップの色・切り替え（compare.js）。比較用の赤だけ tokens.css に無い値を持つ */
-:root {
-  --cmp-worse-bg: #f1e0e5; /* 要確認の札（--ng のれんが色）と色相をずらした赤 */
-  --cmp-worse-ink: #8a2c4b;
-}
+/* 基準を超えた利用者のカードの下段（over.js） */
 .card[data-ref^="over_"] .k-sub { word-break: keep-all; }
-.ov-moves { display: flex; flex-wrap: wrap; gap: var(--sp-xs); }
+.ov-moves { display: flex; flex-wrap: wrap; gap: var(--sp-xs); font-size: var(--fs-sm); }
 .ov-moves .change { margin-right: 0; }
 .ov-name { font-size: var(--fs-xs); color: var(--muted); }
 .ov-prev { margin-left: var(--sp-2xs); font-size: var(--fs-xs); color: var(--muted); }
@@ -36,16 +32,6 @@
 
 .srow > .ov-moves { grid-column: 1 / -1; }
 
-.change.p-br.better { background: var(--chip-up); color: var(--chip-up-ink); }
-.change.p-gr.better { background: var(--ok-bg); color: var(--ok); }
-.change.p-br.worse, .change.p-gr.worse { background: var(--cmp-worse-bg); color: var(--cmp-worse-ink); }
-.change.p-blue.better { background: var(--chip-up); color: var(--accent); font-weight: 400; }
-.change.p-blue.worse { background: var(--chip-up); color: var(--chip-up-ink); }
-
-.cmp-bar { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: var(--sp-xs); margin-top: var(--sp-s); font-size: var(--fs-xs); color: var(--muted); }
-.cmp-bar > span { margin-right: var(--sp-xs); }
-.cmp-bar a { padding: 0 var(--sp-s); border: 1px dashed var(--rule); border-radius: var(--r-s); color: var(--muted); text-decoration: none; }
-.cmp-bar a[aria-current] { border-style: solid; border-color: var(--muted); color: var(--ink); font-weight: 600; }
 .k-viz:has(> .ov-duo) { flex: 1; margin-top: var(--sp-xs); padding-top: 0; grid-template-rows: auto auto 1fr; }
 .k-viz:has(> .ov-duo) > .cap { align-self: end; }
 .card[data-ref="over_rows"] .k-viz { flex: 1; grid-template-rows: auto 1fr; }

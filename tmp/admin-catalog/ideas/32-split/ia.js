@@ -32,7 +32,7 @@
       { id: "policy", title: "設定の適用状況", data: "fixed.r3.policy", lead: "配布した設定と更新が、利用者に行き渡っているか",
         groups: [
           ["設定", ["all_applied", "off_users", "not_introduced", "setting_rates"]],
-          ["版", ["core_outdated", "plugin_outdated"]],
+          ["バージョン", ["core_outdated", "plugin_outdated"]],
         ],
         tabs: ["policy_users", "policy_settings", "versions"] },
       { id: "effect", title: "設定の効果", data: "fixed.effect", lead: "設定を守り始めた前後で、セッションの大きさとコストはどう並ぶか",

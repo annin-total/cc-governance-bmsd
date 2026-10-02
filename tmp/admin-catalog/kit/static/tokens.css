@@ -41,11 +41,12 @@
   --sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", system-ui, sans-serif;
   --fig: "Avenir Next", "Helvetica Neue", "Segoe UI", var(--sans);
   --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  /* 文字の大きさは 5 段（12・14・16・22・40px）。枠は使う場所ごとに分け、値は段のどれかを割り当てる */
   --fs: 14px;
-  --fs-label: 13px;
+  --fs-label: 14px;
   --fs-sm: 12px;
-  --fs-xs: 11px;
-  --fs-unit: 15px;
+  --fs-xs: 12px;
+  --fs-unit: 16px;
   --fs-h1: 22px;
   --fs-h2: 16px;
   --fs-val: 40px;

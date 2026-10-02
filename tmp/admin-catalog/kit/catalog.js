@@ -25,7 +25,8 @@
     const w = W[winId];
     if (!w || (winId !== base && w.base !== base)) fail(`群「${s.label}」の窓 ${winId} はカードの窓 ${base} と合わない`);
     const out = cards.map((c) => (w.fixed && !c.long ? { ...c, long: SAME } : c));
-    return { id: s.id || `g${i + 1}`, label: s.label, win: winId, scope: w.scope, longScope: w.fixed ? w.scope : w.longScope, data: w.data, note: s.note, cards: out };
+    return { id: s.id || `g${i + 1}`, label: s.label, win: winId, scope: w.scope, longScope: w.fixed ? w.scope : w.longScope,
+      brief: w.brief, longBrief: w.fixed ? w.brief : w.longBrief, data: w.data, note: s.note, cards: out };
   }
 
   function tabOf(id) {
@@ -81,19 +82,16 @@
     return out;
   }
 
-  // 概況 { id, title, lead, home: true, summary, groups: [群] }。カードは専用ページの定義をそのまま使い、押すと専用ページのタブへ移る
+  // 概況 { id, title, lead, home: true, summary, groups: [群] }。群は並びと窓だけを決め、見出しは出さない（page.js の homeHtml）。
+  // カードは専用ページの定義をそのまま使い、押すと専用ページのタブへ移る
   function home(def, pages) {
     const where = (id) => pages.find((p) => p.groups.some((g) => g.cards.some((c) => c.ref === id)));
-    const look = KIT.look.get();
     const groups = def.groups.map((spec, i) => {
       const g = group(spec, i);
       const from = g.cards.map((c) => where(c.ref));
       g.cards.forEach((c, j) => { if (!from[j]) fail(`概況のカード ${c.ref} が専用ページに無い`); });
       const cards = g.cards.map((c, j) => (from[j] ? linked(from[j].groups.flatMap((x) => x.cards).find((x) => x.ref === c.ref), from[j]) : c));
-      const owners = [...new Set(from.filter(Boolean))];
-      const own = (Array.isArray(spec) ? spec[2] || {} : spec).ownTitle; // ownTitle: groupTitle が window でも群の名前を見出しにする
-      return { ...g, id: `home-${i + 1}`, label: look.groupTitle === "window" && !own ? W[g.win].name : g.label, cards,
-        links: look.pageLink ? owners.map((p) => ({ title: p.title, href: pageHref(p) })) : [] };
+      return { ...g, id: `home-${i + 1}`, cards };
     });
     noDuplicates("概況", groups.flatMap((g) => g.cards.map((c) => c.ref)));
     return { ...def, periods: def.periods ?? true, groups, tabs: [] };

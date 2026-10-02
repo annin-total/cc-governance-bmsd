@@ -24,7 +24,7 @@ $SP/venv/bin/python data/build_data.py --server $SP/server --db $SP/biased.db
 | --- | --- |
 | 利用者の型 | よく使う 6 人・普段使う 12 人・たまに使う 10 人・ほぼ使わない 8 人・未導入 4 人。未導入とほぼ使わない人にも利用明細のコストはある。4 人は 35〜160 日前に使うのをやめる |
 | コスト | 利用明細の最後の 7 日だけ、よく使う人と普段使う人のコストを 1.3 倍にする（`RECENT_BUMP`）。7 日のコストは注意（1 営業日あたり +13.4%）、28 日と月末の見込みは前より下がる（改善） |
-| 版 | 利用者ごとに版をそろえ、本体 5 人・プラグイン 8 人だけを古い版にする（`OLD_CORE`・`OLD_PLUGIN`）。直近 30 日の対象では本体 4 人・プラグイン 7 人 |
+| バージョン | 利用者ごとにバージョンをそろえ、本体 5 人・プラグイン 8 人だけを古いバージョンにする（`OLD_CORE`・`OLD_PLUGIN`）。直近 30 日の対象では本体 4 人・プラグイン 7 人 |
 | 呼び出し・モデル・セッション | スキルは一部の人だけ、コマンドは `compact`・`clear`・`resume` が多い。Opus はよく使う人の約 7 割。しきい値を守る前後で自動コンパクトに達する大きさが変わる |
 | 暦日 | 週末は記録が平日の 15%、利用明細が 12% の確率で出る |
 
@@ -45,6 +45,6 @@ $SP/venv/bin/python data/build_data.py --server $SP/server --db $SP/biased.db
 | `p[7・28].r3.over` | 基準を超えた利用者（`extras_r3_over.py`）。区分（7 日は `day`・`week`、28 日は `month`）ごとに `users`・`prev_users`・`delta`・`new`・`left`・`ng`・`warn`・`prev_*`・`ng_delta`・`ok`・`all_users`・`user_share`・`cost_share`・`state`・`top`（上位 3 人）。`spans`・`state`（区分の最も重いもの）・`rows`（`over_users` の行。利用者 × 区分）・`row_users` |
 | `p.7.r3` | `silent`（`went_silent` の人数・前・差と `user_delivery` の行）・`errors`（利用者数の行と状態）・`nulls`（状態） |
 | `fixed.r3.forecast` | 月末の見込みの前月の実績との `change`・`state` |
-| `fixed.r3.policy` | 利用者単位の適用状況。`users`（状態・設定ごとの点・最も古い本体とプラグインの版・`tags`）・`items`（`off_users` を足す）・`counts`・`states`・`core`・`plugin`（`latest`・`outdated`・`parts`・`state`）・`versions` |
+| `fixed.r3.policy` | 利用者単位の適用状況。`users`（状態・設定ごとの点・最も古い本体とプラグインのバージョン・`tags`）・`items`（`off_users` を足す）・`counts`・`states`・`core`・`plugin`（`latest`・`outdated`・`parts`・`state`）・`versions` |
 | `fixed.r3.summaries` | サマリーの見本 3 件（`summaries.py`）。`body` が null の 1 件は、キットが概況から下書きを作る |
 | `fixed.policy`・`fixed.effect`・`fixed.effect2`・`fixed.m`・`fixed.settings` | サーバの集計（適用状況・設定の効果・データと設定）と、適用前後のセッションの大きさ・利用明細の鮮度 |

@@ -1,5 +1,5 @@
 "use strict";
-// 案 33 まとめて厚く（concepts.md 6 章）。31 から、利用者・呼び出し・セッション・設定の適用・版を 1 枚ずつにまとめる。チップに語を添え、絞り込みは隠す。
+// 案 33 まとめて厚く（concepts.md 6 章）。31 から、利用者・呼び出し・セッション・設定の適用・バージョンを 1 枚ずつにまとめる。チップに語を添え、絞り込みは隠す。
 (() => {
   const { build } = window.CATALOG;
   window.IA = build({
@@ -32,7 +32,7 @@
       { id: "policy", title: "設定の適用状況", data: "fixed.r3.policy", lead: "配布した設定と更新が、利用者に行き渡っているか",
         groups: [
           ["設定", ["applied_all", "setting_rates"]],
-          ["版", ["outdated_all"]],
+          ["バージョン", ["outdated_all"]],
         ],
         tabs: ["policy_users", "policy_settings", "versions"] },
       { id: "effect", title: "設定の効果", data: "fixed.effect", lead: "設定を守り始めた前後で、セッションの大きさとコストはどう並ぶか",

@@ -15,9 +15,9 @@
     },
     okMark: false, // 正常にも灰の「正常」の札を出す
     filter: "dim", // 絞り込みで該当しないカードを dim（薄くする）か hide（隠す）
-    groupTitle: "group", // 概況の群の見出し: group（群の名前）か window（窓の名前）
-    pageLink: true, // 概況の群の見出しの右に専用ページへの入口
     pack: true, // 窓の違う小さな群（2 列以下）が続くとき 1 行に並べる。false で 1 群 1 行を出す
+    asofAt: "header", // 基準日の置き場: header（ヘッダーの「時点」）・page（ページ内）・range（期間の表示を押す）・step（ヘッダーに前後の送り）
+    fs: "F5", // 文字の大きさの段の組（F5 のほかは compare.css）
   };
 
   let current = DEFAULTS;
@@ -47,7 +47,7 @@
     return chipHtml(text, t);
   }
 
-  // 増減のチップの部品。t は better・worse・neutral（基準を超えた利用者の「新たに該当」「外れた」も使う）
+  // 増減のチップの部品。t は better・worse・neutral（基準を超えた利用者の「新規」「離脱」も使う）
   function chipHtml(text, t) {
     const o = current.delta;
     const cls = o.worseOnly && t !== "worse" ? "plain" : o.color === "none" ? "neutral" : o.color === "better" && t === "worse" ? "neutral" : t;

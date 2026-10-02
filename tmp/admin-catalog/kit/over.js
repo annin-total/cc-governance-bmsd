@@ -1,12 +1,12 @@
 "use strict";
-// 基準を超えた利用者のカードの下段（catalog_over.js の viz.kind）。src は r3[over][区分]（人数・前・新たに該当・外れた・上位）。
+// 基準を超えた利用者のカードの下段（catalog_over.js の viz.kind）。src は r3[over][区分]（人数・前・新規・離脱・上位）。
 (() => {
   const K = window.KIT;
   const { esc, lookup } = K;
   const TONES = ["ng", "warn"]; // 要確認・注意の順に並べる
   const L = () => K.L;
 
-  // 新たに該当（悪化の向き）・外れた（改善の向き）。増減のチップと同じ部品
+  // 新規（悪化の向き）・離脱（改善の向き）。増減のチップと同じ部品
   function moves(s) {
     const chip = (n, label, tone) => K.look.chipHtml(`${label} ${K.num(n)} 人`, n ? tone : "neutral");
     return `<span class="ov-moves">${chip(s.new, L().OVER_KIND.new, "worse")}${chip(s.left, L().OVER_KIND.left, "better")}</span>`;

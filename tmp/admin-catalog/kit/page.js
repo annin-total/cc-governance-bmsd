@@ -25,10 +25,9 @@
     const scope = long ? g.longScope || K.L.LONG_SCOPE : g.scope || "";
     const note = [...notLong, g.note ? fill(g.note, ctx) : ""].filter(Boolean).join(" ");
     const label = fill(g.label, ctx);
-    const links = (g.links || []).map((l) => `<a class="glink" href="${esc(l.href)}">${esc(K.L.OPEN_PAGE.replace("{}", l.title))}</a>`).join("");
     const scopeText = fill(scope, ctx) === label ? "" : fill(scope, ctx); // 見出しと同じ語なら重ねて出さない
     const style = span ? ` style="grid-column: span ${span}; --cols: ${span}"` : "";
-    return `<section class="group${span ? " packed" : ""}" aria-label="${esc(label)}"${style}><h2 class="glabel">${esc(label)}<span>${esc(scopeText)}</span>${links}</h2>`
+    return `<section class="group${span ? " packed" : ""}" aria-label="${esc(label)}"${style}><h2 class="glabel">${esc(label)}<span>${esc(scopeText)}</span></h2>`
       + (cards.length ? `<div class="cards">${cards.map((c) => K.card.cardHtml(c, ctx)).join("")}</div>` : "")
       + (note ? `<p class="gnote">${esc(note)}</p>` : "") + "</section>";
   }
@@ -66,10 +65,19 @@
     return out;
   }
 
+  // 概況: 群の見出しを出さず、カードを群の順に 1 つの格子へ流す。見出し「主な指標」の横に、カードの窓の期間を 1 行で
+  function homeHtml(page, ctxOf, long) {
+    const groups = (page.groups || []).map((g) => ({ g, ctx: ctxOf(g), cards: shownCards(g, long) })).filter((x) => x.cards.length);
+    const briefs = [...new Set(groups.map(({ g, ctx }) => fill((long ? g.longBrief : g.brief) || "", ctx)).filter(Boolean))];
+    const cards = groups.flatMap(({ cards: cs, ctx }) => cs.map((c) => K.card.cardHtml(c, ctx))).join("");
+    return `<div class="kpis"><section class="group home-cards" aria-label="${K.L.HOME_CARDS}"><h2 class="glabel">${K.L.HOME_CARDS}<span>${esc(briefs.join(" · "))}</span></h2>`
+      + `<div class="cards">${cards}</div></section></div>`;
+  }
+
   function screenHtml(page, ctxOf, long) {
     return `<div class="kpis">${rows(page.groups || [], long).map((r) => (r.length > 1
       ? `<div class="group-row">${r.map((g) => groupHtml(g, ctxOf, long, spanOf(g, long))).join("")}</div>` : groupHtml(r[0], ctxOf, long))).join("")}</div>${detailHtml(page.tabs, ctxOf, long)}`;
   }
 
-  window.KIT = Object.assign(window.KIT || {}, { page: { screenHtml, pick, fits, SAME } });
+  window.KIT = Object.assign(window.KIT || {}, { page: { screenHtml, homeHtml, pick, fits, SAME } });
 })();

@@ -1,5 +1,5 @@
 """案の検査: (1) 同じページに同じカードが 2 回出ない (2) 基準を超えた利用者の区分が期間のタブに合う (3) 設計 2 章の全カード・全タブが目録にある
-(4) 状態の判定が閾値の「以上」で動き、データの札が判定と合う。
+(4) 状態の判定が閾値の「以上」で動き、データの札が判定と合う (5) 概況の見出し・使わない語・文字の大きさ（check_screen.py）。
 
 使い方: python kit/check.py ideas/NN-<slug>（playwright の入った Python で）。1 つでも外れたら終了コード 1。
 """
@@ -16,8 +16,11 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "data"))
 import judge  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import check_screen  # noqa: E402
+
 PERIODS = ("7", "28", "12m")
-IA_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods), over: (p.groups || []).some((g) => g.cards.some((c) => /^over_/.test(c.ref))) }))"
+IA_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods), home: Boolean(p.home), over: (p.groups || []).some((g) => g.cards.some((c) => /^over_/.test(c.ref))) }))"
 REFS_JS = "Array.from(document.querySelectorAll('main .card[data-ref]')).map((c) => c.dataset.ref)"
 # 基準を超えた利用者: 期間ごとに出してよい区分（7 日＝日次・週次、28 日＝月次、12 か月は出さない）。区分を 1 枚にまとめたカードは行の見出しで見る
 OVER_SPANS = {"7": {"day", "week"}, "28": {"month"}, "12m": set()}
@@ -50,6 +53,7 @@ def _dom(idea: Path) -> list:
         for pg in pages:
             for period in PERIODS if pg["periods"] else (None,):
                 page.goto(f"{base}?page={pg['id']}" + (f"&period={period}" if period else ""))
+                problems += check_screen.page_problems(page, f"{pg['id']} {period or ''}", pg["home"])
                 refs = page.evaluate(REFS_JS)
                 dup = [k for k, n in Counter(refs).items() if n > 1]
                 if dup:
@@ -114,7 +118,7 @@ def _data() -> list:
 
 def main() -> None:
     idea = Path(sys.argv[1]).resolve()
-    problems = _thresholds() + _data() + _dom(idea)
+    problems = _thresholds() + _data() + check_screen.static_fonts() + _dom(idea)
     for p in problems:
         print(p)
     print("すべて合格" if not problems else f"{len(problems)} 件の問題")

@@ -1,12 +1,12 @@
 "use strict";
-// サマリーの部品: 概況の先頭の最新 1 件・一覧（データと設定の書き出すと同じ形のアコーディオン）・作成と編集のフォーム・下書き。
+// サマリーの部品: 概況の先頭の最新 1 件（見出しはタイトル）・一覧（データと設定の書き出すと同じ形のアコーディオン）・作成と編集のフォーム・下書き。
 // 下書きは概況のカードのうち注意・要確認のものを 1 行ずつ並べる（期間は 7 日）。本文が null の見本は、この下書きを本文にする。
 (() => {
   const K = window.KIT;
   const { esc, fill } = K;
   const WEEK = 7;
   const W = {
-    latest: "サマリー", list: "一覧", asofNote: "基準日 {asof:md} の値 · 作成 {created:day}", edit: "編集",
+    list: "一覧へ", asofNote: "基準日 {asof:md} の値 · 作成 {created:day}", edit: "編集",
     head: ["作成日", "タイトル", "基準日", "更新日", ""], empty: "サマリーはまだありません。",
     fields: { asof: "基準日", title: "タイトル", body: "本文" }, draft: "下書きを作る", save: "保存", back: "一覧に戻る",
     title: "週次サマリー（{from:md}〜{asof:md}）", bullet: "・",
@@ -36,13 +36,13 @@
   function latest() {
     const s = all()[0];
     if (!s) return "";
-    return `<section class="group summary-latest" aria-label="${W.latest}"><h2 class="glabel">${W.latest}<a class="glink" href="?page=summary">${esc(K.L.OPEN_PAGE.replace("{}", W.list))}</a></h2>`
-      + `<div class="panel sum-panel"><p class="sum-title">${esc(s.title)}</p><p class="sum-body">${esc(bodyOf(s))}</p><p class="note">${esc(fill(W.asofNote, s))}</p></div></section>`;
+    return `<section class="group summary-latest" aria-label="${esc(s.title)}"><h2 class="glabel">${esc(s.title)}<span>${esc(fill(W.asofNote, s))}</span>`
+      + `<a class="glink" href="${esc(K.basedate.keep("?page=summary"))}">${W.list}</a></h2><div class="panel sum-panel"><p class="sum-body">${esc(bodyOf(s))}</p></div></section>`;
   }
 
   function list() {
     const rows = all().map((s) => `<details class="m-item"><summary class="m-row"><span class="m-month">${esc(K.day(s.created))}</span><span class="sum-name">${esc(s.title)}</span>`
-      + `<span class="num">${esc(K.md(s.asof))}</span><span class="num">${esc(K.day(s.updated))}</span><a class="btn-sub" href="?page=summary_edit&amp;id=${esc(s.id)}">${W.edit}</a></summary>`
+      + `<span class="num">${esc(K.md(s.asof))}</span><span class="num">${esc(K.day(s.updated))}</span><a class="btn-sub" href="${esc(K.basedate.keep(`?page=summary_edit&id=${s.id}`))}">${W.edit}</a></summary>`
       + `<p class="sum-body sum-open">${esc(bodyOf(s))}</p></details>`).join("");
     return `<div class="months sum-list" data-testid="summaries"><div class="m-row m-head">${W.head.map((h, i) => `<span${i > 1 && i < 4 ? ' class="num"' : ""}>${esc(h)}</span>`).join("")}</div>${rows}</div>`
       + (all().length ? "" : `<p class="empty">${W.empty}</p>`);
@@ -57,7 +57,7 @@
       + `<label>${W.fields.asof}<input type="date" value="${K.day(asof)}" min="${K.day(window.DATA.meta.first_day + 27)}" max="${K.day(today)}" data-sum-asof></label>`
       + `<label class="grow">${W.fields.title}<input type="text" value="${esc(s ? s.title : titleOf(asof))}" data-sum-title></label>`
       + `<label class="full">${W.fields.body}<textarea rows="12" data-sum-body>${esc(body)}</textarea></label>`
-      + `<div class="sum-actions"><button type="button" class="btn-sub" data-sum-draft>${W.draft}</button><button type="submit" class="btn">${W.save}</button><a class="sum-back" href="?page=summary">${W.back}</a></div>`
+      + `<div class="sum-actions"><button type="button" class="btn-sub" data-sum-draft>${W.draft}</button><button type="submit" class="btn">${W.save}</button><a class="sum-back" href="${esc(K.basedate.keep("?page=summary"))}">${W.back}</a></div>`
       + `</form><p class="note">${esc(W.note)}</p>`;
   }
 

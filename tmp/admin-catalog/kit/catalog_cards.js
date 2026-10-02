@@ -8,18 +8,21 @@
   const PREV = "前の {period[days]} 日";
   const RECENT = "直近 {period[days]} 日";
 
-  // 窓。data は群の値の根、fixed は期間に依らない窓（12 か月でも同じに出す）、base は同じ種類の窓（期間を固定した写し）
+  // 窓。data は群の値の根、fixed は期間に依らない窓（12 か月でも同じに出す）、base は同じ種類の窓（期間を固定した写し）。
+  // brief は概況の「主な指標」の横に並べる期間（無い窓はカードの見出しで読める）
   const W = {
-    bill: { name: "利用明細", scope: "利用明細 {r3[cost][start]:md}〜{r3[cost][end]:md} と前の {period[days]} 日 · 利用明細にコストがあった利用者",
-      longScope: "利用明細 直近 {period[months]} か月（{r3[cost][start]:day}〜{r3[cost][end]:day}）· 週と暦月 · 前の期間と比べない" },
-    month: { name: "今月", fixed: true, scope: "{month[month]:ym} · 利用明細の最終日（{month[as_of]:md}）まで · 前月の実績と比べる" },
-    rec: { name: "記録", scope: "直近 {period[days]} 日（{period[start]:md}〜{period[end]:md}）と前の {period[days]} 日 · 記録を送った利用者", longScope: "記録" },
-    rec7: { name: "受信", base: "rec", data: "p.7", fixed: true, scope: "直近 7 日（{period[start]:md}〜{period[end]:md}）と前の 7 日 · 記録を送った利用者 · 期間は選べません" },
-    match7: { name: "照合", data: "p.7", fixed: true, scope: "利用明細の最終日までの 7 日 · 記録と利用明細の突き合わせ · 期間は選べません" },
-    p30: { name: "設定の報告", data: "fixed.r3.policy", fixed: true,
+    bill: { scope: "利用明細 {r3[cost][start]:md}〜{r3[cost][end]:md} と前の {period[days]} 日 · 利用明細にコストがあった利用者",
+      longScope: "利用明細 直近 {period[months]} か月（{r3[cost][start]:day}〜{r3[cost][end]:day}）· 週と暦月 · 前の期間と比べない",
+      brief: "利用明細 {r3[cost][start]:md}〜{r3[cost][end]:md}", longBrief: "利用明細 {r3[cost][start]:ym}〜{r3[cost][end]:md}" },
+    month: { fixed: true, scope: "{month[month]:ym} · 利用明細の最終日（{month[as_of]:md}）まで · 前月の実績と比べる" },
+    rec: { scope: "直近 {period[days]} 日（{period[start]:md}〜{period[end]:md}）と前の {period[days]} 日 · 記録を送った利用者", longScope: "記録",
+      brief: "記録 {period[start]:md}〜{period[end]:md}" },
+    rec7: { base: "rec", data: "p.7", fixed: true, brief: "受信 直近 7 日", scope: "直近 7 日（{period[start]:md}〜{period[end]:md}）と前の 7 日 · 記録を送った利用者 · 期間は選べません" },
+    match7: { data: "p.7", fixed: true, scope: "利用明細の最終日までの 7 日 · 記録と利用明細の突き合わせ · 期間は選べません" },
+    p30: { data: "fixed.r3.policy", fixed: true, brief: "設定の報告 直近 {POLICY_DAYS} 日",
       scope: "直近 {POLICY_DAYS} 日 · 利用者ごとに最新の報告（端末が複数なら最も遅れた値）· 対象は{basis:basis} {denominator:num} 人" },
-    study: { name: "しきい値の前後", data: "fixed.effect", fixed: true, scope: "{REFERENCE_KEY:setting}を {REFERENCE_VALUE} にした前後 {EVENT_STUDY_SPAN} 日 · しきい値を守り始めた利用者 · 前後の境は各利用者が守り始めた日" },
-    now: { name: "利用明細の鮮度", fixed: true, scope: "現時点 · 取り込んだ利用明細" },
+    study: { data: "fixed.effect", fixed: true, scope: "{REFERENCE_KEY:setting}を {REFERENCE_VALUE} にした前後 {EVENT_STUDY_SPAN} 日 · しきい値を守り始めた利用者 · 前後の境は各利用者が守り始めた日" },
+    now: { fixed: true, scope: "現時点 · 取り込んだ利用明細" },
   };
 
   const DAILY_CAP = "日ごと · 濃い棒が直近 {period[days]} 日";
@@ -65,9 +68,9 @@
       long: { label: "利用明細にいた利用者", unit: "人", tabs: ["months", "user_cost"], value: `{${C3("users")}:num}`, sub: "期間にコストがあった人", viz: MONTHS_BARS("users"), cap: ["暦月ごとの人数"] } },
     new_users: { win: "bill", label: "使い始めた利用者", unit: "人", tabs: ["user_cost"], value: "{m[new_user_count]:num}", sub: "利用明細に初めてコストが出た人",
       long: { label: "使い始めた利用者", unit: "人", tabs: ["months", "user_cost"], value: "{m[new_user_count]:num}", sub: "利用明細に初めてコストが出た人", viz: MONTHS_BARS("new_users"), cap: ["暦月ごとの人数"] } },
-    retention: { win: "bill", label: "継続率", unit: "%", tabs: ["user_cost"], value: "{m[retention_rate]:dec1}", sub: "前の {period[days]} 日から離れた {m[left_users]:count} 人",
+    retention: { win: "bill", label: "継続率", unit: "%", tabs: ["user_cost"], value: "{m[retention_rate]:dec1}", sub: "前の {period[days]} 日からの離脱 {m[left_users]:count} 人",
       viz: { kind: "meter", src: "m[retention_rate]", den: 100, tone: "ok" }, cap: ["前の期間の利用者のうち、今も使った割合"],
-      long: { label: "継続率", unit: "%", tabs: ["months", "user_cost"], value: "{m[retention_rate]:dec1}", sub: "{m[retention_month]:ym} · 前の月から離れた {m[left_users]:count} 人",
+      long: { label: "継続率", unit: "%", tabs: ["months", "user_cost"], value: "{m[retention_rate]:dec1}", sub: "{m[retention_month]:ym} · 前の月からの離脱 {m[left_users]:count} 人",
         viz: { kind: "bars", src: "m[retention_rows]", field: "rate", fmt: "dec1", tipLabel: "{day:ym}" }, cap: ["暦月ごと · 前の月の利用者のうち、その月も使った割合"] } },
 
     // ---- 案ごとの分け方（案 32: 合計と 1 営業日あたりを別のカードに）----

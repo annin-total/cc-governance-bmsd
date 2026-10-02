@@ -1,16 +1,16 @@
 "use strict";
-// 案 36 概況を広く（concepts.md 6 章）。概況に 4 枚足して窓ごとの群にし、正常の札と前の値を出す。専用ページは基準を超えた利用者の見せ方のほかは案 31 と同じ。
+// 案 36 概況を広く（concepts.md 6 章）。概況に 4 枚足し、正常の札と前の値を出す。専用ページは基準を超えた利用者の見せ方のほかは案 31 と同じ。
 (() => {
   const { build } = window.CATALOG;
   window.IA = build({
     id: "36-wide-home", name: "案 36 概況を広く",
-    look: { delta: { prev: true }, okMark: true, groupTitle: "window" },
+    look: { delta: { prev: true }, okMark: true },
     pages: [
       { id: "home", title: "概況", home: true, summary: true, lead: "コスト・利用者・設定の適用の要点と、注意・要確認の点",
         groups: [
           ["コストと利用者", ["cost", "per_user_bd", "model_mix", "billed_users"]],
           ["今月", ["forecast"]],
-          ["基準を超えた利用者", ["over_day_band", "over_week_band", "over_month_band"], { ownTitle: true }],
+          ["基準を超えた利用者", ["over_day_band", "over_week_band", "over_month_band"]],
           ["利用状況", ["prompts_per_person_day", "skill_calls"]],
           ["設定の適用", ["all_applied", "off_users", "not_introduced", "core_outdated", "plugin_outdated"]],
           ["収集", ["plugin_errors"], { win: "rec7" }],
@@ -33,7 +33,7 @@
       { id: "policy", title: "設定の適用状況", data: "fixed.r3.policy", lead: "配布した設定と更新が、利用者に行き渡っているか",
         groups: [
           ["設定", ["all_applied", "off_users", "not_introduced", "setting_rates"]],
-          ["版", ["core_outdated", "plugin_outdated"]],
+          ["バージョン", ["core_outdated", "plugin_outdated"]],
         ],
         tabs: ["policy_users", "policy_settings", "versions"] },
       { id: "effect", title: "設定の効果", data: "fixed.effect", lead: "設定を守り始めた前後で、セッションの大きさとコストはどう並ぶか",

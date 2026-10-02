@@ -1,5 +1,5 @@
 "use strict";
-// 第 3 弾で足した操作: 状態の絞り込み（?filter= で初期値）・基準日の指定（?asof= に移る）・サマリーの下書きとタイトルの既定。
+// 第 3 弾で足した操作: 状態の絞り込み（?filter= で初期値）・基準日の指定（?asof= に移る。basedate.js）・サマリーの下書きとタイトルの既定。
 (() => {
   const K = window.KIT;
   const all = (root, sel) => Array.from(root.querySelectorAll(sel));
@@ -35,16 +35,21 @@
     if (first && MATCH[first]) applyFilter(bar, first);
   }
 
-  // 基準日: 今日（データの最終日）なら外し、範囲外は既定に戻す
+  // 基準日: 選んだ日へ移る（今日と範囲外は外す）。期間の表示のボタンは、隣の隠れた日付の欄の選択を開く
   function setupAsof() {
-    const input = document.querySelector("[data-asof]");
-    if (!input) return;
-    input.addEventListener("change", () => {
-      const url = new URL(location.href);
-      const v = input.value;
-      if (!v || v === input.max || v > input.max || v < input.min) url.searchParams.delete("asof"); else url.searchParams.set("asof", v);
-      location.href = url.toString();
-    });
+    for (const input of all(document, "[data-asof]")) {
+      input.addEventListener("change", () => {
+        const v = input.value;
+        const d = !v || v > input.max || v < input.min ? Infinity : Date.parse(v) / 86400000;
+        location.href = K.basedate.hrefAt(d);
+      });
+    }
+    for (const b of all(document, "[data-asof-open]")) {
+      b.addEventListener("click", () => {
+        const input = b.parentElement.querySelector("[data-asof]");
+        try { input.showPicker(); } catch (e) { input.focus(); }
+      });
+    }
   }
 
   function setupSummaryForm() {

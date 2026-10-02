@@ -37,7 +37,7 @@
     Object.entries(VARIANTS).forEach(([name, make]) => { K[`over_${s}_${name}`] = make(s, c); });
   });
 
-  // 33: 1 枚に区分の行をまとめる（行ごとに要確認・注意の人数と札、新たに該当・外れた）
+  // 33: 1 枚に区分の行をまとめる（行ごとに要確認・注意の人数と札、新規・離脱）
   K.over_rows = {
     win: "bill", label: "基準を超えた利用者", unit: "人", longWhy: LONG_WHY, tabs: ["over_users"], state: "r3[over][state]",
     why: SPANS.filter((s) => PERIOD_OF[s] === "7").map((s) => `${L.OVER_SPAN[s]} 要確認 {${O(s, "ng")}:num}・注意 {${O(s, "warn")}:num} 人`).join("、"),

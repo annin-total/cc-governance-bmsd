@@ -23,7 +23,7 @@
     return card.href !== undefined ? `href="${esc(`${card.href}#${hash}`)}"` : `href="#${esc(card.tab)}" data-open="${esc(hash)}"`;
   };
 
-  // 行ごとの札を持つ内訳（まとめたカード）: 見出し・値・札。moves があれば行の下に新たに該当・外れたのチップ
+  // 行ごとの札を持つ内訳（まとめたカード）: 見出し・値・札。moves があれば行の下に新規・離脱のチップ
   function stateRows(card, ctx) {
     return `<span class="srows">${card.viz.rows.filter(K.page.fits).map((r) => {
       const t = r.state ? lookup(ctx, r.state) || "" : "";
