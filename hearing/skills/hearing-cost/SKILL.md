@@ -119,5 +119,5 @@ work（絶対パス）: <work>
 - 段階 1: `references/progress-template.md`（progress.md の型。守ることの要約はそのまま使ってよい）
 - 段階 2〜3: `references/history-notes.md`（集計 JSON のスキーマと各項目の意味。実データと食い違ったら実データを優先）
 - 段階 3: `references/lens-seeds.md`（観点の種）。モデル ID が接頭辞付き・ARN・「不明」が多いときは `references/bedrock.md`
-- 段階 4: `references/interview-questions.md`（ヒアリングの進め方、固定質問 4 問、深掘りの例、記録のしかた）
+- 段階 4: `references/interview-questions.md`（ヒアリングの進め方、固定質問 4 問（履歴で見えた自動実行の確認を含む）、深掘りの例、記録のしかた）
 - 段階 5〜6: `references/report-template.md`（調書の型と書き方の指針）

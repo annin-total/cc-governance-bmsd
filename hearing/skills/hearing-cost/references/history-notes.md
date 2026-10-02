@@ -1,6 +1,6 @@
 # 履歴の読み方の覚え書き
 
-確認日: 2026-10-01（文脈の区切り・切り替え操作の記録は 2026-10-02）。形を確かめたのは Claude Code 2.1.286 の実機 1 台（履歴には 2.1.219 以降の版が混在）だけ。ほかの OS は未確認。
+確認日: 2026-10-01（文脈の区切り・切り替え操作・自動実行の記録は 2026-10-02）。形を確かめたのは Claude Code 2.1.286 の実機 1 台（履歴には 2.1.219 以降の版が混在）だけ。ほかの OS は未確認。
 スクリプトの入口は `scripts/collect.py`（CLI）。集計の本体は同じフォルダの `_` で始まるモジュール（走査・行の処理・出力の組み立て・区切り・切り替え操作の集計など）に分かれる。数値の集計（重複排除・期間・トークン種別・ファミリー判別）は `collect` が決定的に行う。実行ごとの作業フォルダは `_workspace.py`（`init`）が作る。
 
 ## 保存先
@@ -84,6 +84,22 @@
 - compact の記録が無い古い版: 版別に「セッション数」と各操作の件数を並べ（`context_ops.by_version`）、記録の有無を読み分ける。件数 0 でセッションがある版は「0 件」か「記録なし」かを断定できない。
 - 設定: `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`（1〜100 の整数だけを採る）と `autoCompactEnabled`（真偽）を `settings.json` から読む。実機の設定には両方とも無かった（値なし＝既定）。`autoCompactEnabled` は公式では `settings.json` 以外（グローバル設定）に置く可能性があり、`settings.json` に無くても無効とは限らない。
 
+## 無人・自動実行の記録
+
+確認日 2026-10-02。実機 1 台の履歴（2.1.219〜2.1.287）で形を確かめたもの:
+- `entrypoint`: assistant・user・system・attachment のすべての行のトップレベルにあり、全行に付いていた。値は `cli`（対話）・`sdk-cli`（`claude -p`）・`sdk-py`（Agent SDK）・`claude-desktop`。確認した範囲ではセッション内で値は変わらなかった。セッションの値は期間内で最も早い行の値とし、混在したセッション数を `mixed_sessions` に出す。記録の無いセッションは `not_recorded`。
+- `turnOrigin`・`promptSource`: user 行のトップレベルだけ（assistant・system には無い）。tool 結果の行・sidechain の行には付かず、一部の user 行にだけ付く。`turnOrigin` は 2.1.278 以降、`promptSource` は 2.1.219 以降の版で見えた。`turnOrigin` の値は `human`・`sdk`・`peer`・`task_notification`・`scheduled`、`promptSource` の値は `typed`・`sdk`・`system`・`queued`・`suggestion_accepted`。同じセッションの中で値は変わる。
+- 定期実行系: assistant 行の tool_use の `name` が `ScheduleWakeup`（`/loop` の自己ペース）・`CronCreate`・`CronList`・`CronDelete`。user 行の `<command-name>/loop</command-name>`。
+- `collect` は user 行のうち tool 結果でも sidechain でもないものを対象に、記録のある行（`observed_n`）とない行（`absent_n`）を分けて数える。版別に対象行数と記録のある行数を `turn_origin.by_version` に出す。
+
+確認できなかったもの（意味は決めない）:
+- `turnOrigin`・`promptSource` の各値が何を指すか（`scheduled` が `ScheduleWakeup`・cron のどちら起点か、`system` や `peer` が何か）。値のとおりに数えるだけで、「無人」と断定しない。
+- user 行の `origin`（`kind` などを持つオブジェクト）。本文を含みうるので読まない。
+- `/schedule` の起動（この履歴には記録が無かった。形は `/loop` と同じ `<command-name>` と想定）。
+- `Monitor` ツール（見えたが、自動実行かどうかは決められないので数えない）。
+- `entrypoint` が記録されない版（この履歴では全行にあった）。ほかの OS・版は未確認。
+- 端末の外（CI・クラウドの定期実行・ほかの端末・Web 版・別アカウント）の実行は履歴に残らないので、固定質問で聞く。OS のスケジューラ（crontab・launchd・タスク スケジューラ）やプロセスは確認しない。
+
 ## OS 差
 
 - 文字コードは UTF-8 で読み、BOM・不正バイト・CRLF を許容する。出力も UTF-8 を明示する（日本語 Windows の既定 cp932 を避ける）。標準出力には ASCII だけを出す。
@@ -131,6 +147,9 @@
 | `context_ops.longest_sessions` | 稼働分が長い順の上位 5 件 `{session, active_minutes, ops}`（`ops` は操作別の回数） |
 | `context_ops.by_version` | 版ごとの `sessions` と操作別の件数。件数 0 の版は「記録なし」と「0 件」を区別できない |
 | `context_ops.not_detected` | 検出していない操作（`rewind`・`resume_cli_flags`・`branch`） |
+| `automation.entrypoint` | `by_entrypoint.<値>`（`sessions`・`api_calls`・`tokens`（種別ごと、合算しない））。値は `cli`・`sdk-cli`・`sdk-py`・`claude-desktop` ほか、記録の無いセッションは `not_recorded`。`mixed_sessions`（期間内で値が混在したセッション数） |
+| `automation.turn_origin` | `turn_origin`・`prompt_source` それぞれの `observed_n`・`absent_n`（記録なし。0 ではない）・`values`（user 行単位）、`by_version.<版>`（`user_lines`・`turn_origin_observed`・`prompt_source_observed`） |
+| `automation.schedule` | `tools.<ScheduleWakeup・CronCreate・CronDelete・CronList>` の `calls`・`sessions`（発生したセッション数）、`commands.<loop・schedule>`（`<command-name>` の起動回数） |
 | `projects` | `count` と `top_by_output`（`label`・`sessions`・`api_calls`・`tokens`） |
 | `tools.calls_by_name` / `file_extensions` | tool 名別の呼び出し数 / 入力に `file_path`・`notebook_path` を持つツールすべて（Read・Write・Edit など）の拡張子別件数。読み込みと書き込みを区別しない（`(none)`・`(other)` あり） |
 | `tools.result_chars` | tool 結果の文字数: `count`・`chars_total`・`chars_max`・`buckets`・`by_tool`（`count`・`chars`）・`top_max_by_tool`（最大文字数の上位 5 ツール `{tool, chars_max}`） |

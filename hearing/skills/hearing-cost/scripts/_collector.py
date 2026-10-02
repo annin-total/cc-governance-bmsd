@@ -10,6 +10,7 @@ from _base import (
     MIN_TS, MODEL_USAGE_FIELDS, RE_ASSISTANT, TOP_FIELDS, TS_FUTURE_MARGIN_SECONDS, _int, _zero_type_tokens,
     parent_session_file,
 )
+from _automation import Automation
 from _common import inc, iter_lines
 from _context_ops import ContextOps
 from _parse import classify_model, parse_ts, top_fields
@@ -47,6 +48,7 @@ class Collector(RecordMixin):
         self.seen_user: Set[str] = set()
         self.commands: Dict[str, int] = {}
         self.ctx = ContextOps()
+        self.auto = Automation()
         self.session_ts: Dict[str, List[float]] = {}
         self.session_agents: Dict[str, Set[str]] = {}
         self.session_turns: Dict[str, int] = {}

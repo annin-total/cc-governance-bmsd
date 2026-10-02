@@ -158,6 +158,7 @@ class Report(ReportSectionsMixin):
                        "note": "absent_n means not recorded (e.g. older version), not zero or low"},
             "sessions": sess_out,
             "context_ops": c.ctx.report(len(sessions), sess_versions, self._longest(sessions)),
+            "automation": c.auto.report(sessions, tools, c.commands),
             "projects": self._projects(sessions),
             "tools": {"calls_by_name": _sorted_counts(tools), "file_extensions": _sorted_counts(exts),
                       "result_chars": self._result_chars(), "tool_results_dir": dict(c.tool_results_dir)},

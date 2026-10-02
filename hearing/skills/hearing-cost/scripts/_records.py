@@ -41,6 +41,7 @@ class RecordMixin:
         if sid and self._in_period(ts):
             self.session_ts.setdefault(sid, []).append(ts)  # type: ignore[arg-type]
             inc(self.session_files.setdefault(sid, {}), self.cur_file)
+            self.auto.add_entrypoint(sid, ts, d.get("entrypoint"))  # type: ignore[arg-type]
             agent = d.get("agentId")
             if isinstance(agent, str) and agent:
                 self.session_agents.setdefault(sid, set()).add(agent)
@@ -135,6 +136,7 @@ class RecordMixin:
         agent = vals.get("agentId")
         if isinstance(agent, str) and agent:
             self.session_agents.setdefault(sid, set()).add(agent)
+        self.auto.add_entrypoint(sid, ts, vals.get("entrypoint"))
         if ltype == "user":
             self._user(vals, offs, text, parsed, sid, ts)  # type: ignore[arg-type]
         elif ltype == "system" and vals.get("subtype") == "compact_boundary":
@@ -161,9 +163,13 @@ class RecordMixin:
         if has_result:
             msg = parsed.get("message") if parsed else (decode_at(text, offs["message"]) if "message" in offs else None)
             self._tool_results(msg, sid, ts)
-        elif not (vals.get("isMeta") is True or vals.get("isSidechain") is True
-                  or vals.get("isCompactSummary") is True):
-            self.session_turns[sid] = self.session_turns.get(sid, 0) + 1
+        else:
+            if vals.get("isSidechain") is not True:
+                ver = _short_value(vals.get("version")) if vals.get("version") else "unknown"
+                self.auto.add_user(vals, ver)
+            if not (vals.get("isMeta") is True or vals.get("isSidechain") is True
+                    or vals.get("isCompactSummary") is True):
+                self.session_turns[sid] = self.session_turns.get(sid, 0) + 1
 
     def _tool_results(self, msg: Any, sid: str, ts: float) -> None:
         if not isinstance(msg, dict) or not isinstance(msg.get("content"), list):

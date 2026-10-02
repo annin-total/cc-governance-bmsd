@@ -51,6 +51,7 @@ TOP_LINE_TYPES = {
 TOP_FIELDS = (
     "type", "timestamp", "sessionId", "agentId", "uuid", "cwd", "version",
     "isSidechain", "isMeta", "isCompactSummary", "message", "modelUsage", "subtype", "compactMetadata",
+    "entrypoint", "turnOrigin", "promptSource",
 )
 
 EPOCH0 = datetime(1970, 1, 1, tzinfo=timezone.utc)
