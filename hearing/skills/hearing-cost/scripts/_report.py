@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Set, Tuple
 
 from _base import (
     DEFAULT_CLEANUP_DAYS, RETENTION_NEAR_DAYS, SCHEMA_VERSION, TOKEN_TYPES, _add_tokens, _new_role,
-    _new_session, _short_value, _sorted_counts, _tri, _tri_add, _zero_tokens,
+    _new_session, _short_value, _sorted_counts, _tri, _tri_add, _zero_tokens, _zero_type_tokens,
 )
 from _collector import Collector
 from _common import inc
@@ -54,7 +54,7 @@ class Report(ReportSectionsMixin):
             rec = c.records[key]
             cls = classify_model(rec["model"])
             fam = cls["bucket"] or "unknown"
-            sa = session_all.setdefault(rec["sid"], {}).setdefault(fam, {k: 0 for k in TOKEN_TYPES})
+            sa = session_all.setdefault(rec["sid"], {}).setdefault(fam, _zero_type_tokens())
             for k in TOKEN_TYPES:
                 sa[k] += rec["u"][k]
             if rec["ts"] is None:

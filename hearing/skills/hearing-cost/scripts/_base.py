@@ -6,7 +6,7 @@ import hashlib
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from _common import inc
 
@@ -106,6 +106,10 @@ def _zero_tokens() -> Dict[str, int]:
     return {k: 0 for k in ALL_TOKEN_KEYS}
 
 
+def _zero_type_tokens() -> Dict[str, int]:
+    return {k: 0 for k in TOKEN_TYPES}
+
+
 def _add_tokens(dst: Dict[str, int], src: Dict[str, int]) -> None:
     for k in ALL_TOKEN_KEYS:
         dst[k] = dst.get(k, 0) + src.get(k, 0)
@@ -164,6 +168,11 @@ def _tri_add(t: Dict[str, Any], v: Optional[str]) -> None:
     else:
         t["observed_n"] += 1
         inc(t["values"], v)
+
+
+def _ranked(d: Dict[str, Any], value: Callable[[Any], Any]) -> List[Tuple[str, Any]]:
+    """値の降順・キーの昇順に並べた (キー, 値) の列。"""
+    return sorted(d.items(), key=lambda kv: (-value(kv[1]), kv[0]))
 
 
 def _sorted_counts(d: Dict[str, int]) -> Dict[str, int]:

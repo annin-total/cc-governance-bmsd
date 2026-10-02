@@ -7,7 +7,7 @@ import os
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from _base import (
-    MIN_TS, MODEL_USAGE_FIELDS, RE_ASSISTANT, TOKEN_TYPES, TOP_FIELDS, TS_FUTURE_MARGIN_SECONDS, _int,
+    MIN_TS, MODEL_USAGE_FIELDS, RE_ASSISTANT, TOP_FIELDS, TS_FUTURE_MARGIN_SECONDS, _int, _zero_type_tokens,
     parent_session_file,
 )
 from _common import inc, iter_lines
@@ -189,7 +189,7 @@ class Collector(RecordMixin):
             if not isinstance(vals, dict):
                 continue
             bucket = classify_model(model)["bucket"] or "unknown"
-            t = snap.setdefault(bucket, {k: 0 for k in TOKEN_TYPES})
+            t = snap.setdefault(bucket, _zero_type_tokens())
             for k, f in MODEL_USAGE_FIELDS.items():
                 t[k] += _int(vals.get(f))
         prev = self.cost_state.get(sid)

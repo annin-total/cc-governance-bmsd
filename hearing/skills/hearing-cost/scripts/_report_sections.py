@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Set, Tuple
 
 from _base import (
     LENGTH_BUCKET_MAX, LENGTH_BUCKETS, RESULT_BUCKET_MAX, RESULT_BUCKETS, TOKEN_TYPES, TOP_N, _add_tokens,
-    _bucket, _label, _percentile, _sorted_counts, _zero_tokens,
+    _bucket, _label, _percentile, _ranked, _sorted_counts, _zero_tokens, _zero_type_tokens,
 )
 from _common import inc
 from _parse import session_length
@@ -29,7 +29,7 @@ class ReportSectionsMixin:
         tops: Dict[str, List[Dict[str, Any]]] = {}
         for ttype, name in (("output", "top_by_output"), ("cache_creation", "top_by_cache_creation"),
                             ("input", "top_by_input"), ("cache_read", "top_by_cache_read")):
-            ranked = sorted(sessions.items(), key=lambda kv: (-kv[1]["tokens"][ttype], kv[0]))[:TOP_N]
+            ranked = _ranked(sessions, lambda s: s["tokens"][ttype])[:TOP_N]
             tops[name] = []
             for sid, s in ranked:
                 if s["tokens"][ttype] <= 0:
@@ -53,11 +53,11 @@ class ReportSectionsMixin:
 
     @staticmethod
     def _longest(sessions: Dict[str, Any]) -> List[Tuple[str, float, str]]:
-        ranked = sorted(sessions.items(), key=lambda kv: (-kv[1]["minutes"], kv[0]))
+        ranked = _ranked(sessions, lambda s: s["minutes"])
         return [(sid, s["minutes"], _label("S", sid)) for sid, s in ranked]
 
     def _session_detail(self, sid: str, s: Dict[str, Any]) -> Dict[str, Any]:
-        cwd = max(sorted(s["cwds"]), key=lambda k: s["cwds"][k]) if s["cwds"] else ""
+        cwd = _main_cwd(s)
         return {"project": _label("P", cwd) if cwd else None, "api_calls": s["api_calls"],
                 "turns": self.c.session_turns.get(sid, 0), "active_minutes": round(s["minutes"], 1),
                 "segments": s["segments"], "subagents": len(self.c.session_agents.get(sid, set())),
@@ -72,12 +72,12 @@ class ReportSectionsMixin:
             s = sessions[sid]
             if not s["cwds"]:
                 continue
-            cwd = max(sorted(s["cwds"]), key=lambda k: s["cwds"][k])
+            cwd = _main_cwd(s)
             p = proj.setdefault(_label("P", cwd), {"sessions": 0, "api_calls": 0, "tokens": _zero_tokens()})
             p["sessions"] += 1
             p["api_calls"] += s["api_calls"]
             _add_tokens(p["tokens"], s["tokens"])
-        ranked = sorted(proj.items(), key=lambda kv: (-kv[1]["tokens"]["output"], kv[0]))[:TOP_N]
+        ranked = _ranked(proj, lambda v: v["tokens"]["output"])[:TOP_N]
         return {"count": len(proj), "label_rule": "P- + first 8 hex of sha256(cwd)",
                 "top_by_output": [dict(label=k, **v) for k, v in ranked]}
 
@@ -100,7 +100,7 @@ class ReportSectionsMixin:
             t["count"] += 1
             t["chars"] += n
             max_by_tool[name] = max(max_by_tool.get(name, 0), n)
-        top_max = sorted(max_by_tool.items(), key=lambda kv: (-kv[1], kv[0]))[:TOP_N]
+        top_max = _ranked(max_by_tool, lambda v: v)[:TOP_N]
         return {"count": count, "chars_total": total, "chars_max": mx, "buckets": dist,
                 "top_max_by_tool": [{"tool": k, "chars_max": v} for k, v in top_max],
                 "by_tool": dict(sorted(by_tool.items(), key=lambda kv: (-kv[1]["chars"], kv[0])))}
@@ -128,18 +128,12 @@ class ReportSectionsMixin:
             if sid not in period_sessions:
                 continue
             n += 1
-            for fam, toks in self.c.cost_state[sid].items():
-                dst = cs.setdefault(fam, {k: 0 for k in TOKEN_TYPES})
-                for k in TOKEN_TYPES:
-                    dst[k] += toks[k]
-            for fam, toks in session_all.get(sid, {}).items():
-                dst = tr.setdefault(fam, {k: 0 for k in TOKEN_TYPES})
-                for k in TOKEN_TYPES:
-                    dst[k] += toks[k]
+            _add_by_family(cs, self.c.cost_state[sid])
+            _add_by_family(tr, session_all.get(sid, {}))
         by_family = {}
         for fam in sorted(set(cs) | set(tr)):
-            a = cs.get(fam, {k: 0 for k in TOKEN_TYPES})
-            b = tr.get(fam, {k: 0 for k in TOKEN_TYPES})
+            a = cs.get(fam, _zero_type_tokens())
+            b = tr.get(fam, _zero_type_tokens())
             by_family[fam] = {"cost_state": a, "transcript": b,
                               "outside_transcript": {k: a[k] - b[k] for k in TOKEN_TYPES},
                               "only_in_cost_state": fam not in tr}
@@ -149,3 +143,15 @@ class ReportSectionsMixin:
                         "sidechain output_tokens in transcripts is often a start-of-stream value "
                         "(see models.buckets.*.by_role.sidechain.output_unfinalized_calls), so a large "
                         "output gap is expected; money fields are discarded"}
+
+
+def _main_cwd(s: Dict[str, Any]) -> str:
+    """記録が最も多い cwd（同数ならキーの昇順で先）。無ければ空文字。"""
+    return max(sorted(s["cwds"]), key=lambda k: s["cwds"][k]) if s["cwds"] else ""
+
+
+def _add_by_family(dst: Dict[str, Dict[str, int]], src: Dict[str, Dict[str, int]]) -> None:
+    for fam, toks in src.items():
+        d = dst.setdefault(fam, _zero_type_tokens())
+        for k in TOKEN_TYPES:
+            d[k] += toks[k]
