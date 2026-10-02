@@ -37,6 +37,12 @@ test('Bash の目印入りコマンドだけを拒否する', async ($, on) => {
   expect(passed.deny).toBeUndefined()
 })
 
+test('Bash ガードが例外を投げたら拒否する', async ($, on) => {
+  on('tool.call', () => ({ result: 'ok' }) as never)
+  const denied = await $.tool.call({ tool: 'Bash' } as never)
+  expect(denied.deny).toMatch(/ガードが失敗/)
+})
+
 test('ターンの使用量を貯め、flush で POST して空にする', { options: { endpoint: ENDPOINT } }, async ($, on) => {
   _world(on)
   const posted: string[] = []
