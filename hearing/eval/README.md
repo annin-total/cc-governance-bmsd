@@ -22,7 +22,7 @@ cd hearing/eval && python3 -m unittest discover -s tests
 - [ ] 一時フォルダのパス（作業フォルダが OS の一時領域に作られ、所有者のみ読める）
 - [ ] CRLF・cp932（日本語 Windows で出力が化けない。CRLF の履歴を読める）
 - [ ] 権限プロンプトの回数（初回から調書の配置までの回数を記録。履歴の jsonl の Read を含む）
-- [ ] 調書の配置（作業ディレクトリのルートに `claude-code-hearing_<氏名>_<YYYYMMDD>.md` が 1 ファイルだけ。既存なら `_2`）
+- [ ] 調書の配置（起動したプロジェクトのルートに `claude-code-hearing_<氏名>_<YYYYMMDD>.md` が 1 ファイルだけ。既存なら `_2`）
 - [ ] cleanup 引数（あるときだけ削除を提案。無いときは何もしない）
 - [ ] WSL とネイティブの履歴が両方あるときに利用者へ尋ねるか（Windows のみ）
 
