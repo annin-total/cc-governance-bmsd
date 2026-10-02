@@ -1,8 +1,8 @@
-"""文脈の区切り・切り替え操作（compact・clear・resume・model）の回数を集計する。collect.py から呼ばれる。"""
+"""文脈の区切り・切り替え操作（compact・clear・resume・model）の回数を集計する。_collector.py から呼ばれる。"""
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 from _common import inc
 

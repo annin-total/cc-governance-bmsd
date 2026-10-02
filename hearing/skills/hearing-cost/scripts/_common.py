@@ -1,4 +1,4 @@
-"""collect.py が使う小物。"""
+"""collect 系のモジュールが共通で使う小物。"""
 
 from __future__ import annotations
 
