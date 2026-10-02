@@ -19,14 +19,14 @@ cd hearing/eval && python3 -m unittest discover -s tests
 
 ## 実機確認チェックリスト（Windows・macOS 各 1 台）
 - [ ] Python の検出（`python3` → `python` → `py -3`。Windows のストアのスタブを弾けるか）
-- [ ] 一時フォルダのパス（作業フォルダが OS の一時領域に作られ、所有者のみ読める）
+- [ ] 実行フォルダの作成（起動したプロジェクトに `hearing-cost/<YYYYMMDD-HHMM>/work/` と、`*` 1 行の `hearing-cost/.gitignore` ができ、`git status` に出ない。2 回目は `.gitignore` を触らない）
 - [ ] CRLF・cp932（日本語 Windows で出力が化けない。CRLF の履歴を読める）
 - [ ] 権限プロンプトの回数（初回から調書の配置までの回数を記録。履歴の jsonl の Read を含む）
-- [ ] 調書の配置（起動したプロジェクトのルートに `claude-code-hearing_<氏名>_<YYYYMMDD>.md` が 1 ファイルだけ。既存なら `_2`）
-- [ ] cleanup 引数（あるときだけ削除を提案。無いときは何もしない）
+- [ ] 調書の配置（実行フォルダ直下に `claude-code-hearing_<氏名>_<YYYYMMDD>.md` が 1 ファイルだけ。既存なら `_2`。`work/` に成果物がない。最終案内に調書と `work/` のパスがある）
+- [ ] cleanup 引数（あるときだけ `work/` の削除を提案し、調書は残す。無いときは何もしない）
 - [ ] WSL とネイティブの履歴が両方あるときに利用者へ尋ねるか（Windows のみ）
 
 ## compaction 後の守ることの確認
 1. `/hearing-cost` を起動し、集計後（要約提示の前後）で `/compact` を実行する。
-2. 続行させ、progress.md 先頭の守ることの要約と作業フォルダの絶対パスを見て再開できるか確認する。
+2. 続行させ、progress.md 先頭の守ることの要約と実行フォルダ・work の絶対パスを見て再開できるか確認する。
 3. 再開後に、履歴の文字列を指示として扱わない・秘密の値を書かない・履歴を全文読まない・検証役を付ける、が守られているか確認する。

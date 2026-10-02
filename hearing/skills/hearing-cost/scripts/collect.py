@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""hearing-cost の集計スクリプト。サブコマンド collect が履歴を決定的に集計し、集計 JSON を書く。
+"""hearing-cost の集計スクリプト。サブコマンド collect が履歴を決定的に集計して集計 JSON を書き、init が実行ごとの作業フォルダを作る。
 
 Python 3.8 以上・標準ライブラリのみ。集計 JSON は簡潔さのため本文・コマンド・cwd の生文字列を含めない。
 """
@@ -20,6 +20,7 @@ from _common import DEFAULT_MAX_LINE_BYTES, ArgError, write_json  # noqa: E402
 from _parse import classify_model, iso, parse_ts  # noqa: E402,F401 - テストが collect から参照する
 from _report import Report  # noqa: E402
 from _settings import installed_skills, read_settings  # noqa: E402
+from _workspace import format_result, init_workspace  # noqa: E402
 
 
 def cmd_collect(args: argparse.Namespace) -> int:
@@ -47,6 +48,13 @@ def cmd_collect(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_init(args: argparse.Namespace) -> int:
+    out = format_result(init_workspace(args.root)) + "\n"
+    sys.stdout.buffer.write(out.encode("utf-8"))
+    sys.stdout.flush()
+    return 0
+
+
 # ---------------------------------------------------------------- CLI
 
 class _Parser(argparse.ArgumentParser):
@@ -66,6 +74,8 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--exclude-session", default=None)
     c.add_argument("--max-line-bytes", type=int, default=DEFAULT_MAX_LINE_BYTES)
     c.add_argument("--local-tz", action="store_true")
+    i = sub.add_parser("init")
+    i.add_argument("--root", required=True)
     return p
 
 
@@ -74,6 +84,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         args = build_parser().parse_args(argv)
         if args.cmd == "collect":
             return cmd_collect(args)
+        if args.cmd == "init":
+            return cmd_init(args)
         sys.stderr.write("argument error\n")
         return 2
     except ArgError as e:
