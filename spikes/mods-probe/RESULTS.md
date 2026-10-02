@@ -44,7 +44,7 @@ Mods（関数フック）で、governance プラグインの用途（通知・�
   `mods-probe: session.end hook skipped: threw … ECONNREFUSED` が出る。これは現行の Design 原則「hook は常に exit 0、
   標準エラーにも何も出力しない」に反する。`command.run` では応答が `registered /mods-probe but no command.run hook answered it`
   という原因を取り違えやすい文言になる。このため `_flush` は `$.http.fetch` を try/catch で囲み、失敗を文字列で返す
-  （単体テスト「送信が例外で失敗したら…」が落ちることを確かめる対象）。例外の文言には URL が含まれる
+  （単体テスト「送信が例外で失敗したら…」で固定している）。例外の文言には URL が含まれる
 - **送信失敗は debug に error 行を残さない。**mod 側で記録しない限り、失敗に気づく手段がない
 - **ガードは `.catch` を付けないとフェイルオープンになる。**`.catch` を外しても `claude plugin validate` は通る。テストで固定する必要がある
 - **`$.store` は利用者単位の 1 ファイル。**保存先は `~/.claude/plugins/store/<plugin>_<id>-<hash>.json` で、プロジェクト別・
@@ -102,7 +102,7 @@ Mods（関数フック）で、governance プラグインの用途（通知・�
 ```bash
 # worktree のルートで
 claude plugin validate spikes/mods-probe   # マニフェストと hooks の検証
-(cd spikes/mods-probe && tsc -p .)        # 型検査（tsconfig.json は本体が生成したもの）
+(cd spikes/mods-probe && npx -y -p typescript@5 tsc -p .)  # 型検査。tsconfig.json は本体が生成したもので、一度 --plugin-dir で読み込んだ後に通る
 claude plugin test spikes/mods-probe      # tests/*.test.tsx を実行
 ```
 
