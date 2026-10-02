@@ -1,0 +1,14 @@
+{
+  "name": "mods-probe",
+  "version": "0.1.0",
+  "description": "Mods（関数フック）の機能が governance プラグインの用途に足りるかを確かめる検証用 mod",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "endpoint": {
+      "type": "string",
+      "title": "送信先 URL",
+      "description": "ターンの記録を POST する URL。空なら送信しない",
+      "default": ""
+    }
+  }
+}
