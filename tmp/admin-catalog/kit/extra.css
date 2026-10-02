@@ -1,0 +1,80 @@
+/* 第 3 弾で足した部品の見た目（増減のチップの向き・状態の絞り込み・基準日・行ごとの札・サマリー）。値は tokens.css の変数だけを使う（比較用は compare.css） */
+.change.better { background: var(--chip-up); color: var(--accent); }
+.change.worse { background: var(--chip); color: var(--ink); font-weight: 700; }
+.change.neutral { background: var(--chip); color: var(--muted); font-weight: 400; }
+.change.plain { background: none; padding: 0; color: var(--muted); font-weight: 400; }
+
+.is-dim { opacity: var(--link-dim); }
+.group.is-dim .card.is-dim { opacity: 1; }
+[hidden] { display: none !important; }
+.state-filter button { gap: var(--sp-xs); }
+.head-act .chipbar { flex: none; }
+
+.glabel { display: flex; align-items: baseline; flex-wrap: wrap; }
+.glink { margin-left: auto; font-size: var(--fs-sm); font-weight: 400; color: var(--muted); text-decoration: none; }
+.glink::after { content: " →"; }
+.glink:hover { color: var(--accent); }
+
+.asof-pick { display: inline-flex; align-items: center; gap: var(--sp-xs); white-space: nowrap; }
+.asof-pick input { font: inherit; padding: 0 var(--sp-xs); border: 1px solid var(--rule); border-radius: var(--r-s); background: var(--card); color: var(--ink); font-variant-numeric: tabular-nums; }
+.asof-page { gap: var(--sp-s); font-size: var(--fs-label); color: var(--ink-2); }
+.asof-page input { padding: var(--sp-3xs) var(--sp-s); border-radius: var(--r-m); }
+.asof-steps { display: inline-flex; align-items: center; }
+.bar-end:has(.asof-steps) { gap: var(--sp-s); }
+.bar-end .asof-step { padding: 0 var(--sp-2xs); font-size: var(--fs-h2); line-height: 1; color: var(--ink-2); text-decoration: none; }
+.bar-end a.asof-step:hover { color: var(--accent); }
+.asof-step[aria-disabled] { color: var(--ghost); }
+.asof-range { position: relative; }
+.asof-range button { border: 0; border-bottom: 1px dashed var(--muted); background: none; padding: 0; font-size: var(--fs-label); color: var(--ink-2); cursor: pointer; font-variant-numeric: tabular-nums; }
+.asof-range button::after { content: " ▾"; color: var(--muted); }
+.asof-range button:hover { color: var(--accent); }
+.asof-hidden { position: absolute; inset: auto 0 0 0; width: 100%; height: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+
+.k-end { display: inline-flex; align-items: baseline; gap: var(--sp-xs); white-space: nowrap; flex: none; }
+
+.srows { display: grid; gap: var(--sp-3xs); font-size: var(--fs-sm); }
+.srow { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: var(--sp-s); padding: var(--sp-3xs) 0; border-top: 1px solid var(--rule); color: var(--ink-2); }
+.srow .num { font-variant-numeric: tabular-nums; }
+.rates.wide.marks .rate { grid-template-columns: 1fr 28% 5.5em 3.6em 4em; }
+.rmark { text-align: right; }
+
+.p-head-act { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-l); }
+.p-head-act .btn { text-decoration: none; white-space: nowrap; }
+.summary-latest { margin-bottom: var(--sp-xl); }
+.sum-panel { margin-top: 0; }
+.sum-body { margin: var(--sp-xs) 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sum-list .m-row { grid-template-columns: 9em minmax(0, 1fr) 5em 7em 4em; }
+.sum-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sum-open { margin: 0; padding: var(--sp-s) 0 var(--sp-m) var(--sp-l); border-bottom: 1px solid var(--rule); font-size: var(--fs-label); color: var(--ink-2); }
+.sum-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-m) var(--sp-l); margin: var(--sp-l) 0 0; }
+.sum-form label { display: grid; gap: var(--sp-2xs); font-size: var(--fs-sm); color: var(--muted); }
+.sum-form .grow { flex: 1; min-width: var(--name-w); }
+.sum-form .full { flex-basis: 100%; }
+.sum-form input, .sum-form textarea { font: inherit; font-size: var(--fs-label); padding: var(--sp-2xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); }
+.sum-form textarea { width: 100%; line-height: var(--lh); resize: vertical; }
+.sum-form input:focus, .sum-form textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--card-hover); }
+.sum-actions { display: flex; align-items: center; gap: var(--sp-m); }
+.sum-actions .btn-sub { border: 0; cursor: pointer; padding: var(--sp-s) var(--sp-l); }
+.sum-back { font-size: var(--fs-sm); color: var(--muted); }
+.tscroll td.c-user { white-space: nowrap; }
+a.card[href^="?"] .go::after { content: " →"; }
+.sum-form input { height: 2.4em; }
+.group-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-m); }
+.group.packed .cards { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
+.group.packed .glabel span { flex-basis: 100%; margin-left: 0; }
+@media (max-width: 960px) { .group-row { grid-template-columns: 1fr; } .group.packed { grid-column: auto !important; } }
+.group.packed { display: flex; flex-direction: column; }
+.group.packed .glabel { min-height: calc(var(--fs-label) * var(--lh) + 2 * var(--fs-sm) * var(--lh)); align-content: flex-start; }
+.group.packed .cards { flex: 1; align-items: stretch; }
+.rates.wide.marks.diffs .rate { grid-template-columns: 1fr 22% 5em 5.5em 3.6em 4em; }
+.tscroll tr.bands th { position: static; padding-bottom: var(--sp-3xs); border-bottom: 2px solid var(--rule); font-size: var(--fs-xs); font-weight: 600; color: var(--ink-2); text-align: left; white-space: nowrap; }
+.tscroll tr.bands th.blank { border-bottom-color: transparent; }
+.tscroll tr.bands th + th { border-left: 1px solid var(--rule); }
+.tscroll tr.bands th + th { padding-left: var(--sp-s); }
+.tscroll table[data-testid="user_all"] td, .tscroll table[data-testid="user_cost"] td { white-space: nowrap; }
+.k-sub { text-wrap: pretty; }
+.k-label .go-icon::after { content: "↓"; }
+a.card[href^="?"] .go-icon::after { content: "→"; }
+.k-label > span:first-child { word-break: auto-phrase; text-wrap: balance; }
+.home-cards .cards { grid-auto-flow: row dense; } /* 広いカードの前に空いた列を、後ろの 1 列のカードで埋める */
+.tscroll th.c-code { white-space: normal; word-break: auto-phrase; } /* 「本体のバージョン」などを 2 行に折り、最終報告日の列を枠に収める */
