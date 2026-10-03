@@ -45,9 +45,9 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 | 4c | 設定の自動適用の実機検証 | サブエージェント | 済（fea5477。上書き中の混在 12・欠け 15 件と ConfigChange による読み直しを監督が記録で照合） |
 | 4d | お知らせ・状態行・`/reapply` の同等性と改善候補の実機検証 | サブエージェント | 済（5efb439。トーストの切り詰め・`/governance:reapply` の拒否・80 列でペインが出ないことを監督が capture と debug で照合） |
 | 4e | 独自イベント（classic.* 以外）での収集と、sec-default の下で届くかの実機検証 | サブエージェント | 済（e8a7052。m1〜m4 で sec-default が座り、独自イベントは届き classic・skill.prompt だけ飛ばされたことを監督が debug と記録の件数で照合） |
-| 5 | 対応表と補完手段の統合、見え方が変わる機能ごとのユーザー確認 | 監督 | 実行中（下書き f4cdf5d。機能ごとの決定を記録済み） |
-| 6 | 手動検証の手順書 | サブエージェント | 実行中 |
-| 7 | docs（knowledge・remaining）への反映、次のハンドオフの更新、PR | 監督 | 未 |
+| 5 | 対応表と補完手段の統合、見え方が変わる機能ごとのユーザー確認 | 監督 | 済（FEASIBILITY.md。決定と未決を反映） |
+| 6 | 手動検証の手順書 | サブエージェント | 済（c86bc54、manual/。validate --strict と plugin test 6/6 を監督が隔離 config で再実行） |
+| 7 | docs（knowledge・remaining）への反映、次のハンドオフの更新、PR | 監督 | 実行中 |
 
 ## 記録
 
@@ -94,3 +94,6 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
   -p のお知らせは `$.ui.log`
 - ユーザーの以前の会社 PC での検証（2026-10-02、2.1.287、Bedrock）: mod は読み込まれて動く。managed settings は無く、sec-default は座らない。
   2.1.285 では resume で SessionStart の systemMessage が表示されなかった。ONCE の dict は利用者の元の値を丸ごと置き換える（既知の問題として引き継ぐ）
+- 段階 6: 担当が隔離 config の初回の対話で「ターミナル設定」を Yes にし、本体が本人の Cursor の設定ディレクトリに
+  `keybindings.json.<hash>.bak` を作った（元のファイルは不変、bak は同一内容）。ダミーの Bedrock 設定で起動した回に、本体が AWS の資格情報の
+  解決を試みて失敗した（モデルは呼ばれていない）。手順書には「ターミナル設定は No」と書いた
