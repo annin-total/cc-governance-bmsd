@@ -1,0 +1,6 @@
+{
+  "name": "feas-set",
+  "version": "0.1.0",
+  "description": "settings.json の自動適用を mod の fs.* で再現できるかを確かめる検証用 mod。隔離 CLAUDE_CONFIG_DIR の下だけに書く",
+  "author": { "name": "g4c" }
+}

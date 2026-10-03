@@ -1,8 +1,9 @@
 # Mods の採否
 
-Claude Code 2.1.287 の Mods（関数フック）を本プラグインに採るかの検討事項。
+Claude Code 2.1.288 の Mods（関数フック）へ本プラグインを移すかの検討事項。
 上流の挙動は `../knowledge/claude-code-behavior.md` の「Mods（関数フック）」にあり、ここでは繰り返さない。
-検証の一次記録は `spikes/mods-probe/RESULTS.md`（リポジトリのルートからのパス）にある。
+機能ごとの対応表・決めた方針の理由・設計の細部の未決は `spikes/mods-feasibility/FEASIBILITY.md`、
+検証の一次記録は `spikes/mods-feasibility/reports/` と `spikes/mods-probe/RESULTS.md` にある（いずれもリポジトリのルートからのパス）。
 
 **完了条件** — 採否と理由を `../decisions/plugin.md` に記録すること。採らない場合は「採らないと決めたこと」に記録する。
 下の「現行設計への影響」の判断事項は、採否と別に決着させる。
@@ -17,58 +18,67 @@ Claude Code 2.1.287 の Mods（関数フック）を本プラグインに採る�
   特定のイベントだけを選んで止められることと、本文を偽れること
 - 推測: 収集が止まった端末は、サーバ側では途絶えとして見えうる。特定のイベントだけを止められた場合は、
   イベントの種類ごとの比率の偏りとしてしか現れない
-- 本体の型定義は managed settings の hook が mod より上にあると書く（未検証）。成り立つなら、
-  managed settings で配る hook は利用者の mod で止められない
+- managed settings がある端末では、組み込みのガード（sec-default）が座り、command hook は利用者の mod に止められない
+  （managed settings を模した policy の下での観測。本物の managed settings では未検証）
 
 **判断事項** — 次のどちらかを決める。
 
 - 受け入れる限界として `../decisions/plugin.md` の「受け入れている限界」に記録する
-- 対策を取る（下の「改善案・検討事項」の守りの mod、または managed settings の hook）
+- 対策を取る（採る場合は下の「握り潰し」の方針。採らない場合は managed settings を置くか、managed settings で hook を配る）
+
+## 採る場合の方針（設計で確定）
+
+`FEASIBILITY.md` の「決定した論点」の要約。理由と残る未決はそちらにある。
+
+- 段取り: 同等のまま移し、その後に改善する
+- 収集: 独自イベント（`tool.call`・`turn.*`・`session.*`・`prompt.submit`・`command.run`）を土台にする。
+  `prompt_id` と `permission_mode` は transcript の user 行から読み、行はターンの終わりまで保留する
+- 送信: 今と同じ一括送信。送るのは切り離した Python で、mod は判定と起動だけを受け持つ
+- 設定の自動適用: 同梱の Python が丸ごと行い、mod は起動と policy 行の組み立てだけを受け持つ
+- お知らせ: プロンプトの上のバンドにリンクと既読ボタンを付けて出し、ボタンで既読にする。ブラウザ起動は残す。
+  `-p` では `$.ui.log` で出し、既読にしない
+- 状態行: settings の `statusLine` と `statusline.js` を残す
+- 再適用: mod のコマンド `/governance-reapply`（モデルを呼ばない）
+- 握り潰し: managed settings が無い端末では、governance を利用者 settings の `prependPlugins` に置き、守りの mod と検知を足す。
+  ある端末では sec-default に任せる
+- 受け入れる見え方の変化: Esc で中断したツールの `PostToolUseFailure` の行が増える。`claude_code_version` が全イベントに入る。
+  mod が積む error 行の `error_type` が、抜き出した符号と JS の例外名になる
+
+## 採否の前に詰めること
+
+- 推測: 実装が TypeScript と Python の二本立てになり（送信と設定の自動適用は Python に残る）、開発環境とテストの作法も二本立てになる
+- リポジトリの `CLAUDE.md` の Design 原則との両立: 契約の正本（`contract.py`）と mod の列・型をどう同期するか。
+  transcript の user 行（本文を含む）から名指しのキーだけを取り、本文を保持・送信しないことをどう担保するか
+- git 型で配ると、版を上げ忘れたリリースは端末に届かない。リリース手順で版の上げを検査するか
+- Desktop など `$.process.run` が使えない面（型定義で CLI 限定）では、Python に残す送信と設定の自動適用、
+  `user_email`・`host` の取得が動かない見込み（未検証）
 
 ## 採用した場合に得られるもの
 
-- transcript を解析せずにトークン数を得られる（`turn.complete` の `e.usage`）
-- Python の外部プロセスなしで画面表示ができる（お知らせのトースト・状態行・プロンプト上の帯）
-- 送信の定期実行を本体の中で回せる（`$.clock.every`。対話で予定どおりの間隔で発火した）
+- コンテキストトークン数と本体の版を、transcript を読まずに得られる（`$.session.usage().context.tokens`・`$.session.version()`。
+  command hook の値と全件一致）
+- お知らせを、既読にするまでプロンプトの上に出し続けられる
+- 再適用でモデルを呼ばない
 - 開発中はファイルの保存で読み直される
 - `claude -p` でも、画面表示以外のイベントはすべて発火する
 
 ## 採用した場合の注意点
 
-- `$.http.fetch` の例外を必ず捕まえる。捕まえないと「hook は標準エラーに何も出さない」という現行の原則が崩れる
+- `$` の呼び出しの例外を必ず捕まえる（`$.http.fetch` の失敗、`$.command.register` の名前の衝突など）。
+  捕まえないと「hook は標準エラーに何も出さない」という現行の原則が崩れ、同じ hook の残りも止まる
 - 拒否や判定には `.catch` を付け、外すと落ちるテストで固定する。`claude plugin validate` は見ない
-- `$.store` は利用者ごとに 1 ファイルで、同じキーへの並行書き込みは更新を失う。キーをセッションごとに分けるなどの設計が要る
-- `e.usage` はターンごとで、サブエージェントは別のターンとして届く。合計の取り方を契約で決める
+- `$.store` は利用者ごとに 1 ファイルで、同じキーへの並行書き込みは更新を失い、合計が上限に達すると全キーが書けなくなる。
+  キーをセッションごとに分け、大きいものを置かない
 - 利用者は mod を外せる（`disableAllHooks`、`enabledPlugins` の変更）。強制が要る制御は mod に置かない
-- ディレクトリ型マーケットプレイスで配る限り、配布物に型定義などのファイルは書かれない
-- 推測: 実装が TypeScript になり、開発環境（型検査・`claude plugin test`）とテストの作法が Python と二本立てになる
 
-## 改善案・検討事項
+## 未検証事項（手動検証で確かめる）
 
-1. **収集を `turn.complete` に寄せ、transcript の解析を減らす。** コンテキストトークン数を transcript 末尾から読む処理と、
-   その取りこぼし（読み取り範囲・応答なし）が無くなりうる。サブエージェントの分を含めるかを先に決める
-2. **お知らせと状態行を `$.ui` に寄せる。** ブラウザ起動や `statusline.js` の複製が要らなくなりうる。`-p` では表示されない
-3. **守りの mod を置く。** 本プラグインが設定の自動適用で、利用者の `settings.json` の `prependPlugins` に守りの mod を書く。
-   `next.to(e, 'append')` で利用者 tier の mod の握り潰しと本文の改変を防ぐか、`plugin.register` で classic hook に触れる mod の
-   読み込みを拒否する。限界:
-   - 利用者が `settings.json` を戻せば外れる（そのとき守りの mod は読み込みに失敗し、debug にだけ出る）
-   - 利用者が別の mod を `prependPlugins` に書けば、`next.to` は並びに関係なく効かず、`plugin.register` は前に書かれた側が勝つ
-   - classic hook を観測するだけの正当な利用者の mod も、見えなくなるか読み込めなくなる
-   - managed settings がある端末での `prependPlugins` の扱いは未検証
-   - 推測: 防げるのは不用意に入れた mod までで、意図的な回避は防げない
-4. **mod と command hook を併用する（移行期）。** mod が `next(e)` を返す限り、既存の command hook は併走する
-5. **`$.store` は並行を前提にキーを分ける。** セッションごとのキーに書き、送信時にまとめる
-
-## 未検証事項（この Mac では確かめられない）
+この Mac で確かめられる未検証事項は `FEASIBILITY.md` の「未検証事項」にある。
 
 | 事項 | 確かめること |
 | --- | --- |
-| Bedrock の認証 | 会社 PC で mod が読み込まれ、`turn.complete` の `e.usage` に値が入るか |
-| Windows | mod の読み込み・`$.store` の保存先・`$.http.fetch` が macOS と同じか |
-| Desktop・VS Code・JetBrains | 各 surface で toast・状態行・`ui.render` が出るか |
-| managed settings 下 | managed の `prependPlugins`・`allowManagedModsOnly`・`disableAllHooks` があるとき、利用者の `prependPlugins` と mod がどう扱われるか。managed の hook が mod に止められないか |
-| git 型マーケットプレイス | 導入した mod が cache と元のどちらから実行されるか、型定義が書かれるか |
-| `$.clock.every` | 長時間のセッションで発火し続けるか。読み直しの後に旧版のタイマーが残るか |
-| 拒否された mod | `plugin.register` で拒否された mod のトップレベルのコードが実行されるか |
-| `settings.json` の command hook | 守りの mod で、プラグインの command hook と同じく守れるか |
-| 社内の受信先への fetch | 対話起動で、localhost 以外への `$.http.fetch` に許可確認が出るか |
+| 会社 PC（Bedrock） | 2.1.288 でも mod が読み込まれ、sec-default が座らないか。独自イベント・`$.session.usage().context.tokens`・transcript の `promptId`・`permissionMode` が command hook と同じ値か。利用者 settings の `prependPlugins` で governance が tier prepend になるか。社内のプロキシと CA の下で送信が届くか、対話で許可確認が出るか。effort 対応モデルでの `effort` |
+| Windows | 切り離した送信プロセスが本体の終了後に生き残るか（今の Python 版を含む）。`$.process.run` から同梱の Python を起動できるか。transcript を末尾から読む方法（`tail` が無い）。`hostname`・パス・`$.store` の保存先・ブラウザ起動 |
+| 社内 Bitbucket | 認証付きの https URL で `marketplace add` と shallow clone が通るか。既定の端末で `autoUpdate: true` が走るか、所要時間。社内リポジトリに届かないときと、clone 先が消えたときの起動と更新 |
+| managed settings 下 | 本物の managed settings で sec-default が座り、届く範囲が模した policy と同じか。managed の `prependPlugins` で governance が tier prepend になり、利用者の `prependPlugins` が無視されるか。`allowManagedModsOnly`・`allowManagedHooksOnly`・`disableSideloadFlags` の効き方。managed の hook が利用者の mod に止められないか。組み込みや他の mod の `fs.*` hook が、利用者の `settings.json` への書き込みを拒否しないか |
+| Desktop・VS Code | バンドと既読ボタンが描かれるか、`isInteractive`・`CLAUDE_CODE_ENTRYPOINT` の値。`$.process.run` が使えるか。Link を押してブラウザが開くか |

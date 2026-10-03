@@ -1,0 +1,6 @@
+{
+  "name": "g4d-cmp",
+  "version": "0.1.0",
+  "description": "今のお知らせ（SessionStart の systemMessage）を同じ書式で出す比較用プラグイン。既読もブラウザ起動も扱わない",
+  "author": { "name": "g4d" }
+}

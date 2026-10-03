@@ -1,0 +1,7 @@
+{
+  "name": "governance",
+  "version": "0.0.1-g4d",
+  "description": "g4d: お知らせ・状態行・/reapply を Mods で出せるかを確かめる検証用 mod。方式は環境変数 G4D_MODE で選ぶ",
+  "types": "./types/index.d.ts",
+  "author": { "name": "g4d" }
+}

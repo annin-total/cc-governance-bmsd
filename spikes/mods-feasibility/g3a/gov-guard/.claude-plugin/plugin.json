@@ -1,0 +1,6 @@
+{
+  "name": "gov-guard",
+  "version": "0.1.0",
+  "description": "gov-observer の $ 呼び出し（http.fetch・fs.write・settings.read）を利用者 tier から守る検証用 mod。prepend / append でだけ読み込める",
+  "author": { "name": "g3a" }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "adv-ops",
+  "version": "0.1.0",
+  "description": "利用者の mod が他の mod の $ 呼び出し（settings.read・fs.write・http.fetch）を偽れるかを確かめる検証用 mod",
+  "author": { "name": "g3a" }
+}
