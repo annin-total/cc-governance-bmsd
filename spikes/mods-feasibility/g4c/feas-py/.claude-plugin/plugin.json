@@ -1,0 +1,6 @@
+{
+  "name": "feas-py",
+  "version": "0.1.0",
+  "description": "比較用。SessionStart の command hook が Python で settings.json を書き換え、UserPromptSubmit・ConfigChange で env を記録する",
+  "author": { "name": "g4c" }
+}
