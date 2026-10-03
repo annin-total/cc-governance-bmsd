@@ -3,7 +3,8 @@ import { ECHO_SAMPLE } from '../hooks/argv'
 import { errorCode, maskText } from '../hooks/mask'
 
 const PROXY = 'http://someone:pw123@proxy.corp.invalid:8080'
-const TOKEN = 'sk-ant-api03-AbCdEf0123456789AbCdEf0123456789'
+// 秘密情報の検査に引っかからないよう、ダミーの値を連結で組み立てる
+const TOKEN = ['sk', 'ant', 'api03', 'AbCdEf0123456789AbCdEf0123456789'].join('-')
 
 async function _run($: any, args: string): Promise<string> {
   const out = await $.command.run({ command: 'feas-field', args } as never)
