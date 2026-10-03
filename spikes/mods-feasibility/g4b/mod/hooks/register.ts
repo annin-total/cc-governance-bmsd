@@ -273,6 +273,7 @@ export const register: Register = (on) => {
     const c = await _cfg($)
     _log($, `session.end reason=${e.reason} budget.ms=${next.budget.ms} remaining=${next.budget.remainingMs}`)
     if (c.end === 'send') await _send($, 'session.end')
+    if (c.end === 'send3') for (const k of [1, 2, 3]) await _send($, `session.end#${k}`)
     if (c.end === 'detach') await _detach($, 'session.end')
     _log($, `session.end after remaining=${next.budget.remainingMs}`)
     return next(e)

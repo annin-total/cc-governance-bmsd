@@ -1,0 +1,1 @@
+{ "hooks": { "SessionEnd": [ { "hooks": [ { "type": "command", "command": "true", "timeout": 30 } ] } ] } }

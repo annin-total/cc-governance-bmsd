@@ -1,0 +1,1 @@
+{ "hooks": { "SessionEnd": [ { "hooks": [ { "type": "command", "command": "sleep 3; echo plugin-sleep-done >> /private/tmp/claude-501/-Users-terasawayuki-Documents-program-Development-bmsd-governance/f992ce3b-129e-420b-8958-71bb1bc1dc77/scratchpad/g4b/runs/x2-marker.txt", "timeout": 30 } ] } ] } }
