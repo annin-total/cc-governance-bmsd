@@ -47,7 +47,7 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 | 4e | 独自イベント（classic.* 以外）での収集と、sec-default の下で届くかの実機検証 | サブエージェント | 済（e8a7052。m1〜m4 で sec-default が座り、独自イベントは届き classic・skill.prompt だけ飛ばされたことを監督が debug と記録の件数で照合） |
 | 5 | 対応表と補完手段の統合、見え方が変わる機能ごとのユーザー確認 | 監督 | 済（FEASIBILITY.md。決定と未決を反映） |
 | 6 | 手動検証の手順書 | サブエージェント | 済（c86bc54、manual/。validate --strict と plugin test 6/6 を監督が隔離 config で再実行） |
-| 7 | docs（knowledge・remaining）への反映、次のハンドオフの更新、PR | 監督 | 実行中 |
+| 7 | docs（knowledge・remaining）への反映、次のハンドオフの更新、PR | 監督 | 済（e252ba0。PR #108。ハンドオフ 2 の前提を更新） |
 
 ## 記録
 
