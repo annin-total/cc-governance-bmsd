@@ -411,3 +411,10 @@ Windows・Desktop での登録と描画は未検証。
 - **ONCE で配る dict の値**（例 statusLine）は、利用者の元の値を丸ごと置き換え、アンインストールしても戻らない。会社 PC で、検証用に足した `ONCE["statusLine"]` が利用者の元の statusLine を消した（ユーザーの確認）。今配っている policy の ONCE は空なので、今は起きない。ONCE に dict を配るときの問題である
 - **resume で お知らせが出ない**: 2.1.285 では、対話のセッションを resume すると SessionStart の systemMessage が表示されなかった（ユーザーの確認）。バンドならこの問題は起きない見込み（推測。手動検証で確かめる）
 - **notices.json の id の重複**: 同じ id が重複すると、まとめて既読になる
+
+移行の設計で、プロジェクトの Design 原則（リポジトリの `CLAUDE.md`）との両立を決める論点。
+
+- **本文に触れない**: prompt_id・permission_mode を transcript の user 行から読む方式は、プロンプト本文を含む行を読む。
+  今の `_context.py` も transcript の末尾を読む。読んだ行から名指しのキーだけを取り、本文を保持・送信しないことを、どう担保するか
+- **定義は単一の正本に置く**: 契約の正本は `contract.py`（Python）である。mod（TypeScript）の側で列と型をどう同期するか
+  （今の `scripts/sync_contract.py` の生成物に TypeScript を加えるか）
