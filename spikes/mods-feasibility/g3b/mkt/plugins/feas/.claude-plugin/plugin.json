@@ -1,0 +1,9 @@
+{
+  "name": "feas",
+  "version": "0.1.0",
+  "description": "実行元と版を返す検証用 mod",
+  "author": { "name": "g3b" },
+  "userConfig": {
+    "tag": { "type": "string", "title": "tag", "description": "userConfig の読み取り確認用", "default": "" }
+  }
+}

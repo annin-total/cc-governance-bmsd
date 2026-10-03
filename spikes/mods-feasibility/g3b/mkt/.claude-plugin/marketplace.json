@@ -1,0 +1,8 @@
+{
+  "name": "g3b-git-mkt",
+  "owner": { "name": "g3b verification" },
+  "description": "git 型マーケットプレイスの検証用",
+  "plugins": [
+    { "name": "feas", "source": "./plugins/feas", "description": "実行元と版を返す検証用 mod" }
+  ]
+}
