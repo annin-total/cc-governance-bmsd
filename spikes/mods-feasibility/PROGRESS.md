@@ -38,11 +38,11 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 |---|---|---|---|
 | 1 | すり合わせ、worktree・ブランチ作成、進捗記録 | 監督 | 済 |
 | 2 | 機能の洗い出し（対応表の行と、契約の項目ごとの取得元） | サブエージェント | 済（INVENTORY.md。主要な主張は監督が型定義で照合） |
-| 3a | 握り潰しの対策の実機検証 | サブエージェント | 実行中 |
-| 3b | git 型マーケットプレイスの実行元・更新の実機検証 | サブエージェント | 実行中 |
+| 3a | 握り潰しの対策の実機検証 | サブエージェント | 済（025bdc1。順序・fetch の偽装・守りの効果を監督が debug と受信器の記録で照合） |
+| 3b | git 型マーケットプレイスの実行元・更新の実機検証 | サブエージェント | 済（f505e57。実行元が cache・版を上げないと届かないことを監督が応答の記録で照合） |
 | 4a | 収集・コンテキストトークン数・識別子の実機検証 | サブエージェント | 実行中 |
-| 4b | 蓄積と送信の実機検証 | サブエージェント | 未 |
-| 4c | 設定の自動適用の実機検証 | サブエージェント | 未 |
+| 4b | 蓄積と送信の実機検証 | サブエージェント | 実行中 |
+| 4c | 設定の自動適用の実機検証 | サブエージェント | 実行中 |
 | 4d | お知らせ・状態行・`/reapply` の同等性と改善候補の実機検証 | サブエージェント | 未 |
 | 5 | 対応表と補完手段の統合、見え方が変わる機能ごとのユーザー確認 | 監督 | 未 |
 | 6 | 手動検証の手順書 | サブエージェント | 未 |
@@ -55,3 +55,7 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
   ClassicResult に `systemMessage` が無い、`$.fs` は read・write・list・exists・stat・ancestors だけ（rename・delete・append が無い）、
   `$.settings` は読むだけ、`session.end` は全体で既定 1.5 秒、HttpInit に timeout が無い、`$.process.spawn` の子はモジュールの解放で殺される。
   原子的な置き換え・削除・本体終了後の送信が補完の焦点になる
+- 3b: ローカルの bare パスと `file://` は git 型として登録できない（前者はディレクトリ扱い、後者は形式エラー）。dumb HTTP は shallow clone を受けない。
+  使い捨ての smart HTTP（`git http-backend`、localhost）で配って検証した
+- 3a: 本物の managed settings はこの Mac では試せない（`CLAUDE_CODE_MANAGED_SETTINGS_PATH` は効かない。隠しフラグ `--managed-settings` は
+  restrictive-only で prependPlugins などを落とす）。managed の効き方は会社 PC の手順書に回す
