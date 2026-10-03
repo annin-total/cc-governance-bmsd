@@ -43,8 +43,8 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 | 4a | 収集・コンテキストトークン数・識別子の実機検証 | サブエージェント | 済（199754f。件数の一致と中断時の差を監督が記録ファイルで照合） |
 | 4b | 蓄積と送信の実機検証 | サブエージェント | 済（490b863。切り離した送信の ppid=1 での 200・延長時の予算 8000ms を監督が記録で照合） |
 | 4c | 設定の自動適用の実機検証 | サブエージェント | 済（fea5477。上書き中の混在 12・欠け 15 件と ConfigChange による読み直しを監督が記録で照合） |
-| 4d | お知らせ・状態行・`/reapply` の同等性と改善候補の実機検証 | サブエージェント | 実行中 |
-| 5 | 対応表と補完手段の統合、見え方が変わる機能ごとのユーザー確認 | 監督 | 未 |
+| 4d | お知らせ・状態行・`/reapply` の同等性と改善候補の実機検証 | サブエージェント | 済（5efb439。トーストの切り詰め・`/governance:reapply` の拒否・80 列でペインが出ないことを監督が capture と debug で照合） |
+| 5 | 対応表と補完手段の統合、見え方が変わる機能ごとのユーザー確認 | 監督 | 実行中 |
 | 6 | 手動検証の手順書 | サブエージェント | 未 |
 | 7 | docs（knowledge・remaining）への反映、次のハンドオフの更新、PR | 監督 | 未 |
 
@@ -65,3 +65,7 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 - 公式 docs（mods/reference.md）: `$.fs.write` は原子的でないと明記。利用者 settings の `prependPlugins` は、managed settings が無く
   Team・Enterprise でサインインしていない端末でだけ効く
 - 4c: 担当が `claude plugin validate --strict` を 1 回隔離せずに実行した（本人の settings.json の md5 は不変）
+- 4b の追加: SessionEnd の予算を上げるのは settings に書いた hook の timeout だけ（`--settings` で 10000ms、上限 60 秒）。
+  プラグインの hooks.json の SessionEnd hook では上がらない（0bfb00c）
+- 2026-10-03 ターミナルの終了で監督のセッションが中断した。4d は報告書（scratch/g4d/REPORT.md）とコミット 5efb439 まで済んでおり、
+  子プロセス・tmux の残りは無かった。再開後に監督が報告書を生データで照合した
