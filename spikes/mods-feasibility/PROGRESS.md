@@ -44,9 +44,9 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 | 4b | 蓄積と送信の実機検証 | サブエージェント | 済（490b863。切り離した送信の ppid=1 での 200・延長時の予算 8000ms を監督が記録で照合） |
 | 4c | 設定の自動適用の実機検証 | サブエージェント | 済（fea5477。上書き中の混在 12・欠け 15 件と ConfigChange による読み直しを監督が記録で照合） |
 | 4d | お知らせ・状態行・`/reapply` の同等性と改善候補の実機検証 | サブエージェント | 済（5efb439。トーストの切り詰め・`/governance:reapply` の拒否・80 列でペインが出ないことを監督が capture と debug で照合） |
-| 4e | 独自イベント（classic.* 以外）での収集と、sec-default の下で届くかの実機検証 | サブエージェント | 実行中 |
+| 4e | 独自イベント（classic.* 以外）での収集と、sec-default の下で届くかの実機検証 | サブエージェント | 済（e8a7052。m1〜m4 で sec-default が座り、独自イベントは届き classic・skill.prompt だけ飛ばされたことを監督が debug と記録の件数で照合） |
 | 5 | 対応表と補完手段の統合、見え方が変わる機能ごとのユーザー確認 | 監督 | 実行中（下書き f4cdf5d。機能ごとの決定を記録済み） |
-| 6 | 手動検証の手順書 | サブエージェント | 未 |
+| 6 | 手動検証の手順書 | サブエージェント | 実行中 |
 | 7 | docs（knowledge・remaining）への反映、次のハンドオフの更新、PR | 監督 | 未 |
 
 ## 記録
@@ -84,3 +84,8 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 - 3a の生ログ（m3）で、sec-default が座ると利用者 tier の mod に classic.* と settings.read が届かないことを監督が確認した。
   prompt.submit・session.start・http.fetch は届く。classic.* に頼る収集は managed settings のある端末で成り立たないため、
   独自イベントでの収集を 4e で確かめる
+- 4e: 独自イベント（tool.call・turn.*・session.*・prompt.submit・command.run）と `$` の API は sec-default の下でも利用者 tier に届く。
+  列は session_id・tool_name・compact_trigger・command_name・skill_name・agent_id・context_tokens が一致。prompt_id・permission_mode は
+  transcript の user 行から読む条件付き、source・is_interrupt・command_source は組み立てる条件付き、effort_level は未検証
+- 追加の決定: error_type は抜き出した符号（ECONNREFUSED など）と JS の例外名にする（`HTTP <コード>` は今のまま）。prev_value の数値は
+  JS の表記でよく、差を設計書に記録する。手動検証の資材は GitHub のこのブランチから会社 PC で取得する
