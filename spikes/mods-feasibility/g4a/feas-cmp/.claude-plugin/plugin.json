@@ -1,0 +1,6 @@
+{
+  "name": "feas-cmp",
+  "version": "0.1.0",
+  "description": "feas-collect と突き合わせる比較用プラグイン。command hook の stdin をそのまま記録する",
+  "author": { "name": "g4a" }
+}

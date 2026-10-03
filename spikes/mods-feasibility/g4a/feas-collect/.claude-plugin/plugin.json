@@ -1,0 +1,6 @@
+{
+  "name": "feas-collect",
+  "version": "0.1.0",
+  "description": "governance の収集列を mod の classic.* から取れるかを確かめる検証用 mod。受け取った e を記録して素通しする",
+  "author": { "name": "g4a" }
+}
