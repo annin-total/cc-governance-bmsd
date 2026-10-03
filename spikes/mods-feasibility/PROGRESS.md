@@ -42,7 +42,7 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 | 3b | git 型マーケットプレイスの実行元・更新の実機検証 | サブエージェント | 済（f505e57。実行元が cache・版を上げないと届かないことを監督が応答の記録で照合） |
 | 4a | 収集・コンテキストトークン数・識別子の実機検証 | サブエージェント | 済（199754f。件数の一致と中断時の差を監督が記録ファイルで照合） |
 | 4b | 蓄積と送信の実機検証 | サブエージェント | 済（490b863。切り離した送信の ppid=1 での 200・延長時の予算 8000ms を監督が記録で照合） |
-| 4c | 設定の自動適用の実機検証 | サブエージェント | 実行中 |
+| 4c | 設定の自動適用の実機検証 | サブエージェント | 済（fea5477。上書き中の混在 12・欠け 15 件と ConfigChange による読み直しを監督が記録で照合） |
 | 4d | お知らせ・状態行・`/reapply` の同等性と改善候補の実機検証 | サブエージェント | 実行中 |
 | 5 | 対応表と補完手段の統合、見え方が変わる機能ごとのユーザー確認 | 監督 | 未 |
 | 6 | 手動検証の手順書 | サブエージェント | 未 |
@@ -60,3 +60,8 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 - 3a: 本物の managed settings はこの Mac では試せない（`CLAUDE_CODE_MANAGED_SETTINGS_PATH` は効かない。隠しフラグ `--managed-settings` は
   restrictive-only で prependPlugins などを落とす）。managed の効き方は会社 PC の手順書に回す
 - 4a: 比較用プラグインが `_context` を import して `plugin/hooks/__pycache__/` を作った（追跡外）。担当が削除し、以後は `sys.dont_write_bytecode` で防いだ
+- 4b の追加: `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` は公式 docs に無い。公式は「SessionEnd の settings hook の timeout で予算を最大 60 秒に上げる」。
+  これが mod の session.end にも効くかを追加で確かめる
+- 公式 docs（mods/reference.md）: `$.fs.write` は原子的でないと明記。利用者 settings の `prependPlugins` は、managed settings が無く
+  Team・Enterprise でサインインしていない端末でだけ効く
+- 4c: 担当が `claude plugin validate --strict` を 1 回隔離せずに実行した（本人の settings.json の md5 は不変）
