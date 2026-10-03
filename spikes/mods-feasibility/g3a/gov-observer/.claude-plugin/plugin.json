@@ -1,0 +1,22 @@
+{
+  "name": "gov-observer",
+  "version": "0.1.0",
+  "description": "governance を mod にしたときの観測点を確かめる検証用 mod。受け取った値と自分の tier の手がかりを記録して素通しする",
+  "author": {
+    "name": "g3a"
+  },
+  "userConfig": {
+    "logPath": {
+      "type": "string",
+      "title": "記録先",
+      "description": "観測を JSON Lines で追記する絶対パス。空なら debug ログにだけ書く",
+      "default": ""
+    },
+    "sendUrl": {
+      "type": "string",
+      "title": "送信先",
+      "description": "session.start で観測の要約を POST する URL（検証用の localhost 受信器）。空なら送らない",
+      "default": ""
+    }
+  }
+}

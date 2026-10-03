@@ -1,0 +1,6 @@
+{
+  "name": "adv-native",
+  "version": "0.1.0",
+  "description": "利用者の mod がネイティブイベント（prompt.submit）の本文を偽ったとき、外側の mod に何が届くかを確かめる検証用 mod",
+  "author": { "name": "g3a" }
+}
