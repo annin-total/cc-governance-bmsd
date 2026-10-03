@@ -44,7 +44,8 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 | 4b | 蓄積と送信の実機検証 | サブエージェント | 済（490b863。切り離した送信の ppid=1 での 200・延長時の予算 8000ms を監督が記録で照合） |
 | 4c | 設定の自動適用の実機検証 | サブエージェント | 済（fea5477。上書き中の混在 12・欠け 15 件と ConfigChange による読み直しを監督が記録で照合） |
 | 4d | お知らせ・状態行・`/reapply` の同等性と改善候補の実機検証 | サブエージェント | 済（5efb439。トーストの切り詰め・`/governance:reapply` の拒否・80 列でペインが出ないことを監督が capture と debug で照合） |
-| 5 | 対応表と補完手段の統合、見え方が変わる機能ごとのユーザー確認 | 監督 | 実行中 |
+| 4e | 独自イベント（classic.* 以外）での収集と、sec-default の下で届くかの実機検証 | サブエージェント | 実行中 |
+| 5 | 対応表と補完手段の統合、見え方が変わる機能ごとのユーザー確認 | 監督 | 実行中（下書き f4cdf5d。機能ごとの決定を記録済み） |
 | 6 | 手動検証の手順書 | サブエージェント | 未 |
 | 7 | docs（knowledge・remaining）への反映、次のハンドオフの更新、PR | 監督 | 未 |
 
@@ -65,7 +66,21 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 - 公式 docs（mods/reference.md）: `$.fs.write` は原子的でないと明記。利用者 settings の `prependPlugins` は、managed settings が無く
   Team・Enterprise でサインインしていない端末でだけ効く
 - 4c: 担当が `claude plugin validate --strict` を 1 回隔離せずに実行した（本人の settings.json の md5 は不変）
-- 4b の追加: SessionEnd の予算を上げるのは settings に書いた hook の timeout だけ（`--settings` で 10000ms、上限 60 秒）。
-  プラグインの hooks.json の SessionEnd hook では上がらない（0bfb00c）
+- 4b の追加: SessionEnd の予算は、`--settings` に書いた SessionEnd hook の timeout で上がった（timeout 30 で打ち切りが 31.48 秒、
+  120 でも 60 秒で打ち切り）。プラグインの hooks.json の SessionEnd hook では上がらない（0bfb00c）。`next.budget.ms` の 10000 は
+  上限そのものではなく、hook 1 回の予算との小さい方。user・project・managed の settings に置いた場合は未検証
 - 2026-10-03 ターミナルの終了で監督のセッションが中断した。4d は報告書（scratch/g4d/REPORT.md）とコミット 5efb439 まで済んでおり、
   子プロセス・tmux の残りは無かった。再開後に監督が報告書を生データで照合した
+- 段階 5 の下書き（f4cdf5d、FEASIBILITY.md）を受け、ユーザーと機能ごとに次を決めた
+  - お知らせ: AbovePrompt のバンドに出し、リンクと「既読にする」ボタンを付ける。既読はボタンを押したとき。ブラウザ起動は今のまま残す
+  - `/governance:reapply`: mod のコマンド `/governance-reapply` にする（モデルを呼ばず、表で出す）
+  - 状態行: settings の statusLine と statusline.js を残す
+  - Esc で中断したツールの PostToolUseFailure の行が増えることを受け入れる
+  - 設定の自動適用: 判定・JSON の生成・policy 行は mod、書き込み・原子的な置き換え・0600 のバックアップだけ同梱の Python
+  - 送信: 今と同じ一括送信（SessionStart と Stop の時点で 10 分以上たっていれば）。送るのは切り離した Python。mod は判定と起動
+  - claude_code_version は全イベントに入れる
+  - 握り潰し: managed settings が無い端末では、prependPlugins に governance を置き、守りの mod と検知を足す。
+    managed settings がある端末では sec-default に任せる。会社 PC の managed settings の有無を確かめて確定する
+- 3a の生ログ（m3）で、sec-default が座ると利用者 tier の mod に classic.* と settings.read が届かないことを監督が確認した。
+  prompt.submit・session.start・http.fetch は届く。classic.* に頼る収集は managed settings のある端末で成り立たないため、
+  独自イベントでの収集を 4e で確かめる
