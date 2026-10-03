@@ -1,0 +1,6 @@
+{
+  "name": "feas-native",
+  "version": "0.1.0",
+  "description": "governance の収集列を classic.* を使わず Mods 独自のイベントと $ の API だけで取れるかを確かめる検証用 mod",
+  "author": { "name": "g4e" }
+}
