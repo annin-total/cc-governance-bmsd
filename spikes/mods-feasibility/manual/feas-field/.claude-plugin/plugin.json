@@ -1,0 +1,6 @@
+{
+  "name": "feas-field",
+  "version": "0.1.0",
+  "description": "会社 PC・Windows で Mods の挙動を手で確かめるための検証用 mod。モデルを呼ばないコマンド /feas-field で観測値を出す",
+  "author": { "name": "mods-feasibility" }
+}
