@@ -89,3 +89,8 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
   transcript の user 行から読む条件付き、source・is_interrupt・command_source は組み立てる条件付き、effort_level は未検証
 - 追加の決定: error_type は抜き出した符号（ECONNREFUSED など）と JS の例外名にする（`HTTP <コード>` は今のまま）。prev_value の数値は
   JS の表記でよく、差を設計書に記録する。手動検証の資材は GitHub のこのブランチから会社 PC で取得する
+- 追加の決定（2 回目）: 収集の土台は独自イベント。設定の自動適用は前の決定を改め、適用を丸ごと同梱の Python が行い、mod は起動と
+  policy 行の組み立てだけを担う（利用者の settings.json の表記を変えない・規則を 2 か所に持たない）。送信の error 行は Python が今の名前で積む。
+  -p のお知らせは `$.ui.log`
+- ユーザーの以前の会社 PC での検証（2026-10-02、2.1.287、Bedrock）: mod は読み込まれて動く。managed settings は無く、sec-default は座らない。
+  2.1.285 では resume で SessionStart の systemMessage が表示されなかった。ONCE の dict は利用者の元の値を丸ごと置き換える（既知の問題として引き継ぐ）
