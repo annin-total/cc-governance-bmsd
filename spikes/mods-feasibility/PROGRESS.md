@@ -113,3 +113,14 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
   - Q8 statusline.js の同期: 設定の適用と同じ Python
   - Q12 mod からの自動同期: 採らない（本体の自動更新で次の起動から新しい版が効く。g9）
   - 論点 16 effort: classic と turn.step が 3 条件で一致（g8）。解消
+  - Q13 配布: 利用者は社内 Bitbucket に ssh で接続する前提で、ssh の設定に Port がもう付いている。scp 形式（`git@<ホスト>:<パス>`）の git 型で登録する。
+    この marketplace はまだ誰も使っていない（docs の onboarding は https で書いてあり、直す）
+  - Q14 握り潰しの検知: error 行に固定の語彙で積む（新しい stage と固定の error_type。他の mod の名前は送らない）
+  - Q15 送信待ち: mod はセッションごとのファイルに書き、送信の Python がまとめて退避・送信する
+  - Q16 引き継ぎ: 利用者はまだいない（ユーザー本人の試用だけ）。今の queue.jsonl・spool の引き継ぎは要らない
+  - Q12 は聞き直す（ユーザーの指摘: 会社 PC では自動更新が起きなかった。Bitbucket はセルフホスト）。
+    条件の差（--scope local・メッセージの送信・DISABLE_AUTOUPDATER）を g10 で確かめる
+  - Q17 版の上げ忘れ: リリースの検査で止める
+  - Q18 policy 行: 値は Python が作り、mod は共通の列を足すだけ
+  - Q19 ONCE で dict を配る問題: 移行と切り離し、受け入れている限界として記録する
+  - Q20 notices.json の id の重複: リリースの検査で止める（url・label の形も）
