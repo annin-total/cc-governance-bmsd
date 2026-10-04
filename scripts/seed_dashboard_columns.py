@@ -77,8 +77,12 @@ def apply_rules(rules: dict, ctx: Ctx) -> dict:
     return {name: rule(ctx) for name, rule in rules.items()}
 
 
+def new_uuid(rng: random.Random) -> str:
+    return str(uuid.UUID(int=rng.getrandbits(128)))
+
+
 def _uuid(c: Ctx) -> str:
-    return str(uuid.UUID(int=c.rng.getrandbits(128)))
+    return new_uuid(c.rng)
 
 
 def _pick(c: Ctx, hooks: tuple, values: tuple) -> Any:

@@ -2,13 +2,12 @@
 
 import json
 import random
-import uuid
 from pathlib import Path
 
 from ccgov.constants import EVENT_STUDY_SPAN, POLICY_DAYS, STALE_DAYS
 from ccgov.store.queries_events import _HEALTH_NULL_SCOPES
 from ccgov.vendor import contract, policy
-from seed_dashboard_columns import CSV_RULES, RULES, Ctx, Term, apply_rules
+from seed_dashboard_columns import CSV_RULES, RULES, Ctx, Term, apply_rules, new_uuid
 from seed_org_columns import ORG_RULES, org_unit
 
 HOOKS_JSON = Path(__file__).resolve().parents[1] / "plugin" / "hooks" / "hooks.json"
@@ -84,7 +83,7 @@ def _event(ctx: Ctx) -> dict:
 
 def _session(rng: random.Random, term: Term, ts: int, hooks: list, error) -> list:
     """1 セッションの policy・event・error 行。先頭の hook が SessionStart。"""
-    session = str(uuid.UUID(int=rng.getrandbits(128)))
+    session = new_uuid(rng)
     rows = [
         _row("policy", Ctx(rng, term.user, ts, term=term, key=k)) for k in scalar_keys()
     ]
