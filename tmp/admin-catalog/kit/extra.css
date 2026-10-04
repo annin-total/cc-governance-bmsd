@@ -91,3 +91,5 @@ nav .nav-extra { margin-left: var(--sp-s); }
 .tr-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tr-name .sub { font-size: var(--fs-xs); color: var(--muted); }
 .toprow .num { font-weight: 600; font-variant-numeric: tabular-nums; }
+.tscroll td.c-section, .tscroll td.c-dept { white-space: nowrap; }
+.k-label { gap: var(--sp-2xs); } /* 1 列幅で最長の見出し（確認なしモードを使った利用者）を「一覧」と 1 行に収める */

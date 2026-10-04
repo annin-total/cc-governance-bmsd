@@ -5,7 +5,6 @@
   const K = window.KIT;
   const { esc, fill } = K;
   const DAY = 86400000;
-  const MATCH_DAYS = 7; // match7: 利用明細の最終日までの 7 日
   const ASOF = new URLSearchParams(location.search).get("asof");
   const meta = () => window.DATA.meta;
   const chosen = () => (ASOF ? Math.min(Math.round(Date.parse(ASOF) / DAY), meta().end) : meta().end);
@@ -23,8 +22,7 @@
   function fresh() {
     const m = meta();
     const age = m.csv_end === null ? null : m.today - m.csv_end;
-    return { today: m.today, csv_end: m.csv_end, end: chosen(), age, state: age !== null && age >= m.csv_stale_days ? "warn" : "ok",
-      match_start: m.csv_end === null ? null : m.csv_end - MATCH_DAYS + 1 };
+    return { today: m.today, csv_end: m.csv_end, end: chosen(), age, state: age !== null && age >= m.csv_stale_days ? "warn" : "ok" };
   }
 
   // 帯の期間の表示: 期間のページは押すとカレンダー（P3）、状態のページは「MM/DD 時点」で押せない

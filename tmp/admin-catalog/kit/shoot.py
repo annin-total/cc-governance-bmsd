@@ -1,5 +1,6 @@
 """案のフォルダの全ページを撮る。期間の効くページは 7・28・12m、効かないページは 1 枚。幅 1440・fullPage・下段は最初のタブ。
-加えて、概況の絞り込み「要確認」・基準日を選んだ概況・カードやマスを押した移り先・サマリーの開いた行と編集を撮る（EXTRAS）。
+加えて、概況の絞り込み・基準日を選んだ画面・カードを押した移り先・カレンダーを開いた画面・利用明細の古さの警告・課ごと・部で絞った一覧・
+サマリーの開いた行と編集を撮る（EXTRAS）。
 
 使い方: python kit/shoot.py ideas/NN-<slug> [--out 撮った画像の置き場（既定は案のフォルダの shots/）]
 コンソールのエラー（ページの例外を含む）・横スクロール・撮れなかった定義・定義に無い画像を数え、1 つでもあれば終了コード 1 で終わる。
@@ -12,26 +13,36 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+from check_screen import data_patch
+
 WIDTH, HEIGHT = 1440, 900
 PERIODS = ("7", "28", "12m")
 PAGES_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods) }))"
 OVERFLOW_JS = "document.documentElement.scrollWidth > document.documentElement.clientWidth"
 ASOF = "2026-09-11"
-# (名前, URL の問い合わせ, 押す要素)。押す要素があれば、押して移った先を撮る。要素はカンマで候補を並べ、最初に見えるものを押す
+# (名前, URL の問い合わせ, 押す要素[, 読み込み前の差し替え])。押す要素があれば押した後を撮る。要素はカンマで候補を並べ、最初に見えるものを押す。
+# 差し替えは PRE の名前で、読み込み前に window.DATA を書き換える（古さの警告は今日を利用明細の最終日 + csv_stale_days にして撮る）
 FIRST_CARD = "main .kpis a.card[href^='?']"
 EXTRAS = (
     ("x-home-filter-ng", "?page=home&filter=ng", None),
     ("x-home-filter-warn-12m", "?page=home&period=12m&filter=warn", None),
     ("x-home-asof", f"?page=home&period=28&asof={ASOF}", None),
     ("x-go-cost", f"?page=home&period=28&asof={ASOF}", FIRST_CARD),
-    ("x-go-over-week", f"?page=home&asof={ASOF}", "[data-ref^=over_week], [data-ref=over_rows]"),
-    ("x-go-off-users", "?page=home", "[data-ref=off_users], [data-ref=applied_all]"),
-    ("x-go-core-outdated", "?page=home", "[data-ref=core_outdated], [data-ref=outdated_all]"),
+    ("x-go-over-week", f"?page=home&asof={ASOF}", "[data-ref=over_week]"),
+    ("x-go-applied-mix", "?page=home", "[data-ref=applied_mix]"),
+    ("x-go-core-outdated", "?page=home", "[data-ref=core_outdated]"),
+    ("x-cost-calendar", f"?page=cost&asof={ASOF}", "[data-cal-open]"),
+    ("x-policy-asof", f"?page=policy&asof={ASOF}", None),
+    ("x-home-stale", "?page=home", None, "stale"),
+    ("x-collect-stale", "?page=collect", None, "stale"),
+    ("x-cost-sections", "?page=cost&period=28#sections", None),
+    ("x-cost-user-cost-dept", "?page=cost&period=28#user_cost", "#user_cost [data-dept-chip='Department A']"),
     ("x-cost-open-user-cost", "?page=cost&filter=warn", "[data-ref=per_user_bd]"),
     ("x-summary-open", "?page=summary", "details summary"),
     ("x-summary-edit-s2", "?page=summary_edit&id=s2", None),
 )
-EXTRA_FILE = "shots.json"  # 案のフォルダに置くと、[名前, 問い合わせ, 押す要素] の並びを EXTRAS に足す。[名前, null, null] はその撮影をこの案では撮らない
+EXTRA_FILE = "shots.json"  # 案のフォルダに置くと、[名前, 問い合わせ, 押す要素(, 差し替え)] の並びを EXTRAS に足す。[名前, null, null] はその撮影をこの案では撮らない
+PRE = {"stale": data_patch("v.meta.today = v.meta.csv_end + v.meta.csv_stale_days")}
 
 
 def _args() -> argparse.Namespace:
@@ -41,9 +52,11 @@ def _args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def _shoot(ctx, url: str, path: Path, click=None):
+def _shoot(ctx, url: str, path: Path, click=None, pre=None):
     """1 ページを撮り（click があれば押した後）、(エラーの一覧, 横スクロールの有無) を返す。押す要素が無ければ None。"""
     page = ctx.new_page()
+    if pre:
+        page.add_init_script(PRE[pre])
     errors: list = []
     page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -94,9 +107,9 @@ def main() -> None:
         extra = idea / EXTRA_FILE
         defs = EXTRAS + tuple(tuple(x) for x in (json.loads(extra.read_text(encoding="utf-8")) if extra.exists() else []))
         skip = {d[0] for d in defs if d[1] is None}
-        for name, query, click in (d for d in defs if d[0] not in skip):
+        for name, query, click, *pre in (d for d in defs if d[0] not in skip):
             page_id = query.split("page=")[1].split("#")[0].split("&")[0]
-            shot = _shoot(ctx, base + query, out / f"{name}.png", click) if page_id in ids else None
+            shot = _shoot(ctx, base + query, out / f"{name}.png", click, *pre) if page_id in ids else None
             if shot is None:  # 定義した撮影が撮れないのは失敗。案に合わない撮影は shots.json で外す
                 print(f"{name}: 撮れない（ページ {page_id} か押す要素 {click} が無い）")
                 failed += 1

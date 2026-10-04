@@ -49,9 +49,9 @@ $SP/venv/bin/python data/build_data.py --server $SP/server --scripts $SP/scripts
 | `p[k].r3` | `model_pt`。7・28 日は `changes`（利用状況のカードの増減）と `calls`（呼び出し先の行） |
 | `p[7・28].r3.over` | 基準を超えた利用者。区分（7 日は `day`・`week`、28 日は `month`）ごとに `users`・`prev_users`・`delta`・`new`・`left`・`ng`・`warn`・`prev_*`・`ng_delta`・`cost_share`・`state` と、状態ごとの `ng_new`・`ng_left`・`warn_new`・`warn_left`・`ng_cost_share`（要確認の人の分）など。`rows`（`over_users` の行。`dept`・`section` つき） |
 | `p[k].r3.sections` | 課ごとの `dept`・`section`（名簿に無い人は null、課の欄が空なら ""）・`users`・`cost`・`share`・`per_user_bd`。7・28 日は `prev`・`diff`・`change`・`over`（7 日は週次、28 日は月次の注意以上の人数）と記録の段（`rec_users`・`days_per_user`・`prompts_per_person_day`・`skill_calls`・`command_calls`）。合計は `r3.cost` の人数とコストに一致する |
-| `fixed.now` | 状態のページの値（今日までの 7 日）。`period`・`events`・`users`・`errors`・`nulls`・`health`・`reconciliation`（`match7`）と `r3`（`silent`〔`user_delivery` の行に `dept`・`section`〕・`errors`〔`rows`・`state`・`top`＝件数の多い上位 3 つ〕・`nulls`・`changes`〔`events` の率・`senders`〕） |
+| `fixed.now` | 状態のページの値（今日までの 7 日）。`period`・`match`（突き合わせの窓 `start`・`end`）・`events`・`users`・`errors`・`nulls`・`health`・`reconciliation`（`match7`）と `r3`（`silent`〔`user_delivery` の行に `dept`・`section`〕・`errors`〔`rows`・`state`・`top`＝件数の多い上位 3 つ〕・`nulls`・`changes`〔`events` の率・`senders`〕） |
 | `fixed.r3.forecast` | 月末の見込みの前月の実績との `change`・`state` |
-| `fixed.r3.policy` | 利用者単位の適用状況（今日までの 30 日）。`users`（`dept`・`section` つき）・`items`・`counts`・`mix`（`applied_mix` の `ok`・`off`・`none`・`total`）・`states`・`core`・`plugin`（`parts` は [バージョン, 人数, 最新からの距離 0・1・2]）・`versions` |
+| `fixed.r3.policy` | 利用者単位の適用状況（今日までの 30 日。`start`・`end`）。`users`（`dept`・`section` つき）・`items`・`counts`・`mix`（`applied_mix` の `ok`・`off`・`none`・`total`）・`states`・`core`・`plugin`（`parts` は [バージョン, 人数, 最新からの距離 0・1・2]）・`versions` |
 | `fixed.r3.summaries` | サマリーの見本 3 件。基準日は利用明細の最終日から。`body` が null の 1 件は、キットが概況から下書きを作る |
 | `fixed.org` | 組織 CSV の `imported`（取り込み日）・`rows`（行数）・`depts`（部の並び） |
 | `fixed.policy`・`fixed.effect`・`fixed.effect2`・`fixed.settings` | サーバの集計（適用状況・設定の効果・データと設定）と、適用前後のセッションの大きさ |

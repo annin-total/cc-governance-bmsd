@@ -9,6 +9,7 @@ STATE_KEYS = ("users", "events", "errors", "nulls", "health", "reconciliation") 
 CSV_LAG = 2  # 利用明細が 1 件も無いとき、期間の終わりを今日の何日前にするか
 PICK_AFTER = 27  # 選べる最初の日は、利用明細の最初の日の何日後か
 TOP_ERRORS = 3
+MATCH_DAYS = 7  # match7: 突き合わせは利用明細の最終日までの 7 日（サーバの reconciliation_counts と同じ）
 
 
 def end_of(today: int, csv_end) -> int:
@@ -16,12 +17,13 @@ def end_of(today: int, csv_end) -> int:
     return today - CSV_LAG if csv_end is None else csv_end
 
 
-def split_state(p: dict, state: dict) -> dict:
-    """期間のページの値から状態のキーを外し、今日までの 7 日の値（`state`）だけを `fixed.now` に置く。"""
+def split_state(p: dict, state: dict, csv_end) -> dict:
+    """期間のページの値から状態のキーを外し、今日までの 7 日の値（`state`）と突き合わせの窓（`match`。利用明細の最終日までの 7 日）を `fixed.now` に置く。"""
     for v in p.values():
         for k in STATE_KEYS:
             v.pop(k, None)
-    return {"period": state["period"], **{k: state[k] for k in STATE_KEYS}}
+    match = None if csv_end is None else {"start": csv_end - MATCH_DAYS + 1, "end": csv_end}
+    return {"period": state["period"], "match": match, **{k: state[k] for k in STATE_KEYS}}
 
 
 def now_r3(raw, now: dict, today: int, csv_end: int) -> dict:

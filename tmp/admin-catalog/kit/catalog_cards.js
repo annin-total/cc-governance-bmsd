@@ -13,7 +13,7 @@
   const W = {
     bill: {}, month: { fixed: true }, rec: {},
     rec7: { data: "fixed.now", fixed: true, now: true, homeSpan: "直近 7 日" },
-    match7: { data: "fixed.now", fixed: true, span: "{S[match_start]:md}〜{S[csv_end]:md}" },
+    match7: { data: "fixed.now", fixed: true, span: "{match[start]:md}〜{match[end]:md}" },
     p30: { data: "fixed.r3.policy", fixed: true, now: true, span: "直近 {POLICY_DAYS} 日 · 対象 {denominator:num} 人" },
     study: { data: "fixed.effect", fixed: true },
     now: { fixed: true, now: true },

@@ -28,7 +28,7 @@ def _args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def _reports(conn, today: int, end: int) -> dict:
+def _reports(conn, today: int, end: int, csv_end) -> dict:
     """今の 4 画面とデータと設定の集計結果（サーバの関数の戻り値そのまま）。期間は `end`（E）で、状態のページの値は今日で終わる。"""
     from ccgov.ingestion import csv_upload
     from ccgov.metrics import windows
@@ -43,7 +43,7 @@ def _reports(conn, today: int, end: int) -> dict:
     with tempfile.TemporaryDirectory() as csv_dir:
         files = csv_files.build(conn, csv_dir, csv_upload.stored(csv_dir))
     fixed = {
-        "now": extras_r4.split_state(p, overview.build(conn, windows.period(PERIOD_KEYS[0], today))),
+        "now": extras_r4.split_state(p, overview.build(conn, windows.period(PERIOD_KEYS[0], today)), csv_end),
         "policy": policy.build(conn, today),
         "effect": effect.build(conn),
         "settings": {"holidays": holidays.build(conn), "files": files, "export": export.build(conn)},
@@ -132,7 +132,7 @@ def main() -> None:
     csv_end = raw.execute("SELECT MAX(day) FROM cost_daily").fetchone()[0]
     conn = db.connect()
     try:
-        data = _reports(conn, today, extras_r4.end_of(today, csv_end))
+        data = _reports(conn, today, extras_r4.end_of(today, csv_end), csv_end)
         starts = queries_policy.compliance_start_dates(conn, REFERENCE_KEY, REFERENCE_VALUE)
     finally:
         conn.close()

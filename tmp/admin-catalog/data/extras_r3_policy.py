@@ -67,7 +67,7 @@ def build(raw, today: int, policy: dict) -> dict:
     den = policy["denominator"]
     items = [{**i, "off_users": sum(1 for r in rows if r["on"].get(i["key"]) is False)} for i in policy["items"]]
     return {
-        "users": rows, "items": items, "denominator": den, "basis": policy["basis"], "lowest": min(items, key=lambda i: i["rate"])["key"] if items else None,
+        "start": today - POLICY_DAYS + 1, "end": today, "users": rows, "items": items, "denominator": den, "basis": policy["basis"], "lowest": min(items, key=lambda i: i["rate"])["key"] if items else None,
         "counts": {**counts, "ok_rate": round(counts["ok"] / den * 100, 1) if den else None, "old": sum(r["old"] for r in rows)},
         "states": {"off": judge.over(counts["off"], None, judge.NON_COMPLIANT_USERS_HIGH), "none": judge.over(counts["none"], judge.NOT_INTRODUCED_ELEVATED)},
         "core": summ["core"], "plugin": summ["plugin"], "versions": summ["core"]["rows"] + summ["plugin"]["rows"],
