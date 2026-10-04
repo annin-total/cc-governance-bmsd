@@ -2,6 +2,7 @@
 
 - 設計の段取り: 同等のまま Mods へ移す → その後に改善する（ユーザーの方針）
 - 対象: Claude Code 2.1.288、macOS。検証日 2026-10-03。前段の `spikes/mods-probe/RESULTS.md` は 2.1.287
+- 会社 PC（macOS、Bedrock）での手動検証は Claude Code 2.1.289、2026-10-04（`manual/README.md` の各項目の「結果」）。Windows は未実施
 - 行の正本は `INVENTORY.md` の A〜I 節（番号も同じ）。ユーザーが機能ごとに決めたことは「決定」、決まっていないことは「未決」と書く。決定の記録は `PROGRESS.md` の「記録」
 - 不変条件（`PROGRESS.md` の「前提」）: 契約は変えない。機能の後退は認めない。見え方が変わる箇所は機能ごとにユーザーへ確かめる
 
@@ -25,6 +26,7 @@
 - 生ログ（例 `g4c/logs/reader-mix-big.txt`）は scratch に置いたままで、コミットしていない。scratch はセッションの終了で消えうる
 - `docs` は監督が公式 docs（mods/reference.md・hooks.md）で確かめた事実（`PROGRESS.md` の「記録」）
 - `INV` は `INVENTORY.md`、`RES` は `spikes/mods-probe/RESULTS.md`
+- `MAN 5` は `manual/README.md` の項目 5 の「結果」（会社 PC、2.1.289。利用者が実施した記録を含む）
 
 ## 1. 機能ごとの対応表
 
@@ -137,8 +139,8 @@
   - 根拠: g3a §3（m3・m4）、g4e「sec-default が座った状態で届くか」（m1〜m4、`g4e/logs/m1.debug.log` ほか）
   - 確かめたのは隠しフラグ `--managed-settings` で作った policy の下だけ。本物の managed（ファイル・MDM・server-managed）と、Team・Enterprise のサインインで同じ範囲になるかは未検証（g4e「事実と推測」）
   - `$.http.fetch` は sec-default が守らないので、利用者 tier の mod が偽れる（g3a m4）
-- **会社 PC の事実**（ユーザーが 2026-10-02 に確かめた。Claude Code 2.1.287、macOS、Bedrock）: `--plugin-dir` の mod が `-p` でも対話でも読み込まれて動いた。managed settings は無く、sec-default は `not seated: no managed settings and not a Team or Enterprise organization` だった。`--safe-mode` と `--plugin-dir` を併用すると、mod は読み込まれない。他の利用者の端末も同じとは限らない
-- **配布**: git 型マーケットプレイスでは cache から実行され、版を上げないと新しいコードは届かない。autoUpdate で約 4 分後にディスクに入り、開いているセッションは `/reload-plugins` か次の起動まで旧版（g3b 結論 2・4・5）。版の上げ忘れを検査する手順が要る（推測。g3b「推測」）
+- **会社 PC の事実**（ユーザーが 2026-10-02 に確かめた。Claude Code 2.1.287、macOS、Bedrock）: `--plugin-dir` の mod が `-p` でも対話でも読み込まれて動いた。managed settings は無く、sec-default は `not seated: no managed settings and not a Team or Enterprise organization` だった。`--safe-mode` と `--plugin-dir` を併用すると、mod は読み込まれない。2.1.289（2026-10-04）でも managed settings は無く、sec-default は同じ理由で座らなかった（MAN 1）。他の利用者の端末も同じとは限らない
+- **配布**: git 型マーケットプレイスでは cache から実行され、版を上げないと新しいコードは届かない。autoUpdate で約 4 分後にディスクに入り、開いているセッションは `/reload-plugins` か次の起動まで旧版（g3b 結論 2・4・5）。版の上げ忘れを検査する手順が要る（推測。g3b「推測」）。会社 PC（2.1.289、社内 Bitbucket の git 型、autoUpdate）では、marketplace の取得と cache への新しい版の配置は自動で起きたが、実行される版は再起動では切り替わらず、`/plugin` の操作と `/reload-plugins` の後に切り替わった（MAN 5。交絡がある。論点 18）
 - **握り潰し**: 2.1.288 でも利用者 tier の mod 1 つで command hook が無言で止まる（g3a §4）。mod にしても、sec-default が座らない端末では利用者 tier の mod が governance の `$` 呼び出し（送信・書き込み・設定読み）を偽れる（g3a §1、p6b）。対策は 4.10
 
 ## 3. 契約の項目ごとの表
@@ -160,7 +162,7 @@
 | command_name | `e.command_name` | 同じ | `command.run` の `e.command`（組み込みの compact・clear・exit でも発火するので `source==='builtin'` を除く） | 同じ | g4a、g4e |
 | command_source | `e.command_source` | 同じ（`plugin` のみ確認） | `$.command.list()` の同名の `source`（型 CommandSource: builtin・plugin・user・mcp）。hook の語彙（project・mcp_prompt など）との対応は未確認 | 条件付き | g4a、g4e |
 | skill_name | `e.tool_input.skill` | 同じ | `tool.call`（`e.tool==='Skill'`）の `e.skill`。`skill.prompt` は sec-default に飛ばされる | 同じ | g4a、g4e |
-| effort_level | `e.effort.level` | 未検証 | `turn.step` の `e.effort` | 未検証 | haiku では両側とも無い（g4a、g4e） |
+| effort_level | `e.effort.level` | 未検証 | `turn.step` の `e.effort` | 値は入る（一致は未確認） | haiku では両側とも無い（g4a、g4e）。Bedrock の sonnet で `turn.step` の `e.effort` が `medium`（MAN 2。出どころと classic との一致は未確認。論点 16） |
 | permission_mode | `e.permission_mode` | 同じ | 無い。`$.config.list()` の `permissionMode` は設定値で実効値ではない。transcript の、利用者が打った user 行の `permissionMode` を `turn.complete` で読む（m1 acceptEdits・n6 系 default が一致）。スラッシュコマンドのターンでは user 行に無い（hook は default）。ターン途中の shift+tab は反映されない（推測） | 条件付き | g4a、g4e |
 | agent_id | `e.agent_id` | 同じ | `tool.call` の `e.agentId` | 同じ | g4a、g4e |
 | is_interrupt | `e.is_interrupt` | 意味が変わる（Esc 中断で mod の PostToolUseFailure だけが発火し、値は false。true は未観測） | 無い。`isError` と、結果の text の `[Request interrupted by user for tool use]` で中断を見分ける。見分けて除けば今と同じ件数（文言が変わらないことは推測） | 条件付き | g4a「見つけた差」1、g4e |
@@ -308,7 +310,7 @@ Windows・Desktop での登録と描画は未検証。
 
 ### 4.10 握り潰しの対策
 
-**採用**: managed settings が無い端末では A＋B＋C（prependPlugins に governance を置き、守りの mod と検知を足す）。managed settings がある端末では D（sec-default に任せる）。会社 PC では managed settings が無いので A＋B＋C が当てはまる（2.1.287 での事実。2 節）。他の利用者の端末も同じとは限らない。
+**採用**: managed settings が無い端末では A＋B＋C（prependPlugins に governance を置き、守りの mod と検知を足す）。managed settings がある端末では D（sec-default に任せる）。会社 PC では managed settings が無いので A＋B＋C が当てはまる（2.1.287・2.1.289 での事実。2 節）。他の利用者の端末も同じとは限らない。
 
 | 案 | 防げるもの | 防げないもの | 外され方 | 根拠 | Windows |
 |---|---|---|---|---|---|
@@ -325,20 +327,22 @@ Windows・Desktop での登録と描画は未検証。
 
 ### 5.1 決定した論点
 
-| # | 機能 | 論点 | 決定 | 残る未決 |
-|---|---|---|---|---|
-| 1 | C3・C4・C7 | 本体終了後の送信の方式 | 今と同じ一括送信（SessionStart と Stop の時点で 10 分以上たっていれば）。送るのは切り離した Python、mod は判定と起動 | Windows で切り離した Python が本体の終了後に生き残るか（未検証） |
-| 2 | F 全体 | 設定の自動適用の分担 | 適用は丸ごと同梱の Python（読み込み・SET/ADD/REMOVE/ONCE・バックアップ・原子的な書き込み）。結果を JSON で返し、mod は `$.process.run` で起動して policy 行を組み立てる（4.1 の案 E）。理由は F 節の冒頭 | Windows で `$.process.run` から Python を起動できるか（未検証）。結果の JSON の形と、value の文字列を Python と mod のどちらで作るか（設計で決める） |
-| 3 | B6 | Esc 中断で増える PostToolUseFailure の行 | 受け入れる | 独自イベントでは、中断の文言で除けば今と同じ件数にもできる。除くか |
-| 4 | B5 | claude_code_version を入れるイベント | 全イベントに入れる | – |
-| 5 | F11 | prev_value の数値の文字列化 | 解消（Python が書くので今と同じ） | – |
-| 6 | C9・D1 | error_type の語彙 | stage `send` の error 行は Python が今と同じ名前で積む。mod が積む error 行だけ、抜き出した符号（`ECONNREFUSED` など）と JS の例外名にする。`HTTP <code>` は今のまま | – |
-| 7 | G3・G5・G7 | お知らせの表示方式とブラウザ起動 | AbovePrompt のバンドにリンクと「既読にする」ボタンを付ける。ブラウザ起動は今のまま残す。`-p` では `$.ui.log` で出し（stream-json の `ui_log`）、既読にはしない | – |
-| 8 | G6 | 既読の条件 | ボタンを押したとき | ブラウザ起動の条件（今は「既読の書き込みに成功し、`cli` のとき」）を、ボタン方式の下でいつ開くか |
-| 9 | H1・H2 | 状態行 | settings の statusLine と statusline.js を残す | statusline.js の同期の書き込みを mod（`fs.write`＋`mv`）と同梱の Python のどちらで行うか |
-| 10 | I1 | `/reapply` の名前 | mod のコマンド `/governance-reapply`（モデルを呼ばず表で出す） | – |
-| 11 | 握り潰し・D2 | 対策の組み合わせ | managed settings が無い端末では prependPlugins に governance を置き、守りの mod と検知を足す。ある端末では sec-default に任せる。会社 PC では managed settings が無いので A＋B＋C が当てはまる（2.1.287 での事実。2 節） | 他の利用者の端末も同じとは限らない。会社 PC での Team・Enterprise のサインインの有無は sec-default の表示（`not a Team or Enterprise organization`）から読めるが、2.1.288 で再確認する。検知の記録の形（新しい stage にするか） |
-| 15 | A1・B1・B2・B6 | 収集の土台 | 独自イベント（tool.call・turn.*・session.*・prompt.submit・command.run）を前提にする。prompt_id と permission_mode は transcript から読み、行はターンの終わりまで保留する | 設計の未決として残す: transcript が 4 MiB を超えたとき（`$.fs.read` が reject する）の読み方と、Windows（`tail` が無い）での読み方 |
+「会社 PC での裏づけと影響」は、会社 PC（macOS、Bedrock、2.1.289）の手動検証（`MAN`）から分かったこと。
+
+| # | 機能 | 論点 | 決定 | 会社 PC での裏づけと影響 | 残る未決 |
+|---|---|---|---|---|---|
+| 1 | C3・C4・C7 | 本体終了後の送信の方式 | 今と同じ一括送信（SessionStart と Stop の時点で 10 分以上たっていれば）。送るのは切り離した Python、mod は判定と起動 | macOS では、hook の Python・mod から起こした Python（popen・nohup）・mod の `sh -c 'nohup …'` の 4 方式とも、`-p`・対話のどちらでも本体の終了後に生き残った（MAN 4）。社内のプロキシ・CA の下での到達は、会社 PC に `HTTPS_PROXY` が無く確かめられていない（MAN 3） | Windows で切り離した Python が本体の終了後に生き残るか（未検証）。実プロキシ・実 CA の下で届くか（未検証） |
+| 2 | F 全体 | 設定の自動適用の分担 | 適用は丸ごと同梱の Python（読み込み・SET/ADD/REMOVE/ONCE・バックアップ・原子的な書き込み）。結果を JSON で返し、mod は `$.process.run` で起動して policy 行を組み立てる（4.1 の案 E）。理由は F 節の冒頭 | macOS では、mod から `python3` を起動でき、stdin・stdout の UTF-8 がバイト列で一致した。起動中の本体が監視する settings.json を Python が `os.replace` で 400 回置き換えても失敗 0 で、本体は変更を検知し、設定の不具合の行は出なかった（MAN 4） | Windows で `$.process.run` から Python を起動できるか（未検証）。結果の JSON の形と、value の文字列を Python と mod のどちらで作るか（設計で決める） |
+| 3 | B6 | Esc 中断で増える PostToolUseFailure の行 | 受け入れる | – | 独自イベントでは、中断の文言で除けば今と同じ件数にもできる。除くか |
+| 4 | B5 | claude_code_version を入れるイベント | 全イベントに入れる | – | – |
+| 5 | F11 | prev_value の数値の文字列化 | 解消（Python が書くので今と同じ） | – | – |
+| 6 | C9・D1 | error_type の語彙 | stage `send` の error 行は Python が今と同じ名前で積む。mod が積む error 行だけ、抜き出した符号（`ECONNREFUSED` など）と JS の例外名にする。`HTTP <code>` は今のまま | – | – |
+| 7 | G3・G5・G7 | お知らせの表示方式とブラウザ起動 | AbovePrompt のバンドにリンクと「既読にする」ボタンを付ける。ブラウザ起動は今のまま残す。`-p` では `$.ui.log` で出し（stream-json の `ui_log`）、既読にはしない | バンドは新規・`/resume`・`--resume` のすべてで描かれた（MAN 6）。VS Code 拡張は対象外（ユーザーの決定。拡張のパネルでは toast もバンドも出ず（MAN 7）、今の systemMessage も VS Code では出ない（ユーザーの確認）） | Desktop での描画（未検証） |
+| 8 | G6 | 既読の条件 | ボタンを押したとき | – | ブラウザ起動の条件（今は「既読の書き込みに成功し、`cli` のとき」）を、ボタン方式の下でいつ開くか |
+| 9 | H1・H2 | 状態行 | settings の statusLine と statusline.js を残す | – | statusline.js の同期の書き込みを mod（`fs.write`＋`mv`）と同梱の Python のどちらで行うか |
+| 10 | I1 | `/reapply` の名前 | mod のコマンド `/governance-reapply`（モデルを呼ばず表で出す） | – | – |
+| 11 | 握り潰し・D2 | 対策の組み合わせ | managed settings が無い端末では prependPlugins に governance を置き、守りの mod と検知を足す。ある端末では sec-default に任せる。会社 PC では managed settings が無いので A＋B＋C が当てはまる（2 節） | 会社 PC は 2.1.289 でも managed settings が無く、sec-default は `not seated: no managed settings and not a Team or Enterprise organization` だった（MAN 1）。決定の前提はそのまま成り立つ | 他の利用者の端末も同じとは限らない。利用者 settings の `prependPlugins` で governance が `tier prepend` になるかは、会社 PC では未検証。検知の記録の形（新しい stage にするか） |
+| 15 | A1・B1・B2・B6 | 収集の土台 | 独自イベント（tool.call・turn.*・session.*・prompt.submit・command.run）を前提にする。prompt_id と permission_mode は transcript から読み、行はターンの終わりまで保留する | Bedrock の下で、独自イベント・`classic.*`・`turn.complete` の `e.usage`・`$.session.usage().context` のすべてに値が入り、`session.compact`・`classic.PreCompact` も届いた（MAN 2）。`e.usage.model` と `turn.step` の model は表記が違う（`us.` の接頭辞の有無など）が、契約で model を持つのは明細 CSV だけで、端末からは送らないので契約に影響しない | 設計の未決として残す: transcript が 4 MiB を超えたとき（`$.fs.read` が reject する）の読み方と、Windows（`tail` が無い）での読み方。Bedrock の下での transcript の `promptId`・`permissionMode`（未検証） |
 
 ### 5.2 未決の論点
 
@@ -347,23 +351,32 @@ Windows・Desktop での登録と描画は未検証。
 | 12 | B7/C2・C6 | キューの形と送信器の読み方 | mod がセッション別ファイル（`$.fs`）に書き、Python の送信器が複数ファイルを退避・送信する／`$.store` に置く | セッション別ファイル（g4b §5: 並行で欠落なし、`$.store` は合計 4 MiB で全体が止まる）。今の送信器は `queue.jsonl` 1 つを退避するので、送信器側の変更が要る。1 ファイルの大きさは未決 |
 | 13 | C7 | 4 MiB を超える旧版の queue.jsonl・spool | – | 送信を Python に残す決定（1）により、送信器は 4 MiB の上限を受けない。mod が旧ファイルを読まない設計なら論点として消える |
 | 14 | 配布 | 版の上げ忘れ | リリース手順で版の上げを検査する／しない | 検査する（g3b 結論 4: 版を上げないと届かない。推測を含む） |
-| 16 | B2 | effort_level の確認 | effort 対応モデルで `turn.step` の `e.effort` を確かめる（比較に classic の `e.effort.level`） | 確かめる（haiku では両側とも値が無く、まだ一致を確かめられていない。g4a・g4e） |
+| 16 | B2 | effort_level の確認（半分解消） | classic の `e.effort.level` と `turn.step` の `e.effort` を、同じ effort 対応モデルの同じターンで並べて確かめる | 確かめる。Bedrock の sonnet で `turn.step` の `e.effort` に `medium` が入った（MAN 2）。値の出どころ（利用者 settings の `effortLevel` とみられる。未確認）と、classic の `effort.level` との一致は未確認 |
 | 17 | B2 | command_source の語彙の対応 | `$.command.list()` の source（builtin・plugin・user・mcp）と、hook の `command_source`（project・mcp_prompt などを含みうる）の対応表を作る | 推奨なし。対応は `plugin` しか確かめていない（g4e）。決定 15 で独自イベントを土台にしたので、対応表が要る |
+| 18 | 配布 | 新しい版がいつ実行に効くか | 切り分けてから配布の方式（論点 20）と自動同期（論点 19）を決める／切り分けずに自動同期で切り替える | 切り分ける。会社 PC（MAN 5）では、directory 型は clone 先から実行され、autoUpdate を付けても 26〜30 分で更新は届かず、`git pull` → `marketplace update` → `plugin update` の手動なら届いた。git 型は cache から実行され、autoUpdate で marketplace の取得と cache への配置は自動で起きた（起動後の数分〜30 分）が、実行される版は再起動では切り替わらず、`/plugin` の操作と `/reload-plugins` の後に切り替わった（原因は切り分けていない）。交絡: 自動更新はメッセージを送らない起動では走らない見込み（推定）で、放置した間にメッセージを送ったかの記録が無い。`installed_plugins.json` の版と `installPath` も見ていない。再起動で切り替わらないのが本体の仕様なら、利用者が何もしないと新しい版が効かない（推測） |
+| 19 | 配布 | mod からの自動同期（配布の候補） | 採る（下の危険への歯止めを設計する）／採らない | 推奨なし（採否は設計で決める。ユーザーの決定）。事実（MAN 5）: mod が `$.process.run(['claude','plugin','marketplace','update',…])` と `['claude','plugin','update',…]` を実行し、`session.start` から await せずに `$.command.run({command:'reload-plugins'})` を呼ぶと、起動中のセッションが約 1〜2 秒で新しい版に切り替わった（隔離環境と社内 Bitbucket の両方）。`command.run` の hook の中から呼ぶと拒否される。reload で mod のモジュールが作り直され、`session.start` が再発火する。危険（検証用の実装に残るもの）: 歯止めが無いと reload が無限に繰り返されうる。reload は利用者の全プラグインを読み直す。利用者の入力と同じ形の `/reload-plugins` が対話の画面に残る（transcript での形は未確認）。Windows（パスの区切り、`claude` の実行ファイル）では未検証。並行したセッションと、本体の autoUpdate との競合。更新の判定を標準出力の正規表現で行っている（`--json` を使うべき）。同期を間引く仕組みが無い |
+| 20 | 配布 | 配布の方式 | git 型（利用者の `~/.ssh/config` にポート付きの別名を書き、scp 形式の URL で登録）／directory 型（ssh で clone し、ローカルパスで登録） | 推奨なし（論点 18・19 で変わる）。事実（MAN 5）: `marketplace add` が受け付けるのは owner/repo・https・http・scp 形式（`git@host:path`）・ローカルパスで、`file://`・`git://`・`ssh://` は受け付けない。ポートが 22 以外の社内 ssh は、別名に Port を付けて scp 形式で登録すれば git 型として成立し、clone は本体が行う。directory 型は clone と `git pull` を利用者か仕組みが行う。https を直接登録すると 150 秒待っても応答が無かった（原因は切り分けていない）。`--scope local` で入れた mod は、そのフォルダでしか効かない |
 
 ## 6. 未検証事項
 
-手動検証の手順書の元にする。手動検証の資材は GitHub のこのブランチから会社 PC で取得する（決定）。
+手動検証の手順書の元にする。手動検証の資材は GitHub のこのブランチから会社 PC で取得する（決定）。会社 PC の結果は `manual/README.md` の各項目の「結果」にある（MAN）。
 
 ### 会社 PC（Bedrock）
 
-- mod の読み込み: 確認済み（2.1.287。`--plugin-dir` の mod が `-p` でも対話でも動いた）。2.1.288 で再確認する
-- 独自イベント・`$.session.usage().context.tokens`・`$.session.version()`・transcript の `promptId`・`permissionMode` が command hook と同じ値を返すか（Bedrock 認証の下での値は未検証）
-- 社内プロキシ・社内 CA の下で、切り離した Python の送信が届くか（今と同じ経路）
-- sec-default の着座: 確認済み（2.1.287。`not seated: no managed settings and not a Team or Enterprise organization`）。2.1.288 で再確認する
-- 利用者 settings の `prependPlugins` に governance を置いて `tier prepend` で読み込まれるか（決定 11 の A＋B＋C の前提）
-- effort 対応モデルでの `effort.level`（論点 16）
+- mod の読み込み: 確認済み（2.1.287・2.1.289、会社 PC）
+- sec-default の着座: 確認済み（2.1.287・2.1.289、会社 PC。`not seated: no managed settings and not a Team or Enterprise organization`。MAN 1）
+- 独自イベント・`classic.*`・`turn.complete` の `e.usage`・`$.session.usage().context` の値: 確認済み（2.1.289、会社 PC。MAN 2）。`session.compact`・`classic.PreCompact` も届いた
+- `$.http.fetch` の到達: 社内 AIP のサーバへ curl と同じ結果（404）で届き、対話でも許可の確認は出なかった。確認済み（2.1.289、会社 PC。MAN 3）
+- 疑似のプロキシ・自己署名の TLS: `HTTP_PROXY`・`HTTPS_PROXY` に従い、`NO_PROXY` が無いと localhost 宛てもプロキシに回り、`NODE_EXTRA_CA_CERTS` が効いた。確認済み（2.1.289、会社 PC の疑似環境。MAN 3）
+- macOS の切り離し（4 方式、`-p`・対話）・`os.replace`・`python3` の UTF-8: 確認済み（2.1.289、会社 PC。MAN 4）
+- 未検証: 社内の実プロキシ・実 CA の下で、切り離した Python の送信が届くか（会社 PC に `HTTPS_PROXY` が無い）。`CLAUDE_CODE_CERT_STORE`
+- 未検証: Bedrock の下での transcript の `promptId`・`permissionMode`（手動検証の項目に含めていない）
+- 未検証: 利用者 settings の `prependPlugins` に governance を置いて `tier prepend` で読み込まれるか（決定 11 の A＋B＋C の前提）
+- effort: 半分解消（論点 16）
 
 ### Windows
+
+すべて未検証（MAN 4 は Windows 端末が無く保留）。
 
 - 切り離した送信が本体の終了後に生き残るか（`cmd /c start`・`Start-Process`・WMI・schtasks。g4b §3）。今の Python 版の送信プロセスも本体と一緒に殺されていないか（推測。g4b §3）
 - mod から同梱の Python（設定の自動適用）を `$.process.run` で起動できるか、`python3.exe` の有無（4.1 の案 E）
@@ -371,16 +384,22 @@ Windows・Desktop での登録と描画は未検証。
 - `hostname` と `platform.node()` の一致（大文字小文字・`COMPUTERNAME`）
 - `CLAUDE_CONFIG_DIR` が無いときのパス・区切り・`USERPROFILE`
 - ブラウザ起動（シェルを通さない方法）、`$.store` の保存先、cache のパス
+- mod からの自動同期（論点 19）: パスの区切り、`claude` の実行ファイル
 
-### 社内 Bitbucket
+### 配布（社内 Bitbucket）
 
-- 認証付き https URL での `marketplace add`・shallow clone・資格情報（g3b「会社 PC で確かめるべき残り」）
-- 既定の端末（`FORCE_AUTOUPDATE_PLUGINS` 無し）で `autoUpdate: true` が走るか、所要時間
-- Bitbucket に届かないときの起動と自動更新、clone 先が消えたとき
+- `marketplace add` が受け付ける形と、ssh の別名＋scp 形式での git 型の登録・導入・cache からの実行: 確認済み（2.1.289、会社 PC。MAN 5）
+- directory 型の実行元（clone 先）と、手動の更新（`git pull` → `marketplace update` → `plugin update`）: 確認済み（2.1.289、会社 PC。MAN 5）
+- mod からの自動同期（論点 19）が起動中のセッションを新しい版に切り替えること: 確認済み（2.1.289、隔離環境と社内 Bitbucket。MAN 5）
+- `--scope local` で入れた mod がそのフォルダでしか効かないこと: 確認済み（2.1.289、会社 PC。MAN 5）
+- 未検証: https での登録（150 秒待っても応答が無かった。原因は切り分けていない）
+- 未検証: 自動更新で実行される版が切り替わる条件（論点 18 の交絡の切り分け。メッセージを送ったか、`installed_plugins.json` の版と `installPath`）
+- 未検証: 自動同期と、並行したセッション・本体の autoUpdate との競合
+- 未検証: Bitbucket に届かないときの起動と自動更新、clone 先が消えたとき
 
 ### managed settings
 
-- 会社 PC に managed settings があるか: 確認済み（2.1.287。無い）。2.1.288 で再確認する。他の利用者の端末も同じとは限らない
+- 会社 PC に managed settings があるか: 確認済み（2.1.287・2.1.289。無い）。他の利用者の端末も同じとは限らない
 - 以下は managed settings のある端末で確かめる（会社 PC では試せない）
   - managed の `prependPlugins` で governance が `tier prepend` になり、利用者の `prependPlugins` が無視されるか（g3a §3 の手順の材料）
   - 本物の managed の下で sec-default が座り、`--managed-settings` のときと同じ範囲（classic.*・settings.read・skill.prompt は届かず、独自イベントと `$` は届く）になるか（g3a・g4e）
@@ -391,9 +410,10 @@ Windows・Desktop での登録と描画は未検証。
 
 ### Desktop・VS Code
 
-- バンドの描画と既読ボタン、`isInteractive`・`CLAUDE_CODE_ENTRYPOINT` の値（g4d §9）
-- `$.process.run` が使えない面での user_email・host・設定の自動適用（Python）・送信の切り離し（型定義で CLI 限定。g4c #3）
-- Link を押したときにブラウザが開くか
+- VS Code 拡張は対象外（ユーザーの決定）。拡張のパネルでは mod が読み込まれ `$.process.run`・`$.store` も動いたが、`surfaces=[]`・`isInteractive=false`・`CLAUDE_CODE_ENTRYPOINT=claude-vscode` で、toast もバンドも出なかった（MAN 7。パネルで動いた本体の版は未確認）。今の systemMessage も VS Code では出ない（ユーザーの確認）
+- 未検証（Desktop）: バンドの描画と既読ボタン、`isInteractive`・`CLAUDE_CODE_ENTRYPOINT` の値（g4d §9）
+- 未検証（Desktop）: `$.process.run` が使えない面での user_email・host・設定の自動適用（Python）・送信の切り離し（型定義で CLI 限定。g4c #3）
+- 未検証（Desktop）: Link を押したときにブラウザが開くか
 
 ### この Mac で確かめられるが未実施
 
@@ -402,14 +422,14 @@ Windows・Desktop での登録と描画は未検証。
 - API エラーのターンの context_tokens、`command_source` の `plugin` 以外（g4a・g4e）
 - 独自イベントの読み方: tool.call ごとに transcript を読む方式、4 MiB を超える transcript、ターン途中の shift+tab と plan・bypassPermissions・auto モード、`--fork-session`・`--continue`・SDK の resume、自動圧縮が成功した場合の compact（g4e「未検証事項」）
 - ホットリロードでの二重計上・ブラウザ起動の繰り返し、`disableAllHooks` で止まる範囲（g4a・g4d）
-- `--safe-mode`: `--plugin-dir` との併用で mod が読み込まれないことは確認済み（会社 PC、2.1.287）。2.1.288 で再確認する。マーケットプレイスから入れた mod が止まるかは未検証
+- `--safe-mode`: `--plugin-dir` との併用で mod が読み込まれないことは確認済み（会社 PC、2.1.287）。マーケットプレイスから入れた mod が止まるかは未検証
 
 ## 7. 設計への引き継ぎ
 
 移行と独立した、今の機能の既知の問題。移行の設計で扱いを決める。
 
 - **ONCE で配る dict の値**（例 statusLine）は、利用者の元の値を丸ごと置き換え、アンインストールしても戻らない。会社 PC で、検証用に足した `ONCE["statusLine"]` が利用者の元の statusLine を消した（ユーザーの確認）。今配っている policy の ONCE は空なので、今は起きない。ONCE に dict を配るときの問題である
-- **resume で お知らせが出ない**: 2.1.285 では、対話のセッションを resume すると SessionStart の systemMessage が表示されなかった（ユーザーの確認）。バンドならこの問題は起きない見込み（推測。手動検証で確かめる）
+- **resume で お知らせが出ない**: 2.1.285 では、対話のセッションを resume すると SessionStart の systemMessage が表示されなかった（ユーザーの確認）。バンドならこの問題は起きない（確認済み。2.1.289 の会社 PC で、新規・`/resume`・`--resume` のすべてでバンドが描かれた。MAN 6）
 - **notices.json の id の重複**: 同じ id が重複すると、まとめて既読になる
 
 移行の設計で、プロジェクトの Design 原則（リポジトリの `CLAUDE.md`）との両立を決める論点。

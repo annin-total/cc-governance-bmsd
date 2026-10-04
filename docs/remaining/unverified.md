@@ -35,7 +35,7 @@
 
 | 事項 | 確かめること |
 | --- | --- |
-| VS Code 拡張・デスクトップアプリ・JetBrains での `CLAUDE_CODE_ENTRYPOINT` | それぞれの値と、`systemMessage` が画面に表示されるかを確かめ、`../knowledge/claude-code-behavior.md` に記録する。表示されないなら、既読にしない判定を足すかを決める |
+| デスクトップアプリ・JetBrains での `CLAUDE_CODE_ENTRYPOINT` | それぞれの値と、`systemMessage` が画面に表示されるかを確かめ、`../knowledge/claude-code-behavior.md` に記録する。表示されないなら、既読にしない判定を足すかを決める |
 
 ## ローカルの隔離環境で再現すれば白黒が付くこと
 

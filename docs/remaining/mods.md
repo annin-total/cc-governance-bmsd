@@ -77,8 +77,8 @@ Claude Code 2.1.288 の Mods（関数フック）へ本プラグインを移す�
 
 | 事項 | 確かめること |
 | --- | --- |
-| 会社 PC（Bedrock） | 2.1.288 でも mod が読み込まれ、sec-default が座らないか。独自イベント・`$.session.usage().context.tokens`・transcript の `promptId`・`permissionMode` が command hook と同じ値か。利用者 settings の `prependPlugins` で governance が tier prepend になるか。社内のプロキシと CA の下で送信が届くか、対話で許可確認が出るか。effort 対応モデルでの `effort` |
-| Windows | 切り離した送信プロセスが本体の終了後に生き残るか（今の Python 版を含む）。`$.process.run` から同梱の Python を起動できるか。transcript を末尾から読む方法（`tail` が無い）。`hostname`・パス・`$.store` の保存先・ブラウザ起動 |
-| 社内 Bitbucket | 認証付きの https URL で `marketplace add` と shallow clone が通るか。既定の端末で `autoUpdate: true` が走るか、所要時間。社内リポジトリに届かないときと、clone 先が消えたときの起動と更新 |
+| 会社 PC（Bedrock） | 社内の実プロキシ・実 CA の下で送信が届くか（`CLAUDE_CODE_CERT_STORE` を含む）。利用者 settings の `prependPlugins` で governance が tier prepend になるか。Bedrock の下での transcript の `promptId`・`permissionMode`。`turn.step` の `effort` の出どころと、`classic.*` の `effort.level` との一致 |
+| Windows | すべて。切り離した送信プロセスが本体の終了後に生き残るか（今の Python 版を含む）。`$.process.run` から同梱の Python を起動できるか。transcript を末尾から読む方法（`tail` が無い）。`hostname`・パス・`$.store` の保存先・ブラウザ起動。mod からの自動同期（パスの区切り、`claude` の実行ファイル） |
+| 配布（社内 Bitbucket） | https での `marketplace add` が通るか（直接の登録は 150 秒待っても応答が無かった）。自動更新で実行される版が切り替わる条件（メッセージの送信の有無、`installed_plugins.json` の版と `installPath` で交絡を切り分ける）。mod からの自動同期と、並行したセッション・本体の autoUpdate との競合。社内リポジトリに届かないときと、clone 先が消えたときの起動と更新 |
 | managed settings 下 | 本物の managed settings で sec-default が座り、届く範囲が模した policy と同じか。managed の `prependPlugins` で governance が tier prepend になり、利用者の `prependPlugins` が無視されるか。`allowManagedModsOnly`・`allowManagedHooksOnly`・`disableSideloadFlags` の効き方。managed の hook が利用者の mod に止められないか。組み込みや他の mod の `fs.*` hook が、利用者の `settings.json` への書き込みを拒否しないか |
-| Desktop・VS Code | バンドと既読ボタンが描かれるか、`isInteractive`・`CLAUDE_CODE_ENTRYPOINT` の値。`$.process.run` が使えるか。Link を押してブラウザが開くか |
+| Desktop | バンドと既読ボタンが描かれるか、`isInteractive`・`CLAUDE_CODE_ENTRYPOINT` の値。`$.process.run` が使えるか。Link を押してブラウザが開くか（VS Code 拡張は対象外） |
