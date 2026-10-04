@@ -32,8 +32,9 @@ PAGE_JS = """(() => ({
     return Array.from(document.querySelectorAll('main .card[data-ref^=over_]')).map((c) => [c.dataset.ref, c.getBoundingClientRect().width / one, c.querySelectorAll('.srow').length]);
   })(),
 }))()"""
-STICKY_JS = """(() => { window.scrollTo(0, document.body.scrollHeight); const t = document.querySelector('.top').getBoundingClientRect(),
-  b = document.querySelector('.band').getBoundingClientRect(); return [window.scrollY, t.top, b.top - t.bottom]; })()"""
+# 画面は scroll-behavior: smooth のため、すぐに動かす（instant）。画面より長いのに動かなければ落とす
+STICKY_JS = """(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: "instant" }); const t = document.querySelector('.top').getBoundingClientRect(),
+  b = document.querySelector('.band').getBoundingClientRect(); return [document.documentElement.scrollHeight > window.innerHeight, window.scrollY, t.top, b.top - t.bottom]; })()"""
 # 文字を持つ要素（直下に文字か、入力欄）の計算後の大きさ
 SIZES_JS = """Array.from(new Set(Array.from(document.querySelectorAll('body *')).filter((e) =>
   ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.tagName) || Array.from(e.childNodes).some((n) => n.nodeType === 3 && n.textContent.trim()))
@@ -84,9 +85,9 @@ def page_problems(page, where: str, page_id: str, home: bool) -> list:
     if d["sticky"] != "sticky":
         out.append(f"{where}: ヘッダーと帯が sticky でない（{d['sticky']}）")
     else:
-        scrolled, top, gap = page.evaluate(STICKY_JS)
-        if scrolled and (abs(top) > 1 or abs(gap) > 1):
-            out.append(f"{where}: スクロール後にヘッダーと帯が上端に無い（ヘッダー {top}・帯との隙間 {gap}）")
+        tall, scrolled, top, gap = page.evaluate(STICKY_JS)
+        if tall and (not scrolled or abs(top) > 1 or abs(gap) > 1):
+            out.append(f"{where}: スクロール後にヘッダーと帯が上端に無い（スクロール {scrolled}・ヘッダー {top}・帯との隙間 {gap}）")
     out += _cards(where, page_id, d)
     if home:
         h = page.evaluate(HOME_JS)
