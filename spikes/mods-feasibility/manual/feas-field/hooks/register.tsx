@@ -7,7 +7,9 @@ import { bump, emptyRecord, KEY_PREFIX, pushTurn, staleKeys, turnRow, type Recor
 type Rec = Record<string, unknown>
 
 const COMMAND = 'feas-field'
-const USAGE = '使い方: /feas-field info | log | py | fetch <GET|POST> <url> | detach | hold <秒> | ui'
+const USAGE = '使い方: /feas-field info | log | py | fetch <GET|POST> <url> | detach | hold <秒> | update <plugin>@<marketplace> | reload | ui'
+const PLUGIN_SPEC = /^[\w.-]+@[\w.-]+$/
+const UPDATE_TIMEOUT_MS = 60000
 const LOCAL_URL = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/
 const HOLD_MAX_SEC = 120
 const RUN_TIMEOUT_MS = 15000
@@ -20,6 +22,9 @@ let prev: Record_ | null = null
 // classic.SessionStart は session.start より先に来ることがあるので、ここでは作り直さない
 let cur: Record_ = emptyRecord()
 let isBandOn = false
+let isReloadPending = false
+let reloadNote: unknown = null
+let syncNote: unknown = null
 
 async function _homes($: EngineInterface): Promise<string[]> {
   return [await $.env.get('HOME'), await $.env.get('USERPROFILE')].filter((v): v is string => !!v)
@@ -202,17 +207,65 @@ async function _hold($: EngineInterface, sec: string | undefined): Promise<strin
   return JSON.stringify({ heldMs: Date.now() - t0, exitCode: r.exitCode })
 }
 
+// claude plugin の更新を mod から起動できるか。marketplace を取り直してから、プラグインを更新する
+async function _runUpdate($: EngineInterface, spec: string): Promise<Rec[]> {
+  const steps = [['marketplace', 'update', spec.split('@')[1]!], ['update', spec]]
+  const rows: Rec[] = []
+  for (const step of steps) {
+    const t0 = Date.now()
+    try {
+      const r = await $.process.run(['claude', 'plugin', ...step], { timeoutMs: UPDATE_TIMEOUT_MS })
+      rows.push({ step: step.join(' '), exitCode: r.exitCode, ms: Date.now() - t0, out: r.stdout.trim().slice(-200), err: r.stderr.trim().slice(-120) })
+    } catch (err) { rows.push({ step: step.join(' '), error: errorCode(err), ms: Date.now() - t0 }) }
+  }
+  return rows
+}
+
+async function _update($: EngineInterface, spec: string | undefined): Promise<string> {
+  if (!spec || !PLUGIN_SPEC.test(spec)) return '使い方: /feas-field update <plugin>@<marketplace>'
+  return JSON.stringify(await _runUpdate($, spec), null, 2)
+}
+
+// 起動時に更新し、版が変わったときだけ reload する。結果は syncNote に残す
+async function _autoSync($: EngineInterface, spec: string): Promise<void> {
+  if (!PLUGIN_SPEC.test(spec)) return
+  const rootBefore = $.plugin.root.split('/').slice(-1)[0]
+  const rows = await _runUpdate($, spec)
+  const isUpdated = rows.some((r) => /updated from/.test(String(r.out)))
+  syncNote = {
+    at: Date.now(), isUpdated, rootBefore, rootAfter: $.plugin.root.split('/').slice(-1)[0],
+    steps: rows.map((r) => ({ exitCode: r.exitCode ?? r.error, head: String(r.out ?? '').replace(/\s+/g, ' ').slice(-90) })),
+  }
+  if (isUpdated) await _tryReload($, 'autosync')
+}
+
+// /reload-plugins を mod から実行できるか。command.run の中からは実行できない（host が拒否する）ので、後のイベントから待たずに呼び、結果は reloadNote に残す
+async function _tryReload($: EngineInterface, from: string): Promise<void> {
+  const t0 = Date.now()
+  try {
+    const r = await $.command.run({ command: 'reload-plugins' })
+    reloadNote = { from, ok: true, ms: Date.now() - t0, text: String(r?.text ?? '').slice(0, 200) }
+  } catch (err) {
+    reloadNote = { from, error: errorCode(err), message: String((err as Error).message).slice(0, 200), ms: Date.now() - t0 }
+  }
+}
+
 async function _dispatch($: EngineInterface, args: string): Promise<string> {
   const [sub, ...rest] = args.trim().split(/\s+/)
   if (sub === 'info') return _info($)
   if (sub === 'log') {
     const usageNow = await _try(async () => (await $.session.usage()).context)
-    return JSON.stringify({ sessionIdLen: sid.length, previousProcesses: prev, thisProcess: cur, usageNow }, null, 2)
+    return JSON.stringify({ sessionIdLen: sid.length, previousProcesses: prev, thisProcess: cur, usageNow, reloadNote, syncNote }, null, 2)
   }
   if (sub === 'fetch') return _fetch($, rest)
   if (sub === 'detach') return _detach($)
   if (sub === 'py') return _py($)
   if (sub === 'hold') return _hold($, rest[0])
+  if (sub === 'update') return _update($, rest[0])
+  if (sub === 'reload') {
+    isReloadPending = true
+    return 'reload を予約した。次の turn.complete で reload-plugins を実行する。結果は /feas-field log の reloadNote'
+  }
   if (sub === 'ui') {
     isBandOn = !isBandOn
     $.ui.toast('feas-field: toast')
@@ -233,6 +286,9 @@ export const register: Register = (on) => {
     start = { surface: e.surface, isInteractive: e.isInteractive }
     // お知らせのバンドの代わり。起動直後から出し、新規・resume で描かれるかを見る
     if ((await $.env.get('FEAS_BAND')) === '1') isBandOn = true
+    if ((await $.env.get('FEAS_AUTORELOAD')) === '1') void _tryReload($, 'session.start')
+    const syncSpec = await $.env.get('FEAS_AUTOSYNC')
+    if (syncSpec) void _autoSync($, syncSpec)
     await $.command.register({ name: COMMAND, description: 'Mods の検証値を出す（モデルを呼ばない）' })
     sid = await $.session.id()
     const saved = await $.store.get(`${KEY_PREFIX}${sid}`)
@@ -255,6 +311,10 @@ export const register: Register = (on) => {
   on('turn.complete', async ($, e, next) => {
     pushTurn(cur, turnRow(e as unknown as Rec, (await $.session.usage()).context))
     await _count($, 'turn.complete')
+    if (isReloadPending) {
+      isReloadPending = false
+      void _tryReload($, 'turn.complete')
+    }
     return next(e)
   })
 

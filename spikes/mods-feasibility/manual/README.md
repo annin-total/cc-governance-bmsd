@@ -125,6 +125,24 @@ ClaudeCode ディレクトリの一覧・Managed Preferences / レジストリ�
 debug の grep 結果:
 ```
 
+**結果（2026-10-04、2.1.289、macOS 25.6.0、Bedrock。Claude Code のセッション内の Bash から、親セッションの環境変数を `env -u` で外して実行）:**
+
+```text
+Claude Code の版 / OS: 2.1.289 / macOS（Darwin 25.6.0）。手順書の 2.1.288 より新しい版（claude update と npm install -g 後も 2.1.289 が最新）
+ClaudeCode ディレクトリ: /Library/Application Support/ClaudeCode/ が無い。/Library/Managed Preferences/ に anthropic を含む項目なし
+/feas-field info の出力（要点。全文は検証時の出力と同じ構造）:
+  settings.policyKeys=[]、policyEnvKeys=[]、policyPrependPlugins/AppendPlugins/AllowManagedModsOnly/AllowManagedHooksOnly/DisableSideloadFlags=unset、userPrependPlugins=unset
+  tier=user、sessionStart={surface:null, isInteractive:false}、surfaces=[]、model=us.anthropic.claude-sonnet-5
+  env: CLAUDE_CODE_ENTRYPOINT=sdk-cli、CLAUDE_CODE_USE_BEDROCK=1、NODE_EXTRA_CA_CERTS=set(len=51)、
+       HTTPS_PROXY/https_proxy/HTTP_PROXY/NO_PROXY/CLAUDE_CODE_CERT_STORE/DISABLE_AUTOUPDATER/FORCE_AUTOUPDATE_PLUGINS/CLAUDE_CONFIG_DIR/AWS_REGION/OS/USERPROFILE=unset
+  storeFiles=[feas-field_inline-9f5dc1bba725.json(225B)]、configDir=~/.claude
+  process: hostname と python3 が eq=true、python・py -3 は cannot start（macOS に無い）
+debug の grep 結果:
+  cc-plugin-sec-default@builtin not seated: no managed settings and not a Team or Enterprise organization (none)
+  hooks module feas-field@inline loaded (worker, environment 1, tier user); events: store.keys,session.start,prompt.submit,…
+判定: 前回（2.1.287）と同じ。sec-default は座らず、利用者 settings の prependPlugins が効く端末
+```
+
 ---
 
 ## 2. Bedrock での usage と独自イベント
@@ -180,6 +198,26 @@ FEAS_MODEL に使ったモデル（ID の形だけでよい）:
 1 本目の出力:
 /feas-field log の出力（全文）:
 任意の /compact 後の log / effort 対応モデルでの lastStep:
+```
+
+**結果（2026-10-04、2.1.289、macOS、Bedrock）:**
+
+```text
+FEAS_MODEL に使ったモデル: us.anthropic.claude-haiku-4-5-20251001-v1:0
+1 本目の出力: 「hi」と出力されました。
+/feas-field log（previousProcesses）:
+  counts: classic.SessionStart 1 / session.start 1 / prompt.submit 1 / classic.UserPromptSubmit 1 / turn.start 1 / turn.step 2 /
+          classic.PostToolUse 1 / tool.call 1 / classic.Stop 1 / turn.complete 1 / classic.SessionEnd 1 / session.end 1
+  turns[0]: reason=answer、usage={model:"anthropic.claude-haiku-4-5-20251001-v1:0"（us. 接頭辞なし）、input_tokens 15、output_tokens 616、
+            cache_read_input_tokens 27094、cache_creation_input_tokens 27775}、contextAtComplete={tokens 27780, window 200000, percent 14}
+  lastStep: {model:"us.anthropic.claude-haiku-4-5-20251001-v1:0", effort:"<absent>", isSubagent:false}
+  thisProcess.counts: classic.SessionStart 1 / session.start 1 / command.run 1
+  usageNow: {tokens 27780, window 1000000, percent 3}（2 本目のプロセスの既定モデルの窓）
+判定: すべて期待どおり。Bedrock の下で e.usage・context とも値が入る。sec-default が無いので classic.* も届いた
+任意の /compact 後: counts に session.compact 1・classic.PreCompact 1 が増えた（lastStep は null＝compact 単独のプロセスでは step が無い）
+任意の effort 対応モデル（sonnet → us.anthropic.claude-sonnet-5）: lastStep={model:"us.anthropic.claude-sonnet-5", effort:"medium", isSubagent:false}。
+  usage.model は "claude-sonnet-5-5"（lastStep.model と表記が異なる）。input 4 / output 102 / cache_read 57028 / cache_creation 26436
+  effort "medium" は利用者 settings の effortLevel 由来とみられる（未確認）
 ```
 
 ---
@@ -269,6 +307,37 @@ $env:FEAS_ALLOW_REMOTE = '1'; claude --plugin-dir "$env:FEAS\feas-field"; Remove
 3b の curl の結果 / GET の出力 / POST の出力（未実施ならそう書く）:
 3c で許可の画面が出たか（出たなら文言）:
 info の env 欄の HTTPS_PROXY・NO_PROXY・NODE_EXTRA_CA_CERTS・CLAUDE_CODE_CERT_STORE（項目 1 の出力にある）:
+```
+
+**結果（2026-10-04、2.1.289、macOS。3b・3c は検証用の受信先が無く未実施）:**
+
+```text
+3a の出力: feas-field: {"status":200,"ok":true,"bodyLen":11,"ms":1}
+受信器に出た行: method=POST、path=/ingest、bodyLen=41、content-type=application/json、user-agent=Bun/1.4.3（1 行）
+3a の debug の grep 結果:
+  CA certs: stores=bundled,system, extraCertsPath=<社内 CA バンドルのパス>
+  CA certs: Loaded 121 bundled root certificates / Loaded 9 system CA certificates / Appended extra certificates from NODE_EXTRA_CA_CERTS
+  Cleared proxy agent cache（2 回）
+3b（利用者が実施。受信先は社内の AIP 上のサーバ。macOS、2.1.289）: curl http_code=404、GET・POST とも
+  feas-field: {"status":404,"ok":false,"bodyLen":207,"ms":99 / 95}。ネットワークとしては届いている（404 はパスの問題）。curl と mod の結果が一致
+  プロキシ・社内 CA 越えの到達そのものは、この PC に HTTPS_PROXY が無いため未確認のまま
+3c（利用者が実施）: 対話で /feas-field fetch GET <同じ URL> → 許可の確認画面は出ず、そのまま
+  feas-field: {"status":404,"ok":false,"bodyLen":207,"ms":4824} が表示された
+info の env 欄: HTTPS_PROXY・https_proxy・HTTP_PROXY・NO_PROXY・CLAUDE_CODE_CERT_STORE は unset、NODE_EXTRA_CA_CERTS は set(len=51)。
+  この PC は HTTPS_PROXY なし（Bedrock はゲートウェイの URL へ直接接続）。プロキシ環境の確認にはならない
+```
+
+**追加の検証（2026-10-04、2.1.289、macOS。ローカルに立てたテスト用のプロキシ・自己署名 TLS サーバによる疑似環境。社内の実プロキシ・実 CA ではない）:**
+
+```text
+HTTP_PROXY=http://127.0.0.1:<テスト用ポート> で http://example.invalid/x へ fetch → プロキシに "GET http://example.invalid/x" が届き、mod は status 200
+HTTPS_PROXY で https://example.invalid/x へ fetch → プロキシに "CONNECT example.invalid:443" が届き（プロキシが 502 を返す設定）、mod は error=ERR_PROXY_TUNNEL
+  → mod の $.http.fetch は HTTP_PROXY・HTTPS_PROXY に従う（本体と同じ経路）
+HTTP_PROXY 設定・NO_PROXY 未設定で http://127.0.0.1:18850 へ fetch → 127.0.0.1 宛てもプロキシに回る（GET http://127.0.0.1:18850/ingest が届いた）。
+  NO_PROXY=127.0.0.1 を付けると、プロキシに届かず直接接続（受信器を止めていたので ECONNREFUSED）
+  → プロキシ環境では localhost 宛てが回り込まないよう NO_PROXY に localhost・127.0.0.1 が要る
+自己署名の https://127.0.0.1 へ fetch: CA 指定なし → error=DEPTH_ZERO_SELF_SIGNED_CERT／NODE_EXTRA_CA_CERTS にその証明書を指定 → status 200
+  → mod の $.http.fetch は NODE_EXTRA_CA_CERTS を尊重する。OS の証明書ストア（CLAUDE_CODE_CERT_STORE）は、この PC に社内 CA を入れた環境が無く未確認
 ```
 
 ---
@@ -387,6 +456,21 @@ Python の版（python --version / py -3 --version）:
 セキュリティ製品の警告の有無:
 ```
 
+**結果（2026-10-04、2.1.289、macOS。Windows は未実施で保留）:**
+
+```text
+4a run: hook:popen・mod-py:popen・mod-py:nohup・mod:sh-nohup の 4 つとも started=true、survived=true（doneAfterExitSec 3.0〜3.2）。
+  mod 側の起動は exitCode 0（58ms・95ms・28ms）、stderr 空。claude rc=0
+4a run --interactive（利用者が実施）: /feas-field detach で mod-py:popen・mod-py:nohup・mod:sh-nohup が exitCode 0 で起動。
+  hook:popen・mod-py:popen・mod-py:nohup・mod:sh-nohup の 4 つとも started=true、survived=true（doneAfterExitSec 3.0〜3.5）。claude rc=0
+4b: A.whileOpenByPython=ok、afterClose=ok。B は claudeRc 0、replaces={ok:400, final:ok:1}、debugDetectedChange=1、
+  debugSettingsTroubleLines=0、finalSettings=valid json。失敗 0
+4c: python3 の 3 通り（text／text+PYTHONUTF8／buffer）すべて eq=true、exitCode 0、stdin・stdout とも utf-8。
+  python・py -3 は macOS に無く cannot start（想定どおり）
+4c の info（process 欄）: hostname と python3 が eq=true・eqIgnoreCase=true（項目 1 と同じ出力）
+Windows の版・Python の版・Windows での各出力・セキュリティ製品の警告: 未実施（Windows 端末がないため保留）
+```
+
 ---
 
 ## 5. 社内 Bitbucket の git 型マーケットプレイス
@@ -478,6 +562,154 @@ cache の一覧:
 VPN を切ったときの info の出力:
 ```
 
+**結果（2026-10-04、2.1.289、macOS。社内 Bitbucket は未実施。代わりにローカルの directory 型 marketplace で流れだけ確認）:**
+
+```text
+確認の方法: 一時ディレクトリに marketplace 用の git リポジトリを作り、隔離した CLAUDE_CONFIG_DIR に登録。
+  `file://` 形式は "Invalid marketplace source format"（owner/repo・https://…・./path のみ）。絶対パスなら登録できた
+marketplace add / install: どちらも成功（scope: user）
+導入直後の pluginRoot: 元のディレクトリ（<リポジトリ>/plugins/feas-field）を指した。cache ではない。storeFiles は項目 1 と同じ形式
+  → directory 型は cache から動かない。git 型で cache から動くかは未確認（手順書の判定表の pluginRoot は Bitbucket で要確認）
+cache の一覧: 0.1.0
+更新: version を 0.1.1 にして commit → marketplace update → plugin update で "updated from 0.1.0 to 0.1.1"。cache に 0.1.0・0.1.1 が並んだ。
+  更新後も pluginRoot は元のディレクトリのまま（directory 型のため）
+自動更新・VPN を切った確認・Bitbucket の認証付き https: 未実施
+```
+
+**結果（利用者が実施、2026-10-04、2.1.289、macOS。社内 Bitbucket を ssh で clone し、ローカルパスで登録する方式）:**
+
+```text
+方式: `marketplace add` は ssh:// 形式を受け付けない（"Invalid marketplace source format"）。https:// 直登録は 150 秒待っても応答が無かった。
+  scp 形式（git@host:path）は形式としては受理されるがポート 22 固定で届かない。そのため ssh:// で clone してローカルパスで登録した
+  （ssh の別名 Host にポート 7999 を割り当てる方法でも、空リポジトリの clone までは通ることを確認したが、本番では使わない）
+push: 空リポジトリへの最初の push が成功（main に 8 ファイル）。認証は ssh 鍵
+marketplace add（ローカルパス）/ install: どちらも成功（scope: user）
+導入直後の pluginRoot: ~/Documents/Dev/tmp/feas-mods-mkt/plugins/feas-field（clone 先。cache ではない）
+storeFiles: feas-field_feas-mods-mkt-<12 桁>.json（--plugin-dir のときの feas-field_inline-<12 桁>.json とは名前の形が違う）
+cache の一覧: 0.1.0
+更新: 別の clone から 0.1.1 を push → 利用者側で git pull（fast-forward）→ marketplace update → plugin update が
+  "updated from 0.1.0 to 0.1.1"。cache は 0.1.0・0.1.1。更新後も pluginRoot は clone 先のまま（Restart to apply changes）
+判定: ローカルの git リポジトリでの確認と同じ。この方式では実行元は clone 先で、更新は git pull と marketplace update・plugin update で届く。
+  git 型の cache 実行・VPN 切断時の挙動は、この方式では確かめていない（登録方式として使わないため不要と判断）
+```
+
+**自動更新の確認（2026-10-04、2.1.289、macOS。directory 型の marketplace で確認）:**
+
+```text
+設定: 隔離した config の settings.json に extraKnownMarketplaces.feas-mods-mkt.autoUpdate = true（source は {"source":"directory","path":…}）
+手順: 導入後（0.1.1）に、元のリポジトリを 0.1.2 に進めて commit。対話の claude を起動して放置し、cache に 0.1.2 が増えるかを 30 分監視
+結果: 増えなかった（起動 14:10:57 から 14:40 まで cache は 0.1.1 のまま）。debug には "Synced autoUpdate=true from settings for marketplace: feas-mods-mkt"
+  が出ており、設定自体は読まれている。自動更新の実行や更新確認を示す行は無かった
+判定: directory 型（ローカルパス登録）では、autoUpdate: true を付けても 30 分以内に更新されない。設定は認識される
+  ただしこの PC は DISABLE_AUTOUPDATER・FORCE_AUTOUPDATE_PLUGINS とも unset、インストール種別は npm-global。
+  30 分より長い間隔で動く可能性と、git 型の marketplace なら動く可能性は、この実験では否定できない（未確認）
+  directory 型の更新は git pull → marketplace update → plugin update の手動で届くことを確認済み
+```
+
+**本物の ~/.claude への導入（利用者が実施、2026-10-04、2.1.289、macOS、Bedrock）:**
+
+```text
+手順: ssh:// で ~/.claude/plugins/marketplaces/feas-mods-mkt に clone → ローカルパスで marketplace add → install --scope local
+  （検証用フォルダ ~/Documents/Dev/tmp/feas-trial で実施）
+結果: add・install とも成功（marketplace は "declared in user settings"＝ user スコープの設定に入る。plugin の有効化だけが local スコープ）
+  plugin list: Version 0.1.1、Read from: ~/.claude/plugins/marketplaces/feas-mods-mkt/plugins/feas-field、Scope: local、enabled
+  -p と対話の両方で /feas-field が動き、tier=user、/plugin に "1 mod active · feas-field"、surface=terminal、isInteractive=true、
+  CLAUDE_CODE_ENTRYPOINT=cli。storeFiles に feas-field_feas-mods-mkt-<12 桁>.json（727B）が増えた
+別フォルダ（~/Downloads）: `/feas-field info` が未知のコマンドとして扱われ、モデルに通常の文として渡された（mod は読み込まれていない）
+  → --scope local で導入した mod は、そのフォルダにだけ効く
+```
+
+**本物の ~/.claude での自動更新・手動更新（利用者が実施、2026-10-04、2.1.289、macOS。directory 型で登録した clone）:**
+
+```text
+設定: /plugin → Marketplaces → feas-mods-mkt → Enable auto-update で有効化。settings.json の extraKnownMarketplaces.feas-mods-mkt が
+  {"source":{"source":"directory","path":"~/.claude/plugins/marketplaces/feas-mods-mkt"},"autoUpdate":true} になった
+手順: 別の clone から 0.1.2 を Bitbucket に push（15:06:21）→ 検証用フォルダで claude を起動して放置（debug 付き。起動は push の後の 15:17 JST）
+結果: 15:32（push から約 26 分）まで、手元の clone は 0.1.1 の commit（a1e0709）のまま、cache は 0.1.1 のまま、plugin list も 0.1.1。
+  debug には autoUpdate の実行や更新確認を示す行が無い（AutoUpdaterWrapper の行のみ）
+判定: directory 型の marketplace では、autoUpdate: true にしても Bitbucket の更新は届かない。
+  Claude Code が見ているのは手元の clone で、自動で git pull はしない。起動後に更新を取りに行く動きも確認できなかった
+手動更新: `git -C <clone> pull`（a1e0709..64cfdf8 の fast-forward）→ marketplace update → plugin update が
+  "updated from 0.1.1 to 0.1.2 for scope local"、plugin list は 0.1.2・enabled、cache は 0.1.1・0.1.2。Restart to apply changes
+  pull の前に plugin update を実行すると、"feas-field is read from its folder, …: nothing to update. Edits there take effect at the next
+  session start or /reload-plugins."（directory 型は clone 内のファイルを直接読む。実行内容を変えるのは git pull で、plugin update は版の記録）
+補足: 検証用フォルダ以外の場所で `claude plugin list` を実行すると、local スコープの feas-field は "Status: ✘ disabled" と表示される
+  （導入した場所の外では無効扱い。別フォルダで mod が動かない検証結果と整合）
+```
+
+**git 型（ssh の別名 + scp 形式の URL）での自動更新（利用者が実施、2026-10-04、2.1.289、macOS）:**
+
+```text
+登録: ~/.ssh/config に Host bitbucket-rit（HostName git.sampleß-it.com、Port 7999、User git）を追記し、
+  `claude plugin marketplace add git@bitbucket-rit:tyai/feas-mods-mkt.git` → install --scope local が成功。
+  Claude 自身が clone する（"Cloning repository (timeout: 120s)"）。settings.json は {"source":{"source":"git","url":"git@bitbucket-rit:…"}}
+  Version 0.1.2、pluginRoot=~/.claude/plugins/cache/feas-mods-mkt/feas-field/0.1.2（git 型は cache から実行される）
+自動更新: autoUpdate=true（/plugin から有効化）。0.1.3 を push（15:49:54）→ 対話の claude を 15:50 に起動して放置
+  15:56 と 16:22: cache は 0.1.2 のまま。16:22 に marketplace の clone は db9fb15（0.1.3）まで進んでいた（Claude 自身が取得）
+  claude を 16:27:17 に再起動 → 16:28:44 は cache が 0.1.2 のみ、16:30:47 に 0.1.2・0.1.3 の 2 つ（起動の約 3 分後に 0.1.3 が自動で cache に入った）
+  ただし plugin list の Version と claude -p の pluginRoot は 0.1.2 のまま。再起動（16:31・16:37）や -p の実行を繰り返しても 16:44 まで 0.1.2
+  /plugin の操作と /reload-plugins の実行後（16:45）に、plugin list=0.1.3、pluginRoot=…/0.1.3 に切り替わった
+  （16:4x の /plugin で "✔ Removed 1 marketplace" と出ていたのは、この検証と無関係のマーケットプレイス（diagram-design）の削除。feas-mods-mkt は残っていた。
+   切り替えの前に実行した操作は、その削除と /reload-plugins の 2 つで、/reload-plugins が原因とみられる（削除との切り分けはしていない））
+判定: git 型なら autoUpdate で「marketplace の取得」と「cache への新しい版の配置」は自動で起きる（起動後 数分〜30 分）。
+  しかし実行される版への切り替え（インストール記録の更新）は、再起動だけでは起きず、/reload-plugins など明示の操作が要った
+  → 利用者に何もさせずに新しい版を効かせるには、更新後に /reload-plugins 相当を自動で行う仕組みが要る
+```
+
+**mod による自動同期（隔離環境で確認、2026-10-04、2.1.289、macOS。ローカルの HTTP 上の git 型 marketplace、隔離した CLAUDE_CONFIG_DIR）:**
+
+```text
+再現用の環境: 社内の Bitbucket に触れずに git 型を試すため、ローカルで `git http-backend` を Python の CGI（http.server）で配り、
+  `claude plugin marketplace add http://127.0.0.1:<port>/cgi-bin/git/<repo>.git` で登録した。marketplace add が受け付ける git の URL は
+  owner/repo・https://…・http://…・scp 形式（git@host:path）で、file://・git://・ssh:// は "Invalid marketplace source format"。
+  通常の（ダムな）静的 HTTP は、Claude が shallow clone をするため "dumb http transport does not support shallow capabilities" で失敗する。
+  Bitbucket のようにポートが 22 以外の ssh は、ssh の設定で別名（Port 付き）を作り、scp 形式で登録する
+検証用コマンド（feas-field に追加）: /feas-field update <plugin>@<marketplace>、/feas-field reload、
+  環境変数 FEAS_AUTOSYNC=<plugin>@<marketplace>（session.start で自動同期）、FEAS_AUTORELOAD=1（session.start で reload のみ）
+mod から CLI: $.process.run(['claude','plugin','marketplace','update',…]) と ['claude','plugin','update',…] が動く（0.7 秒・0.2 秒）。
+  実行後の次の起動では pluginRoot が新しい版になる（-p でも対話でも）。plugin update の表示は "Restart to apply changes."
+reload-plugins: $.command.run({command:'reload-plugins'}) は、command.run の hook の中からは拒否される
+  （"command.run: called from a command.run hook, it would wait on the turn this hook is holding; … run it from a later event (turn.complete)"）。
+  session.start から await せずに呼べば成功（136ms、"Reloaded: …"）
+端から端まで: 0.1.3（自動同期入り）を導入 → 0.1.4 を公開 → FEAS_AUTOSYNC 付きで対話を起動 → 起動から約 1 秒で、起動中のセッションが 0.1.4 に切り替わった
+  （debug: process.run claude ×2 → "$.command.run (feas-field): 15 chars queued" → "refreshActivePlugins: clearing all plugin caches" →
+   "Using manifest version … 0.1.4" → 新しい版の mod が再読み込み）。0.1.5→0.1.6 でも再現
+注意: 再読み込みで mod のモジュールが作り直され、session.start が新しい版で再発火する（自動同期がもう一度走り、"already at the latest version" で終わる）。
+  モジュール内の変数は引き継がれない（reloadNote が null になるのはこのため。実行の証拠は debug の行）
+未確認: 社内 Bitbucket（ssh）での所要時間と成立、Windows（claude の実行ファイル名・PATH）、同期を間引く仕組み（$.store に時刻を持つ案）、
+  Claude 本体の autoUpdate との同時実行での競合
+```
+
+**mod による自動同期を社内 Bitbucket（ssh の別名、git 型）で確認（利用者が実施、2026-10-04、2.1.289、macOS、autoUpdate: true のまま）:**
+
+```text
+手順: 0.1.4（自動同期入り）を push → 手動で 0.1.4 に更新 → 0.1.5 を push（17:13:42）→ FEAS_AUTOSYNC=feas-field@feas-mods-mkt で対話を起動（17:13:57）
+結果: 成功。起動は 0.1.4 のコードで、約 2 秒後に起動中のセッションが 0.1.5 に切り替わった（再起動なし）。debug の時系列（UTC）:
+  08:13:57.998 process.run claude（marketplace update）→ 59.697 終了 1701ms（ssh の取得を含む）
+  08:13:59.699 process.run claude（plugin update）→ 59.948 終了 250ms
+  08:13:59.948 "$.command.run (feas-field): 15 chars queued"（reload-plugins）
+  08:13:59.973 refreshActivePlugins: clearing all plugin caches → "Using manifest version for feas-field@feas-mods-mkt: 0.1.5"
+  08:14:00.049 以降: 再読み込み後の mod が自動同期をもう一度実行（689ms・265ms）。"already at the latest version (0.1.5)" で終了
+対話の画面には "❯ /reload-plugins" と "Reloaded: 10 plugins · 30 skills · 11 agents · 13 hooks …" が出た（mod が実行した reload が、利用者の入力と同じ形で記録に残る）
+/feas-field info: pluginRoot=~/.claude/plugins/cache/feas-mods-mkt/feas-field/0.1.5。plugin list=0.1.5、cache=0.1.2〜0.1.5
+対象の指定: `claude plugin marketplace update <名前>`（名前を省くと全 marketplace）と `claude plugin update <plugin>@<marketplace>`（1 つのプラグイン）を
+  mod が引数で指定して実行した。他の marketplace・プラグインには触れない。--scope は既定で自動判定（local スコープは起動したフォルダで決まる）。
+  --json で機械可読の結果が得られる（本番では更新有無の判定に正規表現ではなく --json を使う方が確実）
+備考: 利用者側の push で .DS_Store が検証用リポジトリに入った（git add -A のため。配布物には .gitignore が要る）
+片付け（利用者が実施）: uninstall・marketplace remove は成功。settings.json に feas-mods-mkt は残っていない。
+  残り: ~/.claude/plugins/store/ の feas-field_*.json の 2 ファイル
+```
+
+**自動更新の確認（2026-10-04、2.1.289、macOS。ローカルの directory 型 marketplace。実験中のため途中経過。終了後に結果を追記する）:**
+
+```text
+条件: 隔離した CLAUDE_CONFIG_DIR で、導入は 0.1.1、登録元リポジトリは 0.1.2 に進めた状態。
+  settings.json の extraKnownMarketplaces.feas-mods-mkt に "autoUpdate": true を足し（source は directory のまま）、対話の claude を 14:10:57 に起動して放置
+debug: "Synced autoUpdate=true from settings for marketplace: feas-mods-mkt" が起動直後（約 40 秒後）に出た。設定は読まれている
+途中経過: 起動から約 20 分（14:31 時点）で、cache は 0.1.1 のまま、installed_plugins.json も 0.1.1 のまま。更新を示す debug 行は無い
+判定: 未確定（最長 30 分まで待つ）。終了後に、0.1.2 が増えたか・所要時間・debug の該当行を追記する
+```
+
 **片付け（この項目）:** 隔離した config の親ディレクトリを消す（`echo $CLAUDE_CONFIG_DIR` で場所を確かめ、シンボリックリンクではないことを `command ls -la` で確かめてから）。
 ターミナルを閉じるか `unset CLAUDE_CONFIG_DIR`（Windows は `Remove-Item Env:CLAUDE_CONFIG_DIR`）で元に戻す。検証用のリポジトリは不要になったら削除する。
 
@@ -515,6 +747,15 @@ Remove-Item Env:FEAS_BAND
 新規でバンドが出たか（sid・starts）:
 /resume の後にバンドが出たか（sid・starts）:
 claude --resume でバンドが出たか（sid・starts）:
+```
+
+**結果（2026-10-04、2.1.289、macOS、Bedrock。tmux 上の対話で確認）:**
+
+```text
+新規でバンドが出たか: 出た（sid=6a0cb34e starts=1）。起動 20 秒後に描画済み
+/resume の後にバンドが出たか: 出た（sid=41dfb8b4 starts=1）。sid が選んだセッションに変わり、starts は増えなかった。
+  項目 2 の -p のセッションは /resume の一覧に出ないため、別の既存セッションを選んだ
+claude --resume でバンドが出たか: 出た（sid=d96ce95b＝項目 2 のセッション、starts=1）
 ```
 
 ---
@@ -557,6 +798,27 @@ info の sessionStart・surfaces・CLAUDE_CODE_ENTRYPOINT・process:
 リンクを押してブラウザが開いたか:
 ```
 
+**結果（VS Code 拡張のパネル、利用者が実施、2026-10-04、CLI 2.1.289、macOS、Bedrock。拡張の版は未記入）:**
+
+```text
+読み込み: CLAUDE_CODE_PLUGIN_DIRS=<feas-field のパス> code . で mod が読み込まれ、/feas-field info が動いた（tier=user）
+/plugin の表示: ターミナルの "mod active · feas-field" という表記は出なかった。一覧の中に "feas-field@inline" があった（読み込まれていることの確認はこちらで足りる）
+info: sessionStart={surface:null, isInteractive:false}、surfaces=[]、env.CLAUDE_CODE_ENTRYPOINT=claude-vscode
+  （ターミナルは surface="terminal"、isInteractive=true、surfaces=["terminal"]）
+  process: hostname・python3 は動く（eq=true）。python・py -3 は macOS に無く cannot start。usage.context に tokens・percent が入る
+/feas-field ui: 応答は "band=on" → "band=off" と切り替わったが、トースト（feas-field: toast）も入力欄の上のバンドも表示されなかった
+リンク: バンドが出ないため未確認
+判定（推測を含む）: VS Code 拡張のパネルでは、mod の UI の表示先（surface）が無い。surfaces=[] と isInteractive=false がその表れとみられる。
+  ui.toast・ui.render（AbovePrompt）は、呼んでもエラーにならず、何も表示されない。
+  command.run の戻り値のテキスト、$.process.run、$.store、$.http.fetch 系は使える見込み（$.process.run・$.store は今回動いた）
+  → 拡張のパネルでも通知したいなら、ui.* に頼らない手段（コマンドの応答テキスト、session.start の systemMessage など）が別に要る
+Desktop: アプリが /Applications に無く、未実施
+```
+
+**実施環境の確認（2026-10-04、macOS）:** VS Code 1.135.0（`code` コマンドあり）。Claude Code 拡張は `~/.vscode/extensions/` に 2.1.281〜2.1.287 が残っており、
+有効な版は未確認（CLI の 2.1.289 と違う可能性がある）。Claude Desktop アプリは `/Applications` に見つからない。
+VS Code が起動済みだと `code .` が既存のプロセスに処理を渡すだけで `CLAUDE_CODE_PLUGIN_DIRS` が効かないため、先に Cmd+Q で完全に終了する。
+
 ---
 
 ## 片付け
@@ -575,7 +837,8 @@ info の sessionStart・surfaces・CLAUDE_CODE_ENTRYPOINT・process:
 - debug ログの置き場を消す: `rm -r "$FEAS_OUT"`（Windows は `Remove-Item -Recurse $FEAS_OUT`）
 - `tools/detach_check.py`・`tools/replace_check.py` は自分の一時ディレクトリを終わりに消す（`--keep` を付けたときと、途中で止めたときは残る。
   macOS は `$TMPDIR`、Windows は `%TEMP%` の下の `feas-detach-*`・`feas-replace-*`）
-- mod の `$.store` が本人の config に作ったファイルを消す: `~/.claude/plugins/store/feas-field_inline-*.json`
+- mod の `$.store` が本人の config に作ったファイルを消す: `~/.claude/plugins/store/feas-field_*.json`
+  （`--plugin-dir` では `feas-field_inline-<12 桁>.json`、marketplace から導入すると `feas-field_<marketplace>-<12 桁>.json`）
   （Windows は `%USERPROFILE%\.claude\plugins\store\` の下）。この名前のファイルだけを消す
 - 検証のセッションの記録（`~/.claude/projects/` の下）は、普段のセッションと同じく残る
 
@@ -596,3 +859,66 @@ info の sessionStart・surfaces・CLAUDE_CODE_ENTRYPOINT・process:
 
 置き場所（公式 docs）: macOS `/Library/Application Support/ClaudeCode/managed-settings.json`、Windows `C:\Program Files\ClaudeCode\managed-settings.json`。
 中身の例と手順の材料は `../reports/g3a.md` の「会社 PC で確かめる手順の材料」にある。実施する場合は、その時点で手順を相談してほしい。
+
+---
+
+## 付録 B: 社内 Git の marketplace を ssh で clone して使う手順（導入・更新・削除）
+
+過去に別の社内 marketplace（`ai-nization-claude-plugins`）で検証済みの手順を、この検証用リポジトリ `feas-mods-mkt` の名前に置き換えて記す。
+配布方式の候補の手順書として使う。項目 5 では、この手順のうち導入・更新を `feas-mods-mkt` で確かめた（削除は今回未実施。過去の検証では確認済み）。
+
+### 方針
+
+`claude plugin marketplace add` は ssh の URL（社内 Git の接続方式）を直接受け付けない（`owner/repo`・`https://…`・`./path` だけ）。
+そのため、ssh で clone してから、ローカルパスで登録する。`scp` 形式（`git@host:path`）は形式としては受理されるが、ポートが 22 固定で、社内 Git のポートには届かない。
+
+ホスト名などは次のとおり読み替える。
+
+| 表記 | 意味 | 項目 5 で使った値 |
+|---|---|---|
+| `<社内 Git のホスト>` | 社内 Git（Bitbucket）のホスト名 | 社内 Bitbucket |
+| `<ssh ポート>` | ssh のポート | `7999` |
+| `<プロジェクト>` | リポジトリを置くプロジェクトのキー | - |
+
+### 導入（初回のみ）
+
+```bash
+git clone ssh://git@<社内 Git のホスト>:<ssh ポート>/<プロジェクト>/feas-mods-mkt.git ~/.claude/plugins/marketplaces/feas-mods-mkt
+claude plugin marketplace add ~/.claude/plugins/marketplaces/feas-mods-mkt
+```
+
+clone 先は、Claude Code 標準の marketplace の保存先（`~/.claude/plugins/marketplaces/`）に揃えると分かりやすい。
+項目 5 では本人の設定に触れないよう、別のディレクトリ（`~/Documents/Dev/tmp/feas-mods-mkt`）に clone し、隔離した `CLAUDE_CONFIG_DIR` に登録した。
+
+プラグインごとの導入:
+
+```bash
+claude plugin install feas-field@feas-mods-mkt
+```
+
+### 更新
+
+ローカルの clone を `git pull` してから、Claude Code に再読み込みさせる。
+
+```bash
+git -C ~/.claude/plugins/marketplaces/feas-mods-mkt pull
+claude plugin marketplace update feas-mods-mkt
+claude plugin update feas-field@feas-mods-mkt   # 反映は次の起動から（"Restart to apply changes"）
+```
+
+項目 5 で確認した結果: 別の clone から `version` を上げて push し、利用者側で `git pull`（fast-forward）→ `marketplace update` → `plugin update` で
+「updated from 0.1.0 to 0.1.1」となり、cache に両方の版が並んだ。実行元は clone 先のまま（cache ではない）。
+
+### 削除
+
+プラグインを 1 つだけ削除する:
+
+```bash
+claude plugin uninstall feas-field@feas-mods-mkt
+```
+
+marketplace ごと削除する（配下の全プラグインが使えなくなる）:
+
+```bash
+claude plugin marketplace remove feas-mods-mkt
+```
