@@ -27,8 +27,8 @@ Claude Code が届ける収集項目・hook・環境変数のうち、**実在�
 | `error` | `StopFailure` | — | ターン失敗の種別 | 値は `rate_limit`・`overloaded`・`authentication_failed`・`oauth_org_not_allowed`・`account_on_hold`・`billing_error`・`invalid_request`・`model_not_found`・`server_error`・`max_output_tokens`・`cloud_credential_error`・`unknown` の列挙。公式のみ・実測なし（hooks、2026-09-28 取得） |
 | `reason` | `SessionEnd` | `"prompt_input_exit"` / `"other"` | セッションの閉じ方 | 公式（hooks、2026-09-28 取得）の値は `clear`・`resume`・`logout`・`prompt_input_exit`・`other`。実測したのは 2 値だけ |
 | `tool_use_id` | ツール系 hook | `toolu_01…` | 呼出の一意識別 | — |
-| `expansion_type` | `UserPromptExpansion` | `"slash_command"` | コマンド以外の展開との区別 | `command_source` と同じことが分かる |
-| `command_source` | `UserPromptExpansion` | `"userSettings"` / `"plugin"` | コマンドの出どころ | 2.1.283。観測したのは利用者のコマンドとプラグイン同梱のコマンドの 2 つだけで、プロジェクト・managed の値は未確認 |
+| `expansion_type` | `UserPromptExpansion` | `"slash_command"` / `"mcp_prompt"` | コマンド以外の展開との区別 | MCP の prompt だけ `mcp_prompt`（2.1.289） |
+| `command_source` | `UserPromptExpansion` | `"userSettings"` / `"plugin"` / `"projectSettings"` / `"mcp"` | コマンドの出どころ | 利用者のコマンド・skill が `userSettings`、プラグイン同梱が `plugin`（2.1.283）、プロジェクトの `.claude/commands/` が `projectSettings`、MCP の prompt が `mcp`（2.1.289）。組み込みのコマンド（`/context`）では `UserPromptExpansion` も `UserPromptSubmit` も発火しない（2.1.289）。managed・local の値は未確認 |
 | `command_name` / `tool_input.skill` | `UserPromptExpansion` / `PostToolUse`（Skill） | `"<プラグイン名>:foo"` / `"foo"` | 呼ばれたコマンド・スキルの名前 | 2.1.283。プラグイン同梱のものは `<プラグイン名>:<名前>`、利用者のものは名前だけ |
 | `background_tasks` / `session_crons` | `Stop` | ともに空リスト | 背景実行・定期実行の利用有無 | — |
 | `scratchpad_dir` | 一部 hook（`claude -p` には無い） | — | — | — |

@@ -162,8 +162,11 @@
   もともとヘビーユーザーである可能性は消せない。消すには割り当てを管理者が決める必要がある。
 - **2 つ目以降の施策は、案内日をずらせない。** 導入済みの端末には自動更新でほぼ一斉に届くため、
   前後比較のほかに材料が無い。
-- **VS Code 拡張版は対象外にする。** 拡張のパネルでは `SessionStart` の `systemMessage` も mod の UI（toast・バンド）も
-  表示されず、お知らせを届ける手段が無い（`../knowledge/claude-code-behavior.md`）。
+- **VS Code 拡張版と Desktop は対象外にする。** 拡張のパネルでは `SessionStart` の `systemMessage` も mod の UI（toast・バンド）も
+  表示されず、お知らせを届ける手段が無い（`../knowledge/claude-code-behavior.md`）。Desktop も同じ扱いとし、動作を確かめない。
+- **`ONCE` で dict（例 `statusLine`）を配ると、利用者の元の値は丸ごと置き換わって失われ、アンインストールしても戻らない。**
+  `ONCE` はパスの値を書くだけで、利用者の値との合成も、削除時の書き戻しも持たない。
+  書き込み前の `settings.json` は、バックアップの世代（`_govdir.py` の `_BACKUP_KEEP`）の範囲で残る。dict を `ONCE` で配るときは、利用者の値を消すことを前提に決める。
 
 ---
 
@@ -232,3 +235,4 @@
 - 2026-09-28: 収集の範囲の判断の前提を公式ドキュメントに合わせ（`PreToolUse` の差分の未検証点）、`PostCompact` の入力と再開時のキーの記載を `../knowledge/upstream-features.md` に任せた。error 行の `error_type` に `HTTP <状態コード>` を含めた
 - 2026-09-28: 端末のファイル操作に、想定外の入力や同時書き込みへの対策を入れないことを「採らないと決めたこと」に加えた
 - 2026-10-04: VS Code 拡張版を対象外とする限界を加え、起動形態の判定の理由に `claude-vscode` の値を書いた
+- 2026-10-05: Desktop を対象外に加え、`ONCE` で dict を配ると利用者の値を失う限界を加えた
