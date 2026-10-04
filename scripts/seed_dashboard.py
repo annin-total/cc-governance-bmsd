@@ -65,12 +65,17 @@ def _check_rules() -> None:
         sys.exit("対応表・施策と契約が食い違う: " + "; ".join(problems))
 
 
+def write_csv(path: Path, rules: dict, rows: list) -> None:
+    """`rules` のヘッダ順に、UTF-8 の CSV を書く。"""
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rules))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def _import_csv(costs: list, conn) -> None:
     with tempfile.TemporaryDirectory() as tmp:
-        with open(Path(tmp) / "seed.csv", "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=list(CSV_RULES))
-            writer.writeheader()
-            writer.writerows(costs)
+        write_csv(Path(tmp) / "seed.csv", CSV_RULES, costs)
         results = csv_import.import_all(tmp, conn)
     bad = [r for r in results if "error" in r or r.get("dropped")]
     if bad:

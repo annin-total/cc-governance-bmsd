@@ -55,6 +55,7 @@ class Ctx:
     key: Optional[str] = None
     error: Optional[tuple] = None
     factor: float = 1.0
+    org: tuple = ()
     tool: Optional[str] = field(init=False, default=None)
     command: Optional[tuple] = field(init=False, default=None)
 
