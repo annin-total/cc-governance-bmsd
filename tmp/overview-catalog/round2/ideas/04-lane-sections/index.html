@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ja" data-scheme="1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code 利用管理の仕組み</title>
+<style>
+:root, html[data-scheme="1"] {
+  --bg:#e8e5e0; --card:#f6f4f0; --node:#ece9e4; --ink:#2b2926; --ink2:#4a4640; --sub:#6b655c; --rule:#d6d1c9;
+  --accent:#4c6a78; --accent2:#a9b9c1; --soft:#dde6ea; --on:#f6f4f0;
+  --neg:#9e3a2e; --neg-soft:#f1e3df; --ok-soft:#e2eaed;
+  --give:#4c6a78; --take:#4a4640; --view:#8b857c; --lane:#efece7; --lane-h:#e2ded7;
+}
+html[data-scheme="2"], html[data-scheme="3"] {
+  --bg:#f2f5f5; --card:#ffffff; --node:#eef3f4; --ink:#1b2a31; --ink2:#33474f; --sub:#5f7178; --rule:#d5dde0;
+  --accent:#1f4352; --accent2:#86adba; --soft:#e2eaed; --on:#ffffff;
+  --neg:#3a6e80; --neg-soft:#eef3f4; --ok-soft:#e2eaed;
+  --give:#1f4352; --take:#3a6e80; --view:#86adba; --lane:#f4f8f9; --lane-h:#e2eaed;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.65 "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { line-height: 1.35; }
+h3 { font-size: 13.5px; font-weight: 700; color: var(--ink2); margin: 20px 0 8px; }
+h3.first { margin-top: 0; }
+h4 { font-size: 12.5px; font-weight: 700; color: var(--sub); margin: 14px 0 4px; }
+p { margin: 0; }
+.note { font-size: 12px; color: var(--sub); margin: 8px 0 0; }
+code { font: 12px ui-monospace, Menlo, Consolas, monospace; background: var(--soft); padding: 0 4px; border-radius: 3px; }
+.s { display: block; font-size: 12px; color: var(--sub); font-weight: 400; }
+.tw { overflow-x: auto; }
+.flows > *, .two > *, .pair > *, .secs > *, .read > * { min-width: 0; }
+table.t { border-collapse: collapse; width: 100%; font-size: 13px; }
+.t th { text-align: left; font-weight: 600; font-size: 12px; color: var(--sub); padding: 6px 14px 6px 0; border-bottom: 1px solid var(--ink2); white-space: nowrap; }
+.t td { padding: 7px 14px 7px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.t td:first-child { font-weight: 600; white-space: nowrap; }
+.cfg td.v { font-weight: 700; color: var(--accent); white-space: nowrap; }
+.cfg tr.ex td { font-size: 12px; color: var(--sub); font-weight: 400; }
+.exl { display: inline-block; font-size: 11px; font-weight: 600; border: 1px solid var(--rule); color: var(--sub); border-radius: 3px; padding: 0 5px; margin-right: 6px; }
+
+.aims { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.aims div { background: var(--soft); border-radius: 6px; padding: 12px 16px; }
+.aims b { display: block; font-size: 15px; }
+.aims span { font-size: 12px; color: var(--sub); }
+.target { margin-top: 12px; font-size: 13px; color: var(--ink2); }
+.target b { font-size: 20px; color: var(--ink); margin: 0 3px; }
+.nots { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; font-size: 13px; border-left: 3px solid var(--neg); background: var(--neg-soft); padding: 8px 14px; }
+.nots b { color: var(--neg); font-size: 12.5px; }
+
+.routes { display: grid; gap: 10px; }
+.rt { display: grid; grid-template-columns: 92px 1fr 118px 1fr 118px 1fr; align-items: center; }
+.tag { font-size: 12px; font-weight: 700; padding: 5px 6px; border-radius: 4px; text-align: center; color: var(--on); line-height: 1.35; margin-right: 12px; }
+.rt.give .tag { background: var(--give); }
+.rt.take .tag { background: var(--take); }
+.rt.none .tag { background: none; color: var(--neg); border: 1px dashed var(--neg); }
+.nd { background: var(--node); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 12px; min-height: 54px; }
+.nd b { display: block; font-size: 13px; }
+.nd span { font-size: 12px; color: var(--sub); }
+.rt.give .nd { border-left: 3px solid var(--give); }
+.rt.take .nd { border-left: 3px solid var(--take); }
+.ar { position: relative; text-align: center; font-size: 11px; color: var(--sub); padding: 0 8px 14px; line-height: 1.3; }
+.ar::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 6px; height: 2px; background: currentColor; }
+.ar::before { content: ""; position: absolute; right: 6px; bottom: 2px; border: 5px solid transparent; border-left: 7px solid currentColor; border-right: 0; }
+.rt.give .ar { color: var(--give); }
+.rt.take .ar { color: var(--take); }
+.ar.x { color: var(--neg) !important; }
+.ar.x::after { background: none; border-bottom: 2px dashed currentColor; height: 0; }
+.ar.x em { font-style: normal; font-weight: 700; margin-right: 4px; }
+.keyline { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; background: var(--ok-soft); border-left: 3px solid var(--accent); padding: 9px 14px; }
+.keyline b { color: var(--accent); }
+
+.flows { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.flow { border-top: 3px solid var(--give); padding-top: 4px; }
+.flow.take { border-top-color: var(--take); }
+.flow h3 { font-size: 15px; color: var(--ink); margin: 6px 0 8px; display: flex; align-items: baseline; gap: 10px; }
+.flow h3 small { font-size: 12px; font-weight: 600; color: var(--sub); }
+.pts { margin: 0; padding-left: 1.1em; font-size: 13px; display: grid; gap: 4px; }
+.stp { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 13px; }
+.stp dt { font-weight: 700; color: var(--ink2); font-size: 12.5px; }
+.stp dd { margin: 0; }
+
+.two { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; }
+.nol { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.nol li { padding: 6px 0; border-bottom: 1px solid var(--rule); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { background: var(--soft); color: var(--accent); border-radius: 4px; padding: 1px 9px; font-size: 12px; font-weight: 600; }
+
+.read { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.read div { padding: 10px 14px; font-size: 13px; border-radius: 6px; }
+.read .y { background: var(--ok-soft); }
+.read .n { background: var(--neg-soft); }
+.read b { display: block; font-size: 12px; color: var(--accent); }
+.read .n b { color: var(--neg); }
+.notes { margin: 12px 0 0; padding-left: 1.1em; font-size: 12px; color: var(--sub); }
+
+.who { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 7px; border-radius: 3px; background: var(--node); color: var(--ink2); border: 1px solid var(--rule); }
+.who.adm { background: var(--soft); color: var(--accent); border-color: transparent; }
+.ops td:nth-child(2) { white-space: nowrap; color: var(--sub); font-size: 12.5px; }
+.limits { margin: 0; padding-left: 1.1em; font-size: 12px; color: var(--sub); }
+.limits li { margin-bottom: 2px; }
+
+.sw { position: fixed; top: 12px; right: 14px; z-index: 10; display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--sub); background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 4px 6px 4px 10px; }
+.sw button { font: 600 11px/1 inherit; font-family: inherit; width: 24px; height: 22px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink2); border-radius: 4px; cursor: pointer; }
+.sw button[aria-pressed="true"] { background: var(--accent); color: var(--on); border-color: var(--accent); }
+.schemeline { font-size: 11px; color: var(--sub); margin-top: 24px; }
+
+@media (max-width: 600px) {
+  .t3 tr { display: grid; grid-template-columns: 1fr; padding: 7px 0; border-bottom: 1px solid var(--rule); }
+  .t3 tr:first-child { display: none; }
+  .t3 td { border: 0; padding: 1px 0; white-space: normal !important; }
+}
+@media (max-width: 900px) {
+  .aims, .flows, .two, .read { grid-template-columns: 1fr; }
+  .rt { grid-template-columns: 1fr; }
+  .tag { justify-self: start; margin: 0 0 4px; }
+  .ar { padding: 4px 0 4px 34px; text-align: left; min-height: 28px; }
+  .ar::after { left: 16px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; }
+  .ar::before { left: 12px; right: auto; bottom: -4px; border: 5px solid transparent; border-top: 7px solid currentColor; border-bottom: 0; }
+  .ar.x::after { border-bottom: 0; border-left: 2px dashed currentColor; width: 0; }
+  .t td:first-child { white-space: normal; }
+  .ops td:nth-child(2) { white-space: normal; }
+  .stp { grid-template-columns: 1fr; gap: 0; }
+  .stp dd { margin-bottom: 8px; }
+  .sw { position: static; margin: 10px 16px 0; width: max-content; }
+}
+
+.lanefig { overflow-x: auto; }
+.lanefig svg { display: block; width: 100%; min-width: 860px; height: auto; font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif; }
+.lanefig .lbg { fill: var(--lane); }
+.lanefig .lhd { fill: var(--lane-h); }
+.lanefig .lsep { stroke: var(--card); stroke-width: 2; }
+.lanefig .ln { fill: var(--ink); font-weight: 700; }
+.lanefig .ls { fill: var(--sub); }
+.lanefig .nb { fill: var(--card); stroke-width: 1.5; }
+.lanefig .give .nb { stroke: var(--give); } .lanefig .take .nb { stroke: var(--take); } .lanefig .view .nb { stroke: var(--view); }
+.lanefig .nt { fill: var(--ink); font-weight: 700; text-anchor: middle; }
+.lanefig .nsub { fill: var(--sub); text-anchor: middle; }
+.lanefig path.e { fill: none; stroke-width: 2.4; }
+.lanefig .e.give { stroke: var(--give); } .lanefig .e.take { stroke: var(--take); }
+.lanefig .e.int { stroke: var(--view); stroke-width: 1.8; } .lanefig .e.view { stroke: var(--view); stroke-dasharray: 5 4; stroke-width: 2; }
+.lanefig .mk-give { fill: var(--give); } .lanefig .mk-take { fill: var(--take); } .lanefig .mk-int, .lanefig .mk-view { fill: var(--view); }
+.lanefig .el { font-size: 11.5px; font-weight: 600; }
+.lanefig .el.give { fill: var(--give); } .lanefig .el.take { fill: var(--take); } .lanefig .el.view, .lanefig .el.int { fill: var(--sub); }
+.lanefig .xb { fill: var(--card); stroke: var(--neg); stroke-dasharray: 4 3; }
+.lanefig .xt { fill: var(--neg); font-weight: 700; } .lanefig .xs { fill: var(--sub); }
+.lanefig .dim { opacity: .2; }
+.lanefig .hint { display: none; font-size: 11px; color: var(--sub); }
+@media (max-width: 900px) { .lanefig .hint { display: block; } }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 40px 28px 60px; }
+header h1 { font-size: 24px; margin: 0 0 4px; }
+header p { font-size: 12px; color: var(--sub); }
+section { margin-top: 26px; }
+h2 { font-size: 17px; margin: 0 0 10px; display: flex; gap: 10px; align-items: baseline; }
+h2 .no { font-size: 12px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.body { background: var(--card); border-radius: 8px; padding: 20px 24px 22px; }
+.lanefig { margin-bottom: 14px; border-radius: 6px; }
+.flows { grid-template-columns: 1fr; gap: 26px; }
+.flow { border-top: 0; padding-top: 0; }
+.flow h3 { border-left: 4px solid var(--give); padding-left: 10px; }
+.flow.take h3 { border-left-color: var(--take); }
+section.minor h2 { font-size: 13px; color: var(--sub); }
+section.minor .body { background: none; padding: 0 2px; }
+html[data-scheme="3"] { --bg:#ececea; --card:#f9f9f8; --node:#efefed; --ink:#262626; --ink2:#444; --sub:#6c6c6a; --rule:#d9d9d6;
+  --accent:#1f7a8c; --soft:#e1eff2; --give:#1f7a8c; --take:#1f7a8c; --view:#7d9aa1; --lane:#f2f2f0; --lane-h:#e3e3e0;
+  --neg:#6c6c6a; --neg-soft:#ededeb; --ok-soft:#e1eff2; }
+html[data-scheme="3"] .lanefig .dim { opacity: .12; filter: grayscale(1); }
+@media (max-width: 900px) {
+  .wrap { padding: 20px 16px 40px; }
+  .body { padding: 16px; }
+}
+
+</style>
+</head>
+<body>
+<div class="sw" role="group" aria-label="配色（仮）"><span>配色（仮）</span><button type="button" data-s="1" title="管理画面の配色">1</button><button type="button" data-s="2" title="青緑の濃淡">2</button><button type="button" data-s="3" title="灰色と焦点色">3</button></div>
+<div class="wrap"><header><h1>Claude Code 利用管理の仕組み</h1><p>BMSD 本部・仕組みの説明。各節の図は、全体の流れ図のうち該当部分を濃く示す。</p></header><section><h2><span class="no">01</span>目的</h2><div class="body">
+<div class="aims">
+  <div><b>設定の配布</b><span>全員の端末へ同じ設定</span></div>
+  <div><b>利用状況とコストの見える化</b><span>誰がどれだけ使い、いくらかかるか</span></div>
+  <div><b>設定の効果の確認</b><span>配った設定で使われ方が変わったか</span></div>
+</div>
+<p class="target">対象　BMSD 本部の Claude Code 利用者　約<b>200</b>名</p>
+<p class="nots"><b>行わないこと</b><span>会話の本文・ツールの入出力の収集</span><span>リアルタイムの把握（設定の反映は分単位、コストは日次）</span></p>
+</div></section><section><h2><span class="no">02</span>全体構成</h2><div class="body"><div class="lanefig" data-label="全体の構成"><p class="hint">図は横にスクロールできる</p></div>
+<div class="keyline">
+  <b>集計サーバの停止時</b><span>止まるのは集計だけ。設定とお知らせの配布は続く</span>
+</div>
+<h3>構成要素</h3>
+<div class="tw"><table class="t t3">
+  <tr><th>要素</th><th>置き場</th><th>役割</th></tr>
+  <tr><td>配布用リポジトリ</td><td>Bitbucket（社内）</td><td>プラグイン本体・設定値・お知らせの置き場</td></tr>
+  <tr><td>利用者の端末</td><td>Windows / macOS<span class="s">Claude Code ＋ プラグイン。Python 3 が必要</span></td><td>設定の適用・お知らせの表示・イベントの記録と送信</td></tr>
+  <tr><td>集計サーバ</td><td>AIP（または One Cloud）</td><td>記録の保存（データベース）・集計・管理画面</td></tr>
+  <tr><td>利用明細 CSV</td><td>AI Gateway が日ごとに出力</td><td>コストとトークン数の正本</td></tr>
+  <tr><td>管理者</td><td>ブラウザ</td><td>管理画面の閲覧・CSV のアップロード・配布用リポジトリの更新</td></tr>
+</table></div>
+</div></section><section><h2><span class="no">03</span>動作の流れ</h2><div class="body">
+<div class="flows">
+  <div class="flow give"><div class="lanefig" data-lanes="0,1,2" data-focus="A_rel,R_pkg,T_upd,T_start,d1,d2,i1" data-label="配布の流れ"><p class="hint">図は横にスクロールできる</p></div>
+    <h3>配布<small>セッション開始時</small></h3>
+    <ul class="pts">
+      <li>配られた設定値を settings.json へ書き込み<span class="s">変更前の settings.json は自動でバックアップ</span></li>
+      <li>未読のお知らせを表示<span class="s">関連ページを 1 回だけブラウザで開くことがある</span></li>
+    </ul>
+    <h4>配布中の設定値</h4>
+    
+<div class="tw"><table class="t t3 cfg">
+  <tr><th>設定</th><th>値</th><th>狙い</th></tr>
+  <tr><td>プラグインの自動更新</td><td class="v">有効</td><td>設定値・お知らせの変更を全端末へ届ける</td></tr>
+  <tr><td>Claude Code 本体の自動更新</td><td class="v">常に最新版<span class="s">利用者が自動更新を切っていても打ち消す</span></td><td>全員の版をそろえる</td></tr>
+  <tr class="ex"><td><span class="exl">施策の例</span>自動コンパクトの閾値</td><td>コンテキストの 60%</td><td>大きなコンテキストのまま払うコストを抑える</td></tr>
+</table></div>
+
+    <p class="note">利用者が変えても、次のセッション開始時に配った値へ戻る（強制）。利用者が選ぶ方式は無い。「初回だけ書き込み、以後は利用者に任せる」配り方も可能（現在は不使用）。</p>
+  </div>
+  <div class="flow take"><div class="lanefig" data-lanes="2,3" data-focus="T_rec,S_store,i2,c1" data-nox="1" data-label="収集の流れ"><p class="hint">図は横にスクロールできる</p></div>
+    <h3>収集<small>記録と送信</small></h3>
+    <dl class="stp">
+      <dt>利用中</dt><dd>イベントを端末内に記録（フックで記録）</dd>
+      <dt>セッション開始時・応答完了時</dt><dd>前回の送信から 10 分以上経っていれば、溜まった記録をまとめて送信</dd>
+      <dt>送れなかった記録</dt><dd>端末に残し、後でまとめて送信<span class="s">14 日・20 MB まで。超えた分は古い順に破棄</span></dd>
+    </dl>
+    <p class="note">記録・送信は裏で行い、Claude Code の操作を待たせない。エラーが起きても Claude Code は止まらない。</p>
+  </div>
+</div>
+</div></section><section><h2><span class="no">04</span>収集データ</h2><div class="body"><div class="lanefig" data-lanes="0,2,3,4" data-focus="T_rec,S_store,G_csv,A_up,c1,c2,c3" data-nox="1" data-label="データの入口"><p class="hint">図は横にスクロールできる</p></div>
+<div class="two">
+  <div>
+    <h3 class="first">端末から収集</h3>
+    <div class="tw"><table class="t">
+      <tr><th>項目</th><th>内容</th></tr>
+      <tr><td>利用者</td><td>会社のメールアドレス・端末名<span class="s">メールアドレスは利用明細 CSV との照合用</span></td></tr>
+      <tr><td>イベント</td><td>種類（セッション開始・プロンプト送信・ツール使用・ツールのエラー・自動コンパクト・応答完了 など）・イベント時刻・セッション ID</td></tr>
+      <tr><td>ツール</td><td>ツール名（MCP はサーバ名を含む）・サブエージェントによる使用か・中断か</td></tr>
+      <tr><td>スキル・コマンド</td><td>スキル名・コマンド名・その出所</td></tr>
+      <tr><td>状態</td><td>コンテキストのトークン数（自動コンパクト直前・応答完了時）・エフォート・権限モード</td></tr>
+      <tr><td>版</td><td>Claude Code 本体の版・プラグインの版</td></tr>
+      <tr><td>設定の適用結果</td><td>設定ごとの変更前の値・配った値・適用の結果</td></tr>
+      <tr><td>プラグインのエラー</td><td>処理の段階名・エラーの種類<span class="s">エラーメッセージは送らない</span></td></tr>
+    </table></div>
+  </div>
+  <div>
+    <h3 class="first">端末から収集しない</h3>
+    <ul class="nol">
+      <li>会話<span class="s">プロンプト本文・Claude の応答本文・会話内容</span></li>
+      <li>ツールの入出力<span class="s">読み書きしたファイルの中身・実行したコマンドの中身</span></li>
+      <li>コスト<span class="s">端末では数えない</span></li>
+      <li>モデル名<span class="s">端末からは取らない</span></li>
+    </ul>
+    <h3>利用明細 CSV の項目</h3>
+    <div class="chips"><span>日付</span><span>メールアドレス</span><span>モデル</span><span>コスト</span><span>トークン数</span></div>
+    <p class="note">トークン数は入力・出力・キャッシュの別。Claude Code 以外の利用も含む。</p>
+  </div>
+</div>
+</div></section><section><h2><span class="no">05</span>管理画面の表示内容</h2><div class="body"><div class="lanefig" data-lanes="0,3" data-focus="S_store,A_view,v1" data-nox="1" data-label="管理画面の閲覧"><p class="hint">図は横にスクロールできる</p></div>
+<div class="tw"><table class="t">
+  <tr><th>観点</th><th>内容</th></tr>
+  <tr><td>コストと利用者</td><td>全体のコスト・1 人あたり・月末のコスト見込み・利用者数<span class="s">利用者ごとの一覧（コスト・利用状況）</span></td></tr>
+  <tr><td>使われ方</td><td>ツール・スキル・コマンド・MCP・サブエージェントの利用</td></tr>
+  <tr><td>設定の適用</td><td>設定どおりの端末・未導入者・本体とプラグインの版<span class="s">未導入者は、CSV に利用があるのに記録が届かない人</span></td></tr>
+  <tr><td>設定の効果</td><td>配った設定の前後での使われ方の変化</td></tr>
+  <tr><td>収集の状態</td><td>データの届き具合・プラグインのエラー・記録が途絶えた端末</td></tr>
+  <tr><td>状況の要約</td><td>注意・要確認の表示・管理者が書く週次のサマリー</td></tr>
+</table></div>
+<h3>効果の読み方</h3>
+<div class="read">
+  <div class="y"><b>根拠にする</b>使われ方の変化<span class="s">自動コンパクトの例なら、コンテキストの大きさが小さい側へずれたか</span></div>
+  <div class="n"><b>根拠にしない</b>コストの前後差<span class="s">時期・業務量・料金など、ほかの要因でも動く</span></div>
+</div>
+<ul class="notes">
+  <li>アクセスは、推測しにくい URL ＋ パスワード（社内 VPN の内側）</li>
+  <li>月ごとの書き出し（CSV の ZIP）も管理画面で行う</li>
+  <li>未導入者の一覧は、CSV を取り込んでいる間だけ表示できる</li>
+</ul>
+</div></section><section><h2><span class="no">06</span>運用の分担</h2><div class="body"><div class="lanefig" data-lanes="0,1,2" data-focus="A_rel,A_view,A_up" data-label="管理者の作業"><p class="hint">図は横にスクロールできる</p></div>
+<div class="tw"><table class="t t3 ops">
+  <tr><th>担当</th><th>時機</th><th>作業</th></tr>
+  <tr><td><span class="who">利用者</span></td><td>導入時に 1 回</td><td>（Windows）<code>python3</code> の動作確認 → git に会社のメールアドレスが設定済みか確認 → Claude Code で 2 つのコマンドを実行 → 開き直してお知らせが出れば完了</td></tr>
+  <tr><td><span class="who">利用者</span></td><td>日常</td><td>操作なし<span class="s">届かない場合だけ手動更新のコマンド 2 つ</span></td></tr>
+  <tr><td><span class="who adm">管理者</span></td><td>導入の展開時</td><td>案内を 2〜3 回に分け、1〜2 週ずつずらす（部署を横断して分ける）<span class="s">施策の効果を、同時期のほかの変化と区別するため</span></td></tr>
+  <tr><td><span class="who adm">管理者</span></td><td>1〜2 週に 1 回程度</td><td>AI Gateway の CSV を管理画面からアップロード</td></tr>
+  <tr><td><span class="who adm">管理者</span></td><td>随時</td><td>データの届き具合・エラー・未導入者の確認。未導入者への声かけ</td></tr>
+  <tr><td><span class="who adm">管理者</span></td><td>設定・お知らせの変更時</td><td>プラグインの版を上げ、配布用リポジトリへリリース</td></tr>
+</table></div>
+</div></section><section class="minor"><h2><span class="no">07</span>制約</h2><div class="body">
+<ul class="limits">
+  <li>取りこぼしは許容する（長いオフライン・端末の上限超過・エラー時の記録）。利用ログに厳密な正確性は求めない</li>
+  <li>プロジェクト単位の設定などで上書きされた場合は、適用の状況に現れない</li>
+  <li>端末ごとの停止に気づけるのは、記録が途絶えて 14 日後</li>
+  <li>利用明細 CSV に当日と前日の分は無い（コストは 2 日遅れ）</li>
+</ul>
+</div></section><p class="schemeline" id="schemeline"></p></div>
+
+<script>
+(function () {
+  var L = [["管理者", "ブラウザ"], ["配布用リポジトリ", "Bitbucket（社内）"], ["利用者の端末", "Windows / macOS"], ["集計サーバ", "AIP または One Cloud"], ["AI Gateway", "利用明細の出力"]];
+  var N = {
+    A_rel: [0, 0, 1, "give", "設定・お知らせの更新", "版を上げてリリース"],
+    R_pkg: [1, 0, 1, "give", "プラグイン", "設定値・お知らせ"],
+    T_upd: [2, 1, 1, "give", "自動更新", "新しい版を取得"],
+    T_start: [2, 2, 1, "give", "セッション開始", "設定の適用・お知らせ"],
+    T_rec: [2, 3, 1, "take", "利用中", "イベントの記録"],
+    S_store: [3, 3, 2, "take", "受信・保存・集計", "データベース"],
+    A_view: [0, 4, 1, "view", "管理画面の閲覧", "状況の確認"],
+    A_up: [0, 5, 1, "take", "CSV のアップロード", "管理画面から"],
+    G_csv: [4, 5, 1, "take", "利用明細 CSV", "日ごとに出力"]
+  };
+  var E = {
+    d1: ["give", "A_rel", "R_pkg", function (r) { return [[r.A_rel.cx, r.A_rel.b], [r.R_pkg.cx, r.R_pkg.y]]; }, "リリース", function (r) { return [r.A_rel.cx + 8, (r.A_rel.b + r.R_pkg.y) / 2 + 4, "start"]; }],
+    d2: ["give", "R_pkg", "T_upd", function (r) { return [[r.R_pkg.r, r.R_pkg.cy], [r.T_upd.cx, r.R_pkg.cy], [r.T_upd.cx, r.T_upd.y]]; }, "git で自動更新", function (r) { return [r.T_upd.cx + 8, (r.R_pkg.cy + r.T_upd.y) / 2 + 8, "start"]; }],
+    i1: ["int", "T_upd", "T_start", function (r) { return [[r.T_upd.r, r.T_upd.cy], [r.T_start.x, r.T_start.cy]]; }],
+    i2: ["int", "T_start", "T_rec", function (r) { return [[r.T_start.r, r.T_start.cy], [r.T_rec.x, r.T_rec.cy]]; }],
+    c1: ["take", "T_rec", "S_store", function (r) { return [[r.T_rec.cx, r.T_rec.b], [r.T_rec.cx, r.S_store.y]]; }, "まとめて送信", function (r) { return [r.T_rec.cx + 8, (r.T_rec.b + r.S_store.y) / 2 + 4, "start"]; }],
+    c2: ["take", "G_csv", "A_up", function (r) { return [[r.G_csv.x + 120, r.G_csv.y], [r.A_up.x + 120, r.A_up.b]]; }, "日ごとの明細", function (r) { return [r.G_csv.x + 112, r.G_csv.y - 12, "end"]; }],
+    c3: ["take", "A_up", "S_store", function (r) { return [[r.A_up.x + 28, r.A_up.b], [r.A_up.x + 28, r.S_store.cy], [r.S_store.r, r.S_store.cy]]; }, "アップロード", function (r) { return [r.A_up.x + 22, (r.A_up.b + r.S_store.y) / 2, "end"]; }],
+    v1: ["view", "S_store", "A_view", function (r) { return [[r.A_view.cx, r.S_store.y], [r.A_view.cx, r.A_view.b]]; }, "閲覧", function (r) { return [r.A_view.cx + 8, (r.A_view.b + r.S_store.y) / 2 + 4, "start"]; }]
+  };
+  var W = 1220, LW = 150, X0 = 170, CW = 175, NW = 145, NH = 54, LH = 92, LC = 28;
+  var seq = 0;
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function render(el) {
+    seq++;
+    var lanes = el.dataset.lanes ? el.dataset.lanes.split(",").map(Number) : [0, 1, 2, 3, 4];
+    var focus = el.dataset.focus ? el.dataset.focus.split(",") : null;
+    var noX = el.dataset.nox === "1";
+    var on = function (id) { return !focus || focus.indexOf(id) >= 0; };
+    var y = 0, ly = [], lh = [];
+    for (var i = 0; i < 5; i++) { var h = lanes.indexOf(i) >= 0 ? LH : LC; ly.push(y); lh.push(h); y += h; }
+    var H = y, r = {}, o = [];
+    o.push('<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(el.dataset.label || "役割ごとの流れ") + '"><defs>');
+    ["give", "take", "int", "view"].forEach(function (k) {
+      o.push('<marker id="m' + seq + k + '" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="mk-' + k + '" d="M0 0L10 5L0 10z"/></marker>');
+    });
+    o.push("</defs>");
+    for (i = 0; i < 5; i++) {
+      var open = lanes.indexOf(i) >= 0;
+      o.push('<rect class="lbg" x="0" y="' + ly[i] + '" width="' + W + '" height="' + lh[i] + '"/><rect class="lhd" x="0" y="' + ly[i] + '" width="' + LW + '" height="' + lh[i] + '"/>');
+      if (i) o.push('<line class="lsep" x1="0" x2="' + W + '" y1="' + ly[i] + '" y2="' + ly[i] + '"/>');
+      if (open) {
+        o.push('<text class="ln" x="16" y="' + (ly[i] + lh[i] / 2 - 2) + '" font-size="14.5">' + L[i][0] + '</text><text class="ls" x="16" y="' + (ly[i] + lh[i] / 2 + 16) + '" font-size="11.5">' + L[i][1] + "</text>");
+      } else {
+        o.push('<text class="ls" x="16" y="' + (ly[i] + lh[i] / 2 + 4) + '" font-size="11">' + L[i][0] + "</text>");
+      }
+    }
+    Object.keys(N).forEach(function (id) {
+      var n = N[id], x = X0 + n[1] * CW, w = NW + (n[2] - 1) * CW, ny = ly[n[0]] + (LH - NH) / 2;
+      r[id] = { x: x, y: ny, w: w, r: x + w, b: ny + NH, cx: x + w / 2, cy: ny + NH / 2, vis: lanes.indexOf(n[0]) >= 0 };
+    });
+    if (!noX && lanes.indexOf(3) >= 0) {
+      var xy = ly[3] + (LH - 58) / 2;
+      o.push('<g class="' + (on("X") ? "" : "dim") + '"><rect class="xb" x="345" y="' + xy + '" width="320" height="58" rx="5"/><text class="xt" x="361" y="' + (xy + 24) + '" font-size="12.5">サーバから端末への経路は無い</text><text class="xs" x="361" y="' + (xy + 44) + '" font-size="11.5">集計サーバが止まっても、配布は続く</text></g>');
+    }
+    Object.keys(E).forEach(function (id) {
+      var e = E[id];
+      if (!r[e[1]].vis || !r[e[2]].vis) return;
+      var p = e[3](r), d = "M" + p.map(function (q) { return q[0] + " " + q[1]; }).join(" L");
+      o.push('<g class="' + (on(id) ? "" : "dim") + '"><path class="e ' + e[0] + '" d="' + d + '" marker-end="url(#m' + seq + e[0] + ')"/>');
+      if (e[4]) { var t = e[5](r); o.push('<text class="el ' + e[0] + '" x="' + t[0] + '" y="' + t[1] + '" text-anchor="' + t[2] + '">' + e[4] + "</text>"); }
+      o.push("</g>");
+    });
+    Object.keys(N).forEach(function (id) {
+      var n = N[id], q = r[id];
+      if (!q.vis) return;
+      o.push('<g class="' + n[3] + (on(id) ? "" : " dim") + '"><rect class="nb" x="' + q.x + '" y="' + q.y + '" width="' + q.w + '" height="' + NH + '" rx="6"/><text class="nt" x="' + q.cx + '" y="' + (q.y + 23) + '" font-size="13">' + n[4] + '</text><text class="nsub" x="' + q.cx + '" y="' + (q.y + 42) + '" font-size="11.5">' + n[5] + "</text></g>");
+    });
+    o.push("</svg>");
+    el.insertAdjacentHTML("afterbegin", o.join(""));
+    if (focus && el.scrollWidth > el.clientWidth) {
+      var xs = focus.filter(function (id) { return r[id]; }).map(function (id) { return r[id].x; });
+      if (xs.length) el.scrollLeft = Math.max(0, Math.min.apply(null, xs) - 40) * el.scrollWidth / W;
+    }
+  }
+  document.querySelectorAll(".lanefig").forEach(render);
+})();
+</script>
+
+<script>
+(function () {
+  var N = {"1":["管理画面の配色","管理画面の地・カード・インク・アクセントの色を使用"],"2":["青緑の濃淡","同系の青緑の濃淡で経路と節を区別"],"3":["灰色と焦点色","地と図を灰色にし、各節の該当部分だけを 1 色の青緑で示す"]};
+  function set(k) {
+    if (!N[k]) k = "1";
+    document.documentElement.setAttribute("data-scheme", k);
+    document.querySelectorAll(".sw button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.s === k ? "true" : "false"); });
+    var l = document.getElementById("schemeline");
+    if (l) l.textContent = "配色 " + k + "「" + N[k][0] + "」: " + N[k][1];
+  }
+  var m = location.hash.match(/scheme=(\d)/);
+  set(m ? m[1] : "1");
+  document.querySelectorAll(".sw button").forEach(function (b) {
+    b.addEventListener("click", function () { set(b.dataset.s); history.replaceState(null, "", "#scheme=" + b.dataset.s); });
+  });
+})();
+</script>
+</body>
+</html>

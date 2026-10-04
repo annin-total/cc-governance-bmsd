@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code 利用管理ガイド</title>
+<style>
+  :root {
+    --bg: #f6faf9;
+    --paper: #ffffff;
+    --ink: #1d2e30;
+    --sub: #546668;
+    --faint: #879597;
+    --teal: #13827c;
+    --teal-dk: #0d5e5a;
+    --teal-pale: #e3f3f1;
+    --yellow: #fff5d1;
+    --yellow-line: #ecd27a;
+    --yellow-dk: #8a6a0c;
+    --rule: #dbe7e6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 28px 72px; }
+  svg.i { width: 40px; height: 40px; flex: none; color: var(--teal); }
+  svg.i.lg { width: 56px; height: 56px; }
+
+  .hero {
+    background: var(--yellow); border-radius: 24px; padding: 36px 40px; display: grid;
+    grid-template-columns: 1fr auto; gap: 24px; align-items: center;
+  }
+  .hero small { display: block; font-size: 12.5px; font-weight: 700; letter-spacing: .12em; color: var(--yellow-dk); }
+  .hero h1 { margin: 6px 0 10px; font-size: 30px; line-height: 1.35; color: var(--teal-dk); }
+  .hero p { margin: 0; font-size: 15px; }
+  .hero .target { margin-top: 10px; font-size: 13px; color: var(--sub); }
+  .toc { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; }
+  .toc li { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 999px; padding: 4px 16px 4px 4px; }
+  .toc b { width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+
+  .point { background: var(--paper); border-radius: 20px; padding: 32px 36px; margin-top: 24px; border: 1px solid var(--rule); }
+  .ph { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .num {
+    width: 48px; height: 48px; border-radius: 14px; background: var(--teal); color: #fff;
+    font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .ph h2 { margin: 0; font-size: 21px; }
+  .ph span { font-size: 13px; color: var(--sub); }
+  .note { font-size: 12.5px; color: var(--faint); margin: 10px 0 0; }
+
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .tile { background: var(--teal-pale); border-radius: 16px; padding: 20px; display: flex; gap: 14px; align-items: center; }
+  .tile b { display: block; font-size: 16px; color: var(--teal-dk); }
+  .tile span { font-size: 13px; color: var(--sub); }
+
+  /* flow */
+  .flow { display: grid; gap: 14px; }
+  .lane { display: grid; grid-template-columns: 90px 1fr; gap: 16px; align-items: center; border-radius: 16px; padding: 16px 18px; }
+  .lane.d { background: var(--teal-pale); }
+  .lane.c { background: var(--yellow); }
+  .lane .tag { font-size: 13px; font-weight: 700; }
+  .lane.d .tag { color: var(--teal-dk); }
+  .lane.c .tag { color: var(--yellow-dk); }
+  .chain { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 4px; }
+  .actor { display: flex; flex-direction: column; align-items: center; text-align: center; width: 140px; }
+  .actor .bub { width: 64px; height: 64px; border-radius: 18px; background: #fff; display: flex; align-items: center; justify-content: center; }
+  .actor b { font-size: 13px; margin-top: 6px; line-height: 1.35; }
+  .actor span { font-size: 11.5px; color: var(--sub); line-height: 1.35; }
+  .arrow { display: flex; flex-direction: column; align-items: center; width: 104px; font-size: 11px; color: var(--sub); text-align: center; line-height: 1.3; }
+  .arrow svg { width: 44px; height: 14px; }
+  .lane.d .arrow svg { color: var(--teal); }
+  .lane.c .arrow svg { color: var(--yellow-dk); }
+  .sep { width: 1px; align-self: stretch; background: var(--yellow-line); margin: 0 10px; }
+  .key {
+    display: flex; gap: 14px; align-items: center; border: 2px dashed var(--teal); border-radius: 16px; padding: 14px 18px;
+  }
+  .key b { color: var(--teal-dk); }
+  .key p { margin: 0; font-size: 14px; }
+
+  /* terminal steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: s; }
+  .st { border: 1px solid var(--rule); border-radius: 16px; padding: 18px 20px; }
+  .st .top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .st h3 { margin: 0; font-size: 15.5px; color: var(--teal-dk); }
+  .st h3 small { display: block; font-size: 11.5px; color: var(--faint); font-weight: 400; }
+  .st ul { margin: 0; padding-left: 1.1em; font-size: 13.5px; }
+  .st li { margin-bottom: 3px; }
+  .set { margin-top: 16px; background: var(--yellow); border-radius: 16px; padding: 16px 20px; }
+  .set h3 { margin: 0 0 8px; font-size: 14.5px; color: var(--yellow-dk); }
+  .set table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  .set td { padding: 6px 12px 6px 0; border-top: 1px solid var(--yellow-line); vertical-align: top; }
+  .set td:first-child { font-weight: 600; white-space: nowrap; }
+  .set td.v { color: var(--teal-dk); font-weight: 700; white-space: nowrap; }
+  .set td:last-child { color: var(--sub); font-size: 13px; }
+
+  /* collect */
+  .two { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+  .box { border-radius: 16px; padding: 20px 22px; }
+  .box.yes { background: var(--teal-pale); }
+  .box.no { background: #eef1f1; }
+  .box .top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .box h3 { margin: 0; font-size: 16px; }
+  .box.yes h3 { color: var(--teal-dk); }
+  .box.no h3 { color: var(--sub); }
+  .box dl { margin: 0; display: grid; grid-template-columns: 9.5em 1fr; gap: 6px 12px; font-size: 13.5px; }
+  .box dt { font-weight: 600; }
+  .box dd { margin: 0; color: var(--sub); }
+  .box ul { margin: 0; padding-left: 1.1em; font-size: 13.5px; }
+  .box li { margin-bottom: 4px; }
+  .csv { margin-top: 14px; padding-top: 12px; border-top: 1px solid #d9dfdf; font-size: 13.5px; }
+  .csv b { color: var(--yellow-dk); }
+
+  /* ops */
+  .ops { display: grid; grid-template-columns: 1fr 1.3fr; gap: 16px; }
+  .who { border: 1px solid var(--rule); border-radius: 16px; padding: 18px 20px; }
+  .who .top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .who h3 { margin: 0; font-size: 16px; color: var(--teal-dk); }
+  .row { display: grid; grid-template-columns: 8.5em 1fr; gap: 10px; padding: 8px 0; border-top: 1px solid var(--rule); font-size: 13.5px; }
+  .chip { display: inline-block; background: var(--yellow); color: var(--yellow-dk); font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 2px 10px; height: fit-content; text-align: center; justify-self: start; }
+  .row ol { margin: 0; padding-left: 1.2em; }
+  .screens { margin-top: 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .scr { background: var(--teal-pale); border-radius: 14px; padding: 14px 16px; }
+  .scr b { display: block; font-size: 14px; color: var(--teal-dk); }
+  .scr span { font-size: 12.5px; color: var(--sub); }
+  .limits { margin-top: 28px; font-size: 12px; color: var(--faint); }
+  .limits ul { margin: 4px 0 0; padding-left: 1.1em; }
+
+  @media (max-width: 860px) {
+    .tiles, .steps, .two, .ops { grid-template-columns: 1fr; }
+    .screens { grid-template-columns: 1fr 1fr; }
+    .hero { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 24px 16px 56px; }
+    .hero { padding: 24px 20px; border-radius: 18px; }
+    .hero h1 { font-size: 23px; }
+    .point { padding: 22px 18px; border-radius: 16px; }
+    .ph h2 { font-size: 18px; }
+    .lane { grid-template-columns: 1fr; gap: 8px; padding: 14px; }
+    .chain { flex-direction: column; align-items: stretch; }
+    .actor { flex-direction: row; width: auto; gap: 12px; text-align: left; }
+    .actor .bub { width: 48px; height: 48px; border-radius: 14px; flex: none; }
+    .actor b { margin-top: 0; }
+    .arrow { width: auto; flex-direction: row; gap: 8px; padding-left: 14px; }
+    .arrow svg { transform: rotate(90deg); width: 20px; height: 20px; }
+    .sep { width: auto; height: 1px; margin: 8px 0; }
+    .box dl, .row { grid-template-columns: 1fr; gap: 2px; }
+    .box dd { margin-bottom: 6px; }
+    .screens { grid-template-columns: 1fr; }
+    .set tr { display: block; padding: 8px 0; border-top: 1px solid var(--yellow-line); }
+    .set td { display: inline; padding: 0 8px 0 0; border: 0; }
+    .set td:last-child { display: block; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-person" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="16" r="7"/><path d="M10 40c1.5-8 7-12 14-12s12.5 4 14 12"/></g></symbol>
+    <symbol id="ic-repo" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12h28l-3 26a3 3 0 0 1-3 2.6H16a3 3 0 0 1-3-2.6z"/><ellipse cx="24" cy="12" rx="14" ry="4"/><path d="M19 24h10M20 31h8"/></g></symbol>
+    <symbol id="ic-laptop" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="11" width="28" height="19" rx="2.5"/><path d="M5 37h38l-3-7H8z"/><path d="M16 18l4 3-4 3M23 25h7"/></g></symbol>
+    <symbol id="ic-server" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="8" width="30" height="13" rx="3"/><rect x="9" y="27" width="30" height="13" rx="3"/><path d="M15 14.5h.01M15 33.5h.01M22 14.5h10M22 33.5h10"/></g></symbol>
+    <symbol id="ic-doc" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 6h15l9 9v25a2 2 0 0 1-2 2H13a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M28 6v9h9"/><path d="M17 23h14M17 29h14M17 35h9"/></g></symbol>
+    <symbol id="ic-slider" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M8 14h32M8 24h32M8 34h32"/><circle cx="17" cy="14" r="4" fill="#fff"/><circle cx="31" cy="24" r="4" fill="#fff"/><circle cx="21" cy="34" r="4" fill="#fff"/></g></symbol>
+    <symbol id="ic-chart" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 40h32"/><rect x="11" y="24" width="6" height="12" rx="1"/><rect x="21" y="16" width="6" height="20" rx="1"/><rect x="31" y="9" width="6" height="27" rx="1"/></g></symbol>
+    <symbol id="ic-check" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="16"/><path d="M16 24.5l5.5 5.5L32 19"/></g></symbol>
+    <symbol id="ic-play" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><circle cx="24" cy="24" r="16"/><path d="M20 16.5v15l12-7.5z"/></g></symbol>
+    <symbol id="ic-note" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="7" width="24" height="34" rx="3"/><path d="M15 16h14M15 23h14M15 30h8"/><path d="M38 18l-8 14-3 1 .5-3.2 8-14z"/></g></symbol>
+    <symbol id="ic-send" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 30V8M16 16l8-8 8 8"/><path d="M8 28v8a4 4 0 0 0 4 4h24a4 4 0 0 0 4-4v-8"/></g></symbol>
+    <symbol id="ic-lock" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="21" width="28" height="20" rx="3"/><path d="M16 21v-6a8 8 0 0 1 16 0v6M24 29v5"/></g></symbol>
+    <symbol id="ic-browser" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="9" width="36" height="30" rx="3"/><path d="M6 17h36M11 13h.01M15 13h.01"/><path d="M13 33v-6M20 33v-10M27 33v-4"/></g></symbol>
+    <symbol id="ic-arrow" viewBox="0 0 44 14"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h38M34 2l6 5-6 5"/></g></symbol>
+  </defs>
+</svg>
+
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <small>GUIDE</small>
+      <h1>Claude Code 利用管理<br>5 つの要点</h1>
+      <p>設定を全員の端末に配り、利用状況とコストを見える化し、その設定の効果を確かめる仕組み。</p>
+      <p class="target">対象: BMSD 本部の Claude Code 利用者（約 140 名）</p>
+    </div>
+    <ol class="toc">
+      <li><b>1</b>目的</li>
+      <li><b>2</b>構成</li>
+      <li><b>3</b>端末での動き</li>
+      <li><b>4</b>集めるもの・集めないもの</li>
+      <li><b>5</b>運用</li>
+    </ol>
+  </section>
+
+  <!-- 1 -->
+  <section class="point">
+    <div class="ph"><div class="num">1</div><div><h2>目的</h2><span>3 つの役割</span></div></div>
+    <div class="tiles">
+      <div class="tile"><svg class="i lg"><use href="#ic-slider"/></svg><div><b>設定の配布</b><span>全員の端末へ同じ設定</span></div></div>
+      <div class="tile"><svg class="i lg"><use href="#ic-chart"/></svg><div><b>見える化</b><span>利用状況とコスト</span></div></div>
+      <div class="tile"><svg class="i lg"><use href="#ic-check"/></svg><div><b>効果の確認</b><span>配った設定が効いたか</span></div></div>
+    </div>
+    <p class="note">目的は施策の評価。利用者個人の監視をしない。リアルタイムにも見ない（設定の反映は分単位、コストは日次）。</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="point">
+    <div class="ph"><div class="num">2</div><div><h2>構成</h2><span>2 本の経路</span></div></div>
+    <div class="flow">
+      <div class="lane d">
+        <div class="tag">配る経路</div>
+        <div class="chain">
+          <div class="actor"><div class="bub"><svg class="i"><use href="#ic-person"/></svg></div><b>管理者</b><span>設定値・お知らせ</span></div>
+          <div class="arrow"><svg><use href="#ic-arrow"/></svg>リリース</div>
+          <div class="actor"><div class="bub"><svg class="i"><use href="#ic-repo"/></svg></div><b>配布用リポジトリ</b><span>Bitbucket（社内）</span></div>
+          <div class="arrow"><svg><use href="#ic-arrow"/></svg>git で自動更新</div>
+          <div class="actor"><div class="bub"><svg class="i"><use href="#ic-laptop"/></svg></div><b>利用者の端末</b><span>Windows / macOS</span></div>
+        </div>
+      </div>
+      <div class="lane c">
+        <div class="tag">集める経路</div>
+        <div class="chain">
+          <div class="actor"><div class="bub"><svg class="i"><use href="#ic-laptop"/></svg></div><b>利用者の端末</b><span>利用中の記録</span></div>
+          <div class="arrow"><svg><use href="#ic-arrow"/></svg>送信</div>
+          <div class="actor"><div class="bub"><svg class="i"><use href="#ic-server"/></svg></div><b>集計サーバ</b><span>AIP または One Cloud</span></div>
+          <div class="sep"></div>
+          <div class="actor"><div class="bub"><svg class="i"><use href="#ic-doc"/></svg></div><b>利用明細 CSV</b><span>AI Gateway（日ごと）</span></div>
+          <div class="arrow"><svg><use href="#ic-arrow"/></svg>管理者がアップロード</div>
+          <div class="actor"><div class="bub"><svg class="i"><use href="#ic-server"/></svg></div><b>集計サーバ</b><span>保存・集計</span></div>
+        </div>
+      </div>
+      <div class="key">
+        <svg class="i"><use href="#ic-check"/></svg>
+        <p><b>サーバから端末への経路は無い。</b>集計サーバが止まっても、設定とお知らせの配布は止まらない。止まるのは集計だけ。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="point">
+    <div class="ph"><div class="num">3</div><div><h2>端末での動き</h2><span>1 セッションの流れ</span></div></div>
+    <div class="steps">
+      <div class="st">
+        <div class="top"><svg class="i"><use href="#ic-play"/></svg><h3><small>セッション開始時</small>設定の適用・お知らせ</h3></div>
+        <ul>
+          <li>設定値を settings.json へ書き込み（変更前は自動でバックアップ）</li>
+          <li>未読のお知らせを表示（関連ページを 1 回だけブラウザで開くことがある）</li>
+        </ul>
+      </div>
+      <div class="st">
+        <div class="top"><svg class="i"><use href="#ic-note"/></svg><h3><small>利用中</small>イベントの記録</h3></div>
+        <ul>
+          <li>プロンプト送信・ツール使用・ツールのエラー・自動コンパクト・応答完了など</li>
+          <li>端末内に記録（フックで記録）</li>
+        </ul>
+      </div>
+      <div class="st">
+        <div class="top"><svg class="i"><use href="#ic-send"/></svg><h3><small>セッション開始時・応答完了時</small>まとめて送信</h3></div>
+        <ul>
+          <li>前回の送信から 10 分以上経っていれば送信</li>
+          <li>送れなかった記録は端末に残し、後で送信（14 日・20 MB まで。超えた分は古い順に捨てる）</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">記録・送信は裏で行い、Claude Code の操作を待たせない。エラーが起きても Claude Code は止まらない。端末には Python 3（<code>python3</code> コマンド）が必要。</p>
+    <div class="set">
+      <h3>配る設定値</h3>
+      <table>
+        <tr><td>自動コンパクトの閾値</td><td class="v">60%</td><td>大きなコンテキストのまま払うコストを抑える（効果の測定対象）</td></tr>
+        <tr><td>プラグインの自動更新</td><td class="v">有効</td><td>設定値・お知らせの変更を全端末へ届ける</td></tr>
+        <tr><td>本体の自動更新</td><td class="v">常に最新版</td><td>全員の版をそろえる（利用者が切っていても打ち消す）</td></tr>
+      </table>
+      <p class="note">利用者が変えても、次のセッション開始時に配った値へ戻る。</p>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="point">
+    <div class="ph"><div class="num">4</div><div><h2>集めるもの・集めないもの</h2><span>本文には触れない</span></div></div>
+    <div class="two">
+      <div class="box yes">
+        <div class="top"><svg class="i"><use href="#ic-note"/></svg><h3>集めるもの（端末から）</h3></div>
+        <dl>
+          <dt>利用者</dt><dd>会社のメールアドレス（CSV との照合用）・端末名</dd>
+          <dt>イベント</dt><dd>種類・イベント時刻・セッション ID</dd>
+          <dt>ツール</dt><dd>ツール名（MCP はサーバ名を含む）・サブエージェントによる使用か・中断か</dd>
+          <dt>スキル・コマンド</dt><dd>スキル名・コマンド名・出所</dd>
+          <dt>状態</dt><dd>コンテキストのトークン数（自動コンパクト直前・応答完了時）・エフォート・権限モード</dd>
+          <dt>版</dt><dd>Claude Code 本体・プラグイン</dd>
+          <dt>設定の適用結果</dt><dd>変更前の値・配った値・適用の結果</dd>
+          <dt>プラグインのエラー</dt><dd>処理の段階名・エラーの種類のみ</dd>
+        </dl>
+      </div>
+      <div class="box no">
+        <div class="top"><svg class="i" style="color:#6c7b7d"><use href="#ic-lock"/></svg><h3>集めないもの</h3></div>
+        <ul>
+          <li>プロンプト本文・Claude の応答本文・会話内容</li>
+          <li>ツールの入出力（読み書きしたファイルの中身、実行したコマンドの中身）</li>
+          <li>エラーメッセージ</li>
+          <li>コスト・モデル名（端末からは取らない）</li>
+        </ul>
+        <div class="csv"><b>CSV から入る項目</b><br>日付・メールアドレス・モデル・コスト・トークン数（入力・出力・キャッシュ）</div>
+        <p class="note">CSV はコストとトークン数の正本。Claude Code 以外の利用も含む。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="point">
+    <div class="ph"><div class="num">5</div><div><h2>運用</h2><span>利用者・管理者</span></div></div>
+    <div class="ops">
+      <div class="who">
+        <div class="top"><svg class="i"><use href="#ic-laptop"/></svg><h3>利用者</h3></div>
+        <div class="row"><span class="chip">導入時に 1 回</span>
+          <ol>
+            <li>（Windows）<code>python3</code> の動作確認</li>
+            <li>git の会社メールアドレスの確認</li>
+            <li>2 つのコマンドで導入</li>
+            <li>開き直してお知らせが出れば完了</li>
+          </ol>
+        </div>
+        <div class="row"><span class="chip">日常</span><div>操作なし（更新も自動）。届かない場合だけ手動更新のコマンド 2 つ</div></div>
+      </div>
+      <div class="who">
+        <div class="top"><svg class="i"><use href="#ic-person"/></svg><h3>管理者</h3></div>
+        <div class="row"><span class="chip">導入時</span><div>案内を 2〜3 回に分け、1〜2 週ずつずらす（部署を横断）。効果を同時期のほかの変化と区別するため</div></div>
+        <div class="row"><span class="chip">1〜2 週に 1 回</span><div>AI Gateway の CSV を管理画面からアップロード</div></div>
+        <div class="row"><span class="chip">随時</span><div>データの届き具合・エラー・未導入者の確認。未導入者への声かけ</div></div>
+        <div class="row"><span class="chip">設定の変更時</span><div>プラグインの版を上げて配布用リポジトリへリリース</div></div>
+      </div>
+    </div>
+    <div class="screens">
+      <div class="scr"><b>概況</b><span>コスト・利用者数・月末のコスト見込み・データの届き具合・プラグインのエラー</span></div>
+      <div class="scr"><b>設定の適用状況</b><span>適用率・未導入者・記録が途絶えた端末（14 日以上）・版の分布</span></div>
+      <div class="scr"><b>設定の効果</b><span>適用開始日を起点にした前後の推移・コンテキストのトークン数の分布</span></div>
+      <div class="scr"><b>スキル・コマンドの利用</b><span>スキル・コマンドごとの利用</span></div>
+    </div>
+    <p class="note">管理画面は 4 画面 ＋ データと設定（CSV のアップロード・月ごとのダウンロード・会社の休日の登録）。社内 VPN の内側で、推測しにくい URL ＋ パスワード。効果は「コンテキストの大きさが小さい側へずれたか」で見る。コストの前後差は時期・業務量・料金でも動くため、効果の根拠にしない。</p>
+  </section>
+
+  <div class="limits">
+    限界
+    <ul>
+      <li>取りこぼしは許容する（オフラインが長い・端末の上限超過・エラー時の記録）</li>
+      <li>プロジェクト単位の設定などで上書きされた場合は、適用率に現れない</li>
+      <li>端末ごとの停止に気づけるのは、記録が途絶えて 14 日経ってから</li>
+    </ul>
+  </div>
+</main>
+</body>
+</html>
