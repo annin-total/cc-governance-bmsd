@@ -5,6 +5,7 @@ import judge
 POLICY_DAYS = 30
 KINDS = ("core", "plugin")
 STATUS_RANK = {"off": 0, "none": 1, "ok": 2}
+MAX_DIST = 2  # バージョンの段階: 最新・1 つ前・2 つ以上前
 
 
 def _ver(v: str) -> tuple:
@@ -32,7 +33,7 @@ def _versions(raw, today: int) -> dict:
 
 
 def _summary(kind: str, by_user: dict) -> dict:
-    """古い版の人数（最新は窓の中で報告された最も新しい版）と、版ごとの人数。"""
+    """古い版の人数（最新は窓の中で報告された最も新しい版）と、版ごとの [版, 人数, 最新からの距離（0・1・2 以上は 2）]。"""
     if not by_user:
         return {"latest": None, "outdated": 0, "total": 0, "parts": [], "rows": [], "state": judge.OK}
     latest = max(by_user.values(), key=_ver)
@@ -42,7 +43,7 @@ def _summary(kind: str, by_user: dict) -> dict:
     order = sorted(counts, key=_ver, reverse=True)
     outdated = sum(n for v, n in counts.items() if v != latest)
     elevated = judge.CORE_OUTDATED_ELEVATED if kind == "core" else judge.PLUGIN_OUTDATED_ELEVATED
-    return {"latest": latest, "outdated": outdated, "total": len(by_user), "parts": [[v, counts[v]] for v in order],
+    return {"latest": latest, "outdated": outdated, "total": len(by_user), "parts": [[v, counts[v], min(i, MAX_DIST)] for i, v in enumerate(order)],
             "state": judge.over(outdated, elevated), "rows": [{"kind": kind, "version": v, "users": counts[v], "total": len(by_user),
                                                               "share": round(counts[v] / len(by_user) * 100, 1), "latest": v == latest,
                                                               "order": len(order) - i} for i, v in enumerate(order)]}

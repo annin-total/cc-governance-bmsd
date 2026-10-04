@@ -1,6 +1,6 @@
 """カタログ用の偏りのある合成データを、空の DB（DB_DSN）に作る。本物の seed（scripts/seed_dashboard.py）は変えない。
 
-使い方: DB_DSN=sqlite:///<db> python seed_biased.py --server <server> --scripts <seed の scripts/> [--users 40] [--days 400]
+使い方: DB_DSN=sqlite:///<db> python seed_biased.py --server <server> --scripts <seed の scripts/> [--users 200] [--days 400]
 端末・設定の報告・エラーは本物の seed の関数（_terminals・_row）をそのまま使い、記録と利用明細だけを利用者の型で偏らせる。
 受信と取込はサーバの本体（ndjson.ingest・csv_import.import_all）を通し、1 行でも捨てられたら止まる。
 """
@@ -38,12 +38,13 @@ TIERS = {
     "dormant": (0.05, (1, 1), 0.6, 7, 0.0, 0.2, 0.0, 0.0, 0.0, 0.2),
     "none": (0.0, (0, 0), 0.6, 5, 0, 0, 0, 0, 0, 0),
 }
-TIER_COUNTS = (("heavy", 6), ("regular", 12), ("light", 10), ("dormant", 8))
-QUITTERS, QUIT_AGO = 4, (35, 160)  # 途中で離れる人（利用明細も記録も止まる）
+TIER_COUNTS = (("heavy", 30), ("regular", 60), ("light", 50), ("dormant", 40))  # 未導入は本物の seed が --users の 1 割（200 人で 20 人）
+QUITTERS, QUIT_AGO = 20, (35, 160)  # 途中で離れる人（利用明細も記録も止まる）
 CSV_LAG = 2  # 利用明細の最終日は基準日の 2 日前
-RECENT_BUMP, BUMP_DAYS, BUMP_TIERS = 1.3, 7, ("heavy", "regular")  # 利用明細の最後の 7 日だけ、よく使う人と普段使う人のコストを上げる（7 日のコストを注意にする）
+RECENT_BUMP, BUMP_DAYS, BUMP_TIERS = 1.18, 7, ("heavy", "regular")  # 利用明細の最後の 7 日だけ、よく使う人と普段使う人のコストを上げる（7 日のコストを注意にする）
+RECENT_DROP, DROPPERS = 0.3, 8  # 同じ 7 日に、よく使う人の一部のコストを下げる（基準超えに離脱を出す）
 # 古い版の利用者の人数（本体・プラグイン）。ほかは最新の版にそろえ、古い版がほぼ全員にならないようにする
-OLD_CORE, OLD_PLUGIN, LATEST_CORE, LATEST_PLUGIN = 5, 8, "2.1.283", "0.2.1"
+OLD_CORE, OLD_PLUGIN, LATEST_CORE, LATEST_PLUGIN = 25, 40, "2.1.283", "0.2.1"
 RECENT_SPREAD = 6  # 途絶えていない端末の、必ず記録を作る日を基準日から何日前まで散らすか
 
 
@@ -51,7 +52,7 @@ def _args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--server", required=True, type=Path)
     p.add_argument("--scripts", required=True, type=Path)
-    p.add_argument("--users", type=int, default=40)
+    p.add_argument("--users", type=int, default=200)
     p.add_argument("--days", type=int, default=400)
     return p.parse_args()
 
@@ -82,6 +83,8 @@ def _profiles(rng, introduced: list, not_introduced: list) -> dict:
             "bypass": rng.random() < 0.15, "p_skill": rng.uniform(0.1, 0.35), "p_cmd": rng.uniform(0.05, 0.2),
             "p_ext": rng.uniform(0.15, 0.5), "p_agent": rng.uniform(0.1, 0.3), "quit": None,
         }
+    for u in random.Random(SEED + 2).sample([u for u in order if profs[u]["tier"] == "heavy"], DROPPERS):  # 乱数は本体の流れと分ける
+        profs[u]["drop"] = True
     for u in [u for u in order if profs[u]["tier"] in ("light", "dormant")][:QUITTERS]:
         profs[u]["quit"] = rng.randint(*QUIT_AGO)  # 何日前に使うのをやめたか
     for u, p in profs.items():  # モデルの構成: Opus は上位の型の一部、Haiku は軽い型の一部
@@ -196,7 +199,9 @@ def _csv_rows(rng, user: str, prof: dict, lo: int, hi: int, start, csv_cols: lis
         if rng.random() > tier[2] * (0.12 if _weekend(d) else 1.0):
             continue
         base = tier[3] * rng.uniform(0.5, 1.5) * (1.3 if start is None or d < start else 1.0)
-        if d >= bump_from and prof["tier"] in BUMP_TIERS:
+        if d >= bump_from and prof.get("drop"):
+            base *= RECENT_DROP
+        elif d >= bump_from and prof["tier"] in BUMP_TIERS:
             base *= RECENT_BUMP
         parts = [(prof["model"], 1.0)]
         if prof["model"] == "sonnet" and rng.random() < 0.25:
