@@ -1,0 +1,9 @@
+[
+  ["x-cost-user-cost-dept", null, null],
+  ["user-all-7", "?page=cost#user_all", null],
+  ["user-all-12m", "?page=cost&period=12m#user_all", null],
+  ["user-all-dept", "?page=cost&period=28#user_all", "#user_all [data-dept-chip='Department A']"],
+  ["sections-rec-7", "?page=cost#sections", null],
+  ["sections-rec-12m", "?page=cost&period=12m#sections", null],
+  ["go-activity-user-all", "?page=activity", "[data-ref=days_per_user]"]
+]

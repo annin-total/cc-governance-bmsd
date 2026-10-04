@@ -1,0 +1,11 @@
+[
+  ["cmp-over-O1", "?page=home&over=O1", null],
+  ["cmp-over-O3", "?page=home&over=O3", null],
+  ["cmp-over-O4", "?page=home&over=O4", null],
+  ["cmp-over-O5", "?page=home&over=O5", null],
+  ["cmp-over-O5-cost", "?page=cost&over=O5", null],
+  ["cmp-cost-C32", "?page=home&cost=C32", null],
+  ["cmp-ver-V1", "?page=home&ver=V1", null],
+  ["cmp-ver-V2", "?page=home&ver=V2", null],
+  ["cmp-head-H2", "?page=home&head=H2", null]
+]
