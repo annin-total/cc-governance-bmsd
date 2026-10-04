@@ -47,7 +47,7 @@ $SP/venv/bin/python data/build_data.py --server $SP/server --scripts $SP/scripts
 | `p[k].calls`・`p[k].size` | 呼び出し 4 種の合計と上位・セッションの大きさ（7・28 日） |
 | `p[k].r3.cost` | `bill` の窓の `total`・`bd`・`per_bd`・`users`・`per_user_bd` と `prev_*`、`*_change`、`state`・`per_user_state`・`users_state`、`daily`。12 か月は前と状態が無い |
 | `p[k].r3` | `model_pt`。7・28 日は `changes`（利用状況のカードの増減）と `calls`（呼び出し先の行） |
-| `p[7・28].r3.over` | 基準を超えた利用者。区分（7 日は `day`・`week`、28 日は `month`）ごとに `users`・`prev_users`・`delta`・`new`・`left`・`ng`・`warn`・`prev_*`・`ng_delta`・`cost_share`・`state` など。`rows`（`over_users` の行。`dept`・`section` つき） |
+| `p[7・28].r3.over` | 基準を超えた利用者。区分（7 日は `day`・`week`、28 日は `month`）ごとに `users`・`prev_users`・`delta`・`new`・`left`・`ng`・`warn`・`prev_*`・`ng_delta`・`cost_share`・`state` と、状態ごとの `ng_new`・`ng_left`・`warn_new`・`warn_left`・`ng_cost_share`（要確認の人の分）など。`rows`（`over_users` の行。`dept`・`section` つき） |
 | `p[k].r3.sections` | 課ごとの `dept`・`section`（名簿に無い人は null、課の欄が空なら ""）・`users`・`cost`・`share`・`per_user_bd`。7・28 日は `prev`・`diff`・`change`・`over`（7 日は週次、28 日は月次の注意以上の人数）と記録の段（`rec_users`・`days_per_user`・`prompts_per_person_day`・`skill_calls`・`command_calls`）。合計は `r3.cost` の人数とコストに一致する |
 | `fixed.now` | 状態のページの値（今日までの 7 日）。`period`・`events`・`users`・`errors`・`nulls`・`health`・`reconciliation`（`match7`）と `r3`（`silent`〔`user_delivery` の行に `dept`・`section`〕・`errors`〔`rows`・`state`・`top`＝件数の多い上位 3 つ〕・`nulls`・`changes`〔`events` の率・`senders`〕） |
 | `fixed.r3.forecast` | 月末の見込みの前月の実績との `change`・`state` |

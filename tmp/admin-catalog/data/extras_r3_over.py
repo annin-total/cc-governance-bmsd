@@ -43,6 +43,8 @@ def _span(span: str, now_sums: dict, now: dict, prev: dict, cost: dict) -> dict:
     top = sorted(now, key=lambda e: -now_sums[e][VALUE[span]])[:TOP]
     users, all_users = len(now), cost["users"]
     ng = _count(now, judge.NG)
+    of = lambda tones, tone: {e for e, t in tones.items() if t == tone}  # noqa: E731
+    ng_now, ng_prev, warn_now, warn_prev = of(now, judge.NG), of(prev, judge.NG), of(now, judge.WARN), of(prev, judge.WARN)
     return {
         "key": span, "users": users, "prev_users": len(prev), "delta": users - len(prev),
         "new": len(set(now) - set(prev)), "left": len(set(prev) - set(now)),
@@ -50,6 +52,9 @@ def _span(span: str, now_sums: dict, now: dict, prev: dict, cost: dict) -> dict:
         "ok": all_users - users, "all_users": all_users, "user_share": judge.share(users, all_users), "cost": spent, "cost_share": judge.share(spent, cost["total"]),
         "state": judge.worst(now.values()), "elevated": judge.USER_COST_ELEVATED[span], "high": judge.USER_COST_HIGH[span],
         "top": [{"email": e, "value": now_sums[e][VALUE[span]], "state": now[e]} for e in top],
+        # 状態ごとの新規・離脱とコストの割合（要確認だけ・注意だけを数える見せ方 O2〜O4）
+        "ng_new": len(ng_now - ng_prev), "ng_left": len(ng_prev - ng_now), "warn_new": len(warn_now - warn_prev), "warn_left": len(warn_prev - warn_now),
+        "ng_cost_share": judge.share(sum(now_sums[e]["total"] for e in ng_now), cost["total"]),
     }
 
 
