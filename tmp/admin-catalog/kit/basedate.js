@@ -5,7 +5,10 @@
   const K = window.KIT;
   const { esc, fill } = K;
   const DAY = 86400000;
-  const ASOF = new URLSearchParams(location.search).get("asof");
+  const ASOF_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
+  const asked = new URLSearchParams(location.search).get("asof");
+  // href に埋め込むので、日付の形でない値は捨てる
+  const ASOF = asked && ASOF_FORMAT.test(asked) ? asked : null;
   const meta = () => window.DATA.meta;
   const chosen = () => (ASOF ? Math.min(Math.round(Date.parse(ASOF) / DAY), meta().end) : meta().end);
 
