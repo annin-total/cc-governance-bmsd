@@ -100,3 +100,16 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
 - 2026-10-04 会社 PC（2.1.289）での手動検証の結果を受け取り、手順書に取り込んだ（9a04798。記録の途中経過と覆った記述は 3331ecf で整理）。
   別の担当に二重チェックさせてから、対応表と docs に反映した（60cdddf）。ユーザーの決定: VS Code 拡張版は対象外（拡張では systemMessage も mod の UI も出ない）。
   mod からの自動同期は配布の候補として記録し、採否は設計で決める
+- 2026-10-04 grilling（設計の前の不明点の解消）の途中経過。調査 g8（effort と command_source）・g9（自動更新）を reports/ に残した（scratch はセッションの中断で失われた）。
+  回答済み:
+  - Q1 Windows: 設計は進め、リリースの前に Windows で検証する
+  - Q2 プロキシ: 対象にプロキシの端末は無い前提で進める
+  - Q3 Desktop: 対象外（VS Code 拡張と同じ）
+  - Q4 Bedrock の transcript: 同じ形を前提にし、実装後の E2E で確かめる
+  - Q5 command_name・command_source: この 2 列だけ classic.UserPromptExpansion から取る（今と同じ値）。sec-default の端末ではこの行が出ない
+  - Q6 Esc で中断したツールの行: 受け入れたまま
+  - Q7・Q9・Q10・Q11 お知らせ: ブラウザを自動で開く機能は消す。未読はすべてバンドに並べ、各お知らせに「既読にする」ボタン。
+    notices.json に任意の `label` を足し、太字のリンクと薄い URL の文字列で出す
+  - Q8 statusline.js の同期: 設定の適用と同じ Python
+  - Q12 mod からの自動同期: 採らない（本体の自動更新で次の起動から新しい版が効く。g9）
+  - 論点 16 effort: classic と turn.step が 3 条件で一致（g8）。解消
