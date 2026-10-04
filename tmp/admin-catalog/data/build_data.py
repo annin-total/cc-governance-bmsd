@@ -82,8 +82,10 @@ def _org(raw, data: dict) -> None:
     """組織 CSV（合成）の部・課を利用者ごとの行に足し、課ごとの集計（`p[期間].r3.sections`）を作る。"""
     import extras_org
 
-    n = raw.execute("SELECT COUNT(*) FROM (SELECT user_email FROM events UNION SELECT user_email FROM cost_daily)").fetchone()[0]
-    data["fixed"]["org"], by = extras_org.roster(n)
+    users = [u for (u,) in raw.execute("SELECT user_email FROM events UNION SELECT user_email FROM cost_daily")]
+    c = data["p"]["7"]["r3"]["cost"]
+    active = [u for (u,) in raw.execute("SELECT DISTINCT user_email FROM cost_daily WHERE day BETWEEN ? AND ? AND cost > 0", (c["start"], c["end"]))]
+    data["fixed"]["org"], by = extras_org.roster(len(users), users, active)
     for key in PERIOD_KEYS:
         p = data["p"][key]
         extras_org.annotate(p["x"]["people"], by)

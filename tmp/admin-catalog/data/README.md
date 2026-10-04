@@ -20,7 +20,7 @@ $SP/venv/bin/python data/build_data.py --server $SP/server --scripts $SP/scripts
 - **利用明細は今日と前日の分が無い**（`CSV_LAG`）。最終日は 09/16
 - **期間のページの窓（`bill`・`rec`・`month`）は利用明細の最終日で終わる**（`meta.end`。サーバの `windows.period` に渡す日を最終日にする）。**状態のページの窓は今日で終わる**（`fixed.now` の `rec7`・設定の適用状況の `p30`）。`match7` は最終日までの 7 日
 - 受信と取り込みはサーバの本体を通し、1 行でも捨てられたら止まる。example.com 以外のメールが出力に入ると止まる。`applied_mix` の 3 区分の合計が対象と合わないとき、`sections` の合計が利用者数・コストと合わないときも止まる
-- 組織 CSV は `scripts/` の `seed_dashboard_rows.roster()`（`seed_org_columns`）の合成で、実物は使わない。部は 2 つ・課は 8 つ、名簿に無い利用者（不明）は約 5%（7 日の窓には出ず、28 日・12 か月に出る）、名簿には利用者でない人も約 50%
+- 組織 CSV は `scripts/` の `seed_dashboard_rows.roster()`（`seed_org_columns`）の合成で、実物は使わない。部は 2 つ・課は 8 つ、名簿に無い利用者（不明）は 7 日 4 人・28 日と 12 か月 5 人（本物の seed は漏れる人が途絶えた端末の利用者に重なるため、`extras_org.roster` で漏れる人を直近にコストのある 4 人と漏れた人の 1 人に入れ替える）、名簿には利用者でない人も約 50%
 
 ## データの偏り
 

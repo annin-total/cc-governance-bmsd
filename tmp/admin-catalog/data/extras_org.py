@@ -11,15 +11,30 @@ from collections import defaultdict
 EPOCH = dt.date(1970, 1, 1)
 IMPORTED = dt.date(2026, 9, 1)  # 取り込んだ日（月 1 回の更新）
 EMAIL, DEPT, SECTION = "Email - Primary Work", "Department", "Section"
-OVER_SPAN = {"7": "week", "28": "month"}  # 課ごとの「基準を超えた利用者」の区分（7 日は週次、28 日は月次）
+OVER_SPAN = {"7": "week", "28": "month"}
+ORG_SALT, LAGGED_OUT, ACTIVE_OUT = 3, 1, 4  # 名簿に無い（不明の）利用者: 漏れた人から 1 人・直近 7 日にコストのある人から 4 人  # 課ごとの「基準を超えた利用者」の区分（7 日は週次、28 日は月次）
 
 
-def roster(n_users: int) -> dict:
-    """名簿（`fixed.org`）と、メール → (部, 課)。scripts/ と server/ が import の経路にあること。"""
+def roster(n_users: int, users: list, active: list) -> tuple:
+    """名簿（`fixed.org`）と、メール → (部, 課)。scripts/ と server/ が import の経路にあること。
+
+    本物の seed は名簿から漏れる人（不明）が途絶えた端末の利用者に重なるため、漏れる人を入れ替える:
+    漏れた人のうち LAGGED_OUT 人だけを残して名簿に足し、直近にコストのある `active` から ACTIVE_OUT 人を名簿から外す。
+    """
     from seed_dashboard import SEED
     from seed_dashboard_rows import roster as make
+    from seed_org_columns import org_unit
 
     rows = make(random.Random(SEED), n_users)
+    rng = random.Random(SEED + ORG_SALT)  # 乱数は本物の seed の流れと分ける
+    listed = {r[EMAIL] for r in rows}
+    lagged = sorted(u for u in users if u not in listed)
+    out = set(rng.sample(lagged, min(LAGGED_OUT, len(lagged)))) | set(rng.sample(sorted(active), min(ACTIVE_OUT, len(active))))
+    for u in lagged:
+        if u not in out:
+            org = org_unit(rng)
+            rows.append({EMAIL: u, DEPT: org[0], SECTION: org[1]})
+    rows = [r for r in rows if r[EMAIL] not in out]
     by = {r[EMAIL]: (r[DEPT], r[SECTION]) for r in rows if "@" in r[EMAIL]}
     depts = sorted({d for d, _ in by.values()})
     return {"imported": (IMPORTED - EPOCH).days, "rows": len(rows), "depts": depts}, by
