@@ -4,7 +4,7 @@
 使い方: DB_DSN=<DSN> python3 scripts/seed_dashboard.py [--users 人数] [--days 日数] [--no-csv]
   DSN の形はサーバと同じ（`server/ccgov/store/db.py`）。契約の表に 1 行でも在る DB には入れずに止まる。
   乱数の種は固定。`--no-csv` は CSV（cost_daily）を入れない。
-  受信・取込の本体（`/ingest`・`/import` と同じ関数）を通し、行が 1 つでも捨てられたら止まる。
+  受信と取込の本体（`/ingest` の受信と `csv_import.import_all`）を通し、行が 1 つでも捨てられたら止まる。
 """
 
 import argparse
@@ -65,12 +65,17 @@ def _check_rules() -> None:
         sys.exit("対応表・施策と契約が食い違う: " + "; ".join(problems))
 
 
+def write_csv(path: Path, rules: dict, rows: list) -> None:
+    """`rules` のヘッダ順に、UTF-8 の CSV を書く。"""
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rules))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def _import_csv(costs: list, conn) -> None:
     with tempfile.TemporaryDirectory() as tmp:
-        with open(Path(tmp) / "seed.csv", "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=list(CSV_RULES))
-            writer.writeheader()
-            writer.writerows(costs)
+        write_csv(Path(tmp) / "seed.csv", CSV_RULES, costs)
         results = csv_import.import_all(tmp, conn)
     bad = [r for r in results if "error" in r or r.get("dropped")]
     if bad:
