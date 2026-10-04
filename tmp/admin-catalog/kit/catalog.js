@@ -98,5 +98,5 @@
     return { ...ia, pages: [...pages, ...sectionPages] };
   }
 
-  Object.assign(window.CATALOG, { build, LONG, ASOF });
+  Object.assign(window.CATALOG, { build });
 })();
