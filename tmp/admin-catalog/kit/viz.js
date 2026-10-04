@@ -7,6 +7,12 @@
   const MINI_PAD = 36; // geo.bars の上下の余白（16 + 20）。小さな縦棒では余白を切り落とす
   // バージョンの帯の色（look.ver）: V1・V3 は最新・1 つ前・2 つ以上前の 3 段、V2 は最新と未更新の 2 区分。dist は最新からの距離
   const verClass = (dist) => `ver-${K.look.get().ver === "V2" ? (dist ? 2 : 0) : dist}`;
+  // V2 はバージョンごとでなく「最新・未更新」の 2 区分に足し合わせる（区切りと凡例も 2 つ）
+  function verParts(src) {
+    if (K.look.get().ver !== "V2") return src;
+    const sum = (old) => src.filter(([, , d]) => Boolean(d) === old).reduce((n, [, c]) => n + c, 0);
+    return [[K.L.VER_PART.latest, sum(false), 0], [K.L.VER_PART.old, sum(true), 1]].filter(([, n]) => n);
+  }
   const hbar = (p, tone = "") => `<span class="hbar ${tone}"><i style="width: ${Math.round(p * 10) / 10}%"></i></span>`;
 
   function tip(row, value, fmt, unit) {
@@ -104,7 +110,7 @@ ${g.prev ? `<polyline class="fc-cum-prev" points="${g.prev}" vector-effect="non-
     if (v.kind === "hist") return src && src.length ? histSvg(src, v) : "";
     if (v.kind === "stack") {
       if (!src || !src.length) return "";
-      const pairs = v.field ? src.map((r) => [r.key, r[v.field]]) : src;
+      const pairs = v.tone === "ver" ? verParts(src) : v.field ? src.map((r) => [r.key, r[v.field]]) : src;
       const ps = pairs.map(([k, n, dist], i) => ({ label: term(v.terms, k), value: n, cls: v.tone === "ver" ? verClass(dist) : `${v.tone}-${i % SHADES}` }));
       return `<span class="stack">${ps.map((p) => `<i class="${p.cls}" style="flex: ${p.value}"></i>`).join("")}</span>
 <span class="legend">${ps.map((p) => `<span><i class="${p.cls}"></i>${esc(p.label)} ${K.num(p.value)}</span>`).join("")}</span>`;

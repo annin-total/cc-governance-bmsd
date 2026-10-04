@@ -77,7 +77,7 @@
     long: { id: "sections", label: "課ごと", hint: "{r3[sections]:count} 行 · 利用明細", title: "課ごとの利用者とコスト", unit: "行", rows: "r3[sections]", dept: true,
       scope: "利用明細 {r3[cost][start]:day}〜{r3[cost][end]:day} · 部ごとの課（課の欄が空の人は「—」、名簿に無い人は「不明」）", cols: [...SEC, ...SEC_TAIL] } };
   T.sections = SECTIONS;
-  T.sections_rec = { ...SECTIONS, bands: [["", 2], ["利用明細", 7], ["記録", 4]], cols: [...SECTIONS.cols, ...SEC_REC],
+  T.sections_rec = { ...SECTIONS, hint: "{r3[sections]:count} 行 · 利用明細と記録", bands: [["", 2], ["利用明細", 7], ["記録", 4]], cols: [...SECTIONS.cols, ...SEC_REC],
     note: "記録の段は、課の利用者のうち期間に記録を送った人で数えます。" };
 
   // ---- 利用者ごとの一覧（案 42）: user_cost・user_use・user_calls を 1 行に並べ、置き換える。両方の段は帯の期間 ----

@@ -80,7 +80,7 @@
     DOT: { true: "適用", false: "未適用", null: "報告なし" },
     DOT_LEGEND: { true: "配布した値", false: "違う値か未設定", null: "報告なし（未導入）" },
     NO_REPORT: "報告なし", TODAY: "今日", DAYS_AGO: "{} 日前", LATEST: "最新",
-    VERSION_KIND: { core: "本体", plugin: "プラグイン" },
+    VERSION_KIND: { core: "本体", plugin: "プラグイン" }, VER_PART: { latest: "最新", old: "未更新" },
     BASIS: {
       csv: `利用明細（CSV）の最終日までの ${C.POLICY_DAYS} 日にコストがある`,
       policy: `直近 ${C.POLICY_DAYS} 日に設定の報告があった`,

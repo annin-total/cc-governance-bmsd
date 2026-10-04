@@ -10,6 +10,7 @@ NOW_PAGES = ("policy", "collect")
 NOW_CARDS = ("applied_mix", "core_outdated", "plugin_outdated", "plugin_errors")
 ASOF = "2026-09-01"
 TOKENS = {"ok": "--ok", "none": "--warn", "off": "--ng"}  # applied_mix の帯の色（すべて適用・未導入・未適用）
+USER_TABS = ("sections", "user_cost", "user_all", "over_users")  # コストと利用者のうち、案にあるものを調べる（不明の行を必ず持つのは over_users 以外）
 MAIN_JS = "document.querySelector('main').innerText"
 BAND_JS = "document.querySelector('.band [data-period-display]').textContent"
 CARD_JS = "(r) => { const c = document.querySelector(`main .card[data-ref=${r}]`); return c ? [c.textContent, c.dataset.state, c.classList.contains('is-dim')] : null; }"
@@ -148,7 +149,10 @@ def org(page, base: str, data: dict) -> list:
         shown = page.locator("#sections tbody tr:visible").count()
         if shown != sum(r["dept"] == dept for r in rows):
             out.append(f"課ごと: 部 {dept} で絞った行 {shown} が部の行の数と合わない")
-    for tab in ("sections", "user_cost", "over_users"):
+    tabs = [t for t in USER_TABS if t in page.evaluate("Array.from(document.querySelectorAll('[data-panel]')).map((p) => p.id)")]
+    if not any(t in tabs for t in ("user_cost", "user_all")):
+        out.append(f"コストと利用者に利用者ごとのタブが無い（{tabs}）")
+    for tab in tabs:
         _goto(page, f"{base}?page=cost&period=28#{tab}")
         bad = page.locator(f"#{tab} tbody tr[data-dept=unknown] :is(td.c-dept, td.c-section) .mark").count()
         bad += page.locator("#sections tbody tr[data-dept=unknown] .mark").count() if tab == "sections" else 0

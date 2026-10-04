@@ -19,6 +19,12 @@ WIDTH, HEIGHT = 1440, 900
 PERIODS = ("7", "28", "12m")
 PAGES_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods) }))"
 OVERFLOW_JS = "document.documentElement.scrollWidth > document.documentElement.clientWidth"
+# 表が枠の中で横スクロールするときは、横スクロールを数えた後に下段だけを右へ広げ、右端の列まで写す（カードの格子は変えない）
+TABLE_EXTRA_JS = "Math.max(0, ...Array.from(document.querySelectorAll('.tscroll')).filter((e) => e.offsetParent).map((e) => e.scrollWidth - e.clientWidth))"
+CONTENT_W, SIDE = 1160, 40  # 本文の幅（--wrap から左右の余白を除く）と、広げた下段の右の余白
+# 全体を撮るときは固定を外して上へ戻し、ヘッダーと帯をスクロールした位置でなく上端に描く（固定の検査は check.py が実画面で見る）
+UNSTICK_CSS = ".sticky-top { position: relative; }"
+TOP_JS = "window.scrollTo({ top: 0, behavior: 'instant' })"
 ASOF = "2026-09-11"
 # (名前, URL の問い合わせ, 押す要素[, 読み込み前の差し替え])。押す要素があれば押した後を撮る。要素はカンマで候補を並べ、最初に見えるものを押す。
 # 差し替えは PRE の名前で、読み込み前に window.DATA を書き換える（古さの警告は今日を利用明細の最終日 + csv_stale_days にして撮る）
@@ -70,6 +76,12 @@ def _shoot(ctx, url: str, path: Path, click=None, pre=None):
         page.wait_for_load_state("load")
         page.wait_for_timeout(300)
     overflow = page.evaluate(OVERFLOW_JS)
+    extra = page.evaluate(TABLE_EXTRA_JS)
+    if extra:
+        page.set_viewport_size({"width": max(WIDTH, CONTENT_W + 2 * (extra + SIDE)), "height": HEIGHT})
+        page.add_style_tag(content=f".detail {{ margin-right: -{extra}px; }}")
+    page.add_style_tag(content=UNSTICK_CSS)
+    page.evaluate(TOP_JS)
     page.screenshot(path=str(path), full_page=True)
     page.close()
     return errors, overflow
