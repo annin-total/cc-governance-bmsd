@@ -309,7 +309,7 @@ $env:FEAS_ALLOW_REMOTE = '1'; claude --plugin-dir "$env:FEAS\feas-field"; Remove
 info の env 欄の HTTPS_PROXY・NO_PROXY・NODE_EXTRA_CA_CERTS・CLAUDE_CODE_CERT_STORE（項目 1 の出力にある）:
 ```
 
-**結果（2026-10-04、2.1.289、macOS。3b・3c は検証用の受信先が無く未実施）:**
+**結果（2026-10-04、2.1.289、macOS。3b・3c は利用者が社内の AIP 上のサーバで実施）:**
 
 ```text
 3a の出力: feas-field: {"status":200,"ok":true,"bodyLen":11,"ms":1}
@@ -569,7 +569,7 @@ VPN を切ったときの info の出力:
   `file://` 形式は "Invalid marketplace source format"（owner/repo・https://…・./path のみ）。絶対パスなら登録できた
 marketplace add / install: どちらも成功（scope: user）
 導入直後の pluginRoot: 元のディレクトリ（<リポジトリ>/plugins/feas-field）を指した。cache ではない。storeFiles は項目 1 と同じ形式
-  → directory 型は cache から動かない。git 型で cache から動くかは未確認（手順書の判定表の pluginRoot は Bitbucket で要確認）
+  → directory 型は cache から動かない。git 型は cache から動く（下の「git 型（ssh の別名 + scp 形式の URL）での自動更新」で確認）
 cache の一覧: 0.1.0
 更新: version を 0.1.1 にして commit → marketplace update → plugin update で "updated from 0.1.0 to 0.1.1"。cache に 0.1.0・0.1.1 が並んだ。
   更新後も pluginRoot は元のディレクトリのまま（directory 型のため）
@@ -581,7 +581,7 @@ cache の一覧: 0.1.0
 ```text
 方式: `marketplace add` は ssh:// 形式を受け付けない（"Invalid marketplace source format"）。https:// 直登録は 150 秒待っても応答が無かった。
   scp 形式（git@host:path）は形式としては受理されるがポート 22 固定で届かない。そのため ssh:// で clone してローカルパスで登録した
-  （ssh の別名 Host にポート 7999 を割り当てる方法でも、空リポジトリの clone までは通ることを確認したが、本番では使わない）
+  （ssh の別名 Host にポート 7999 を割り当てる方法でも、空リポジトリの clone までは通ることを確認した。後の git 型の確認と自動同期はこの方式で行った）
 push: 空リポジトリへの最初の push が成功（main に 8 ファイル）。認証は ssh 鍵
 marketplace add（ローカルパス）/ install: どちらも成功（scope: user）
 導入直後の pluginRoot: ~/Documents/Dev/tmp/feas-mods-mkt/plugins/feas-field（clone 先。cache ではない）
@@ -590,7 +590,7 @@ cache の一覧: 0.1.0
 更新: 別の clone から 0.1.1 を push → 利用者側で git pull（fast-forward）→ marketplace update → plugin update が
   "updated from 0.1.0 to 0.1.1"。cache は 0.1.0・0.1.1。更新後も pluginRoot は clone 先のまま（Restart to apply changes）
 判定: ローカルの git リポジトリでの確認と同じ。この方式では実行元は clone 先で、更新は git pull と marketplace update・plugin update で届く。
-  git 型の cache 実行・VPN 切断時の挙動は、この方式では確かめていない（登録方式として使わないため不要と判断）
+  git 型の cache 実行・VPN 切断時の挙動は、この方式では確かめていない（git 型は下の別の確認で扱った）
 ```
 
 **自動更新の確認（2026-10-04、2.1.289、macOS。directory 型の marketplace で確認）:**
@@ -698,16 +698,6 @@ reload-plugins: $.command.run({command:'reload-plugins'}) は、command.run の 
 備考: 利用者側の push で .DS_Store が検証用リポジトリに入った（git add -A のため。配布物には .gitignore が要る）
 片付け（利用者が実施）: uninstall・marketplace remove は成功。settings.json に feas-mods-mkt は残っていない。
   残り: ~/.claude/plugins/store/ の feas-field_*.json の 2 ファイル
-```
-
-**自動更新の確認（2026-10-04、2.1.289、macOS。ローカルの directory 型 marketplace。実験中のため途中経過。終了後に結果を追記する）:**
-
-```text
-条件: 隔離した CLAUDE_CONFIG_DIR で、導入は 0.1.1、登録元リポジトリは 0.1.2 に進めた状態。
-  settings.json の extraKnownMarketplaces.feas-mods-mkt に "autoUpdate": true を足し（source は directory のまま）、対話の claude を 14:10:57 に起動して放置
-debug: "Synced autoUpdate=true from settings for marketplace: feas-mods-mkt" が起動直後（約 40 秒後）に出た。設定は読まれている
-途中経過: 起動から約 20 分（14:31 時点）で、cache は 0.1.1 のまま、installed_plugins.json も 0.1.1 のまま。更新を示す debug 行は無い
-判定: 未確定（最長 30 分まで待つ）。終了後に、0.1.2 が増えたか・所要時間・debug の該当行を追記する
 ```
 
 **片付け（この項目）:** 隔離した config の親ディレクトリを消す（`echo $CLAUDE_CONFIG_DIR` で場所を確かめ、シンボリックリンクではないことを `command ls -la` で確かめてから）。
@@ -865,12 +855,13 @@ VS Code が起動済みだと `code .` が既存のプロセスに処理を渡�
 ## 付録 B: 社内 Git の marketplace を ssh で clone して使う手順（導入・更新・削除）
 
 過去に別の社内 marketplace（`ai-nization-claude-plugins`）で検証済みの手順を、この検証用リポジトリ `feas-mods-mkt` の名前に置き換えて記す。
-配布方式の候補の手順書として使う。項目 5 では、この手順のうち導入・更新を `feas-mods-mkt` で確かめた（削除は今回未実施。過去の検証では確認済み）。
+配布方式の候補の手順書として使う。項目 5 では、この手順のうち導入・更新を `feas-mods-mkt` で確かめた（削除は項目 5 の片付けで、uninstall・marketplace remove とも成功した）。
 
 ### 方針
 
-`claude plugin marketplace add` は ssh の URL（社内 Git の接続方式）を直接受け付けない（`owner/repo`・`https://…`・`./path` だけ）。
-そのため、ssh で clone してから、ローカルパスで登録する。`scp` 形式（`git@host:path`）は形式としては受理されるが、ポートが 22 固定で、社内 Git のポートには届かない。
+`claude plugin marketplace add` は `ssh://` の URL を受け付けない（受け付けるのは `owner/repo`・`https://…`・`http://…`・`scp` 形式（`git@host:path`）・ローカルパス）。
+`scp` 形式はポートを書けず 22 番に繋ぐので、ポートの違う社内 Git には、この付録では ssh で clone してローカルパスで登録する（directory 型）。
+この方式では autoUpdate で更新は届かず、下の手動の手順で更新する。ssh の別名に Port を付けて `scp` 形式で登録する git 型の方式は、項目 5 の「git 型（ssh の別名 + scp 形式の URL）での自動更新」にある。
 
 ホスト名などは次のとおり読み替える。
 
@@ -888,7 +879,7 @@ claude plugin marketplace add ~/.claude/plugins/marketplaces/feas-mods-mkt
 ```
 
 clone 先は、Claude Code 標準の marketplace の保存先（`~/.claude/plugins/marketplaces/`）に揃えると分かりやすい。
-項目 5 では本人の設定に触れないよう、別のディレクトリ（`~/Documents/Dev/tmp/feas-mods-mkt`）に clone し、隔離した `CLAUDE_CONFIG_DIR` に登録した。
+項目 5 の最初の確認では、別のディレクトリ（`~/Documents/Dev/tmp/feas-mods-mkt`）に clone し、隔離した `CLAUDE_CONFIG_DIR` に登録した。その後の確認（「本物の ~/.claude への導入」以降）は本人の `~/.claude` で行った。
 
 プラグインごとの導入:
 
