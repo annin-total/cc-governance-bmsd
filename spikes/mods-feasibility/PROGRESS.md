@@ -124,3 +124,9 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
   - Q18 policy 行: 値は Python が作り、mod は共通の列を足すだけ
   - Q19 ONCE で dict を配る問題: 移行と切り離し、受け入れている限界として記録する
   - Q20 notices.json の id の重複: リリースの検査で止める（url・label の形も）
+  - Q21 本文に触れない: transcript の user 行から promptId・permissionMode だけをその場で取り、本文は保持・送信しない。壊すと落ちるテストで固定する
+  - Q22 契約の同期: scripts/sync_contract.py が mod 用の TypeScript も生成し、--check で食い違いを止める
+  - Q23 握り潰しの対策（決定 11 を改める）: prepend と検知だけにし、守りの mod は作らない。policy の ADD で利用者 settings の prependPlugins に governance を足し、
+    tier が user に下がっていたら error 行で知らせる。governance を狙って `$` の呼び出しに割り込む mod は、受け入れている限界として記録する。
+    理由: 守りが防ぐ相手は、prependPlugins の行を消せば済む「意図して外す人」で、止められない。2 つ目のプラグインの費用に見合わない
+  - Q24 古い本体: 対応しない。onboarding に最低の版を書き、古い本体向けの command hook は残さない
