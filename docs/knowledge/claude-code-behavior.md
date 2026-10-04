@@ -59,6 +59,7 @@ macOS での実測。確かめた版は各行に添える。版の無い行は�
 | `SessionStart` の標準入力には `-p` かどうかを示すキーが無く、`source` は対話・`-p` のどちらも `startup` になる。hook の標準入出力は対話起動でも端末に接続されていない（`isatty` では対話かどうかを判別できない）（2.1.281） | stdin の内容や `isatty` で対話起動を判定しようとしたとき。どちらも根拠にならない |
 | hook の `command` に書いた `python3` は、利用者の `PATH` で解決される。pyenv などのシムに当たると、起動のたびにシム自身の処理が乗る（2.1.283、pyenv 2.6.13 で観測） | hook の遅さを調べるとき。hook の処理より `python3` の起動の仕方が効くことがある |
 | hook が `timeout` を超えると、本体は待つのをやめる。`--output-format stream-json --verbose` の `hook_response` に `outcome: "cancelled"`・`exit_code: 1` が出る。hook のプロセスは最後まで走り、副作用（ファイルの書き込み）を残すことがある。stream-json に `hook_response` が出るのは `SessionStart` の hook だけ（2.1.283） | 打ち切りを検出するとき。`cancelled` の数は「処理されなかった数」ではない。`SessionStart` 以外の打ち切りは stream-json では見えない |
+| 公式（hooks、2026-10-05 確認）: `type: "command"` の hook に `"async": true` を付けると、本体は終わりを待たずに進む。`timeout` は効かず、`decision`・`continue` などの応答は無視され、`systemMessage`・`additionalContext` は次のターンで Claude にだけ渡る。`claude -p` では、セッションの終了時に走っている非同期の hook が止められる（未検証） | hook の起動の待ち時間を本体から外したいとき |
 
 ## transcript
 
@@ -109,3 +110,6 @@ macOS での実測。確かめた版は各行に添える。版の無い行は�
 | `$.command.register` で登録したコマンドには名前空間が付かない（名前に使えるのは英数字・`_`・`-` だけで、`<plugin>:` は付けられない）。同じ名前のスキルがあると、別のプラグインのものでも登録は例外で拒否され、そのコマンドはスキルへ行く（2.1.288） | mod のコマンドの名前を決めるとき。例外を捕まえないと、同じ hook の残りが止まる |
 | `$.command.list()` の `source` は `builtin`・`plugin`・`user`・`mcp` の 4 値で、プロジェクトの `.claude/commands/` のコマンドも利用者の skill も `user` になり区別できない。hook の `command_source` では両者は `projectSettings` と `userSettings` に分かれる。組み込みのコマンド（`/context`）は `builtin` になる。MCP の prompt の名前は、hook の `command_name` では `mcp__<server>__<prompt>`、`command.run` の `e.command` と `command.list` の name では `<server>:<prompt> (MCP)` になる（2.1.289、macOS、Claude.ai 認証、`claude -p`） | mod からコマンドの出どころを記録するとき。hook の `command_source` と同じ語彙では取れない |
 | mod が答えたスラッシュコマンドは、`prompt.submit` に数えられず、`UserPromptSubmit`・`UserPromptExpansion`・`Stop` も（mod の `classic.*` でも command hook でも）発火せず、モデルも呼ばない（`-p` で `num_turns` 0・費用 0）。`tool.call` で mod が拒否すると、ツールの結果は `is_error` で返り、`-p` の `permission_denials` には数えられない（2.1.287。`classic.*` と command hook は 2.1.288） | 利用回数や拒否の件数を数えるとき |
+| 公式（mods/admin、2026-10-05 確認）は、settings とプラグインの `hooks/hooks.json` の command・HTTP・prompt・agent hook は mod と並んでこれまでどおり動き、非推奨にしたものは無いと書く。一方、mod の型定義の先頭には、早期アクセスで版ごとに予告なく変わりうるとある（2.1.288 の型） | command hook と mod のどちらに機能を置くかを決めるとき |
+| 公式（mods/admin、2026-10-05 確認）: インストールした mod を動かすワーカーが 3 回落ちると、組み込み以外の mod はそのセッションの間すべて読み込みから外れる。他の mod の不具合でも外れる（未検証） | mod に置いた機能が止まる経路を見積もるとき |
+| 公式（mods/admin、2026-10-05 確認）: cache にコピーされるプラグイン（GitHub・git・URL・npm のソース）の mod は、managed の `enabledPlugins` で有効にしても利用者の mod として扱われ、`prependPlugins`・`appendPlugins` から外される。組織の mod になるのは、managed settings が絶対パスのディレクトリとして指すマーケットプレイスから、相対パスでその場で読み込まれるプラグインだけ（未検証） | git 型で配るプラグインの mod の順位を考えるとき |

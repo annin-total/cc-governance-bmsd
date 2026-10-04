@@ -137,3 +137,11 @@ governance プラグイン（`plugin/`）を Mods 基盤へ移す前に、今の
   `/reload-plugins` はそのセッションだけを切り替える。user の範囲（本番の導入）では、どのセッションの自動更新でも記録が書き換わる（g9・g11）。
   外れた仮説: local の範囲そのもの（g10）、並行したプロセスの書き戻し（g11）
   - Q25 移行の段取り: 2 段（同等のまま移す → 改善）を保つ
+- 2026-10-05 方針を改めた（ユーザーの決定）。Mods を基本にせず、収集・送信・設定の自動適用は今の command hook と Python に残し、mod はお知らせと
+  `/governance-reapply` に限る。根拠: 調査資料（二次資料）の 1〜16 章をサブエージェント 3 体で読み、型定義と公式文書で裏を取った。
+  - 行数は減らず二本立てになる。収集を独自イベントに移すと transcript の読みと行の保留が要る
+  - mod でしか取れない値は効果が小さい（費用は CSV、レート制限は Bedrock で空）。hook の入力（`duration_ms`・`StopFailure`・`Notification` など）と
+    状態行の入力で取れる値が多い
+  - command hook の `"async": true` が公式にある（Python の起動の待ち時間を外せる見込み。未検証）
+  - 公式（mods/admin）: command hook は非推奨にしていない。ワーカーが 3 回落ちると組み込み以外の mod が止まる。git 型のプラグインは `prependPlugins` から外される
+  - 握り潰し（論点 11）は受け入れる限界にした。async の検証と収集項目の追加は、別の作業として docs の remaining に置いた

@@ -28,4 +28,5 @@
 | `remaining/known-issues.md` | 既知の課題（修正か判断によって完了するもの） |
 | `remaining/deploy.md` | 実行基盤に到達しないとできない確認 |
 | `remaining/distribution.md` | 社内リポジトリに到達しないとできない配布の確認と初回の作業 |
-| `remaining/mods.md` | Mods（関数フック）の採否の検討事項 |
+| `remaining/mods.md` | Mods（関数フック）を画面とコマンドに限って足す作業 |
+| `remaining/collection.md` | 収集の hook の非同期化と、契約に足す項目の検討 |
