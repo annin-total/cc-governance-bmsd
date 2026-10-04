@@ -1,6 +1,6 @@
 "use strict";
 // サマリーの部品: 概況の先頭の最新 1 件（見出しはタイトル）・一覧（データと設定の書き出すと同じ形のアコーディオン）・作成と編集のフォーム・下書き。
-// 下書きは概況のカードのうち注意・要確認のものを 1 行ずつ並べる（期間は 7 日）。本文が null の見本は、この下書きを本文にする。
+// 下書きは概況のカードのうち注意・要確認のものを 1 行ずつ並べる（期間は 7 日。状態のカードは今日の時点の値）。本文が null の見本は、この下書きを本文にする。
 (() => {
   const K = window.KIT;
   const { esc, fill } = K;
@@ -16,15 +16,13 @@
   function draft() {
     const home = window.IA.pages.find((p) => p.home);
     const lines = [];
-    for (const g of home ? home.groups : []) {
-      const ctx = K.contextOf(g.data || "p.{period}", "7");
-      for (const c of g.cards.filter((x) => !x.only || x.only.includes("7"))) {
-        const t = K.card.stateOf(c, ctx);
-        if (t !== "warn" && t !== "ng") continue;
-        const value = c.value ? ` ${fill(c.value, ctx)}${c.unit ? ` ${c.unit}` : ""}` : "";
-        const why = c.why ? K.L.DRAFT_WHY.replace("{}", fill(c.why, ctx)) : "";
-        lines.push(W.bullet + fill(K.L.DRAFT_LINE, { state: K.L.STATE[t], label: fill(c.label, ctx), value, why }));
-      }
+    for (const c of (home ? home.cards : []).filter((x) => !x.only || x.only.includes("7"))) {
+      const ctx = K.contextOf(c.data || "p.{period}", "7");
+      const t = K.card.stateOf(c, ctx);
+      if (t !== "warn" && t !== "ng") continue;
+      const value = c.value ? ` ${fill(c.value, ctx)}${c.unit ? ` ${c.unit}` : ""}` : "";
+      const why = c.why ? K.L.DRAFT_WHY.replace("{}", fill(c.why, ctx)) : "";
+      lines.push(W.bullet + fill(K.L.DRAFT_LINE, { state: K.L.STATE[t], label: fill(c.label, ctx), value, why }));
     }
     return lines.join("\n");
   }
@@ -49,12 +47,12 @@
   }
 
   function form() {
-    const today = window.DATA.meta.asof;
+    const m = window.DATA.meta;
     const s = all().find((x) => x.id === new URLSearchParams(location.search).get("id"));
-    const asof = s ? s.asof : today;
+    const asof = s ? s.asof : m.end;
     const body = s ? bodyOf(s) : draft();
     return `<form class="sum-form" onsubmit="return false" data-summary-form>`
-      + `<label>${W.fields.asof}<input type="date" value="${K.day(asof)}" min="${K.day(window.DATA.meta.first_day + 27)}" max="${K.day(today)}" data-sum-asof></label>`
+      + `<label>${W.fields.asof}<input type="date" value="${K.day(asof)}" min="${K.day(m.first_pick)}" max="${K.day(m.end)}" data-sum-asof></label>`
       + `<label class="grow">${W.fields.title}<input type="text" value="${esc(s ? s.title : titleOf(asof))}" data-sum-title></label>`
       + `<label class="full">${W.fields.body}<textarea rows="12" data-sum-body>${esc(body)}</textarea></label>`
       + `<div class="sum-actions"><button type="button" class="btn-sub" data-sum-draft>${W.draft}</button><button type="submit" class="btn">${W.save}</button><a class="sum-back" href="${esc(K.basedate.keep("?page=summary"))}">${W.back}</a></div>`

@@ -1,9 +1,10 @@
 "use strict";
-// 区画（sections）で組むページ: サマリーの一覧・作成と編集、データと設定（全案で今のまま）。区画の部品は boot.js と summary.js。
+// 区画（sections）で組むページ: サマリーの一覧・作成と編集、データと設定（全案で同じ）。区画の部品は boot.js と summary.js。
+// 期間を持たないため、帯の期間の表示は状態のページと同じ「MM/DD 時点」（now）。
 (() => {
   const settings = {
-    id: "settings", title: "データと設定", nav: "end", data: "fixed.settings",
-    lead: "利用明細（CSV）の取り込み、月ごとの全ログの書き出し、営業日の数え方に使う会社の休日",
+    id: "settings", title: "データと設定", nav: "end", now: true, data: "fixed.settings",
+    lead: "利用明細（CSV）と組織 CSV の取り込み、月ごとの全ログの書き出し、営業日の数え方に使う会社の休日",
     sections: [
       { id: "import", title: "取り込む", lead: "利用明細（CSV）はコストとトークンの正本です",
         blocks: [
@@ -13,6 +14,8 @@
             cols: [{ key: "source_file", kind: "code", label: "取り込んだファイル" }, { key: "first", kind: "span", sort: "last", label: "期間" },
               { key: "bytes", kind: "bytes", label: "大きさ" }, { key: "source_file", kind: "delete_file", label: "", sort: null }] } },
         ] },
+      { id: "org", title: "組織 CSV", lead: "利用者のメールアドレスを業務メールアドレスに突き合わせ、部と課を引きます",
+        blocks: [{ kind: "note", text: "取り込んだ組織 CSV: {F[org][imported]:day} · {F[org][rows]:num} 行（月 1 回の更新）" }] },
       { id: "export", title: "書き出す", lead: "記録・設定の報告・エラー・利用明細の 4 表を、月（JST）ごとに表ごとの CSV の ZIP で · 月を押すと、表ごとの行数と列が開きます",
         blocks: [
           { kind: "months", src: "export", words: { head: ["月", "行数（4 表）", "大きさ（目安）"], unit: "件", download: "ダウンロード",
@@ -32,7 +35,7 @@
   };
 
   const summary = {
-    id: "summary", title: "サマリー", nav: "end", data: "fixed.r3",
+    id: "summary", title: "サマリー", nav: "end", now: true, data: "fixed.r3",
     lead: "週ごとのまとめ · 作成日の新しい順 · 行を押すと本文が開きます",
     sections: [
       { id: "summaries", title: "サマリー", lead: "本文はプレーンテキストです。作成日と更新日は保存したときに付きます。",
@@ -40,9 +43,9 @@
     ],
   };
   const summaryEdit = {
-    id: "summary_edit", title: "サマリーの作成と編集", nav: "none", navAs: "summary", data: "fixed.r3",
+    id: "summary_edit", title: "サマリーの作成と編集", nav: "none", navAs: "summary", now: true, data: "fixed.r3",
     lead: "基準日の概況のうち、注意・要確認のカードを下書きにできます",
-    sections: [{ id: "summary-form", title: "サマリー", lead: "基準日は今日まで · 下書きは概況のカードだけから作ります", blocks: [{ kind: "summary_form" }] }],
+    sections: [{ id: "summary-form", title: "サマリー", lead: "基準日は利用明細の最終日まで · 下書きは概況のカードだけから作ります", blocks: [{ kind: "summary_form" }] }],
   };
 
   window.CATALOG.sectionPages = [summary, summaryEdit, settings];

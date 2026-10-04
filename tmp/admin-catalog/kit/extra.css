@@ -1,42 +1,21 @@
-/* 第 3 弾で足した部品の見た目（増減のチップの向き・状態の絞り込み・基準日・行ごとの札・サマリー）。値は tokens.css の変数だけを使う（比較用は compare.css） */
-.change.better { background: var(--chip-up); color: var(--accent); }
-.change.worse { background: var(--chip); color: var(--ink); font-weight: 700; }
+/* 足した部品の見た目（増減のチップの向き・状態の絞り込み・上部の固定と帯・カードの第 2 の数字・サマリー）。値は tokens.css の変数だけを使う。カレンダーは calendar.css */
+/* 増減のチップ（型 C）: 改善＝緑系、悪化＝赤系（要確認の札の赤から色相をずらす）、中立＝薄い灰 */
+.change.better { background: var(--ok-bg); color: var(--ok); }
+.change.worse { background: var(--chip-worse-bg); color: var(--chip-worse-ink); }
 .change.neutral { background: var(--chip); color: var(--muted); font-weight: 400; }
-.change.plain { background: none; padding: 0; color: var(--muted); font-weight: 400; }
 
 .is-dim { opacity: var(--link-dim); }
-.group.is-dim .card.is-dim { opacity: 1; }
 [hidden] { display: none !important; }
 .state-filter button { gap: var(--sp-xs); }
-.head-act .chipbar { flex: none; }
 
 .glabel { display: flex; align-items: baseline; flex-wrap: wrap; }
 .glink { margin-left: auto; font-size: var(--fs-sm); font-weight: 400; color: var(--muted); text-decoration: none; }
 .glink::after { content: " →"; }
 .glink:hover { color: var(--accent); }
 
-.asof-pick { display: inline-flex; align-items: center; gap: var(--sp-xs); white-space: nowrap; }
-.asof-pick input { font: inherit; padding: 0 var(--sp-xs); border: 1px solid var(--rule); border-radius: var(--r-s); background: var(--card); color: var(--ink); font-variant-numeric: tabular-nums; }
-.asof-page { gap: var(--sp-s); font-size: var(--fs-label); color: var(--ink-2); }
-.asof-page input { padding: var(--sp-3xs) var(--sp-s); border-radius: var(--r-m); }
-.asof-steps { display: inline-flex; align-items: center; }
-.bar-end:has(.asof-steps) { gap: var(--sp-s); }
-.bar-end .asof-step { padding: 0 var(--sp-2xs); font-size: var(--fs-h2); line-height: 1; color: var(--ink-2); text-decoration: none; }
-.bar-end a.asof-step:hover { color: var(--accent); }
-.asof-step[aria-disabled] { color: var(--ghost); }
-.asof-range { position: relative; }
-.asof-range button { border: 0; border-bottom: 1px dashed var(--muted); background: none; padding: 0; font-size: var(--fs-label); color: var(--ink-2); cursor: pointer; font-variant-numeric: tabular-nums; }
-.asof-range button::after { content: " ▾"; color: var(--muted); }
-.asof-range button:hover { color: var(--accent); }
-.asof-hidden { position: absolute; inset: auto 0 0 0; width: 100%; height: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
 
 .k-end { display: inline-flex; align-items: baseline; gap: var(--sp-xs); white-space: nowrap; flex: none; }
 
-.srows { display: grid; gap: var(--sp-3xs); font-size: var(--fs-sm); }
-.srow { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: var(--sp-s); padding: var(--sp-3xs) 0; border-top: 1px solid var(--rule); color: var(--ink-2); }
-.srow .num { font-variant-numeric: tabular-nums; }
-.rates.wide.marks .rate { grid-template-columns: 1fr 28% 5.5em 3.6em 4em; }
-.rmark { text-align: right; }
 
 .p-head-act { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-l); }
 .p-head-act .btn { text-decoration: none; white-space: nowrap; }
@@ -59,14 +38,6 @@
 .tscroll td.c-user { white-space: nowrap; }
 a.card[href^="?"] .go::after { content: " →"; }
 .sum-form input { height: 2.4em; }
-.group-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-m); }
-.group.packed .cards { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
-.group.packed .glabel span { flex-basis: 100%; margin-left: 0; }
-@media (max-width: 960px) { .group-row { grid-template-columns: 1fr; } .group.packed { grid-column: auto !important; } }
-.group.packed { display: flex; flex-direction: column; }
-.group.packed .glabel { min-height: calc(var(--fs-label) * var(--lh) + 2 * var(--fs-sm) * var(--lh)); align-content: flex-start; }
-.group.packed .cards { flex: 1; align-items: stretch; }
-.rates.wide.marks.diffs .rate { grid-template-columns: 1fr 22% 5em 5.5em 3.6em 4em; }
 .tscroll tr.bands th { position: static; padding-bottom: var(--sp-3xs); border-bottom: 2px solid var(--rule); font-size: var(--fs-xs); font-weight: 600; color: var(--ink-2); text-align: left; white-space: nowrap; }
 .tscroll tr.bands th.blank { border-bottom-color: transparent; }
 .tscroll tr.bands th + th { border-left: 1px solid var(--rule); }
@@ -76,5 +47,47 @@ a.card[href^="?"] .go::after { content: " →"; }
 .k-label .go-icon::after { content: "↓"; }
 a.card[href^="?"] .go-icon::after { content: "→"; }
 .k-label > span:first-child { word-break: auto-phrase; text-wrap: balance; }
-.home-cards .cards { grid-auto-flow: row dense; } /* 広いカードの前に空いた列を、後ろの 1 列のカードで埋める */
 .tscroll th.c-code { white-space: normal; word-break: auto-phrase; } /* 「本体のバージョン」などを 2 行に折り、最終報告日の列を枠に収める */
+
+.cards.grid { grid-auto-flow: row dense; } /* 広いカードの前に空いた列を、後ろの 1 列のカードで埋める */
+
+/* 上部の固定: ヘッダーと帯。リード文から下が流れる */
+.sticky-top { position: sticky; top: 0; z-index: 5; background: var(--bg); }
+.band { border-bottom: 1px solid var(--rule); }
+.band-in { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-s) var(--sp-xl); min-height: var(--bar-h); padding-top: var(--sp-xs); padding-bottom: var(--sp-xs); }
+.band-in h1 { margin-right: auto; }
+.band-in .chipbar { flex: none; }
+.page-lead { margin: var(--sp-l) 0 var(--sp-l); }
+.bar-end { padding-left: var(--sp-l); border-left: 1px solid var(--rule); }
+.bar-end:empty { display: none; }
+nav .nav-extra { margin-left: var(--sp-s); }
+.detail { scroll-margin-top: calc(2 * var(--bar-h) + var(--sp-m)); }
+
+/* 帯の期間の表示（期間のページは押すとカレンダー、状態のページは押せない）と古さの警告 */
+.asof-range { position: relative; font-size: var(--fs-label); color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.asof-range > button { border: 0; border-bottom: 1px dashed var(--muted); background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.asof-range > button::after { content: " ▾"; color: var(--muted); }
+.asof-range > button:hover { color: var(--accent); }
+.stale { font-size: var(--fs-sm); color: var(--warn); white-space: nowrap; }
+.stale:hover { text-decoration: underline; }
+
+/* カードの第 2 の数字（cost の 1 営業日あたり）・右に添える値・並べた大きな数字（applied_mix） */
+.k-value2 { display: inline-flex; align-items: baseline; gap: var(--sp-xs); margin-left: var(--sp-xl); font-size: var(--fs-sm); color: var(--muted); }
+.k-value2 b { font-size: var(--fs-h1); font-weight: var(--fw-val); color: var(--ink); }
+.k-after { margin-left: var(--sp-s); font-family: var(--sans); font-size: var(--fs-sm); font-weight: 400; color: var(--muted); letter-spacing: 0; }
+.k-values { display: flex; gap: var(--sp-xl); }
+.k-pair { display: grid; }
+.k-pair-label { font-size: var(--fs-xs); color: var(--muted); margin-top: var(--sp-xs); }
+.k-pair .k-value { margin-top: 0; }
+
+/* 設定の適用の帯（すべて適用＝緑・未導入＝注意の色・未適用＝要確認の色）とバージョンの帯（最新＝薄い灰・1 つ前＝注意の色の薄い地・2 つ以上前＝注意の色） */
+.mix-ok { background: var(--ok); } .mix-none { background: var(--warn); } .mix-off { background: var(--ng); }
+.ver-0 { background: var(--ghost); } .ver-1 { background: var(--warn-3); } .ver-2 { background: var(--warn); }
+
+/* 件数の多い種類の上位の行（plugin_errors の型 V3）: 処理段階・種類・件数 */
+.toprows { display: grid; font-size: var(--fs-sm); }
+.toprow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--sp-s); padding: var(--sp-2xs) 0; border-top: 1px solid var(--rule); }
+.tr-name { display: grid; min-width: 0; }
+.tr-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr-name .sub { font-size: var(--fs-xs); color: var(--muted); }
+.toprow .num { font-weight: 600; font-variant-numeric: tabular-nums; }

@@ -5,6 +5,8 @@
   const { esc, fill, lookup, term, parts, partsHtml } = K;
   const SHADES = 3;
   const MINI_PAD = 36; // geo.bars の上下の余白（16 + 20）。小さな縦棒では余白を切り落とす
+  // バージョンの帯の色（look.ver）: V1・V3 は最新・1 つ前・2 つ以上前の 3 段、V2 は最新と未更新の 2 区分。dist は最新からの距離
+  const verClass = (dist) => `ver-${K.look.get().ver === "V2" ? (dist ? 2 : 0) : dist}`;
   const hbar = (p, tone = "") => `<span class="hbar ${tone}"><i style="width: ${Math.round(p * 10) / 10}%"></i></span>`;
 
   function tip(row, value, fmt, unit) {
@@ -69,14 +71,12 @@ ${g.prev ? `<polyline class="fc-cum-prev" points="${g.prev}" vector-effect="non-
   function rates(rows, v, ctx, wide) {
     const field = v.field;
     const top = v.den === "max" ? Math.max(0, ...rows.map((r) => r[field] || 0)) : v.den ? lookup(ctx, v.den) : 100;
-    const shown = v.limit ? rows.slice(0, v.limit) : rows;
-    const body = shown.map((r) => {
+    const body = rows.map((r) => {
       const label = v.label ? fill(v.label, r) : term(v.terms, r.key);
       const right = (v.right || []).map((t, i, all) => `<span class="num${i === all.length - 1 ? " strong" : ""}">${esc(fill(t, r))}</span>`).join("");
-      const mark = v.mark ? `<span class="rmark">${K.look.stateHtml(r[v.mark])}</span>` : "";
-      return `<span class="rate"><span>${esc(label)}</span>${hbar(K.geo.pct(r[field], top))}${right}${mark}</span>`;
+      return `<span class="rate"><span>${esc(label)}</span>${hbar(K.geo.pct(r[field], top))}${right}</span>`;
     }).join("");
-    return `<span class="rates${wide ? " wide" : ""}${v.mark ? " marks" : ""}${v.cls ? ` ${v.cls}` : ""}">${body}</span>`;
+    return `<span class="rates${wide ? " wide" : ""}">${body}</span>`;
   }
 
   function render(card, ctx) {
@@ -89,7 +89,7 @@ ${g.prev ? `<polyline class="fc-cum-prev" points="${g.prev}" vector-effect="non-
       g.hits = g.hits.map((h, i) => ({ ...h, tip: tip(rows[i], rows[i][v.field], v.fmt, card.unit) }));
       return sparkSvg(g);
     }
-    if (v.kind === "bars") return barsSvg(v.limit ? src.slice(-v.limit) : src, v, card.unit);
+    if (v.kind === "bars") return barsSvg(src, v, card.unit);
     if (v.kind === "forecast") return forecast(src, v);
     if (v.kind === "meter") {
       const den = typeof v.den === "number" ? v.den : lookup(ctx, v.den);
@@ -105,11 +105,19 @@ ${g.prev ? `<polyline class="fc-cum-prev" points="${g.prev}" vector-effect="non-
     if (v.kind === "stack") {
       if (!src || !src.length) return "";
       const pairs = v.field ? src.map((r) => [r.key, r[v.field]]) : src;
-      const ps = pairs.map(([k, n], i) => ({ label: term(v.terms, k), value: n, cls: `${v.tone}-${i % SHADES}` }));
+      const ps = pairs.map(([k, n, dist], i) => ({ label: term(v.terms, k), value: n, cls: v.tone === "ver" ? verClass(dist) : `${v.tone}-${i % SHADES}` }));
       return `<span class="stack">${ps.map((p) => `<i class="${p.cls}" style="flex: ${p.value}"></i>`).join("")}</span>
 <span class="legend">${ps.map((p) => `<span><i class="${p.cls}"></i>${esc(p.label)} ${K.num(p.value)}</span>`).join("")}</span>`;
     }
     if (v.kind === "rates") return rates(src || [], v, ctx, card.wide);
+    if (v.kind === "toprows") {
+      return `<span class="toprows">${(src || []).map((r) => `<span class="toprow"><span class="tr-name"><span class="sub">${esc(fill(v.head, r))}</span>`
+        + `<span>${esc(fill(v.name, r))}</span></span><span class="num">${esc(fill(v.right, r))}</span></span>`).join("")}</span>`;
+    }
+    if (v.kind === "mix") {
+      return `<span class="stack mix">${v.band.map(([k]) => `<i class="mix-${k}" style="flex: ${src[k]}"></i>`).join("")}</span>`
+        + `<span class="legend">${v.band.map(([k, label]) => `<span><i class="mix-${k}"></i>${esc(label)} ${K.num(src[k])}</span>`).join("")}</span>`;
+    }
     console.error(`kit: 知らないグラフの種類: ${v.kind}`);
     return "";
   }

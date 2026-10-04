@@ -1,36 +1,15 @@
 "use strict";
-// 上段の群、下段のタブ（サーバの screens/view.py・components/tabs.html の写し）。カードは card.js。
-// 12 か月の扱い（long）: 未指定は出さない（カードは群の注記に名前、タブは「出しません」）・"same" はそのまま・オブジェクトは差し替え。
+// 上段のカードの格子、下段のタブ（サーバの screens/view.py・components/tabs.html の写し）。カードは card.js。
+// カードはページごとに 1 つの格子へ並びの順に流す（群の見出しと注記を持たない）。12 か月で出さないカードは断らずに詰める。
+// 12 か月の扱い（long）: 未指定は出さない（タブは「出しません」）・"same" はそのまま・オブジェクトは差し替え。
 (() => {
   const K = window.KIT;
   const { esc, fill } = K;
   const SAME = "same";
 
-  const pick = (item, long) => (!long || item.long === SAME ? item : item.long ? { ref: item.ref, ...item.long } : null);
+  const pick = (item, long) => (!long || item.long === SAME ? item : item.long ? { ref: item.ref, data: item.data, ...item.long } : null);
   const fits = (item) => !item.only || item.only.includes(K.period); // only: 出す期間（K.period は boot.js が描く前に決める）
-
-  const ROW = 4; // 1 行に並べられるカードの列数（格子の最小幅と本文の幅から）
-  const shownCards = (g, long) => (g.cards || []).filter(fits).map((c) => pick(c, long)).filter(Boolean);
-  const spanOf = (g, long) => shownCards(g, long).reduce((n, c) => n + (c.wide ? 2 : 1), 0);
-
-  function groupHtml(g, ctxOf, long, span) {
-    const ctx = ctxOf(g);
-    const cards = shownCards(g, long);
-    const missing = long ? (g.cards || []).filter((c) => { const s = pick(c, true); return !s || s.label !== c.label; }) : [];
-    const whys = [...new Set(missing.map((c) => c.longWhy || K.L.NOT_LONG_WHY))];
-    // 理由を持つカード（longWhy）が群ごと出ないときは、カード名を並べず群の見出しで断る
-    const whole = missing.length === (g.cards || []).length && missing.every((c) => c.longWhy);
-    const names = (why) => (whole ? fill(g.label, ctx) : missing.filter((c) => (c.longWhy || K.L.NOT_LONG_WHY) === why).map((c) => fill(c.label, ctx)).join(K.L.LIST_SEP));
-    const notLong = whys.map((why) => K.L.NOT_LONG_CARDS.replace("{why}", why).replace("{names}", names(why)));
-    const scope = long ? g.longScope || K.L.LONG_SCOPE : g.scope || "";
-    const note = [...notLong, g.note ? fill(g.note, ctx) : ""].filter(Boolean).join(" ");
-    const label = fill(g.label, ctx);
-    const scopeText = fill(scope, ctx) === label ? "" : fill(scope, ctx); // 見出しと同じ語なら重ねて出さない
-    const style = span ? ` style="grid-column: span ${span}; --cols: ${span}"` : "";
-    return `<section class="group${span ? " packed" : ""}" aria-label="${esc(label)}"${style}><h2 class="glabel">${esc(label)}<span>${esc(scopeText)}</span></h2>`
-      + (cards.length ? `<div class="cards">${cards.map((c) => K.card.cardHtml(c, ctx)).join("")}</div>` : "")
-      + (note ? `<p class="gnote">${esc(note)}</p>` : "") + "</section>";
-  }
+  const shownCards = (page, long) => (page.cards || []).filter(fits).map((c) => pick(c, long)).filter(Boolean);
 
   function panelHtml(tab, ctx, shown) {
     const head = (scope, dots) => `<header class="p-head"><h2>${esc(fill(tab.title, ctx))}</h2><p class="scope">${esc(fill(scope, ctx))}${dots}</p></header>`;
@@ -46,6 +25,7 @@
       + `${K.table.tableHtml(t, shown.id, !switches)}${note ? `<p class="note">${esc(note)}</p>` : ""}</div>`;
   }
 
+  // 下段の見出し「詳しい一覧」はタブの入口で、カードの群の見出しではない
   function detailHtml(tabs, ctxOf, long) {
     if (!tabs || !tabs.length) return "";
     const items = tabs.map((t) => ({ t, shown: pick(t, long), ctx: ctxOf(t) }));
@@ -54,30 +34,11 @@
       + `<div class="tabs" role="tablist">${bar}</div>${items.map(({ t, shown, ctx }) => panelHtml(shown || t, ctx, shown)).join("")}</section>`;
   }
 
-  // 窓の違う小さな群（2 列以下）が続くとき、ROW 列に収まるだけ 1 行に並べる（look.pack）。群ごとに見出しと期間の注記を持つ
-  function rows(groups, long) {
-    const out = [];
-    for (const g of groups) {
-      const n = spanOf(g, long), last = out[out.length - 1];
-      const small = K.look.get().pack && n > 0 && n <= 2;
-      if (small && last && last.small && last.n + n <= ROW) { last.push(g); last.n += n; } else out.push(Object.assign([g], { small, n }));
-    }
-    return out;
-  }
+  const grid = (page, ctxOf, long) => `<div class="cards grid">${shownCards(page, long).map((c) => K.card.cardHtml(c, ctxOf(c))).join("")}</div>`;
 
-  // 概況: 群の見出しを出さず、カードを群の順に 1 つの格子へ流す。見出し「主な指標」の横に、カードの窓の期間を 1 行で
-  function homeHtml(page, ctxOf, long) {
-    const groups = (page.groups || []).map((g) => ({ g, ctx: ctxOf(g), cards: shownCards(g, long) })).filter((x) => x.cards.length);
-    const briefs = [...new Set(groups.map(({ g, ctx }) => fill((long ? g.longBrief : g.brief) || "", ctx)).filter(Boolean))];
-    const cards = groups.flatMap(({ cards: cs, ctx }) => cs.map((c) => K.card.cardHtml(c, ctx))).join("");
-    return `<div class="kpis"><section class="group home-cards" aria-label="${K.L.HOME_CARDS}"><h2 class="glabel">${K.L.HOME_CARDS}<span>${esc(briefs.join(" · "))}</span></h2>`
-      + `<div class="cards">${cards}</div></section></div>`;
-  }
+  // 概況: 見出し「主な指標」の下に 1 つの格子（期間は帯の期間の表示に 1 か所だけ）
+  const homeHtml = (page, ctxOf, long) => `<div class="kpis"><section class="home-cards" aria-label="${K.L.HOME_CARDS}"><h2 class="glabel">${K.L.HOME_CARDS}</h2>${grid(page, ctxOf, long)}</section></div>`;
+  const screenHtml = (page, ctxOf, long) => `<div class="kpis">${grid(page, ctxOf, long)}</div>${detailHtml(page.tabs, ctxOf, long)}`;
 
-  function screenHtml(page, ctxOf, long) {
-    return `<div class="kpis">${rows(page.groups || [], long).map((r) => (r.length > 1
-      ? `<div class="group-row">${r.map((g) => groupHtml(g, ctxOf, long, spanOf(g, long))).join("")}</div>` : groupHtml(r[0], ctxOf, long))).join("")}</div>${detailHtml(page.tabs, ctxOf, long)}`;
-  }
-
-  window.KIT = Object.assign(window.KIT || {}, { page: { screenHtml, homeHtml, pick, fits, SAME } });
+  window.KIT = Object.assign(window.KIT || {}, { page: { screenHtml, homeHtml, pick, fits, shownCards, SAME } });
 })();

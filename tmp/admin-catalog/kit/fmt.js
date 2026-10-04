@@ -81,6 +81,7 @@
     setting: (v) => term(L().SETTING, v),
     provider: (v) => term(L().PROVIDER, v),
     model: (v) => term(L().MODEL, v),
+    stage: (v) => term(L().STAGE, v),
     basis: (v) => L().BASIS[v],
     basis_note: (v) => L().BASIS_NOTE[v],
   };

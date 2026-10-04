@@ -8,12 +8,14 @@
   --track: #ebe7e1;
   --chip: #e3e0da;
   --chip-up: #dde6ea;
+  --chip-worse-bg: #f1e0e5; /* 増減のチップの悪化。要確認の札（--ng のれんが色）と色相をずらした赤 */
   /* 色: 文字と線。--muted は --card・--bg・--tabs のどの面でも WCAG AA（4.5:1）を満たす */
   --ink: #2b2926;
   --ink-2: #4a4640;
   --muted: #625c53;
   --rule: #d6d1c9;
   --chip-up-ink: #2f4b58;
+  --chip-worse-ink: #8a2c4b;
   --on-ink: #f6f4f0;
   /* 色: 強調とグラフ */
   --accent: #4c6a78;

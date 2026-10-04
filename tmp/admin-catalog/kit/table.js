@@ -83,6 +83,15 @@
     return [(tab.chipsAll === false ? [] : [every]).concat(counted), tags];
   }
 
+  // 部の絞り込み（dept: true のタブ）: すべて・部ごと・不明の 1 択。行の data-dept で絞る
+  const UNKNOWN = "unknown";
+  const deptOf = (r) => r.dept ?? UNKNOWN;
+  function deptChips(tab, rows, ctx) {
+    if (!tab.dept) return [];
+    const ids = [...(lookup(ctx, "F[org][depts]") || []), UNKNOWN];
+    return [{ id: "all", label: K.L.ALL, count: rows.length }].concat(ids.map((id) => ({ id, label: id === UNKNOWN ? K.L.UNKNOWN : id, count: rows.filter((r) => deptOf(r) === id).length })));
+  }
+
   // 列の上の段 [見出し, 列数]。列数の合計が列と合わなければ定義の誤り
   function bands(tab, cols, ctx) {
     if (!tab.bands) return null;
@@ -99,11 +108,11 @@
     const [cs, tags] = chips({ ...tab, chips: tab.chips && tab.chips.filter(K.page.fits) }, rows, ctx);
     const key = tab.chart ? tab.chart.key || "day" : null;
     return {
-      cols, bands: bands(tab, cols, ctx), chips: cs, chipsAll: tab.chipsAll !== false, search: tab.q ? fill(tab.search || "", ctx) : "",
+      cols, bands: bands(tab, cols, ctx), chips: cs, depts: deptChips(tab, rows, ctx), chipsAll: tab.chipsAll !== false, search: tab.q ? fill(tab.search || "", ctx) : "",
       unit: tab.unit || "", empty: tab.empty,
       total: tab.chipsAll !== false || !cs.length ? rows.length : cs[0].count, source,
       rows: rows.map((r) => ({
-        tags: tags(r).join(" "), q: tab.q ? fill(tab.q, r) : "", key: key ? r[key] : null, cells: cols.map((c) => cell(c, r)),
+        tags: tags(r).join(" "), dept: tab.dept ? deptOf(r) : null, q: tab.q ? fill(tab.q, r) : "", key: key ? r[key] : null, cells: cols.map((c) => cell(c, r)),
       })),
     };
   }
@@ -112,14 +121,16 @@
     const search = t.search ? `<label class="search"><span class="sr">${K.L.SEARCH}</span><input type="search" placeholder="${esc(t.search)}" data-search></label>` : "";
     const chipbar = t.chips.length ? `<div class="chipbar" role="group" aria-label="${K.L.FILTER_GROUP}">${t.chips.map((c, i) =>
       `<button type="button" data-chip="${esc(c.id)}" aria-pressed="${i === 0}">${c.tone ? `<i class="dot ${c.tone}"></i>` : ""}${esc(c.label)}<b>${K.num(c.count)}</b></button>`).join("")}</div>` : "";
-    return `<div class="filters" data-filter hidden>${search}${chipbar}<span class="count"><b data-shown>${K.num(t.total)}</b> / <span${t.chipsAll ? "" : " data-total"}>${K.num(t.total)}</span> ${esc(t.unit)}</span></div>`;
+    const depts = t.depts.length ? `<div class="chipbar dept-filter" role="group" aria-label="${K.L.DEPT_NAV}">${t.depts.map((c, i) =>
+      `<button type="button" data-dept-chip="${esc(c.id)}" aria-pressed="${i === 0}">${esc(c.label)}<b>${K.num(c.count)}</b></button>`).join("")}</div>` : "";
+    return `<div class="filters" data-filter hidden>${search}${chipbar}${depts}<span class="count"><b data-shown>${K.num(t.total)}</b> / <span${t.chipsAll ? "" : " data-total"}>${K.num(t.total)}</span> ${esc(t.unit)}</span></div>`;
   }
 
   function tableHtml(t, id, withFilters = true) {
     const head = t.cols.map((c, i) => `<th scope="col" class="c-${c.kind}${c.num ? " num" : ""}"${c.aria ? ` aria-sort="${c.aria}"` : ""}>${c.sort
       ? `<button type="button" data-sort="${i}">${esc(c.label)}<i class="arrow"></i></button>` : esc(c.label)}${c.sub ? `<span class="th-sub">${esc(c.sub)}</span>` : ""}</th>`).join("");
     const top = t.bands ? `<tr class="bands">${t.bands.map((b) => `<th scope="colgroup" colspan="${b.span}"${b.label ? "" : ' class="blank"'}>${esc(b.label)}</th>`).join("")}</tr>` : "";
-    const body = t.rows.map((r) => `<tr data-tags="${esc(r.tags)}" data-q="${esc(r.q)}"${r.key !== null && r.key !== undefined ? ` data-link="${esc(r.key)}"` : ""}>${r.cells.map((c) =>
+    const body = t.rows.map((r) => `<tr data-tags="${esc(r.tags)}"${r.dept ? ` data-dept="${esc(r.dept)}"` : ""} data-q="${esc(r.q)}"${r.key !== null && r.key !== undefined ? ` data-link="${esc(r.key)}"` : ""}>${r.cells.map((c) =>
       `<td class="c-${c.col.kind}${c.col.num ? " num" : ""}" data-v="${esc(c.sort)}">${K.cells.cell(c)}</td>`).join("")}</tr>`).join("");
     return `${withFilters ? filtersHtml(t) : ""}<div class="tscroll"><table data-testid="${esc(id)}"><thead>${top}<tr>${head}</tr></thead><tbody>${body}</tbody></table>
 <p class="empty" data-empty${t.rows.length ? " hidden" : ""}>${esc(t.empty || K.L.EMPTY)}</p></div>`;

@@ -1,0 +1,23 @@
+/* 自作のカレンダー（calendar.js）。日の見せ方は 3 つで、状態の色（注意・要確認）を使わない */
+.cal { position: absolute; top: calc(100% + var(--sp-xs)); right: 0; z-index: 6; width: calc(var(--date-w) * 2); padding: var(--sp-m); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-l); box-shadow: var(--shadow-tip); white-space: normal; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-s); }
+.cal-nav { border: 0; background: none; padding: 0 var(--sp-s); font-size: var(--fs-h2); color: var(--ink-2); cursor: pointer; }
+.cal-nav:disabled { color: var(--ghost); cursor: default; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--sp-3xs); }
+.cal-wd { text-align: center; font-size: var(--fs-xs); color: var(--muted); }
+.cal-day { position: relative; height: 2.2em; border: 0; border-radius: var(--r-s); background: none; font-size: var(--fs-sm); color: var(--ink); cursor: pointer; font-variant-numeric: tabular-nums; }
+.cal-day:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--accent); }
+.cal-day.in-range { background: var(--chip-up); }
+.cal-day.is-sel { box-shadow: inset 0 0 0 2px var(--ink); font-weight: 700; }
+.cal-day:disabled { cursor: default; }
+.cal-day.is-off:not(.cal-wait) { opacity: var(--link-dim); }
+/* 利用明細あり: 下に点。取り込み待ち: 灰色の斜線。利用明細なし: 無地 */
+.cal-has::after, .cal-key.cal-has::after { content: ""; position: absolute; left: 50%; bottom: var(--sp-3xs); width: var(--mark-dot); height: var(--mark-dot); margin-left: calc(var(--mark-dot) / -2); border-radius: 50%; background: var(--accent); }
+.cal-wait, .cal-key.cal-wait { background: repeating-linear-gradient(135deg, var(--ghost) 0 2px, transparent 2px 6px); color: var(--muted); }
+.cal-none { color: var(--muted); }
+.cal-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-s); margin-top: var(--sp-s); }
+.cal-legend { display: grid; gap: var(--sp-3xs); font-size: var(--fs-xs); color: var(--muted); }
+.cal-legend > span { display: inline-flex; align-items: center; gap: var(--sp-xs); }
+.cal-key { position: relative; display: inline-block; width: 1.4em; height: 1.4em; border: 1px solid var(--rule); border-radius: var(--r-xs); }
+.cal-latest { border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); padding: var(--sp-2xs) var(--sp-m); font-size: var(--fs-sm); color: var(--ink-2); cursor: pointer; }
+.cal-latest:hover { color: var(--accent); }

@@ -13,7 +13,8 @@
     let shown = 0;
     for (const tr of rows) {
       const tags = (tr.dataset.tags || "").split(" ");
-      const hit = (state.chip === "all" || tags.includes(state.chip)) && (!q || (tr.dataset.q || "").toLowerCase().includes(q));
+      const hit = (state.chip === "all" || tags.includes(state.chip)) && (state.dept === "all" || tr.dataset.dept === state.dept)
+        && (!q || (tr.dataset.q || "").toLowerCase().includes(q));
       tr.hidden = !hit;
       if (hit) shown += 1;
     }
@@ -26,6 +27,7 @@
     const empty = panel.querySelector("[data-empty]");
     if (empty) empty.hidden = shown > 0;
     for (const b of all(panel, "[data-chip]")) b.setAttribute("aria-pressed", String(b.dataset.chip === state.chip));
+    for (const b of all(panel, "[data-dept-chip]")) b.setAttribute("aria-pressed", String(b.dataset.deptChip === state.dept));
   }
 
   function compare(a, b) {
@@ -50,7 +52,7 @@
     const tabs = all(section, "[data-tab]");
     const panels = all(section, "[data-panel]");
     const firstChip = (p) => { const c = p.querySelector("[data-chip]"); return c ? c.dataset.chip : "all"; };
-    const states = new Map(panels.map((p) => [p.dataset.panel, { chip: firstChip(p), q: "" }]));
+    const states = new Map(panels.map((p) => [p.dataset.panel, { chip: firstChip(p), q: "", dept: "all" }]));
     const cards = all(document, "[data-open]");
 
     function open(id, chip, fromCard) {
@@ -79,6 +81,11 @@
       p.addEventListener("click", (e) => {
         const chip = e.target.closest("[data-chip]");
         const sorter = e.target.closest("[data-sort]");
+        const dept = e.target.closest("[data-dept-chip]");
+        if (dept) {
+          state.dept = dept.dataset.deptChip;
+          filter(p, state);
+        }
         if (chip) {
           state.chip = chip.dataset.chip;
           for (const c of cards) c.classList.remove("is-open");

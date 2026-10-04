@@ -41,6 +41,9 @@
     delete_file: (v, row) => `<form data-confirm="${esc(fill(isNone(row.first) ? "{source_file} を削除します。よろしいですか。" : "{source_file} を削除します。取り込んだ {first:day}〜{last:day} の利用明細の行も消えます。よろしいですか。", row))}" onsubmit="return false"><button type="submit" class="btn-quiet">削除</button></form>`,
     span: (v, row) => esc(fill(L().SPAN, row)),
     rank: (v) => (isNone(v) ? sub("—") : `<b>${esc(K.num(v))}</b>`),
+    // 部・課: 名簿に無い人は「不明」、課の欄が空の人は「—」。どちらも状態の札を付けない
+    dept: (v) => (isNone(v) ? sub(L().UNKNOWN) : esc(v)),
+    section: (v, row) => (isNone(row.dept) ? sub(L().UNKNOWN) : v ? esc(v) : sub(L().NO_SECTION)),
   };
   // 値が None なら「—」（value の列は「未設定」）
   const SOME = {

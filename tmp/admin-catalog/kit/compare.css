@@ -1,18 +1,4 @@
-/* 比較用の切り替え（compare.js。案 31 だけ）: チップの色・文字の大きさの段の組・切り替えの帯。比較用の値は tokens.css に無い値を持つ */
-:root {
-  --cmp-worse-bg: #f1e0e5; /* 要確認の札（--ng のれんが色）と色相をずらした赤 */
-  --cmp-worse-ink: #8a2c4b;
-}
-/* 文字の大きさ: F5（12・14・16・22・40）は tokens.css。F6 は最も小さい枠だけ 10、F7 は 11・12・13・14・16・22・40 */
-:root[data-fs="F6"] { --fs-xs: 10px; }
-:root[data-fs="F7"] { --fs-xs: 11px; --fs-label: 13px; }
-
-.change.p-br.better { background: var(--chip-up); color: var(--chip-up-ink); }
-.change.p-gr.better { background: var(--ok-bg); color: var(--ok); }
-.change.p-br.worse, .change.p-gr.worse { background: var(--cmp-worse-bg); color: var(--cmp-worse-ink); }
-.change.p-blue.better { background: var(--chip-up); color: var(--accent); font-weight: 400; }
-.change.p-blue.worse { background: var(--chip-up); color: var(--chip-up-ink); }
-
+/* 比較用の切り替えの帯（compare.js） */
 .cmp-bar { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: var(--sp-xs); margin-top: var(--sp-s); font-size: var(--fs-sm); color: var(--muted); }
 .cmp-group { display: inline-flex; align-items: center; gap: var(--sp-xs); }
 .cmp-group > span, .cmp-tag { margin-right: var(--sp-2xs); }
