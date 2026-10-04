@@ -93,3 +93,4 @@ nav .nav-extra { margin-left: var(--sp-s); }
 .toprow .num { font-weight: 600; font-variant-numeric: tabular-nums; }
 .tscroll td.c-section, .tscroll td.c-dept { white-space: nowrap; }
 .k-label { gap: var(--sp-2xs); } /* 1 列幅で最長の見出し（確認なしモードを使った利用者）を「一覧」と 1 行に収める */
+@media (max-width: 1100px) { .bar { gap: var(--sp-m); } nav a, .bar-end a { padding: var(--sp-2xs) var(--sp-s); } } /* 6 ページとサマリー・データと設定をヘッダーの 1 行に収める */
