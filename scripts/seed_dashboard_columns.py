@@ -72,6 +72,11 @@ class Ctx:
         return self.key not in self.term.off_keys and self.day >= self.term.start
 
 
+def apply_rules(rules: dict, ctx: Ctx) -> dict:
+    """対応表の列の順に、1 行の値を作る。"""
+    return {name: rule(ctx) for name, rule in rules.items()}
+
+
 def _uuid(c: Ctx) -> str:
     return str(uuid.UUID(int=c.rng.getrandbits(128)))
 

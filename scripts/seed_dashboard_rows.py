@@ -8,7 +8,7 @@ from pathlib import Path
 from ccgov.constants import EVENT_STUDY_SPAN, POLICY_DAYS, STALE_DAYS
 from ccgov.store.queries_events import _HEALTH_NULL_SCOPES
 from ccgov.vendor import contract, policy
-from seed_dashboard_columns import CSV_RULES, RULES, Ctx, Term
+from seed_dashboard_columns import CSV_RULES, RULES, Ctx, Term, apply_rules
 from seed_org_columns import ORG_RULES, org_unit
 
 HOOKS_JSON = Path(__file__).resolve().parents[1] / "plugin" / "hooks" / "hooks.json"
@@ -70,7 +70,7 @@ def _terminals(rng: random.Random, n_users: int, today: int, days: int) -> tuple
 
 
 def _row(kind: str, ctx: Ctx) -> dict:
-    return {"kind": kind, **{name: rule(ctx) for name, rule in RULES[kind].items()}}
+    return {"kind": kind, **apply_rules(RULES[kind], ctx)}
 
 
 def _event(ctx: Ctx) -> dict:
@@ -100,7 +100,7 @@ def _session(rng: random.Random, term: Term, ts: int, hooks: list, error) -> lis
 def _cost(rng: random.Random, user: str, day: int, start) -> dict:
     factor = 1.3 if start is None or day < start else 1.0
     ctx = Ctx(rng, user, day=day, factor=factor)
-    return {header: rule(ctx) for header, rule in CSV_RULES.items()}
+    return apply_rules(CSV_RULES, ctx)
 
 
 def generate(rng: random.Random, n_users: int, days: int, base_ts: int) -> tuple:
@@ -143,7 +143,7 @@ def roster(rng: random.Random, n_users: int) -> list:
     rows = []
     for i in people:
         ctx = Ctx(rng, user_email(i), org=org_unit(rng))
-        rows.append({header: rule(ctx) for header, rule in ORG_RULES.items()})
+        rows.append(apply_rules(ORG_RULES, ctx))
     for row, email in zip(rows[-len(NO_EMAILS) :], NO_EMAILS):
         row["Email - Primary Work"] = email
     return rows
