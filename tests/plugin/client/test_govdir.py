@@ -115,8 +115,8 @@ def test_statuslineの同梱ファイルが無くても落ちない(tmp_path):
     assert not _govdir.governance_dir().exists()
 
 
-def test_statuslineの同期の失敗は設定の適用に波及しない(monkeypatch, capsys):
-    """同期が例外を投げても、設定の適用・hook 出力・収集は行われる。"""
+def test_statuslineの同期の失敗は設定の適用に波及しない(monkeypatch):
+    """同期が例外を投げても、設定の適用・収集は行われる。"""
 
     def _raise(*_args, **_kwargs):
         raise RuntimeError("boom")
@@ -130,7 +130,6 @@ def test_statuslineの同期の失敗は設定の適用に波及しない(monkey
 
     settings = json.loads(_govdir.settings_path().read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
-    json.loads(capsys.readouterr().out)
     assert (_govdir.config_dir().parent / "state" / "queue.jsonl").is_file()
 
 

@@ -164,52 +164,6 @@ def spy_launch(monkeypatch):
     return calls
 
 
-@pytest.fixture
-def write_notices(tmp_path, monkeypatch):
-    """渡した項目で notices.json を書き、読み込み先をそこへ向ける関数を返す。"""
-    import _notices
-
-    def _write(data) -> Path:
-        path = tmp_path / "notices.json"
-        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-        monkeypatch.setattr(_notices, "_NOTICES_PATH", path)
-        return path
-
-    return _write
-
-
-class _RaisingStdout:
-    """`write` が必ず例外を投げる標準出力の代わり。"""
-
-    def write(self, *_args, **_kwargs):
-        raise OSError("boom")
-
-    def flush(self):
-        pass
-
-
-class _FlushRaisingStdout:
-    """`write` は成功するが `flush` が必ず例外を投げる標準出力の代わり。"""
-
-    def write(self, *_args, **_kwargs):
-        pass
-
-    def flush(self):
-        raise OSError("boom")
-
-
-@pytest.fixture
-def raising_stdout():
-    """`write` が必ず例外を投げる標準出力の代わり。"""
-    return _RaisingStdout()
-
-
-@pytest.fixture
-def flush_raising_stdout():
-    """`write` は成功するが `flush` が必ず例外を投げる標準出力の代わり。"""
-    return _FlushRaisingStdout()
-
-
 _ALL_HOOK_EVENTS = (
     "PostToolUse",
     "UserPromptSubmit",

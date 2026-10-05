@@ -1,4 +1,4 @@
-"""`session_start.py` の出力経路・実行順序・無効化スイッチを検証する。
+"""`session_start.py` の policy イベント・実行順序・無効化スイッチを検証する。
 
 すべて `tmp_path` と `CLAUDE_PLUGIN_DATA` / `CLAUDE_CONFIG_DIR` で隔離する。
 利用者本人の `~/.claude/` には一切触れない。`claude` コマンドは実行しない。
@@ -9,14 +9,12 @@ import subprocess
 from pathlib import Path
 
 import _identity
-import _notices
 import _spool
 import pytest
 import session_start
 
 PCT_KEY = "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 AUTOUPDATE_KEY = "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate"
-MARKER = "ZZMARKER-NOTICE-BODY"
 
 
 def _policy_key_count() -> int:
@@ -33,17 +31,6 @@ def _raiser(*_args, **_kwargs):
 pytestmark = pytest.mark.usefixtures("session_start_env", "spy_launch", "fixed_policy")
 
 
-@pytest.fixture
-def notices_file(write_notices):
-    """fixture の notices.json（n-001 / n-002、n-001 に一意なマーカー）を用意する。"""
-    return write_notices(
-        [
-            {"id": "n-001", "title": "件名1", "body": f"本文1 {MARKER}"},
-            {"id": "n-002", "title": "件名2", "body": "本文2"},
-        ]
-    )
-
-
 def _settings_file(tmp_path) -> Path:
     return tmp_path / "config" / "settings.json"
 
@@ -53,16 +40,6 @@ def _write_settings(tmp_path, content) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(content), encoding="utf-8")
     return path
-
-
-def _seen_file(tmp_path) -> Path:
-    return tmp_path / "state" / "seen.json"
-
-
-def _write_seen(tmp_path, ids) -> None:
-    path = _seen_file(tmp_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(ids), encoding="utf-8")
 
 
 def _queue_rows(tmp_path) -> list:
@@ -186,223 +163,89 @@ def test_session_start_resolves_user_email_again(tmp_path, monkeypatch):
     assert {row["user_email"] for row in rows} == {"new@example.com"}
 
 
-# ---- お知らせの出力経路と既読を立てる順序 ----
+# ---- 標準出力 ----
 
 
-def test_output_stdout_is_single_json(notices_file, capsys):
-    session_start.main()
-    lines = capsys.readouterr().out.splitlines()
-    assert len(lines) == 1
-    json.loads(lines[0])
-
-
-def test_output_system_message_contains_marker(notices_file, capsys):
-    session_start.main()
-    out = json.loads(capsys.readouterr().out)
-    assert MARKER in out["systemMessage"]
-
-
-def test_output_marker_not_leaked_outside_system_message(notices_file, capsys):
-    session_start.main()
-    out = json.loads(capsys.readouterr().out)
-    rest = {k: v for k, v in out.items() if k != "systemMessage"}
-    assert MARKER not in json.dumps(rest, ensure_ascii=False)
-
-
-def test_output_no_additional_context_key(notices_file, capsys):
-    session_start.main()
-    out = json.loads(capsys.readouterr().out)
-    assert "additionalContext" not in out
-
-
-def test_output_stderr_is_empty(notices_file, capsys):
-    """標準エラーが空。main() が例外なく終わる（終了コード 0 に相当）。"""
-    session_start.main()
-    assert capsys.readouterr().err == ""
-
-
-def test_output_no_unread_omits_system_message_key(notices_file, tmp_path, capsys):
-    _write_seen(tmp_path, ["n-001", "n-002"])
-    session_start.main()
-    out = json.loads(capsys.readouterr().out)
-    assert "systemMessage" not in out
-
-
-def test_output_seen_file_contains_both_ids(notices_file, tmp_path, capsys):
-    session_start.main()
-    capsys.readouterr()
-    seen = json.loads(_seen_file(tmp_path).read_text(encoding="utf-8"))
-    assert set(seen) == {"n-001", "n-002"}
-
-
-def test_output_write_failure_keeps_seen_unchanged(
-    notices_file, tmp_path, raising_stdout
-):
-    original_stdout = session_start.sys.stdout
-    session_start.sys.stdout = raising_stdout
-    try:
-        session_start.main()
-    finally:
-        session_start.sys.stdout = original_stdout
-
-    assert not _seen_file(tmp_path).exists()
-
-
-def test_output_flush_only_failure_keeps_seen_unchanged(
-    notices_file, tmp_path, flush_raising_stdout
-):
-    original_stdout = session_start.sys.stdout
-    session_start.sys.stdout = flush_raising_stdout
-    try:
-        session_start.main()
-    finally:
-        session_start.sys.stdout = original_stdout
-
-    assert not _seen_file(tmp_path).exists()
-
-
-def test_output_retried_after_failure_shows_again(notices_file, capsys, raising_stdout):
-    original_stdout = session_start.sys.stdout
-    session_start.sys.stdout = raising_stdout
-    try:
-        session_start.main()
-    finally:
-        session_start.sys.stdout = original_stdout
-    capsys.readouterr()
+def test_stdout_and_stderr_are_empty(tmp_path, capsys):
+    """SessionStart は標準出力に何も書かない（お知らせは mod が出す）。"""
+    _write_settings(tmp_path, {})
 
     session_start.main()
-    out = json.loads(capsys.readouterr().out)
-    assert MARKER in out["systemMessage"]
-    assert "本文2" in out["systemMessage"]
+    captured = capsys.readouterr()
 
-
-def test_output_existing_seen_entry_is_preserved(notices_file, tmp_path, capsys):
-    _write_seen(tmp_path, ["n-001"])
-    session_start.main()
-    capsys.readouterr()
-    seen = json.loads(_seen_file(tmp_path).read_text(encoding="utf-8"))
-    assert set(seen) == {"n-001", "n-002"}
-
-
-def test_output_two_items_are_joined_by_blank_line(notices_file, capsys):
-    session_start.main()
-    out = json.loads(capsys.readouterr().out)
-    message = out["systemMessage"]
-    assert isinstance(message, str)
-    parts = message.split("\n\n")
-    assert len(parts) == 2
-    assert MARKER in parts[0]
-    assert "本文2" in parts[1]
-    for decoration in ("【お知らせ】", "SessionStart:"):
-        assert decoration not in message
+    assert captured.out == ""
+    assert captured.err == ""
 
 
 # ---- 実行順序 ----
 
 
-def test_order_normal_run_does_everything(notices_file, tmp_path, capsys):
+def test_order_normal_run_does_everything(tmp_path):
     _write_settings(tmp_path, {})
     session_start.main()
-    out = json.loads(capsys.readouterr().out)
 
     settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
-    assert "systemMessage" in out
     assert len(_policy_rows(tmp_path)) == _policy_key_count()
     assert len(_event_rows(tmp_path)) == 1
 
 
-def test_order_collect_failure_leaves_earlier_steps_done(
-    notices_file, tmp_path, monkeypatch, capsys
-):
-    """収集を例外にしても、設定適用とお知らせの出力は既に終わっている。終了コード0、標準エラーが空。"""
+def test_order_collect_failure_leaves_earlier_steps_done(tmp_path, monkeypatch, capsys):
+    """収集を例外にしても、設定適用は既に終わっている。標準エラーが空。"""
     _write_settings(tmp_path, {})
     monkeypatch.setattr(session_start, "_collect_step", _raiser)
 
     session_start.main()
-    captured = capsys.readouterr()
-    out = json.loads(captured.out)
 
     settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
-    assert "systemMessage" in out
-    seen = json.loads(_seen_file(tmp_path).read_text(encoding="utf-8"))
-    assert set(seen) == {"n-001", "n-002"}
-    assert captured.err == ""
+    assert capsys.readouterr().err == ""
 
 
-def test_order_notice_step_failure_still_runs_collect(
-    notices_file, tmp_path, monkeypatch, capsys
-):
-    _write_settings(tmp_path, {})
-    monkeypatch.setattr(_notices, "notices_step", _raiser)
+def test_order_settings_failure_still_collects(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(session_start, "_apply_settings_step", _raiser)
 
     session_start.main()
-    captured = capsys.readouterr()
-    json.loads(captured.out)  # それでも 1 個の JSON が出る
 
-    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
-    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
     assert len(_event_rows(tmp_path)) == 1
-    assert captured.err == ""
+    assert capsys.readouterr().err == ""
 
 
-def test_order_settings_failure_still_shows_notice_and_collects(
-    notices_file, monkeypatch, capsys
-):
+def test_order_both_failures_still_exit_clean(monkeypatch, capsys):
     monkeypatch.setattr(session_start, "_apply_settings_step", _raiser)
-
-    session_start.main()
-    out = json.loads(capsys.readouterr().out)
-
-    assert "systemMessage" in out
-
-
-def test_order_all_three_failures_still_exit_clean(notices_file, monkeypatch, capsys):
-    monkeypatch.setattr(session_start, "_apply_settings_step", _raiser)
-    monkeypatch.setattr(_notices, "notices_step", _raiser)
     monkeypatch.setattr(session_start, "_collect_step", _raiser)
 
     session_start.main()
-    captured = capsys.readouterr()
 
-    assert captured.err == ""
-    json.loads(captured.out)
+    assert capsys.readouterr().err == ""
 
 
-def test_order_call_order_is_settings_notice_collect(notices_file, monkeypatch, capsys):
+def test_order_call_order_is_settings_collect(monkeypatch):
     calls = []
     original_settings = session_start._apply_settings_step
-    original_notices = _notices.notices_step
     original_collect = session_start._collect_step
 
     def _settings_spy(*args, **kwargs):
         calls.append("settings")
         return original_settings(*args, **kwargs)
 
-    def _notices_spy(*args, **kwargs):
-        calls.append("notices")
-        return original_notices(*args, **kwargs)
-
     def _collect_spy(*args, **kwargs):
         calls.append("collect")
         return original_collect(*args, **kwargs)
 
     monkeypatch.setattr(session_start, "_apply_settings_step", _settings_spy)
-    monkeypatch.setattr(_notices, "notices_step", _notices_spy)
     monkeypatch.setattr(session_start, "_collect_step", _collect_spy)
 
     session_start.main()
-    capsys.readouterr()
 
-    assert calls == ["settings", "notices", "collect"]
+    assert calls == ["settings", "collect"]
 
 
-def test_order_stdin_read_failure_does_not_silence_settings_and_notices(
-    notices_file, tmp_path, monkeypatch, capsys
+def test_order_stdin_read_failure_does_not_silence_settings(
+    tmp_path, monkeypatch, capsys
 ):
     """標準入力の読み取りの失敗（深い入れ子で RecursionError）は収集だけに留まる。
-    読み取りが 3 ステップの try の外にあると、設定の適用・お知らせ・キューへの記録が丸ごと消える。
+    読み取りが収集の段の外にあると、設定の適用・キューへの記録が丸ごと消える。
     """
     _write_settings(tmp_path, {})
     monkeypatch.setattr(
@@ -412,11 +255,8 @@ def test_order_stdin_read_failure_does_not_silence_settings_and_notices(
     )
 
     session_start.main()
-    captured = capsys.readouterr()
 
-    assert captured.err == ""
-    out = json.loads(captured.out)
-    assert "systemMessage" in out
+    assert capsys.readouterr().err == ""
     settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
     assert len(_policy_rows(tmp_path)) == _policy_key_count()
@@ -425,79 +265,36 @@ def test_order_stdin_read_failure_does_not_silence_settings_and_notices(
 # ---- 無効化スイッチ ----
 
 
-def test_disable_unset_runs_everything(notices_file, tmp_path, capsys):
+def test_disable_unset_runs_everything(tmp_path):
     _write_settings(tmp_path, {})
     session_start.main()
-    out = json.loads(capsys.readouterr().out)
 
     settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
-    assert "systemMessage" in out
-    seen = json.loads(_seen_file(tmp_path).read_text(encoding="utf-8"))
-    assert len(seen) == 2
     assert len(_event_rows(tmp_path)) == 1
 
 
-def test_disable_value_1_skips_notice_and_collect(
-    notices_file, tmp_path, monkeypatch, capsys
+@pytest.mark.parametrize("value", ["1", "0", "false"])
+def test_disable_nonempty_value_skips_collect_keeps_settings(
+    tmp_path, monkeypatch, value
 ):
-    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
+    """空でない値は "0" や "false" でも収集を止める。設定の適用は止めない。"""
+    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", value)
     _write_settings(tmp_path, {})
 
     session_start.main()
-    out = json.loads(capsys.readouterr().out)
 
     settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
-    assert "systemMessage" not in out
-    assert not _seen_file(tmp_path).exists()
     assert _event_rows(tmp_path) == []
 
 
-def test_disable_value_0_still_counts_as_set(
-    notices_file, tmp_path, monkeypatch, capsys
-):
-    """値 "0" も空でない値として、お知らせと収集を止める。"""
-    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "0")
-    _write_settings(tmp_path, {})
-
-    session_start.main()
-    out = json.loads(capsys.readouterr().out)
-
-    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
-    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
-    assert "systemMessage" not in out
-    assert _event_rows(tmp_path) == []
-
-
-def test_disable_value_false_still_counts_as_set(
-    notices_file, tmp_path, monkeypatch, capsys
-):
-    """値 "false" も空でない値として、お知らせと収集を止める。"""
-    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "false")
-    _write_settings(tmp_path, {})
-
-    session_start.main()
-    out = json.loads(capsys.readouterr().out)
-
-    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
-    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
-    assert "systemMessage" not in out
-    assert _event_rows(tmp_path) == []
-
-
-def test_disable_empty_value_runs_everything(
-    notices_file, tmp_path, monkeypatch, capsys
-):
+def test_disable_empty_value_runs_everything(tmp_path, monkeypatch):
     monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "")
     _write_settings(tmp_path, {})
 
     session_start.main()
-    out = json.loads(capsys.readouterr().out)
 
-    settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
-    assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
-    assert "systemMessage" in out
     assert len(_event_rows(tmp_path)) == 1
 
 
@@ -508,17 +305,6 @@ def test_disable_value_1_still_records_policy_rows(tmp_path, monkeypatch):
     session_start.main()
 
     assert len(_policy_rows(tmp_path)) == _policy_key_count()
-
-
-def test_disable_value_1_stdout_is_still_valid_json(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("CC_GOVERNANCE_DISABLE", "1")
-    _write_settings(tmp_path, {})
-
-    session_start.main()
-    captured = capsys.readouterr()
-
-    json.loads(captured.out)
-    assert captured.err == ""
 
 
 def test_disable_value_1_still_launches_sender_once(tmp_path, monkeypatch, spy_launch):

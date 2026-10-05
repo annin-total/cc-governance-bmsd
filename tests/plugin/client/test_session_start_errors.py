@@ -5,7 +5,6 @@ from pathlib import Path
 
 import _govdir
 import _identity
-import _notices
 import pytest
 import session_start
 
@@ -64,8 +63,6 @@ _STAGE_CASES = {
         _raiser,
         "apply_settings",
     ),
-    "notices": (_notices, "notices_step", _raiser, "notices"),
-    "mark_seen": (session_start, "_mark_seen_and_open", _raiser, "mark_seen"),
     "collect": (session_start, "_collect_step", _raiser, "collect"),
 }
 
@@ -76,9 +73,8 @@ _STAGE_CASES = {
     ids=_STAGE_CASES.keys(),
 )
 def test_stage_failure_queues_one_error_row(
-    write_notices, tmp_path, monkeypatch, capsys, module, attr, replacement, stage
+    tmp_path, monkeypatch, capsys, module, attr, replacement, stage
 ):
-    write_notices([{"id": "n-001", "title": "件名", "body": "本文"}])
     monkeypatch.setattr(module, attr, replacement)
 
     session_start.main()
@@ -94,8 +90,7 @@ def test_stage_failure_queues_one_error_row(
     assert _MARKER not in json.dumps(row)
 
 
-def test_normal_run_queues_no_error_row(write_notices, tmp_path, capsys):
-    write_notices([{"id": "n-001", "title": "件名", "body": "本文"}])
+def test_normal_run_queues_no_error_row(tmp_path, capsys):
 
     session_start.main()
     capsys.readouterr()

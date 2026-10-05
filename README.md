@@ -8,7 +8,7 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 
 ```
 端末のプラグイン（各自の Claude Code）
-  │ 設定の適用・お知らせの表示・利用状況の記録
+  │ 設定の適用・利用状況の記録（お知らせは mod が表示）
   ▼ HTTP で送信
 集計サーバ ◀── AI Gateway の日次 CSV（コスト）
   │
@@ -48,7 +48,7 @@ Claude Code の中で、次の 2 つを順に実行する。
 /plugin install governance@cc-marketplace-governance-bmsd
 ```
 
-Claude Code を開き直し、お知らせが表示されれば導入できている。
+Claude Code を開き直し、プロンプトの上のバンドにお知らせが表示されれば導入できている。
 案内文の雛形と展開の進め方は [`docs/guide/onboarding.md`](docs/guide/onboarding.md)。
 
 ### 開発環境の準備
@@ -117,7 +117,7 @@ docker compose up --build
 | `plugin/config.json` の `ingest_url` | 送信先（サーバの `/ingest`） | `https://example.com/governance/ingest` |
 | `plugin/config.json` の `ingest_token` | 送信用のトークン。サーバの `INGEST_TOKEN` と同じ値 | `dummy-token` |
 | `plugin/hooks/policy.py` | 端末の `settings.json` に適用する設定値（書き方は `policy_sample.py`） | `SET = {"env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"}` |
-| `plugin/notices.json` | 利用者に表示するお知らせ（`id`・`title`・`body`） | `{"id": "2026-10-01-intro", "title": "...", "body": "..."}` |
+| `plugin/notices.json` | プロンプトの上のバンドに表示するお知らせ（`id`・`title`・`body`、任意で `url`・`label`） | `{"id": "2026-10-01-intro", "title": "...", "body": "..."}` |
 
 ### サーバ（環境変数）
 

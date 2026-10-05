@@ -163,3 +163,12 @@ def test_statuslineはinstallPathの複製で更新に追従する(root, gitsrv)
     ok(root, "plugin", "update", PLUGIN_ID)
     session(root)
     _assert_statusline(root, V2)
+
+
+def test_無効化スイッチは収集を止め設定の適用は止めない(root, gitsrv):
+    install(root, gitsrv, V1)
+    session(root, {"CC_GOVERNANCE_DISABLE": "1"})
+    # hook は動いている。収集の行は無く、policy 行だけが残る
+    rows = hook_rows(data_dir(root))
+    assert rows and {r["kind"] for r in rows} == {"policy"}, rows
+    _assert_holds(root.json("settings.json"), _policy(root))

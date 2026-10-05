@@ -1,6 +1,6 @@
 """SessionStart hook のエントリ。各段を個別に例外から守り、1 つの失敗で残りを止めない。
 
-無効化スイッチが止めるのはお知らせと利用ログの収集だけ。設定の適用・policy イベント・送信判定は止めない。
+無効化スイッチが止めるのは利用ログの収集だけ。標準出力には何も書かない。設定の適用・policy イベント・送信判定は止めない。
 """
 
 if __name__ == "__main__":
@@ -9,16 +9,13 @@ if __name__ == "__main__":
 
     _signal.signal(_signal.SIGINT, _signal.SIG_IGN)
 
-import json
 import os
 import sys
 import time
 from typing import Any, Optional
 
-import _browser
 import _govdir
 import _identity
-import _notices
 import _spool
 from _settings import apply_settings
 from collect import (
@@ -60,7 +57,7 @@ def _policy_row(
 def _apply_settings_step() -> None:
     """設定を適用し、結果を policy イベントとしてキューに積む。
 
-    `policy` の import と版の取得をここに置き、その失敗をお知らせと収集へ波及させない。
+    `policy` の import と版の取得をここに置き、その失敗を収集へ波及させない。
     """
     import policy
 
@@ -71,36 +68,6 @@ def _apply_settings_step() -> None:
         _spool.append(
             _policy_row(key_name, value, prev_value, apply_result, ts, plugin_version)
         )
-
-
-def _mark_seen_and_open(unread: list, seen: set) -> None:
-    """`CLAUDE_CODE_ENTRYPOINT` が `sdk-` 始まりの起動では何もしない。それ以外は未読を既読にし、書けたら対話起動（`cli`）に限り先頭の URL を開く（書けない端末で毎回開かないため）。"""
-    if _browser.is_headless():
-        return
-    if not _notices._write_seen(seen | {n["id"] for n in unread}):
-        return
-    if _browser.is_interactive():
-        url = _notices.first_url(unread)
-        if url:
-            _browser.open_url(url)
-
-
-def _emit_output(output: dict) -> bool:
-    """hook の JSON 出力を標準出力へ 1 個だけ書く。書けたら真。
-
-    失敗時は fd 1 を `/dev/null` に差し替える。残ったバッファの flush が終了時に標準エラーへ漏れ exit 120 になるため（`sys.stdout` の差し替えでは防げない）。
-    """
-    try:
-        sys.stdout.write(json.dumps(output, ensure_ascii=False))
-        sys.stdout.write("\n")
-        sys.stdout.flush()
-        return True
-    except Exception:  # noqa: BLE001 (hook は例外を外に出さない)
-        try:
-            os.dup2(os.open(os.devnull, os.O_WRONLY), 1)
-        except OSError:
-            pass
-        return False
 
 
 def _collect_step(hook_event: Optional[str], disabled: bool) -> None:
@@ -135,19 +102,6 @@ def main() -> None:
         _apply_settings_step()
     except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
         append_error("apply_settings", type(e).__name__, hook_event)
-
-    try:
-        output, unread, seen = _notices.notices_step(disabled, _notices._NOTICES_PATH)
-    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
-        output, unread, seen = {}, [], set()
-        append_error("notices", type(e).__name__, hook_event)
-
-    # 出力は必ず 1 回だけ行う。ここより上で何が失敗しても、少なくとも空の JSON を出す。
-    if _emit_output(output) and unread:
-        try:
-            _mark_seen_and_open(unread, seen)
-        except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
-            append_error("mark_seen", type(e).__name__, hook_event)
 
     try:
         _collect_step(hook_event, disabled)

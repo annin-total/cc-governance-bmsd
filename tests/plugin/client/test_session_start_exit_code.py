@@ -1,7 +1,7 @@
 """session_start.py が、故意に壊した入出力・環境でも常に exit 0・標準エラー空で終わることを検証する。
 
 `plugin/hooks` 一式を一時ディレクトリへコピーして起動する。実 `plugin/config.json` は変更しない。
-標準出力に書く唯一の hook なので、閉じたパイプへの書き出し（BrokenPipeError で exit 120）が起きうる。
+標準出力には何も書かないので、閉じたパイプへの書き出し（BrokenPipeError で exit 120）は起きない。
 """
 
 import json
@@ -44,51 +44,15 @@ def _assert_clean_exit(rc, stderr):
     assert stderr == b"" or stderr == ""
 
 
-# --- 標準出力のパイプが閉じている ---
+# --- 標準出力 ---
 
 
-def test_stdout_pipe_reader_closed(hooks_dir, tmp_path):
-    env = _base_env(tmp_path)
-    r, w = os.pipe()
-    os.close(r)
-    perr_r, perr_w = os.pipe()
-    try:
-        p = subprocess.Popen(
-            [sys.executable, str(hooks_dir / "session_start.py"), "SessionStart"],
-            stdin=subprocess.PIPE,
-            stdout=w,
-            stderr=perr_w,
-            env=env,
-        )
-        os.close(w)
-        os.close(perr_w)
-        w = perr_w = -1
-        p.stdin.write(b'{"session_id":"s","source":"startup"}')
-        p.stdin.close()
-        rc = p.wait(timeout=15)
-        err = os.read(perr_r, 65536)
-    finally:
-        if w != -1:
-            os.close(w)
-        if perr_w != -1:
-            os.close(perr_w)
-        os.close(perr_r)
-    _assert_clean_exit(rc, err)
-
-
-def test_stdout_fd_closed(hooks_dir, tmp_path):
-    env = _base_env(tmp_path)
-    result = subprocess.run(
-        f'exec {sys.executable} "{hooks_dir}/session_start.py" SessionStart 1>&-',
-        shell=True,
-        input="{}",
-        text=True,
-        capture_output=True,
-        env=env,
-        timeout=15,
-        check=False,
+def test_stdout_is_empty(hooks_dir, tmp_path):
+    result = _run(
+        hooks_dir, _base_env(tmp_path), '{"session_id":"s","source":"startup"}'
     )
     _assert_clean_exit(result.returncode, result.stderr)
+    assert result.stdout == ""
 
 
 # --- 壊れた標準入力 ---
@@ -128,7 +92,7 @@ def test_collect_step_failure_queues_error_row(hooks_dir, tmp_path):
 
 
 def test_readonly_state_dir(hooks_dir, tmp_path):
-    """状態ディレクトリ（`seen.json` / `queue.jsonl` の置き場所）を読み取り専用にした状態。"""
+    """状態ディレクトリ（`queue.jsonl` の置き場所）を読み取り専用にした状態。"""
     plugin_data = tmp_path / "plugin-data"
     plugin_data.mkdir(parents=True)
     plugin_data.chmod(stat.S_IRUSR | stat.S_IXUSR)

@@ -32,11 +32,6 @@ os.environ["CLAUDE_CONFIG_DIR"] = str(_SESSION_HOME / ".claude")
 sys.dont_write_bytecode = True
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
-# hook は `CLAUDE_CODE_ENTRYPOINT` が対話を示すときにお知らせの URL をブラウザで開く。
-# Claude Code の中から pytest を動かすとこの変数を継承するため、消して本物のブラウザを開かせない。
-# 子プロセスも継承する。対話を再現するテストは monkeypatch で個別に立てる。
-os.environ.pop("CLAUDE_CODE_ENTRYPOINT", None)
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "plugin" / "hooks"))
 
