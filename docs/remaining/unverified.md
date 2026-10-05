@@ -11,6 +11,13 @@
 **不合格だったとき** — 報告し、`../decisions/plugin.md` の「起動コマンドは `python3` のままにする」
 判断を見直すかを決める。
 
+### scp 形式に ref を付けた登録
+
+**確かめること** — 社内リポジトリを `git@<ホスト>:<パス>#staging` の形で `claude plugin marketplace add` に渡して登録でき、
+`staging` の版が導入されるか（`../guide/release.md` の「staging で確かめる」は `<owner>/<repo>#staging` と `https://…#staging` の形で書いている）。
+
+**完了条件** — 結果を `../knowledge/claude-code-behavior.md` に記録すること。通らなければ報告し、staging の確かめ方を決め直す。
+
 ### Bedrock での E2E
 
 **確かめること** — 会社 PC で Bedrock の認証を渡し、`pytest e2e` が要認証のモジュールを skip せずに通ること。
@@ -23,19 +30,26 @@
 
 | 事項 | 確かめること |
 | --- | --- |
-| `CLAUDE_CODE_ENTRYPOINT` の値 | 対話起動・`claude -p` それぞれで macOS と同じ `cli` / `sdk-cli` になるか |
-| `os.startfile` | 既定ブラウザが実際に開くか。コンソールウィンドウが一瞬でも出ないか |
+| お知らせの mod | 対話でバンドが出て既読のボタンが効くか。`$.store` のファイルがどこに置かれるか |
 | 起動時間 | hook の応答を体感できるほど遅らせないか |
 | 収集と送信 | 並列の hook の追記で `queue.jsonl` の行が欠けないか。切り離した送信プロセスが Claude Code の終了後も送り切るか（`start_new_session` は POSIX でしか効かない） |
 | E2E | `pytest e2e` が通るか。通らなければ、つまずいた点を `../guide/e2e.md` に反映する |
 
 **完了条件** — 結果を `../knowledge/claude-code-behavior.md` に記録すること。不合格なら報告する。
 
-## まだ観測されていない値
+## お知らせの mod の見え方
+
+実機のターミナルで確かめる（tmux では確かめられない）。結果は `../knowledge/claude-code-behavior.md` に記録する。
 
 | 事項 | 確かめること |
 | --- | --- |
-| VS Code 拡張・デスクトップアプリ・JetBrains での `CLAUDE_CODE_ENTRYPOINT` | それぞれの値と、`systemMessage` が画面に表示されるかを確かめ、`../knowledge/claude-code-behavior.md` に記録する。表示されないなら、既読にしない判定を足すかを決める |
+| リンク | バンドのリンクの文言を押して既定のブラウザが開くか（macOS の Terminal・iTerm2、Windows Terminal） |
+| OSC 8 に対応しない端末 | URL が 2 回出るか（リンクの後の薄い URL と、本体が足す URL） |
+| マウス | 全画面の描画で、実際の端末アプリ（Terminal・iTerm2・Windows Terminal）でもホイールでのスクロールとボタンのクリックが効くか |
+| managed settings がある端末 | sec-default が座った端末で、利用者の mod に `ui.render` と `$.store` が届き、バンドが出るか |
+| 入れ直し | アンインストールして入れ直したとき、`$.store` の既読が残るか |
+
+**完了条件** — 各事項の結果が記録されていること。押しても開かない・崩れるなら報告する。
 
 ## ローカルの隔離環境で再現すれば白黒が付くこと
 

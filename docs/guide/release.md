@@ -51,10 +51,13 @@ python scripts/validate.py
 - `.venv/bin/python scripts/check_settings_schema.py` が `[OK]` で終わる（`[NG]` のときの対処はスクリプトの冒頭）
 - 効果測定の対象の施策（`server/ccgov/constants.py` の `REFERENCE_KEY` / `REFERENCE_VALUE`）の値を変えたら、同じリリースでこの 2 つを差し替えた。差し替えると以前の実験は画面から消える（データは残る）。ほかの影響は `server/ccgov/constants.py` のコメントにある
 - 配布リポジトリの作業ブランチで `diff -r -x __pycache__ -x .DS_Store plugin/ ../cc-marketplace-governance-bmsd/plugins/governance/` が差分なしで終わる（このリポジトリから実行する）
-- `notices.json` の `url` は `https://` で始まり、意図したページを指している
-- `notices.json` を変えたら、「staging で確かめる」の対話の確認でお知らせが表示されることを見る（`pytest e2e` は見本の
-  `notices.json` を使うため本物の文面を通らず、壊れた JSON は黙って空になる）
-- `notices.json` のお知らせは 1 件を日本語で 600 字程度までに収めた（長い文面はファイルへ退避され、先頭しか表示されない。境界は `../knowledge/measurements.md`）
+- `notices.json` の `url` が意図したページを指している（形と `id` の重複は「プラグインを検証する」のスクリプトが見る）
+- `notices.json` の運用を守った。`id` を変えると、既読の利用者も含めて全員に再び出る（文面を直して見せ直すときだけ変える）。
+  同じ `id` のまま文面を直すと、既読の端末には出ない。消したお知らせは、未読の端末でも以後出ない（周知が済んだものから消す）。
+  並びはそのまま枠の上からの順になり、新しく導入した利用者には残っている全件が未読で並ぶ
+- `notices.json` を変えたら、「staging で確かめる」の対話の確認で、入力欄の上の枠にお知らせが崩れずに表示されることを見る
+  （`pytest e2e` も `tests/` も本物の文面を表示しない）。本文は短くし、詳細は `url` の先に置く。全画面の描画では枠に使える高さが
+  端末の約半分しかなく、超えるとスクロールになる（`../knowledge/claude-code-behavior.md`）
 - `config.json` の送信先 URL が `https://` で始まり、デプロイ済みのサーバの URL と一致している（スキームは検査されない。理由は `../decisions/plugin.md` の「受け入れている限界」）
 - `config.json` の受信トークンが、サーバの Secret ファイルの `INGEST_TOKEN` と一致している。**一致していなければ全端末の送信が 401 で跳ね返り続ける。**端末は spool を保持するが、`config.json` の `spool_max_days`・`spool_max_bytes` を超えた分は古いものから失われ、誰も気づかない
 
@@ -180,3 +183,5 @@ claude plugin update governance
 - 2026-09-28: 401 が続く間も spool の上限を超えた分は失われることを書いた
 - 2026-09-28: ロールバックで戻らないもの、列を足すときの型・実行手段・端末を先に配ったときの欠損を加え、同期の確認項目に `contract.py` を加えた
 - 2026-09-28: 章番号での参照を見出し名に替え、staging の対話起動を `e2e.md` の手動確認に寄せ、knowledge・スクリプトと重なる記述を参照に縮めた
+- 2026-10-05: `notices.json` の確認項目を、検証スクリプトの検査とお知らせの枠の表示に合わせた
+- 2026-10-07: `notices.json` の運用（`id` の変更・削除・並び）を確認項目に加え、枠の高さを全画面の描画の実測に合わせた

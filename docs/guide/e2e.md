@@ -11,7 +11,7 @@
 | --- | --- | --- | --- | --- |
 | 導入 | `e2e/test_install.py` | `e2e/test_install.py` | 不要 | 不要 |
 | 設定の配布 | `e2e/test_settings.py` | `e2e -k settings` | 不要 | 不要 |
-| お知らせ | `e2e/test_notices.py` | `e2e -k notices` | 不要 | 不要 |
+| お知らせ | `e2e/test_notices_mod.py`（mod の振る舞いは `tests/mod/`） | `e2e/test_notices_mod.py` | 不要 | 不要 |
 | 収集 | `e2e/test_collect.py` | `e2e -k collect` | 必要 | 不要 |
 | 送信 | `e2e/test_send.py` | `e2e -k send` | 不要 | 必要 |
 | 非漏洩 | `e2e/test_leak.py` | `e2e -k leak` | 必要 | 必要（陽性対照は不要） |
@@ -78,11 +78,11 @@ git source のマーケットプレイスとして導入し、cache への複製
 
 ## 手動確認の準備
 
-認証と対話が要る確認は、テストが残した隔離ルートで行う。お知らせのテストのルートは、見本の
-お知らせが未読のまま設定も適用済みなので、両モジュールの手動確認に使える。
+認証と対話が要る確認は、テストが残した隔離ルートで行う。設定の配布のテストのルートは、設定が適用済みで、
+`-p` でしか起動していないのでお知らせも未読のまま残る。設定の配布とお知らせの手動確認に使える。
 
 ```bash
-CC_E2E_KEEP=1 .venv/bin/python -m pytest e2e -k 未読 -s   # 残したルートのパスが表示される（-s が無いと出ない）
+CC_E2E_KEEP=1 .venv/bin/python -m pytest e2e -k SETが入り -s   # 残したルートのパスが表示される（-s が無いと出ない）
 cd <ルート>/project
 env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<ルート>/config <認証の変数> claude --settings '{"env":{"DISABLE_AUTOUPDATER":"1"}}'   # 対話で起動する（認証は環境変数で渡し、/login しない）
 ```
@@ -92,8 +92,8 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
   `Claude Code-credentials-<8 桁>` ができ、ルートを消しても残る。消すときは、末尾の 8 桁が消した config の項目だけを
   `security delete-generic-password -s 'Claude Code-credentials-<8 桁>'` で消す（8 桁の求め方は
   `docs/knowledge/claude-code-behavior.md`）。末尾の無い `Claude Code-credentials` は本人の認証なので消さない
-- `url` 付きの項目は、`<ルート>/config/plugins/cache/` 配下の installPath にある `notices.json` に足す。
-  git source では hook は cache から動く（`docs/knowledge/claude-code-behavior.md`）
+- お知らせを足すときは、`<ルート>/config/plugins/cache/` 配下の installPath にある `notices.json` を書き換える。
+  git source では hook も mod も cache から動く（`docs/knowledge/claude-code-behavior.md`）
 - **この `claude` を、別の Claude Code セッションの中（Bash 等）から起動しない。**起動形態を示す環境変数
   （`CLAUDECODE` 等）を継承し、判定が汚れる。`env -i` で空の環境から起動し、コマンドの最低限の変数と
   認証の変数（「認証」の節）だけを渡す。プロキシ環境では、`e2e/_root.py` の許可リストのプロキシ系の変数も渡す
@@ -103,7 +103,7 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 `installPath` の `policy.py` が `SessionStart` で隔離した `settings.json` に当たり、Claude Code 本体の
 書き込みと共存し、本体の記録に取り込まれること、`statusline.js` が `installPath` から配置されることを
-確かめる。適用の規則そのもの（`SET` / `ADD` / `REMOVE` / `ONCE`・競合・パース失敗）は `tests/` が見る。
+確かめる。無効化スイッチ（`CC_GOVERNANCE_DISABLE`）が hook まで届き、収集を止めて設定の適用を止めないことも見る。適用の規則そのもの（`SET` / `ADD` / `REMOVE` / `ONCE`・競合・パース失敗）は `tests/` が見る。
 
 ### 手動確認項目
 
@@ -125,24 +125,43 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 ## お知らせ（モジュール 3）
 
-`installPath` の `notices.json` が `SessionStart` の `systemMessage` として Claude Code に渡り、
-`claude -p` では既読にならず、無効化スイッチ（`CC_GOVERNANCE_DISABLE`）が hook まで届くことを確かめる。
-本物の `notices.json` の中身に左右されないよう、`e2e/samples/notices.json` を組み立てたコピーに重ねる。
+`pytest e2e` は、git source から導入したプラグインの mod が cache から読み込まれ、その版の `notices.json` を読めることだけを確かめる
+（`claude -p` の stream-json の `ui_log` で見る。認証は不要）。`tests/mod/` と `scripts/validate_plugin.py` は、配布物の実際の配置と
+`hooks.json` の `modules` からの読み込みを通らない。
+mod の振る舞い（全件の表示・既読のボタン・`/clear` の後・`-p` の
+`$.ui.log`・例外を外へ出さないこと・無効化スイッチ）は `tests/mod/` が `claude plugin test` で見る。
+`claude plugin test` は対象のディレクトリの中のテストを走らせ、`plugin/` は配布物でテストを置けないので、
+`tests/mod/test_mod.py` が `plugin/` を一時ディレクトリに写し、テストを足して走らせる。`claude` が PATH に無ければ skip される。
+`claude plugin test` が見るのは描いた木だけで、実際の見え方・押したときのブラウザ・マーケットプレイスからの導入は手動確認で見る。
+
+### 手元で mod を読み込むときの罠
+
+- **開発ツリーの `plugin/` を `--plugin-dir` で直接読まない。**本体が `plugin/tsconfig.json` と `plugin/.claude-plugin/types/` を書く。
+  `.gitignore` に入っているが、`scripts/validate_plugin.py` の混入の検査が名前で検出して落ちる（`*.test.ts(x)`・`node_modules` も同じ）。一時ディレクトリに写してから読み、
+  写しの `config.json` の送信先は空にする（`--plugin-dir` でも command hook が動き、送信する。「安全の約束」）
+- 型検査は任意で、写しを `--plugin-dir` で一度読ませて型定義を書かせた後、写しの中で `npx -y -p typescript@5 tsc -p .` を実行する
 
 ### 手動確認項目
 
-準備は「手動確認の準備」。`url` 付きの項目を足し、この順に行う（後の確認で既読になるため）。
+準備は「手動確認の準備」。`url` 付きと `url` の無いお知らせを 2 件以上にしてから、この順に行う（後の確認で既読になるため）。
 
-1. **`-p` では開かない**: 「手動確認の準備」と同じ起動のしかた（`env -i`・`--settings`・空の `project/`）で、`claude` に `-p ok` を付けて実行する。
-   合格: ブラウザが開かず、`<ルート>/config/plugins/data/` 配下に `seen.json` が無い
-2. **対話での見え方**: 対話で起動する。合格: 題名・本文・`詳細: <url>` がそろって表示される
-   （表示の接頭辞と長文の退避は `docs/knowledge/claude-code-behavior.md`）
-3. **URL が開くか**: 2 と同じ起動で、既定ブラウザが先頭の有効な `url` を 1 回だけ開く。合格: 開いた
-   タブが 1 つで、開き直した次のセッションではお知らせも表示されずブラウザも開かない
+1. **`-p` では既読にならない**: 「手動確認の準備」と同じ起動のしかたで、`claude` に `-p ok --output-format stream-json --verbose` を付けて実行する。
+   合格: `"subtype":"ui_log"` の行に未読のお知らせが 1 件ずつ出て、`<ルート>/config/plugins/store/` の `governance_` で始まるファイルが
+   無いか、あっても `seen:` で始まるキーが無い
+2. **対話での見え方**: 対話で起動する。合格: 入力欄の上の枠の先頭に押し方の案内があり、未読がすべて、題名の行の `[ 既読にする ]`・本文・
+   （`url` があれば）リンクの文言と薄い文字の URL のそろった形で並ぶ。80x24 の端末でも、案内と 1 件目のボタンが窓の中に見える
+   （`--settings` の JSON に `"tui":"fullscreen"` を足して全画面の描画で見る。`tui` が無いと本体が端末ごとに描画を選ぶ。
+   従来の描画（`"tui":"default"`）では窓が端末の高さまで使える）
+3. **既読のボタン**: ctrl+x tab で枠に移り、tab で 2 件目のボタンを選んで Enter を素早く 2 回押す（上下の矢印キーは枠のスクロールでボタンを選ばない）。
+   合格: 2 件目だけが消える（二度押しで次の 1 件に既読が付かない）。store のファイルに `seen:<id>` が `true` で入る。
+   全画面の描画なら、3 件目のボタンをマウスでクリックして消えることも見る
+4. **再表示の条件**: `/clear`、`/resume` で同じセッションを選ぶ、終了して `claude --resume <session_id>` で起動する、の 3 つを順に行う。
+   合格: どの後も、既読にしていないものだけが出る
+5. **リンク**: ターミナルのリンクを開く操作で、リンクの文言を押す。合格かどうかは記録だけする（未検証の事項）
 
 ### 実物でも確かめられない限界
 
-ブラウザ起動は OS に依存する観測であり、自動では確かめない。
+画面の見え方と、リンクを押してブラウザが開くかは、ターミナルに依存する観測であり、自動では確かめない。VS Code 拡張と Desktop は対象外である。
 
 ## 収集（モジュール 4）
 
@@ -235,3 +254,5 @@ DB は SQLite だけで、MySQL は確かめない。AIP の前段のリバー�
 - 2026-09-28: 手動確認で表を埋める合成データの入れ方を書いた
 - 2026-09-29: 見た目の規約の参照先を `design-system.md` にし、error 行が出る場所を刷新後の画面の語で書いた
 - 2026-09-30: CSV の取込を「データと設定」の画面で受け取る手順にし、手動確認の画面に `/settings` を加えた
+- 2026-10-05: お知らせのモジュールを、`tests/mod/` の mod のテストと手動確認にした。無効化スイッチの確認を設定の配布に移し、手動確認の準備に使うテストを替えた
+- 2026-10-07: お知らせのモジュールに配布経路の自動の確認を書き、手動確認を hotkey の無いボタン・二度押し・80x24 に合わせた。混入の検査を名前での検出に合わせた

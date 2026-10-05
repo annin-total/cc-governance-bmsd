@@ -41,14 +41,16 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 
 ### プラグインの導入（利用者向け）
 
-Claude Code の中で、次の 2 つを順に実行する。
+事前に、`claude --version` が 2.1.287 以上、`python3 --version` が 3.9 以上であることを確かめる。
+Claude Code の中で、次の 2 つを順に実行する（社内リポジトリは ssh の scp 形式で指す）。
 
 ```
-/plugin marketplace add <マーケットプレイスの URL>
+/plugin marketplace add git@<ホスト>:<パス>
 /plugin install governance@cc-marketplace-governance-bmsd
 ```
 
-Claude Code を開き直し、プロンプトの上のバンドにお知らせが表示されれば導入できている。
+ターミナルで Claude Code を開き直し、入力欄の上の枠にお知らせが表示されればお知らせの部分は動いている。
+記録と設定の適用（`python3` で動く）が動いたかは画面からは分からず、管理者が管理画面の未導入者一覧で確かめる。
 案内文の雛形と展開の進め方は [`docs/guide/onboarding.md`](docs/guide/onboarding.md)。
 
 ### 開発環境の準備

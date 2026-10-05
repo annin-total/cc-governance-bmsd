@@ -24,7 +24,7 @@ def test_非UTF8のファイルで例外が漏れない(tmp_path, fixed_policy):
     """非 UTF-8 のバイト列を含む settings.json で `parse_failed` を返し、ファイルを触らない。
 
     `UnicodeDecodeError` は `ValueError` 派生で `OSError` ではない。捕まえ損ねると
-    SessionStart のたびに例外が漏れ、お知らせも policy イベントも到達しないまま
+    SessionStart のたびに例外が漏れ、policy イベントが到達しないまま
     その端末が準拠率の分母から静かに消える。
     """
     path = tmp_path / "settings.json"

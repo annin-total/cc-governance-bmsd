@@ -6,17 +6,19 @@ Claude Code の端末プラグイン。設定の自動適用・お知らせの�
 行う。配布名は `governance`、ソースは `plugin/`。全体像と契約（`plugin/hooks/contract.py`）
 の位置づけは `system.md` にある。
 
-hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `session_start.py`
+command hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `session_start.py`
 （`SessionStart`）の 2 つだけであり、`_` 始まりの
-ファイルは内部モジュールである。ほかに利用者が呼ぶ `/governance:reapply`（入口は
-`reapply.py`）がある。端末の状態（識別子のキャッシュ・既読・送信待ち）は `${CLAUDE_PLUGIN_DATA}`
-（無ければ `~/.claude/cc-governance/`）に置く。アンインストールすると `${CLAUDE_PLUGIN_DATA}` は消え、既読と
+ファイルは内部モジュールである。ほかに、お知らせを出す mod（`notices.tsx`。`hooks.json` の `modules`）と、
+利用者が呼ぶ `/governance:reapply`（入口は `reapply.py`）がある。
+端末の状態（識別子のキャッシュ・送信待ち）は `${CLAUDE_PLUGIN_DATA}`
+（無ければ `~/.claude/cc-governance/`）に置く。アンインストールすると `${CLAUDE_PLUGIN_DATA}` は消え、
 未送信分（`queue.jsonl`・`spool/`）も失われる（上流の挙動は `../knowledge/claude-code-behavior.md`）。
+お知らせの既読だけは、本体が管理する mod の `$.store` に置く。
 
 ## 規約
 
-- hook は常に `exit 0` し、標準エラーには何も出力しない。標準出力に書くのは
-  `session_start.py` の hook JSON 出力 1 回だけである
+- command hook は常に `exit 0` し、標準出力にも標準エラーにも何も出力しない。
+  mod は例外を hook の外へ出さない
 - `tool_input` は `skill` キーだけを名指しで読む。`prompt` / `tool_response` / `message`
   には触れない
 
@@ -48,7 +50,7 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 `command_name`・`command_source`）、`tool_name`（MCP のツールはサーバ名を含む）、端末のホスト名（`host`）、`user_email` だけである。
 
 環境変数 `CC_GOVERNANCE_DISABLE` が空でないとき、**利用ログの収集とお知らせの表示**
-（ブラウザの起動を含む）を止める。設定の適用と policy イベントの記録・送信（`SessionStart` での
+を止める。設定の適用と policy イベントの記録・送信（`SessionStart` での
 送信判定）は続ける。`Stop` では送信しない。
 
 ## 蓄積と送信
@@ -128,19 +130,23 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
 
 ## お知らせの配信
 
-`plugin/notices.json`（ロジックを持たない純データ）のうち、既読集合に無いものを、hook の
-JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポーリングも使わない。
+mod（`plugin/hooks/notices.tsx`）が `plugin/notices.json`（ロジックを持たない純データの配列）を読み、
+未読をすべてプロンプトの上のバンドに並べる。サーバもポーリングも使わない。
 
-- 各項目は任意で `url` を持てる。開いてよい形（`https://` のみ等）は `plugin/hooks/_notices.py`
-  が判定し、不正な `url` は項目ではなく `url` だけを無視する。有効な `url` は本文末尾に
-  `詳細: <url>` として付く
-- 既定ブラウザで開くのは、有効な `url` を持つ未読の先頭 1 件だけであり、対話セッション
-  （`CLAUDE_CODE_ENTRYPOINT` が `cli`）かつ既読の記録に成功したときに限る。
-  対応 OS は macOS と Windows である
-- `claude -p` や Agent SDK からの起動（`CLAUDE_CODE_ENTRYPOINT` が `sdk-` 始まり）では、
-  表示はするが既読にしない
-
-表示の接頭辞と長文の退避の挙動は `../knowledge/claude-code-behavior.md` にある。
+- 各お知らせは `id`・`title`・`body` を持ち、任意で `url` と `label` を持てる。形式（`id` の一意・
+  `url` の形）は `scripts/validate_plugin.py` が検査する。mod は形の合わない要素を飛ばし、表示できない `url` は
+  お知らせではなく `url` だけを無視する。`notices.json` が読めなければ何も出さない
+- 枠の先頭に押し方の案内を 1 行出す。1 件ごとに、題名の行に「既読にする」ボタンを置き、本文・（`url` があれば）リンクと
+  薄い文字の URL を続ける。リンクの文言は `label`、無ければ既定の文言である。ボタンに hotkey は付けない（ctrl+x tab で 1 件目のボタンへ移り、tab で次のボタンへ、Enter で押す。クリックでも押せる）
+- ボタンを押してから `notices.tsx` の `PRESS_GUARD_MS` の間は、次の押下を無視する
+- 既読はボタンを押したときだけ付き、`$.store` にお知らせの `id` ごとのキーで残る。未読は描くたびに
+  `notices.json` と `$.store` から作るので、新規の起動・`/resume`・`--resume`・`/clear` の後にも出る
+- 既読は次のときに消え、`notices.json` に残っているお知らせが再び未読として出る（消えても再表示されるだけである）:
+  どのセッションも `cleanupPeriodDays` の間その store を読み書きしない、マーケットプレイス名かプラグイン名を変える
+  （store のファイル名に入る）、`CLAUDE_CONFIG_DIR` を変える（store はその下にある）。上流の仕様は `../knowledge/claude-code-behavior.md`
+- バンドには、本体と他の mod の描画も並ぶ。アンケートを出している間はバンドを譲る
+- `claude -p` では、未読を `$.ui.log`（`--output-format stream-json` の `ui_log` の行にだけ現れる）に 1 件ずつ出し、既読にしない
+- mod が読み込まれない端末と VS Code 拡張では出ない。Desktop は対象外で、出るかを確かめていない（理由は `../decisions/plugin.md`）
 
 ## 改訂履歴
 
@@ -155,3 +161,5 @@ JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポー�
 - 2026-09-28: HTTP のエラー応答での送信の打ち切りと、error 行の状態コードごとの集約を書いた
 - 2026-09-28: 本体が読めない settings.json・アンインストールで消える状態・ONCE の記録の範囲・送る値・同じ内容のバックアップを取らないことを書いた。送る値に MCP の `tool_name` を含め、収集の分岐の範囲を実装にそろえた
 - 2026-09-28: `config.json` が無いときに退避も破棄もしないことと、spool が送信先を持たないことを書いた
+- 2026-10-05: お知らせを mod のバンドで出し、ボタンで既読にする形にした。ブラウザで開く処理と `SessionStart` の標準出力を外した
+- 2026-10-07: 既読ボタンの hotkey と件数の上限を外し、ボタンの位置・押し方の案内・二度押しの無視・既読が消える条件を書いた。Desktop を確かめていない対象外とした
