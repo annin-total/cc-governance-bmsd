@@ -13,7 +13,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
-from plugin_checks import files, hooks, report, tools
+from plugin_checks import files, hooks, notices, report, tools
 
 
 def main(argv: list) -> int:
@@ -33,6 +33,7 @@ def main(argv: list) -> int:
     tools.check_upstream_validate(plugin_dir)
     files.check_all_json_parse(plugin_dir)
     files.check_all_py_syntax(plugin_dir)
+    notices.check_notices_json(plugin_dir)
     hooks.check_hooks_json_files(hooks_json, hook_commands, plugin_dir)
     files.check_no_dev_artifacts(plugin_dir)
     tools.check_no_gitignored_files(repo_root, plugin_name)
