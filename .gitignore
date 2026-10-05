@@ -30,3 +30,7 @@ Thumbs.db
 # --- scripts/ の実採取データ（実行のたびに用意する作業ディレクトリ。生データは追跡しない） ---
 /scripts/raw/
 /scripts/captured/
+
+# --- mod の型と tsconfig（本体が --plugin-dir の読み込みで書く生成物） ---
+/plugin/tsconfig.json
+/plugin/.claude-plugin/types/

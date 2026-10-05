@@ -8,23 +8,27 @@ from urllib.parse import urlsplit
 from plugin_checks.report import ng, ok
 
 _REQUIRED_STR_KEYS = ("title", "body")
-# mod は既読ボタンに a〜z を 1 つずつ振る。超えた分はボタンをキーで押せない
-_MAX_NOTICES = 26
+_URL_SCHEME = "https://"
 _URL_MAX_LENGTH = 2048
-# mod（hooks/notices.tsx）が表示しない URL の文字。空白・制御文字と、引数やシェルの区切りになりうる文字
+# mod（hooks/notices.tsx）が表示しない URL の文字。空白・制御文字と、引数やシェルの区切りになりうる文字と、
+# 角括弧（IPv6 の表記。urlsplit の扱いが Python の版で違い、mod と判定がずれる）
 _URL_FORBIDDEN_CHARS = (
-    frozenset('"<>\\^`|{}') | {chr(c) for c in range(0x21)} | {"\x7f"}
+    frozenset('"<>\\^`|{}[]') | {chr(c) for c in range(0x21)} | {"\x7f"}
 )
 
 
 def _url_ok(url: Any) -> bool:
-    """mod がリンクとして表示する URL なら真。"""
-    if not isinstance(url, str) or len(url) > _URL_MAX_LENGTH or not url.isascii():
+    """mod がリンクとして表示する URL なら真。mod と同じく小文字の `https://` で始まることを求める。"""
+    if not isinstance(url, str) or not url.startswith(_URL_SCHEME):
+        return False
+    if len(url) > _URL_MAX_LENGTH or not url.isascii():
         return False
     if any(c in _URL_FORBIDDEN_CHARS for c in url):
         return False
-    parts = urlsplit(url)
-    return parts.scheme == "https" and bool(parts.hostname)
+    try:
+        return bool(urlsplit(url).hostname)
+    except ValueError:
+        return False
 
 
 def _item_errors(item: Any, seen_ids: set) -> list:
@@ -53,7 +57,7 @@ def _item_errors(item: Any, seen_ids: set) -> list:
     return errors
 
 
-# --- notices.json: 配列・件数の上限・id の一意・title と body は必須・url は mod が表示できる形 ---
+# --- notices.json: 配列・id の一意・title と body は必須・url は mod が表示できる形 ---
 def check_notices_json(plugin_dir: Path) -> None:
     path = plugin_dir / "notices.json"
     if not path.is_file():
@@ -68,11 +72,7 @@ def check_notices_json(plugin_dir: Path) -> None:
         ng("notices.json: 配列でない")
         return
     seen_ids: set = set()
-    failed = len(data) > _MAX_NOTICES
-    if failed:
-        ng(
-            f"notices.json: {len(data)} 件ある（上限 {_MAX_NOTICES} 件。既読にしたお知らせから消す）"
-        )
+    failed = False
     for index, item in enumerate(data):
         for message in _item_errors(item, seen_ids):
             ng(f"notices.json[{index}]: {message}")

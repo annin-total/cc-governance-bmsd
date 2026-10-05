@@ -11,6 +11,13 @@ sys.path.insert(0, str(_ROOT / "scripts"))
 
 from plugin_checks import notices, report
 
+# mod のテストと共有する URL の表。定義の右辺は JSON として読める
+_URL_CASES_TS = _ROOT / "tests" / "mod" / "url_cases.ts"
+_URL_CASES_MARK = "export const URL_CASES: [unknown, boolean][] ="
+_URL_CASES = json.loads(
+    _URL_CASES_TS.read_text(encoding="utf-8").split(_URL_CASES_MARK, 1)[1]
+)
+
 _VALID = {
     "id": "n-1",
     "title": "件名",
@@ -36,9 +43,9 @@ def _check(tmp_path, monkeypatch, content) -> bool:
         [_VALID],
         [{"id": "a", "title": "t", "body": ""}],
         [{"id": "a", "title": "t", "body": "b", "url": "https://example.com"}],
-        [{"id": f"n-{i}", "title": "t", "body": "b"} for i in range(26)],
+        [{"id": f"n-{i}", "title": "t", "body": "b"} for i in range(30)],
     ],
-    ids=["empty", "full", "no_url", "url_no_label", "max_count"],
+    ids=["empty", "full", "no_url", "url_no_label", "many"],
 )
 def test_正しいnotices_jsonはOK(tmp_path, monkeypatch, content):
     assert not _check(tmp_path, monkeypatch, content)
@@ -67,7 +74,8 @@ def test_正しいnotices_jsonはOK(tmp_path, monkeypatch, content):
         [{**_VALID, "url": "https://example.com/a b"}],
         [{**_VALID, "url": "https://example.com/日本"}],
         [{**_VALID, "url": "https://example.com/" + "a" * 2048}],
-        [{"id": f"n-{i}", "title": "t", "body": "b"} for i in range(27)],
+        [{**_VALID, "url": "HTTPS://example.com/"}],
+        [{**_VALID, "url": "https://[x"}],
     ],
     ids=[
         "broken_json",
@@ -90,7 +98,8 @@ def test_正しいnotices_jsonはOK(tmp_path, monkeypatch, content):
         "url_space",
         "url_non_ascii",
         "url_too_long",
-        "too_many",
+        "url_upper_scheme",
+        "url_unclosed_bracket",
     ],
 )
 def test_壊れたnotices_jsonはNG(tmp_path, monkeypatch, content):
@@ -107,3 +116,8 @@ def test_同梱のnotices_jsonはOK(monkeypatch):
     monkeypatch.setattr(report, "FAIL", False)
     notices.check_notices_json(_ROOT / "plugin")
     assert not report.FAIL
+
+
+@pytest.mark.parametrize("url, expected", _URL_CASES)
+def test_URLの判定はmodと同じ表に従う(url, expected):
+    assert notices._url_ok(url) is expected
