@@ -7,7 +7,7 @@
 （ページごとの問い・群の期間と母集団・カード・タブの表として。今の 4 画面の記述は消す）。あわせて、実装で古くなる次の記述を直す。
 
 - `../spec/system.md`: 管理画面の数
-- `../decisions/server.md`: 受け入れている限界の「版の分布」「`/` 概況は最も重い画面」
+- `../decisions/server.md`: 受け入れている限界の「版の分布」
 - `../spec/design-system.md`: 「画面の型」（4 画面・概況の見出し）と「部品」の期間の切り替え、データと設定の入口
 - `../guide/onboarding.md`・`../guide/e2e.md`・`../guide/release.md`・`../guide/deploy-aip.md`: `/policy`・`/assets`・概況を指す箇所
 
