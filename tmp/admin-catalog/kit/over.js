@@ -26,7 +26,8 @@
   const KINDS = { ov_tally: tally, ov_duo: duo };
   function render(card, ctx) {
     const s = lookup(ctx, card.viz.src);
-    return s ? KINDS[card.viz.kind](s) : "";
+    if (!s) return "";
+    return card.viz.form && K.over5 ? K.over5.render(s, card.viz.form) : KINDS[card.viz.kind](s); // form: 案 51 の下段の型（over5.js）
   }
 
   window.KIT = Object.assign(window.KIT || {}, { over: { render, has: (kind) => kind in KINDS } });

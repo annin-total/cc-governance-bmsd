@@ -68,7 +68,7 @@
   // 概況: 群の見出しを出さず、カードを群の順に 1 つの格子へ流す。見出し「主な指標」の横に、カードの窓の期間を 1 行で
   function homeHtml(page, ctxOf, long) {
     const groups = (page.groups || []).map((g) => ({ g, ctx: ctxOf(g), cards: shownCards(g, long) })).filter((x) => x.cards.length);
-    const briefs = [...new Set(groups.map(({ g, ctx }) => fill((long ? g.longBrief : g.brief) || "", ctx)).filter(Boolean))];
+    const briefs = !K.look.get().brief ? [] : [...new Set(groups.map(({ g, ctx }) => fill((long ? g.longBrief : g.brief) || "", ctx)).filter(Boolean))]; // brief: false は期間を帯の 1 か所だけに（案 51）
     const cards = groups.flatMap(({ cards: cs, ctx }) => cs.map((c) => K.card.cardHtml(c, ctx))).join("");
     return `<div class="kpis"><section class="group home-cards" aria-label="${K.L.HOME_CARDS}"><h2 class="glabel">${K.L.HOME_CARDS}<span>${esc(briefs.join(" · "))}</span></h2>`
       + `<div class="cards">${cards}</div></section></div>`;

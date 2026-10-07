@@ -26,6 +26,7 @@
   function vizHtml(card, ctx) {
     if (!card.viz) return "";
     if (K.over.has(card.viz.kind)) return K.over.render(card, ctx);
+    if (K.viz5 && K.viz5.has(card.viz.kind)) return `<span class="k5-wrap" data-part="${esc(card.viz.part)}">${K.viz5.render(card, ctx)}</span>`; // 案 51 の部品
     return K.viz.render(card, ctx);
   }
 
@@ -37,7 +38,7 @@
     const cs = caps(card, ctx).map((c) => fill(c, ctx));
     const label = `<span>${esc(fill(card.label, ctx))}</span>`;
     const body = (card.value ? `<span class="k-value">${partsHtml(value)}<span class="u">${esc(blank ? "" : card.unit || "")}</span></span>` : "")
-      + `<span class="k-sub">${K.look.deltaHtml(card, ctx)}${partsHtml(parts(card.sub || "", ctx))}</span>`
+      + `<span class="k-sub">${K.look.deltaHtml(card, ctx)}${card.chipNote ? `<span class="chip-note">${esc(fill(card.chipNote, ctx))}</span>` : ""}${partsHtml(parts(card.sub || "", ctx))}</span>`
       + `<span class="k-viz">${vizHtml(card, ctx)}${cs.length ? `<span class="cap">${cs.map((c) => `<span>${esc(c)}</span>`).join("")}</span>` : ""}</span>`;
     const attrs = `class="card${card.wide ? " wide" : ""}" data-ref="${esc(card.ref || "")}" data-state="${state || ""}"`;
     const go = card.tab ? `<span class="go">${K.L.OPEN_LIST}</span>` : "";
