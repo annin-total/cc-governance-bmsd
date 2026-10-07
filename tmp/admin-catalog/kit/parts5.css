@@ -117,3 +117,11 @@ rect.k5-old { fill: var(--ghost); stroke: none; }
 .conc-dot { opacity: .75; stroke: var(--card); stroke-width: 1; }
 .conc-axis { stroke: var(--rule); stroke-width: 1; }
 .k5 .is-partial { opacity: var(--partial-opacity); }
+/* 組織 CSV の取り込み（pages5.js）: OI3 の月の帯と、OI4 の名簿の無い月の行 */
+.org-form { margin-top: var(--sp-m); }
+.org-band { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; margin: var(--sp-m) 0; font-size: var(--fs-xs); }
+.org-cell { display: grid; gap: var(--sp-3xs); padding: var(--sp-xs); border: 1px solid var(--rule); border-radius: var(--r-s); color: var(--muted); }
+.org-cell b { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.org-cell.is-own { background: var(--chip-up); border-color: var(--accent-2); color: var(--chip-up-ink); }
+.tscroll tr[data-own="0"] td { color: var(--muted); }
+.org-form input[type="month"] { font: inherit; font-size: var(--fs-label); padding: var(--sp-3xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--card); color: var(--ink); }

@@ -34,6 +34,8 @@
     concd: { label: "部署と割合", def: "CD1", pages: ["cost"], variants: {
       CD1: ["2 本の横棒", { concd: "CD1" }], CD2: ["マリメッコ", { concd: "CD2" }], CD3: ["ツリーマップ", { concd: "CD3" }], CD4: ["散布図", { concd: "CD4" }] } },
     concAt: { label: "集中の置き場", def: "card", pages: ["cost"], variants: { card: ["カード", { concAt: "card" }], tab: ["詳細タブ", { concAt: "tab" }] } },
+    oi: { label: "組織 CSV の取り込み", def: "OI1", pages: ["settings"], variants: {
+      OI1: ["明細と同じ形", { oi: "OI1" }], OI2: ["要約の欄", { oi: "OI2" }], OI3: ["月の帯", { oi: "OI3" }], OI4: ["全月の表", { oi: "OI4" }], OI5: ["名前から年月", { oi: "OI5" }] } },
     stale: { label: "利用明細の古さの警告", def: "W1", pages: ALL, variants: { W0: ["なし", { stale: "W0" }], W1: ["あり", { stale: "W1" }] } },
     lag: { label: "明細の遅れの見本", def: "normal", pages: ALL, variants: { normal: ["通常", { lag: "" }], lag: ["遅れ", { lag: "lag" }] } },
   };

@@ -31,7 +31,8 @@
     lag: "", // 明細の遅れの見本（lag: 最終日を数日前に見せる）
     chip: "", // 増減のチップの色の型（CH1〜CH7。"" は案 31 のまま）
     dfs: "DS1", // 部署の絞り込みの中の部品の見た目（DS1〜DS6）
-    conc: "CC1", concd: "CD1", concAt: "", // 人数とコストの割合（利用者の集中・部署・置き場 card か tab。"" はどちらも出さない）
+    conc: "CC1", concd: "CD1", concAt: "",
+    oi: "OI1", // 組織 CSV の取り込みの見せ方（OI1〜OI5。look.org のときだけ） // 人数とコストの割合（利用者の集中・部署・置き場 card か tab。"" はどちらも出さない）
   };
 
   let current = DEFAULTS;
