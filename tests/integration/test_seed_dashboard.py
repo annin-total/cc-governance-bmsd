@@ -121,9 +121,9 @@ def test_画面の全ての表と分布が埋まる(seeded):
     assert effect.event_study(
         conn, REFERENCE_KEY, REFERENCE_VALUE, EFFECT_PROVIDER, end
     )
-    for hook_event in ("PreCompact", "Stop"):
-        distribution = effect.context_distribution(conn, hook_event, starts, end)
-        assert set(distribution) == {"before", "after"}, hook_event
+    sessions = effect.session_sizes(conn, starts, end)
+    for side in ("before", "after"):
+        assert sessions[side]["sessions"] and sessions[side]["auto_sessions"], side
 
 
 def test_CSVなし_行の在るDB_下限を割る引数を扱う(tmp_path, monkeypatch):
