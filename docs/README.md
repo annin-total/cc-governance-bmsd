@@ -28,4 +28,4 @@
 | `remaining/known-issues.md` | 既知の課題（修正か判断によって完了するもの） |
 | `remaining/deploy.md` | 実行基盤に到達しないとできない確認 |
 | `remaining/distribution.md` | 社内リポジトリに到達しないとできない配布の確認と初回の作業 |
-| `remaining/admin-redesign.md` | 管理画面の作り直しの目標の構成（ページ・群・カード・タブ）と、実装の前に決めること |
+| `remaining/admin-redesign.md` | 管理画面の作り直しの目標の構成（ページ・群・カード・タブ） |
