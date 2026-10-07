@@ -52,6 +52,7 @@ $SP/venv/bin/python data/build_data.py --server $SP/server --scripts $SP/scripts
 | `p[k].r5.depts` | 部署ごと（タブ `depts`）の行。`kind`（`dept` 部の行＝部全体の合算・`section` 課の行・`unknown` 名簿に無い人）・`dept`・`section`（課の欄が空なら ""）・`users`・`cost`・`share`・`per_user_bd`。7・28 日は `prev`・`diff`・`change`・`over`（7 日は週次、28 日は月次の注意以上の人数）。部の行と不明の行の合計は `r3.cost` の人数とコストに一致する |
 | `p[k].r5.series` | 日ごとの `cost`・`users`・`bd`（営業日か）・`period`。7・28 日は前と直近の 2N 日、12 か月は 365 日 |
 | `p[k].r5.per_user` | 期間の利用者ごとの 1 人 1 営業日あたり（`values`。メールは出さない）・`median`・`mean`（`r3.cost.per_user_bd` と一致） |
+| `p[k].r5.prev_costs` | 前の期間の利用者ごとのコスト（多い順。メールは出さない。合計は `r3.cost.prev_total`）。12 か月は空 |
 | `fixed.now` | 状態のページの値（今日までの 7 日）。`period`・`match`（突き合わせの窓 `start`・`end`）・`events`・`users`・`errors`・`nulls`・`health`・`reconciliation`（`match7`）と `r3`（`silent`〔`user_delivery` の行に `dept`・`section`〕・`errors`・`nulls`・`changes`〔`events` の率・`senders`〕） |
 | `fixed.r3.forecast` | 月末の見込みの前月の実績との `change`・`state` |
 | `fixed.r3.policy` | 利用者単位の適用状況（今日までの 30 日。`start`・`end`）。`users`（`dept`・`section` つき）・`items`・`counts`・`states`・`core`・`plugin`・`versions` |

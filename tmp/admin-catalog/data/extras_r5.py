@@ -1,6 +1,7 @@
-"""第 5 弾で足す値（`p[期間].r5`）: コストのカードのグラフの部品に使う日ごとの系列と、利用者ごとの 1 人 1 営業日あたり。"""
+"""第 5 弾で足す値（`p[期間].r5`）: コストのカードのグラフの部品に使う日ごとの系列・利用者ごとの 1 人 1 営業日あたり・前の期間の利用者ごとのコスト。"""
 
 import statistics
+import sys
 
 from ccgov.metrics import business_days as bd
 
@@ -29,6 +30,17 @@ def per_user(raw, cost: dict) -> dict:
     return {"values": values, "median": statistics.median(values) if values else None, "mean": statistics.fmean(values) if values else None}
 
 
+def prev_costs(raw, cost: dict, long: bool) -> list:
+    """前の期間の利用者ごとのコスト（多い順。メールは出さない）。集中の曲線の前の期間に使う。合計は `prev_total` と一致する。12 か月は前と比べない。"""
+    if long:
+        return []
+    sql = "SELECT SUM(cost) FROM cost_daily WHERE day BETWEEN ? AND ? AND cost > 0 GROUP BY user_email"
+    out = sorted((c for (c,) in raw.execute(sql, (cost["prev_start"], cost["prev_end"]))), reverse=True)
+    if abs(sum(out) - cost["prev_total"]) > 0.01:
+        sys.exit("前の期間の利用者ごとのコストの合計が prev_total と合わない")
+    return out
+
+
 def build(raw, p: dict) -> dict:
-    c = p["r3"]["cost"]
-    return {"series": series(raw, c, p["period"]["long"]), "per_user": per_user(raw, c)}
+    c, long = p["r3"]["cost"], p["period"]["long"]
+    return {"series": series(raw, c, long), "per_user": per_user(raw, c), "prev_costs": prev_costs(raw, c, long)}

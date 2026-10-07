@@ -24,6 +24,8 @@ STICKY_JS = "Boolean(document.documentElement.dataset.sticky)"
 UNSTICK_CSS = ":root[data-sticky] .top { position: relative; }"
 TOP_JS = "window.scrollTo({ top: 0, behavior: 'instant' })"
 SCROLL, SCROLL_Y = "scroll", 600
+# 撮影ごとに localStorage を空にする（案 51 の比較のパネルは開いているかを覚えるため、前の撮影で開くと後の撮影にも写る）
+FRESH_JS = "try { localStorage.clear(); } catch (e) {}"
 # (名前, URL の問い合わせ, 押す要素)。押す要素があれば、押して移った先を撮る。要素はカンマで候補を並べ、最初に見えるものを押す
 FIRST_CARD = "main .kpis a.card[href^='?']"
 EXTRAS = (
@@ -63,6 +65,7 @@ def _settle(page) -> None:
 def _shoot(ctx, url: str, path: Path, click=None):
     """1 ページを撮り（click があれば押した後）、(エラーの一覧, 横スクロールの有無) を返す。押す要素が無ければ None。"""
     page = ctx.new_page()
+    page.add_init_script(FRESH_JS)
     errors: list = []
     page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
     page.on("pageerror", lambda e: errors.append(str(e)))
