@@ -13,7 +13,7 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 集計サーバ ◀── AI Gateway の日次 CSV（コスト）
   │
   ▼
-管理画面（概況・policy・effect・assets）
+管理画面（概況・policy・effect・activity）
 ```
 
 | ディレクトリ | 中身 |

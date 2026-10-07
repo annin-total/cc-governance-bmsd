@@ -13,7 +13,7 @@ import pytest
 from _server import BASE_PATH, CSV_DIR, DockerServer, build_context, docker
 
 _SAMPLE_CSV = Path(__file__).resolve().parent / "samples" / "cost_daily.csv"
-_PAGES = ("/", "/policy", "/effect", "/assets")
+_PAGES = ("/", "/policy", "/effect", "/activity")
 _VENDOR = Path("ccgov") / "vendor" / "contract.py"
 
 
