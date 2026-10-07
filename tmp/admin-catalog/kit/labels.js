@@ -7,6 +7,7 @@
     USER_COST_ELEVATED: { day: 50, week: 70, month: 280 }, USER_COST_HIGH: { day: 100, week: 150, month: 600 },
     REFERENCE_KEY: "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE", REFERENCE_VALUE: "60", EFFECT_PROVIDER: "aws-bedrock",
     FORECAST_MIN_BUSINESS_DAYS: 3, LONG_MONTHS: 12,
+    TABLE_FOLD_ROWS: 10, // 案 51 の一覧の折りたたみ: 初めに出す行の数の既定（表の定義の fold で上書き）
   };
   const LONG_NAME = "12 か月";
   const L = {

@@ -92,7 +92,7 @@
     const key = tab.chart ? tab.chart.key || "day" : null;
     return {
       cols, chips: cs, chipsAll: tab.chipsAll !== false, search: tab.q ? fill(tab.search || "", ctx) : "",
-      unit: tab.unit || "", empty: tab.empty,
+      unit: tab.unit || "", empty: tab.empty, fold: tab.fold,
       total: tab.chipsAll !== false || !cs.length ? rows.length : cs[0].count, source,
       rows: rows.map((r) => ({
         tags: tags(r).join(" "), q: tab.q ? fill(tab.q, r) : "", key: key ? r[key] : null, cells: cols.map((c) => cell(c, r)),
@@ -114,7 +114,7 @@
     const attrs = (r) => (r.attrs ? Object.entries(r.attrs).map(([k, v]) => ` data-${k}="${esc(v)}"`).join("") : "");
     const body = t.rows.map((r) => `<tr data-tags="${esc(r.tags)}"${attrs(r)} data-q="${esc(r.q)}"${r.key !== null && r.key !== undefined ? ` data-link="${esc(r.key)}"` : ""}>${r.cells.map((c) =>
       `<td class="c-${c.col.kind}${c.col.num ? " num" : ""}" data-v="${esc(c.sort)}">${K.cells.cell(c)}</td>`).join("")}</tr>`).join("");
-    return `${withFilters ? filtersHtml(t) : ""}<div class="tscroll"><table data-testid="${esc(id)}"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+    return `${withFilters ? filtersHtml(t) : ""}<div class="tscroll"${t.fold ? ` data-fold="${t.fold}"` : ""}><table data-testid="${esc(id)}"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
 <p class="empty" data-empty${t.rows.length ? " hidden" : ""}>${esc(t.empty || K.L.EMPTY)}</p></div>`;
   }
 

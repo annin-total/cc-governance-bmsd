@@ -27,7 +27,7 @@
     + `<p class="note">${esc(W.note)}${guess ? ` ${esc(W.guess)}` : ""}</p>`;
 
   // OI1・OI5: 取り込んだ月ごとの行
-  const byRoster = (ctx) => table({ id: "org_rosters", rows: "F[org][rosters]", cols: COLS, empty: W.empty, unit: "件" }, { ...ctx, F: { ...ctx.F, org: { ...ctx.F.org, rosters: rosters(ctx) } } });
+  const byRoster = (ctx) => table({ id: "org_rosters", rows: "F[org][rosters]", cols: COLS, empty: W.empty, unit: "件", fold: K.C.TABLE_FOLD_ROWS }, { ...ctx, F: { ...ctx.F, org: { ...ctx.F.org, rosters: rosters(ctx) } } });
 
   // OI4: 直近 12 か月のすべての月の行。名簿の無い月は使う月を薄く示す
   function byMonth(ctx) {
@@ -35,7 +35,7 @@
     const rows = [...ctx.F.org.applied].reverse().map((a) => ({ ...(have.get(a.month) || {}), month: a.month, use: a.use, own: have.has(a.month),
       using: fill(have.has(a.month) ? W.own : W.use, a) }));
     const cols = [COLS[0], { key: "using", kind: "text", label: "使う名簿", sort: null }, ...COLS.slice(1, -1)]; // 削除は名簿のある月だけにあるため、取り込んだ月の表（OI1）で行う
-    return table({ id: "org_months", rows: "R", cols, unit: "か月", rowData: (r) => ({ month: r.month, use: r.use, own: r.own ? "1" : "0" }) }, { ...ctx, R: rows });
+    return table({ id: "org_months", rows: "R", cols, unit: "か月", fold: K.C.TABLE_FOLD_ROWS, rowData: (r) => ({ month: r.month, use: r.use, own: r.own ? "1" : "0" }) }, { ...ctx, R: rows });
   }
 
   // OI3: 直近 12 か月のマス。名簿のある月を塗り、無い月に使う月を示す
@@ -63,6 +63,32 @@
     const m = MONTH_FROM_NAME.exec(e.target.files[0].name);
     if (m) e.target.closest("form").querySelector("[data-org-month]").value = `${m[1]}-${m[2]}`;
   });
+
+  // 一覧の折りたたみ（fold5.js）: 取り込んだファイル・書き出しの月・サマリーの一覧に、初めに出す行の数を渡す（表ごとに変えられる）
+  const FOLDS = { csv_files: K.C.TABLE_FOLD_ROWS, months: K.C.TABLE_FOLD_ROWS, summaries: K.C.TABLE_FOLD_ROWS };
+  for (const page of window.CATALOG.sectionPages) {
+    for (const b of page.sections.flatMap((s) => s.blocks)) {
+      const id = b.tab ? b.tab.id : b.kind;
+      if (id in FOLDS) Object.assign(b.tab || b, { fold: FOLDS[id] });
+    }
+  }
+
+  // 行の多い見本（look.rows が many）: 取り込んだファイル・名簿・サマリーを増やし、折りたたみが見える状態にする。名簿の適用は同じ決まりで数え直す
+  const SAMPLE = { files: 14, rosters: 12, summaries: 12 };
+  const apply = (months, shown) => shown.map((m) => { const before = months.filter((x) => x <= m); return { month: m, use: before.length ? Math.max(...before) : Math.min(...months.filter((x) => x > m)) }; });
+  const monthBack = (day, n) => { const d = new Date(day * 86400000); return Math.round(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - n, 1) / 86400000); };
+  K.prepares = [...(K.prepares || []), () => {
+    if (K.look.get().rows !== "many" || !K.look.get().org) return;
+    const F = window.DATA.fixed, org = F.org, first = Math.min(...org.rosters.map((r) => r.month));
+    F.settings.files.files.push(...Array.from({ length: SAMPLE.files }, (_, i) => { const m = monthBack(window.DATA.meta.csv_end, i + 1);
+      return { source_file: `cost_${K.ym(m)}.csv`, first: m, last: monthBack(window.DATA.meta.csv_end, i) - 1, bytes: null }; }));
+    org.rosters.push(...Array.from({ length: SAMPLE.rosters }, (_, i) => { const m = monthBack(first, i + 1);
+      return { ...org.rosters[0], month: m, file: `org_${K.ym(m).replace("-", "")}.csv`, imported: monthBack(m, -1) }; }));
+    org.applied = apply(org.rosters.map((r) => r.month), org.applied.map((a) => a.month));
+    const s = F.r3.summaries, last = s[s.length - 1];
+    s.push(...Array.from({ length: SAMPLE.summaries }, (_, i) => { const asof = last.asof - 7 * (i + 1);
+      return { ...last, id: `x${i}`, asof, created: asof, updated: asof, title: K.summary.titleOf(asof) }; }));
+  }];
 
   const settings = window.CATALOG.sectionPages.find((p) => p.id === "settings");
   const at = settings.sections.findIndex((s) => s.id === "import") + 1;

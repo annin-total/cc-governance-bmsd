@@ -36,6 +36,7 @@
     SUM_HEAD: "サマリー", SUM_MORE: "これまでのサマリー", SUM_META: "対象 {from:md}〜{asof:md} · 作成 {created:md}",
     OVER_MOVE: "注意→要確認 {up} · 要確認→注意 {down}", OVER_WORSE: "悪化 {} 人", OVER_BETTER: "改善 {} 人",
     OVER_IN: "新規 {} 人", OVER_OUT: "離脱 {} 人", OVER_DIFF: "{} 人", OVER_TABLE: { head: "前＼今", ok: "正常", warn: "注意", ng: "要確認" },
+    FOLD_MORE: "さらに表示（残り {} 件）", FOLD_CLOSE: "閉じる",
     CMP_OPEN: "☰ 比較", CMP_TITLE: "比較用の切り替え", CMP_COPY: "この組み合わせの URL をコピー", CMP_COPIED: "コピーしました", CMP_RESET: "既定に戻す",
   });
 })();

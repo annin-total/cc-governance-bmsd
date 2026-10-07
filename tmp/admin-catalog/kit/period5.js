@@ -60,5 +60,6 @@
     return `<a class="stale" href="${esc(K.basedate.keep("?page=collect"))}" data-stale>${esc(fill(K.L.STALE, s))}</a>`;
   }
 
-  Object.assign(K.basedate, { display, stale, fresh, span, prepare });
+  Object.assign(K.basedate, { display, stale, fresh, span });
+  K.prepares = [...(K.prepares || []), prepare];
 })();

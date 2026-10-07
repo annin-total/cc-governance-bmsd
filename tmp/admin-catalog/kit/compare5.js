@@ -37,10 +37,11 @@
     y12: { label: "12 か月の前の年", def: "none", pages: ["home", "cost"], variants: { none: ["比べない", { y12: "" }], prev: ["前の 12 か月を並べる", { y12: "prev" }] } },
     oi: { label: "組織 CSV の取り込み", def: "OI1", pages: ["settings"], variants: {
       OI1: ["明細と同じ形", { oi: "OI1" }], OI2: ["要約の欄", { oi: "OI2" }], OI3: ["月の帯", { oi: "OI3" }], OI4: ["全月の表", { oi: "OI4" }], OI5: ["名前から年月", { oi: "OI5" }] } },
+    rows: { label: "一覧の行の見本", def: "normal", pages: ["settings", "summary"], variants: { normal: ["通常", { rows: "" }], many: ["行の多い見本", { rows: "many" }] } },
     stale: { label: "利用明細の古さの警告", def: "W1", pages: ALL, variants: { W0: ["なし", { stale: "W0" }], W1: ["あり", { stale: "W1" }] } },
     lag: { label: "明細の遅れの見本", def: "normal", pages: ALL, variants: { normal: ["通常", { lag: "" }], lag: ["遅れ", { lag: "lag" }] } },
   };
-  const NO_ID = ["normal", "lag", "card", "tab", "none", "prev"]; // 値の名前だけで分かるもの（記号を前に付けない）
+  const NO_ID = ["normal", "lag", "card", "tab", "none", "prev", "many"]; // 値の名前だけで分かるもの（記号を前に付けない）
   const KEY = (param) => `kit5-${param}`;
   const OPEN_KEY = "kit5-compare-open";
   const store = (s, fn) => { try { return fn(s()); } catch (e) { return null; } }; // 覚えられなくても動く（読めなければ null）

@@ -97,7 +97,7 @@
   function build(ia) {
     // compare: 比較用の切り替え（true は compare.js の右上の帯、"r5" は compare5.js の右下のパネル）
     KIT.look.set(ia.compare === "r5" ? KIT.compare5.look(ia.look) : ia.compare ? KIT.compare.look(ia.look) : ia.look);
-    if (KIT.basedate.prepare) KIT.basedate.prepare();
+    (KIT.prepares || []).forEach((f) => f()); // 案 51 の見本の差し替え（look が決まった後、描く前。period5.js・pages5.js）
     const normal = ia.pages.filter((p) => !p.home).map(page);
     const pages = ia.pages.map((p) => (p.home ? home(p, normal) : normal.find((x) => x.id === p.id)));
     return { ...ia, pages: [...pages, ...sectionPages] };

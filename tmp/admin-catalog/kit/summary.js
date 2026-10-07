@@ -58,11 +58,11 @@
       + `<a class="glink" href="${esc(K.basedate.keep("?page=summary"))}">${W.list}</a></h2><div class="panel sum-panel"><p class="sum-body">${esc(bodyOf(s))}</p></div></section>`;
   }
 
-  function list() {
+  function list(b = {}) {
     const rows = all().map((s) => `<details class="m-item"><summary class="m-row"><span class="m-month">${esc(K.day(s.created))}</span><span class="sum-name">${esc(s.title)}</span>`
       + `<span class="num">${esc(K.md(s.asof))}</span><span class="num">${esc(K.day(s.updated))}</span><a class="btn-sub" href="${esc(K.basedate.keep(`?page=summary_edit&id=${s.id}`))}">${W.edit}</a></summary>`
       + `<p class="sum-body sum-open">${esc(bodyOf(s))}</p></details>`).join("");
-    return `<div class="months sum-list" data-testid="summaries"><div class="m-row m-head">${W.head.map((h, i) => `<span${i > 1 && i < 4 ? ' class="num"' : ""}>${esc(h)}</span>`).join("")}</div>${rows}</div>`
+    return `<div class="months sum-list" data-testid="summaries"${b.fold ? ` data-fold="${b.fold}"` : ""}><div class="m-row m-head">${W.head.map((h, i) => `<span${i > 1 && i < 4 ? ' class="num"' : ""}>${esc(h)}</span>`).join("")}</div>${rows}</div>`
       + (all().length ? "" : `<p class="empty">${W.empty}</p>`);
   }
 
