@@ -22,11 +22,9 @@ import check_screen  # noqa: E402
 PERIODS = ("7", "28", "12m")
 IA_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods), home: Boolean(p.home), over: (p.groups || []).some((g) => g.cards.some((c) => /^over_/.test(c.ref))) }))"
 REFS_JS = "Array.from(document.querySelectorAll('main .card[data-ref]')).map((c) => c.dataset.ref)"
-# 基準を超えた利用者: 期間ごとに出してよい区分（7 日＝日次・週次、28 日＝月次、12 か月は出さない）。区分を 1 枚にまとめたカードは行の見出しで見る
+# 基準を超えた利用者: 期間ごとに出してよい区分（7 日＝日次・週次、28 日＝月次、12 か月は出さない）
 OVER_SPANS = {"7": {"day", "week"}, "28": {"month"}, "12m": set()}
 OVER_REF = re.compile(r"^over_(day|week|month)")
-OVER_ROWS_JS = "Array.from(document.querySelectorAll('main .card[data-ref=over_rows] .srow > span:first-child')).map((s) => s.textContent)"
-OVER_ROW_SPAN = {"日次": "day", "週次": "week", "月次": "month"}
 CATALOG_JS = "({ cards: Object.keys(window.CATALOG.K), tabs: Object.values(window.CATALOG.T).flatMap((t) => [t.id, (t.long || {}).id]).filter(Boolean) })"
 
 
@@ -58,7 +56,7 @@ def _dom(idea: Path) -> list:
                 dup = [k for k, n in Counter(refs).items() if n > 1]
                 if dup:
                     problems.append(f"{pg['id']} {period or ''}: 同じカードが 2 回: {dup}")
-                spans = {m.group(1) for m in map(OVER_REF.match, refs) if m} | {OVER_ROW_SPAN[t] for t in page.evaluate(OVER_ROWS_JS)}
+                spans = {m.group(1) for m in map(OVER_REF.match, refs) if m}
                 if period and spans != (OVER_SPANS[period] if pg["over"] else set()):
                     problems.append(f"{pg['id']} {period}: 基準を超えた利用者の区分が期間に合わない: {sorted(spans)}")
         browser.close()

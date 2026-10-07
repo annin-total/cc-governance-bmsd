@@ -1,5 +1,5 @@
 "use strict";
-// 上段のカード（サーバの components/card.html の写しに、状態の札・増減のチップ・行ごとの札を足したもの）。
+// 上段のカード（サーバの components/card.html の写しに、状態の札・増減のチップを足したもの）。
 // 押した先: 同じページでは data-open（app.js がタブを開く）、概況では href（専用ページのタブへ移る）。
 (() => {
   const K = window.KIT;
@@ -23,19 +23,9 @@
     return card.href !== undefined ? `href="${esc(`${card.href}#${hash}`)}"` : `href="#${esc(card.tab)}" data-open="${esc(hash)}"`;
   };
 
-  // 行ごとの札を持つ内訳（まとめたカード）: 見出し・値・札。moves があれば行の下に新規・離脱のチップ
-  function stateRows(card, ctx) {
-    return `<span class="srows">${card.viz.rows.filter(K.page.fits).map((r) => {
-      const t = r.state ? lookup(ctx, r.state) || "" : "";
-      const moves = r.moves ? K.over.moves(lookup(ctx, r.moves)) : "";
-      return `<span class="srow"><span>${esc(fill(r.label, ctx))}</span><b class="num">${esc(fill(r.value, ctx))}</b><span>${K.look.stateHtml(t)}</span>${moves}</span>`;
-    }).join("")}</span>`;
-  }
-
   function vizHtml(card, ctx) {
     if (!card.viz) return "";
     if (K.over.has(card.viz.kind)) return K.over.render(card, ctx);
-    if (card.viz.kind === "staterows") return stateRows(card, ctx);
     return K.viz.render(card, ctx);
   }
 
@@ -47,7 +37,7 @@
     const cs = caps(card, ctx).map((c) => fill(c, ctx));
     const label = `<span>${esc(fill(card.label, ctx))}</span>`;
     const body = (card.value ? `<span class="k-value">${partsHtml(value)}<span class="u">${esc(blank ? "" : card.unit || "")}</span></span>` : "")
-      + `<span class="k-sub">${K.look.deltaHtml(card, ctx)}${partsHtml(parts(K.look.subOf(card), ctx))}</span>`
+      + `<span class="k-sub">${K.look.deltaHtml(card, ctx)}${partsHtml(parts(card.sub || "", ctx))}</span>`
       + `<span class="k-viz">${vizHtml(card, ctx)}${cs.length ? `<span class="cap">${cs.map((c) => `<span>${esc(c)}</span>`).join("")}</span>` : ""}</span>`;
     const attrs = `class="card${card.wide ? " wide" : ""}" data-ref="${esc(card.ref || "")}" data-state="${state || ""}"`;
     const go = card.tab ? `<span class="go">${K.L.OPEN_LIST}</span>` : "";

@@ -36,7 +36,7 @@
     const has = (page.groups || []).some((g) => g.cards.some((c) => c.state));
     if (!has) return "";
     const L = K.L;
-    return `<div class="chipbar state-filter" role="group" aria-label="${L.STATE_FILTER_NAV}" data-state-filter="${K.look.get().filter}">`
+    return `<div class="chipbar state-filter" role="group" aria-label="${L.STATE_FILTER_NAV}" data-state-filter>`
       + Object.entries(L.STATE_FILTER).map(([id, label], i) => `<button type="button" data-filter="${id}" aria-pressed="${i === 0}">${id !== "all" ? `<i class="dot ${id}"></i>` : ""}${esc(label)}</button>`).join("") + "</div>";
   }
 

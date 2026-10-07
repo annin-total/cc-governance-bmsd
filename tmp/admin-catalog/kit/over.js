@@ -19,36 +19,15 @@
   const tally = (s) => moves(s) + `<span class="ov-tally">${TONES.map((t) =>
     `<span class="ov-cell"><span class="ov-name">${esc(L().STATE[t])}</span>${count(s, t)}${prevText(s[`prev_${t}`])}</span>`).join("")}</span>`;
 
-  // 案 32: 要確認と注意を別々の大きな数字で並べる
+  // 要確認と注意を別々の大きな数字で並べる（案 51）
   const duo = (s) => `<span class="ov-duo">${TONES.map((t) =>
     `<span class="ov-big"><span class="ov-name">${esc(L().STATE[t])}</span><span class="k-value">${K.num(s[t])}<span class="u">人</span></span>${prevText(s[`prev_${t}`])}</span>`).join("")}</span>` + moves(s);
 
-  // 案 34: 該当者の上位 3 人（利用者・金額・札）
-  const top = (s) => moves(s) + `<span class="ov-top">${s.top.map((r) =>
-    `<span class="ov-trow"><span class="ov-mail">${esc(r.email)}</span><span class="num">${esc(K.usd(r.value))}</span>${K.look.stateHtml(r.state)}</span>`).join("")}</span>`;
-
-  // 案 35: 要確認・注意それぞれの前と今の横棒（軸は組ごと）
-  function bars(s) {
-    const pair = (t) => {
-      const top = Math.max(1, s[t], s[`prev_${t}`]);
-      const bar = (n, label, ghost) => `<span class="ov-bar"><span>${esc(label)}</span>${K.viz.hbar(K.geo.pct(n, top), ghost ? "ghost" : "")}<span class="num">${K.num(n)} 人</span></span>`;
-      return `<span class="ov-pair"><span class="ov-name">${esc(L().STATE[t])}</span>${bar(s[`prev_${t}`], L().OVER_PREV_SHORT, true)}${bar(s[t], L().OVER_NOW_SHORT, false)}</span>`;
-    };
-    return moves(s) + `<span class="ov-bars">${TONES.map(pair).join("")}</span>`;
-  }
-
-  // 案 36: 利用者全体を要確認・注意・正常で分けた 1 本の帯（人数の割合）
-  function band(s) {
-    const parts = [["ng", s.ng], ["warn", s.warn], ["ok", s.ok]];
-    return moves(s) + `<span class="stack ov-band">${parts.map(([t, n]) => `<i class="ov-${t}" style="flex: ${n}"></i>`).join("")}</span>`
-      + `<span class="legend">${parts.map(([t, n]) => `<span><i class="ov-${t}"></i>${esc(L().STATE[t])} ${K.num(n)}</span>`).join("")}</span>`;
-  }
-
-  const KINDS = { ov_tally: tally, ov_duo: duo, ov_top: top, ov_bars: bars, ov_band: band };
+  const KINDS = { ov_tally: tally, ov_duo: duo };
   function render(card, ctx) {
     const s = lookup(ctx, card.viz.src);
     return s ? KINDS[card.viz.kind](s) : "";
   }
 
-  window.KIT = Object.assign(window.KIT || {}, { over: { render, has: (kind) => kind in KINDS, moves } });
+  window.KIT = Object.assign(window.KIT || {}, { over: { render, has: (kind) => kind in KINDS } });
 })();

@@ -76,7 +76,7 @@ ${g.prev ? `<polyline class="fc-cum-prev" points="${g.prev}" vector-effect="non-
       const mark = v.mark ? `<span class="rmark">${K.look.stateHtml(r[v.mark])}</span>` : "";
       return `<span class="rate"><span>${esc(label)}</span>${hbar(K.geo.pct(r[field], top))}${right}${mark}</span>`;
     }).join("");
-    return `<span class="rates${wide ? " wide" : ""}${v.mark ? " marks" : ""}${v.cls ? ` ${v.cls}` : ""}">${body}</span>`;
+    return `<span class="rates${wide ? " wide" : ""}${v.mark ? " marks" : ""}">${body}</span>`;
   }
 
   function render(card, ctx) {

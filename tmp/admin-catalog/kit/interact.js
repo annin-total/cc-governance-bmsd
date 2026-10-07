@@ -5,8 +5,8 @@
   const all = (root, sel) => Array.from(root.querySelectorAll(sel));
   const MATCH = { all: () => true, warn: (s) => s === "warn" || s === "ng", ng: (s) => s === "ng" };
 
+  // 該当しないカードを薄くし、カードがすべて該当しない群も薄くする
   function applyFilter(bar, id) {
-    const mode = bar.dataset.stateFilter;
     const ok = MATCH[id] || MATCH.all;
     for (const b of all(bar, "[data-filter]")) b.setAttribute("aria-pressed", String(b.dataset.filter === id));
     for (const g of all(document, "main .group")) {
@@ -15,12 +15,9 @@
       for (const c of cards) {
         const hit = ok(c.dataset.state);
         shown += hit;
-        c.classList.toggle("is-dim", !hit && mode === "dim");
-        c.hidden = !hit && mode === "hide";
+        c.classList.toggle("is-dim", !hit);
       }
-      const none = cards.length > 0 && shown === 0;
-      g.classList.toggle("is-dim", none && mode === "dim");
-      g.hidden = none && mode === "hide";
+      g.classList.toggle("is-dim", cards.length > 0 && shown === 0);
     }
     const url = new URL(location.href);
     if (id === "all") url.searchParams.delete("filter"); else url.searchParams.set("filter", id);

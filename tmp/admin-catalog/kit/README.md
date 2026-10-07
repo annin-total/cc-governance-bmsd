@@ -12,7 +12,7 @@
   const { build } = window.CATALOG;
   window.IA = build({
     id: "NN-slug", name: "案 NN 名前",
-    look: { delta: { arrow: true, color: "better" }, filter: "hide" },   // 省略すると既定（案 31）
+    look: { delta: { arrow: true, color: "better" } },   // 省略すると既定（案 31）
     pages: [
       { id: "home", title: "概況", home: true, summary: true, lead: "…",
         groups: [["コスト", ["cost", "per_user_bd"]], ["設定の適用", ["all_applied", "off_users"]]] },
@@ -38,25 +38,18 @@
 | `delta.color` | `"tone"` / `"better"` / `"none"` | 増減のチップの色。tone: 改善＝青・悪化＝濃い灰の太字・中立＝薄い灰。better: 改善だけ青 |
 | `delta.arrow` | `false` | ▲▼ を付ける |
 | `delta.word` | `false` | 「改善」「悪化」を値の後ろに添える |
-| `delta.worseOnly` | `false` | 悪化だけチップにし、改善と中立は地の文字 |
-| `delta.prev` | `false` | 前の値を添える（「+12.3%（前 $1,040）」） |
 | `delta.palette` | `""` | 比較用の色の組（`br` 青と赤・`gr` 緑と赤・`blue` 青だけ。`compare.js` が選ぶ） |
-| `okMark` | `false` | 正常にも灰の「正常」の札 |
-| `filter` | `"dim"` / `"hide"` | 状態の絞り込みで該当しないカードを薄くするか隠すか |
 | `pack` | `true` | 窓の違う小さな群（カード 2 列以下）が続くとき、4 列に収まるだけ 1 行に並べる。群ごとに見出しと期間の注記を持つ。`false` で 1 群 1 行（専用ページ） |
 | `asofAt` | `"header"` / `"page"` / `"range"` / `"step"` | 基準日の置き場（`basedate.js`）。header: ヘッダーの「時点」を日付の指定に置き換える。page: ページ内の期間のタブの前。range: 期間のタブの後ろの期間の表示を押すと日付を選ぶ。step: header に前後の送り（7 日、28 日のタブでは 28 日） |
 | `fs` | `"F5"` / `"F6"` / `"F7"` | 文字の大きさの段の組。F5 は `static/tokens.css`、ほかは `compare.css` |
 
-案ごとに分ける・まとめるカードも目録にある: `cost_total`・`per_bd`（案 32）、
-`users_all`・`calls_all`・`session_all`・`applied_all`・`outdated_all`・`over_rows`（案 33。内訳は行ごとの札を持つ `staterows`）。
-基準を超えた利用者（`catalog_over.js`）は区分ごとの `over_day`・`over_week`・`over_month` と、見せ方の変種 `over_<区分>_duo`（案 32）・`_top`（案 34）・`_bars`（案 35）・`_band`（案 36）。
+合計と 1 営業日あたりを別にしたカード `cost_total`・`per_bd` も目録にある（案 51）。
+基準を超えた利用者（`catalog_over.js`）は区分ごとの `over_day`・`over_week`・`over_month` と、要確認と注意を 2 つの大きな数字で並べる `over_<区分>_duo`（案 51）。
 カード・列・絞り込みの `only: ["7"]` は出す期間を限る（12 か月で出さないのは `long` を持たないこと）。12 か月の群の注記の理由はカードの `longWhy`。
 案の `compare: true` は比較用の切り替え（`compare.js`）を画面の右上に出す（案 31）。チップの見せ方 `?chips=A|B|C|D`・文字の大きさ `?fs=F5|F6|F7`・基準日の置き場 `?base=P1|P2|P3|P4`。
 
-- 札と「一覧」の入口は両方出す（並ぶときの入口は矢印だけ）。`delta.prev` のときは添える数字から前の値を抜く。矢印は中立に付けない
+- 札と「一覧」の入口は両方出す（並ぶときの入口は矢印だけ）。状態の絞り込みは該当しないカードを薄くする。矢印は中立に付けない
 - 案のフォルダに `shots.json`（`[[名前, 問い合わせ, 押す要素], …]`）を置くと、撮影の追加分に足す。`[名前, null, null]` はその撮影をこの案では撮らない。定義した撮影が撮れないとき・定義に無い画像が `shots/` に残るときは失敗にする
-案 34 の部品: `top_spenders_diff`（内訳に前との差）・タブ `user_all`（`replaces` で `user_cost`・`user_use`・`user_calls` を開く先として置き換える。列の上の段は `bands: [[見出し, 列数]]`）。
-ページの `borrow: [タブ id]` は、ページに開く先の無いカードを押したとき、そのタブを持つ別のページへ期間と基準日を引き継いで移す。
 
 ## 撮影と検査
 

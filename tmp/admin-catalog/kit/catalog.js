@@ -37,14 +37,11 @@
   }
 
   // カードの tabs（候補）から、ページにある最初のタブを開く先にする。無ければ押せないカード
-  // alias: タブの replaces（置き換えたタブの id → 置き換えたタブ）。away: 他のページのタブ（borrow）の id → そのページの URL
-  function resolve(card, ids, alias = {}, away = {}) {
+  function resolve(card, ids) {
     const { tabs, ...out } = card;
-    const want = (tabs || []).map((t) => (ids.includes(t) ? t : alias[t] || t));
-    const hit = want.find((t) => ids.includes(t));
-    const far = hit ? null : want.find((t) => t in away);
-    if (hit) out.tab = hit; else if (far) Object.assign(out, { tab: far, href: away[far] }); else delete out.chip;
-    if (card.long && card.long !== SAME) out.long = resolve(card.long, ids, alias, away);
+    const hit = (tabs || []).find((t) => ids.includes(t));
+    if (hit) out.tab = hit; else delete out.chip;
+    if (card.long && card.long !== SAME) out.long = resolve(card.long, ids);
     return out;
   }
 
@@ -53,22 +50,13 @@
     ids.forEach((id) => { if (seen.has(id)) fail(`${where} に同じカードが 2 回ある: ${id}`); seen.add(id); });
   }
 
-  function aliases(ids) {
-    return Object.fromEntries(ids.flatMap((id) => ((T[id] || {}).replaces || []).map((r) => [r, id])));
-  }
-
-  // ページ { id, title, lead, periods, groups: [群], tabs: [id], borrow: [他のページのタブ id] }。
-  // borrow のタブは、ページに開く先の無いカードを押したとき、持ち主のページへ期間と基準日を引き継いで開く
-  function page(def, defs = []) {
+  // ページ { id, title, lead, periods, groups: [群], tabs: [id] }
+  function page(def) {
     const all = (def.tabs || []).map(tabOf).filter((t) => !t.longOnly || LONG);
     const shown = (t) => !LONG || Boolean(t.long);
     const tabs = [...all.filter(shown), ...all.filter((t) => !shown(t))]; // 12 か月では出るタブを先に開く
     const ids = tabs.map((t) => (LONG && t.long && t.long !== SAME ? t.long.id : t.id));
-    const owner = (id) => defs.find((d) => !d.home && d !== def && (d.tabs || []).includes(id));
-    (def.borrow || []).forEach((id) => { if (!owner(id)) fail(`ページ ${def.id} の borrow のタブ ${id} がほかのページに無い`); });
-    const away = Object.fromEntries((def.borrow || []).filter(owner).map((id) => [id, pageHref(owner(id))]));
-    const alias = aliases([...ids, ...Object.keys(away)]);
-    const groups = (def.groups || []).map(group).map((g) => ({ ...g, cards: g.cards.map((c) => resolve(c, ids, alias, away)) }));
+    const groups = (def.groups || []).map(group).map((g) => ({ ...g, cards: g.cards.map((c) => resolve(c, ids)) }));
     noDuplicates(`ページ ${def.id}`, groups.flatMap((g) => g.cards.map((c) => c.ref)));
     return { ...def, tabs, groups };
   }
@@ -100,7 +88,7 @@
   // 案 { id, name, look, pages: [概況とページ] }。サマリーとデータと設定のページは末尾に足す
   function build(ia) {
     KIT.look.set(ia.compare ? KIT.compare.look(ia.look) : ia.look); // compare: 比較用の切り替え（compare.js）
-    const normal = ia.pages.filter((p) => !p.home).map((p) => page(p, ia.pages));
+    const normal = ia.pages.filter((p) => !p.home).map(page);
     const pages = ia.pages.map((p) => (p.home ? home(p, normal) : normal.find((x) => x.id === p.id)));
     return { ...ia, pages: [...pages, ...sectionPages] };
   }
