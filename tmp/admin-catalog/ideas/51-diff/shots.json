@@ -58,4 +58,14 @@
  ["cmp-concd-CD3", "?page=cost&concd=CD3", null],
  ["cmp-concd-CD4", "?page=cost&concd=CD4", null],
  ["cmp-concAt-tab", "?page=cost&concAt=tab#conc", null],
- ["cmp-concAt-tab-CC3-CD3", "?page=cost&concAt=tab&conc=CC3&concd=CD3#conc", null]]
+ ["cmp-concAt-tab-CC3-CD3", "?page=cost&concAt=tab&conc=CC3&concd=CD3#conc", null],
+ ["cmp-dfs-DS7", "?page=cost&dfs=DS7&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", "#user_cost [data-df-toggle]"],
+ ["cmp-dfs-DS7-F1", "?page=cost&df=F1&dfs=DS7&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", null],
+ ["cmp-dfs-DS8", "?page=cost&dfs=DS8&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", "#user_cost [data-df-toggle]"],
+ ["cmp-dfs-DS8-F1", "?page=cost&df=F1&dfs=DS8&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", null],
+ ["cmp-dfs-DS9", "?page=cost&dfs=DS9&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", "#user_cost [data-df-toggle]"],
+ ["cmp-dfs-DS9-F1", "?page=cost&df=F1&dfs=DS9&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", null],
+ ["cmp-oi-OI2", "?page=settings&oi=OI2", null],
+ ["cmp-oi-OI3", "?page=settings&oi=OI3", null],
+ ["cmp-oi-OI4", "?page=settings&oi=OI4", null],
+ ["cmp-oi-OI5", "?page=settings&oi=OI5", null]]
