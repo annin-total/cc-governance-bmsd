@@ -82,11 +82,28 @@ MONTHS_JS = """Array.from(document.querySelectorAll('main .card svg[data-months]
 MONTH_CARDS = {"cost_total", "per_bd", "billed_users"}  # 12 か月で、どの K の型でも暦月の棒になるカード（per_user_bd は K4〜K6 で分布）
 
 
-def months12(page, base: str, data: dict) -> list:
-    """12 か月の暦月の棒は、前の 12 か月と直近の 12 か月を同じ軸に持ち、色が 2 つ。"""
-    out, n = [], len(data["p"]["12m"]["r5"]["months"])
+CHIP_SEL = "main .card:not([data-ref=forecast]) .change"  # 月末の見込みは期間に依らず前月と比べる
+OLD_JS = "Array.from(document.querySelectorAll('main .card[data-ref] .bar-old, main .card[data-ref] .k5-old, main .card[data-ref] .k5-shadow')).map((e) => e.closest('.card').dataset.ref)"
+
+
+def long_no_prev(page, base: str) -> list:
+    """既定（y12 なし）の 12 か月は前の期間と比べない: どの K の型でも、カードのグラフに前の区間（灰の棒・前の線・影）が無く、チップが無い。"""
+    out = []
     for k in CHARTS:
         goto(page, f"{base}?page=cost&period=12m&chart={k}")
+        old, chips = sorted(set(page.evaluate(OLD_JS))), page.locator(CHIP_SEL).count()
+        if old or chips:
+            out.append(f"{k} 12 か月: 前の区間を持つカード {old} か、チップ {chips} がある")
+    return out
+
+
+def months12(page, base: str, data: dict) -> list:
+    """y12=prev の 12 か月の暦月の棒は、前の 12 か月と直近の 12 か月を同じ軸に持ち、色が 2 つ。チップは出さない。"""
+    out, n = [], len(data["p"]["12m"]["r5"]["months"])
+    for k in CHARTS:
+        goto(page, f"{base}?page=cost&period=12m&chart={k}&y12=prev")
+        if page.locator(CHIP_SEL).count():
+            out.append(f"{k} 12 か月 y12=prev: チップがある")
         got = {ref: (bars, colors) for ref, bars, colors in page.evaluate(MONTHS_JS)}
         refs = MONTH_CARDS - ({"cost_total"} if CHARTS[k][0] == "grid" else set())  # マス目は 12 か月も日の濃淡のまま
         out += [f"{k} 12 か月 {r}: 前の 12 か月と並べた暦月の棒が無いか、色が 2 つでない（{got.get(r)}）" for r in refs if got.get(r) != (n, 2)]
