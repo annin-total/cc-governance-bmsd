@@ -54,6 +54,7 @@
  ["cmp-conc-CC2", "?page=cost&conc=CC2", null],
  ["cmp-conc-CC3", "?page=cost&conc=CC3", null],
  ["cmp-conc-CC4", "?page=cost&conc=CC4", null],
+ ["cmp-concd-CD1", "?page=cost&concd=CD1", null],
  ["cmp-concd-CD2", "?page=cost&concd=CD2", null],
  ["cmp-concd-CD3", "?page=cost&concd=CD3", null],
  ["cmp-concd-CD4", "?page=cost&concd=CD4", null],

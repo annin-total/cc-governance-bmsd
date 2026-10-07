@@ -31,8 +31,8 @@
       DS7: ["2 段のプルダウン", { dfs: "DS7" }], DS8: ["部の色の帯", { dfs: "DS8" }], DS9: ["条件のタグ", { dfs: "DS9" }] } },
     conc: { label: "利用者の集中", def: "CC1", pages: ["cost"], variants: {
       CC1: ["累積の曲線", { conc: "CC1" }], CC2: ["パレート図", { conc: "CC2" }], CC3: ["状態の階級の帯", { conc: "CC3" }], CC4: ["1 人 1 マス", { conc: "CC4" }] } },
-    concd: { label: "部署と割合", def: "CD1", pages: ["cost"], variants: {
-      CD1: ["2 本の横棒", { concd: "CD1" }], CD2: ["マリメッコ", { concd: "CD2" }], CD3: ["ツリーマップ", { concd: "CD3" }], CD4: ["散布図", { concd: "CD4" }] } },
+    concd: { label: "部署と割合", def: "CD5", pages: ["cost"], variants: {
+      CD5: ["コストの多い課", { concd: "CD5" }], CD1: ["2 本の横棒", { concd: "CD1" }], CD2: ["マリメッコ", { concd: "CD2" }], CD3: ["ツリーマップ", { concd: "CD3" }], CD4: ["散布図", { concd: "CD4" }] } },
     concAt: { label: "集中の置き場", def: "card", pages: ["cost"], variants: { card: ["カード", { concAt: "card" }], tab: ["詳細タブ", { concAt: "tab" }] } },
     y12: { label: "12 か月の前の年", def: "none", pages: ["home", "cost"], variants: { none: ["比べない", { y12: "" }], prev: ["前の 12 か月を並べる", { y12: "prev" }] } },
     oi: { label: "組織 CSV の取り込み", def: "OI1", pages: ["settings"], variants: {

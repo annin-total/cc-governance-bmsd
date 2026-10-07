@@ -10,16 +10,22 @@
   const color = (ctx, dept) => { const i = (lookup(ctx, "F[org][depts]") || []).indexOf(dept); return i < 0 ? "var(--muted)" : `var(--dc-${i})`; };
   const nameOf = (r) => (r.kind === "unknown" ? K.L.UNKNOWN : r.kind === "dept" ? r.dept : r.section || K.L.DF_NO_SECTION);
 
-  // CD1 部署ごとに人数の割合とコストの割合の 2 本の横棒（カードは部と不明、タブは課も）
-  function cd1(ctx, size, at) {
-    const rows = at === "tab" ? (lookup(ctx, "r5[depts]") || []) : depts(ctx);
+  // CD1 部署ごとに人数の割合とコストの割合の 2 本の横棒（カードは部と不明、タブは課も）。CD5 は課をコストの多い順に TOP_SECTIONS 個
+  function cd1(ctx, size, at, only) {
+    const rows = only || (at === "tab" ? (lookup(ctx, "r5[depts]") || []) : depts(ctx));
     const n = lookup(ctx, "r3[cost][users]"), total = U().sum(depts(ctx).map((r) => r.cost));
     const top = Math.max(...rows.map((r) => Math.max(r.users / n, r.cost / total)));
     const bar = (v, cls) => `<span class="hbar ${cls}"><i style="width: ${U().r1((v / top) * 100)}%"></i></span>`;
-    const body = rows.map((r) => `<span class="conc-drow${r.kind === "section" ? " is-sec" : ""}" style="--dc: ${color(ctx, r.dept)}"><span>${esc(nameOf(r))}</span>`
+    const body = rows.map((r) => `<span class="conc-drow${r.kind === "section" && !only ? " is-sec" : ""}${only ? " is-top" : ""}" style="--dc: ${color(ctx, r.dept)}" data-sec="${esc(`${r.dept}|${r.section ?? ""}`)}" data-cost="${r.cost}"><span>${only ? '<i class="conc-mark"></i>' : ""}${esc(nameOf(r))}</span>`
       + `${bar(r.users / n, "conc-people")}<span class="num">${esc(K.pct((r.users / n) * 100))}</span>${bar(r.cost / total, "conc-cost")}<span class="num">${esc(K.pct((r.cost / total) * 100))}</span></span>`).join("");
-    return `<span class="conc-drows" data-cost-total="${U().r1(total * 100) / 100}"><span class="conc-dhead"><span></span><span>${esc(K.L.CONC.people)}</span><span></span><span>${esc(K.L.CONC.cost)}</span><span></span></span>${body}</span>` + U().note(K.L.CONC.cd1);
+    const tag = only ? "" : ` data-cost-total="${U().r1(total * 100) / 100}"`; // CD5 は上位だけなので合計を持たない
+    return `<span class="conc-drows${only ? " conc-top" : ""}"${tag}><span class="conc-dhead"><span></span><span>${esc(K.L.CONC.people)}</span><span></span><span>${esc(K.L.CONC.cost)}</span><span></span></span>${body}</span>` + U().note(only ? fill(K.L.CONC.cd5, { more: secs(ctx).length - only.length, unknown: (depts(ctx).find((r) => r.kind === "unknown") || {}).users || 0 }) : K.L.CONC.cd1);
   }
+
+  // CD5 コストの多い課: 課（不明は課として並べず、添え書きに数える）をコストの多い順に TOP_SECTIONS 個。見せ方は CD1 と同じ
+  const TOP_SECTIONS = 5;
+  const secs = (ctx) => (lookup(ctx, "r5[depts]") || []).filter((r) => r.kind === "section" && r.users > 0).sort((a, b) => b.cost - a.cost);
+  const cd5 = (ctx, size, at) => cd1(ctx, size, at, secs(ctx).slice(0, TOP_SECTIONS));
 
   // CD2 マリメッコ: 横幅＝人数、高さ＝1 人あたりのコスト、面積＝コスト（課と不明。部で色分け）
   function cd2(ctx, size) {
@@ -69,5 +75,5 @@
     return U().svg(size, U().sum(rows.map((r) => r.cost)), `<line class="conc-axis" x1="${pad}" y1="${h - pad}" x2="${w}" y2="${h - pad}"/><line class="conc-axis" x1="${pad}" y1="0" x2="${pad}" y2="${h - pad}"/>${dots}`, "conc-fixed") + U().note(fill(K.L.CONC.cd4, {}));
   }
 
-  K.concDepts = { CD1: cd1, CD2: cd2, CD3: cd3, CD4: cd4 };
+  K.concDepts = { CD1: cd1, CD2: cd2, CD3: cd3, CD4: cd4, CD5: cd5 };
 })();

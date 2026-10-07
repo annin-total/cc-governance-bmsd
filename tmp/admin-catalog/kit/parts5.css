@@ -125,3 +125,5 @@ rect.k5-old { fill: var(--ghost); stroke: none; }
 .org-cell.is-own { background: var(--chip-up); border-color: var(--accent-2); color: var(--chip-up-ink); }
 .tscroll tr[data-own="0"] td { color: var(--muted); }
 .org-form input[type="month"] { font: inherit; font-size: var(--fs-label); padding: var(--sp-3xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--card); color: var(--ink); }
+.conc-mark { display: inline-block; width: 8px; height: 8px; margin-right: var(--sp-xs); border-radius: 2px; background: var(--dc); }
+.conc-top .conc-drow > span:first-child { border-left: 0; padding-left: 0; }
