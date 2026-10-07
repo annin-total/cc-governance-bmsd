@@ -1,3 +1,0 @@
-[["x-activity-go-user-all", "?page=activity", "[data-ref=days_per_user]"],
- ["x-activity-agents-go-user-all", "?page=activity", "[data-ref=agent_launches]"],
- ["x-user-all-warn", "?page=cost#user_all:warn", null]]

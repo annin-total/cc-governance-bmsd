@@ -17,6 +17,7 @@ PERIODS = ("7", "28", "12m")
 PAGES_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods) }))"
 OVERFLOW_JS = "document.documentElement.scrollWidth > document.documentElement.clientWidth"
 ASOF = "2026-09-11"
+SETTLE_MS, SETTLE_TRIES = 300, 20
 # (名前, URL の問い合わせ, 押す要素)。押す要素があれば、押して移った先を撮る。要素はカンマで候補を並べ、最初に見えるものを押す
 FIRST_CARD = "main .kpis a.card[href^='?']"
 EXTRAS = (
@@ -24,9 +25,9 @@ EXTRAS = (
     ("x-home-filter-warn-12m", "?page=home&period=12m&filter=warn", None),
     ("x-home-asof", f"?page=home&period=28&asof={ASOF}", None),
     ("x-go-cost", f"?page=home&period=28&asof={ASOF}", FIRST_CARD),
-    ("x-go-over-week", f"?page=home&asof={ASOF}", "[data-ref^=over_week], [data-ref=over_rows]"),
-    ("x-go-off-users", "?page=home", "[data-ref=off_users], [data-ref=applied_all]"),
-    ("x-go-core-outdated", "?page=home", "[data-ref=core_outdated], [data-ref=outdated_all]"),
+    ("x-go-over-week", f"?page=home&asof={ASOF}", "[data-ref^=over_week]"),
+    ("x-go-off-users", "?page=home", "[data-ref=off_users]"),
+    ("x-go-core-outdated", "?page=home", "[data-ref=core_outdated]"),
     ("x-cost-open-user-cost", "?page=cost&filter=warn", "[data-ref=per_user_bd]"),
     ("x-summary-open", "?page=summary", "details summary"),
     ("x-summary-edit-s2", "?page=summary_edit&id=s2", None),
@@ -39,6 +40,18 @@ def _args() -> argparse.Namespace:
     p.add_argument("idea", type=Path)
     p.add_argument("--out", type=Path)
     return p.parse_args()
+
+
+def _settle(page) -> None:
+    """なめらかなスクロールが止まり、当てた見た目の遷移が終わるまで待つ（マウスの下の要素が時間で変わり、画像が揺れるため）。"""
+    last = None
+    for _ in range(SETTLE_TRIES):
+        page.wait_for_timeout(SETTLE_MS)
+        now = page.evaluate("window.scrollY")
+        if now == last:
+            break
+        last = now
+    page.wait_for_timeout(SETTLE_MS)
 
 
 def _shoot(ctx, url: str, path: Path, click=None):
@@ -55,7 +68,7 @@ def _shoot(ctx, url: str, path: Path, click=None):
     if click:
         page.locator(f"{click} >> visible=true").first.click()
         page.wait_for_load_state("load")
-        page.wait_for_timeout(300)
+        _settle(page)
     overflow = page.evaluate(OVERFLOW_JS)
     page.screenshot(path=str(path), full_page=True)
     page.close()
