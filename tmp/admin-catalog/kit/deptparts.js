@@ -12,13 +12,13 @@
   const colorOf = (dept) => { const i = Object.keys(units()).indexOf(dept); return i < 0 ? "var(--muted)" : `var(--dc-${i})`; };
   const off = (state, dept) => state.dept.size > 0 && !state.dept.has(dept); // 部を選ぶと、選んだ部に入らない課は押せない
 
-  function box(kind, id, label, on, disabled, dept) {
+  function box(kind, id, label, on, disabled, dept, text = label) { // text: 狭い型で見せる短い名前（吹き出しは label）
     return `<label class="df-item df-${kind}${disabled ? " is-off" : ""}" style="--dc: ${colorOf(dept)}" title="${esc(label)}" data-df-name="${esc(label)}">`
-      + `<input type="checkbox" data-df-${kind}="${esc(id)}"${on ? " checked" : ""}${disabled ? " disabled" : ""}><span class="df-text">${esc(label)}</span></label>`;
+      + `<input type="checkbox" data-df-${kind}="${esc(id)}"${on ? " checked" : ""}${disabled ? " disabled" : ""}><span class="df-text">${esc(text)}</span></label>`;
   }
 
   const deptBox = (state, x) => box("dept", x, x === UNKNOWN ? K.L.UNKNOWN : x, state.dept.has(x), false, x);
-  const secBox = (state, dept, x) => box("sec", `${dept}|${x}`, x || K.L.DF_NO_SECTION, state.sec.has(`${dept}|${x}`), off(state, dept), dept);
+  const secBox = (state, dept, x, text) => box("sec", `${dept}|${x}`, x || K.L.DF_NO_SECTION, state.sec.has(`${dept}|${x}`), off(state, dept), dept, text);
   const clear = () => `<button type="button" class="df-clear" data-df-clear>${esc(K.L.DF_CLEAR)}</button>`;
 
   // DS1・DS2・DS3・DS6: 部の列と課の列（見た目は CSS の dfs-<型>）
@@ -39,16 +39,19 @@
     return `<div class="df-tree">${rows.join("")}<div class="df-node"><span class="df-open"></span>${deptBox(state, UNKNOWN)}</div></div>`;
   }
 
+  const tagsOf = (state) => [...[...state.dept].map((x) => ["dept", x, x === UNKNOWN ? K.L.UNKNOWN : x]), ...[...state.sec].map((x) => ["sec", x, x.split("|")[1] || K.L.DF_NO_SECTION])]
+    .map(([kind, id, label]) => `<span class="df-tag" style="--dc: ${colorOf(id.split("|")[0])}">${esc(label)}<button type="button" data-df-remove="${kind}" data-df-id="${esc(id)}" aria-label="${esc(label)}">×</button></span>`).join("");
+
   // DS5: 検索つきの複数選択。選んだものを上にタグで並べ、× で外す。入力で候補を絞る
   function search(state) {
-    const L = K.L, names = [...[...state.dept].map((x) => [`dept`, x, x === UNKNOWN ? L.UNKNOWN : x]), ...[...state.sec].map((x) => ["sec", x, x.split("|")[1] || L.DF_NO_SECTION])];
-    const tags = names.map(([kind, id, label]) => `<span class="df-tag" style="--dc: ${colorOf(id.split("|")[0])}">${esc(label)}<button type="button" data-df-remove="${kind}" data-df-id="${esc(id)}" aria-label="${esc(label)}">×</button></span>`).join("");
-    return `<div class="df-tags">${tags}<input type="search" class="df-q" placeholder="${esc(L.DF_SEARCH)}" data-df-q></div><div class="df-cands">${columns(state)}</div>`;
+    const L = K.L;
+    return `<div class="df-tags">${tagsOf(state)}<input type="search" class="df-q" placeholder="${esc(L.DF_SEARCH)}" data-df-q></div><div class="df-cands">${columns(state)}</div>`;
   }
 
   function lists(state) {
     const type = K.look.get().dfs;
-    const body = type === "DS4" ? tree(state) : type === "DS5" ? search(state) : columns(state);
+    const more = (K.dfParts.more || {})[type]; // DS7〜DS9 は deptparts2.js
+    const body = more ? more(state) : type === "DS4" ? tree(state) : type === "DS5" ? search(state) : columns(state);
     return `<div class="df-lists dfs-${type}">${body}${clear()}</div>`;
   }
 
@@ -71,5 +74,5 @@
     e.target.closest(".df-lists").querySelectorAll(".df-item").forEach((l) => { l.hidden = Boolean(q) && !l.dataset.dfName.toLowerCase().includes(q); });
   });
 
-  K.dfParts = { lists };
+  K.dfParts = { ...(K.dfParts || {}), lists, tagsOf, deptBox, secBox, colorOf, units, columns, UNKNOWN };
 })();

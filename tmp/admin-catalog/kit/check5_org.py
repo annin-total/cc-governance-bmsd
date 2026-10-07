@@ -8,7 +8,7 @@ PERIODS = ("7", "28", "12m")
 DEPT, SEC = "Department A", "Department A|Section A3"
 OTHER = "Department B"
 UNKNOWN_TABS = ("user_cost", "over_users", "depts")
-DFS = ("DS1", "DS2", "DS3", "DS4", "DS5", "DS6")
+DFS = ("DS1", "DS2", "DS3", "DS4", "DS5", "DS6", "DS7", "DS8", "DS9")
 SEC_OFF_JS = "Array.from(document.querySelectorAll('#user_cost [data-df-sec]')).map((b) => [b.dataset.dfSec, b.disabled])"
 CLICK_JS = "(s) => document.querySelector(s).click()"  # 見た目で隠れたチェック（DS3・閉じた DS4）も押す
 VISIBLE_JS = "(id) => Array.from(document.querySelectorAll(`#${id} tbody tr`)).filter((tr) => !tr.hidden && !tr.hasAttribute('data-dept-out')).map((tr) => [tr.dataset.dept, tr.dataset.sec, tr.dataset.kind || ''])"
