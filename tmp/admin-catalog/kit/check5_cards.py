@@ -77,6 +77,22 @@ def charts(page, base: str) -> list:
     return out
 
 
+MONTHS_JS = """Array.from(document.querySelectorAll('main .card svg[data-months]')).map((s) => [s.closest('.card').dataset.ref, s.querySelectorAll('rect').length,
+  [...new Set(Array.from(s.querySelectorAll('rect')).map((r) => getComputedStyle(r).fill))].length])"""
+MONTH_CARDS = {"cost_total", "per_bd", "billed_users"}  # 12 か月で、どの K の型でも暦月の棒になるカード（per_user_bd は K4〜K6 で分布）
+
+
+def months12(page, base: str, data: dict) -> list:
+    """12 か月の暦月の棒は、前の 12 か月と直近の 12 か月を同じ軸に持ち、色が 2 つ。"""
+    out, n = [], len(data["p"]["12m"]["r5"]["months"])
+    for k in CHARTS:
+        goto(page, f"{base}?page=cost&period=12m&chart={k}")
+        got = {ref: (bars, colors) for ref, bars, colors in page.evaluate(MONTHS_JS)}
+        refs = MONTH_CARDS - ({"cost_total"} if CHARTS[k][0] == "grid" else set())  # マス目は 12 か月も日の濃淡のまま
+        out += [f"{k} 12 か月 {r}: 前の 12 か月と並べた暦月の棒が無いか、色が 2 つでない（{got.get(r)}）" for r in refs if got.get(r) != (n, 2)]
+    return out
+
+
 def _moves(rows: list, span: str) -> dict:
     m = {(a, b): 0 for a in STATES for b in STATES}
     for r in rows:
