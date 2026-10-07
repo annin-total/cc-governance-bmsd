@@ -50,4 +50,12 @@
  ["cmp-dfs-DS5", "?page=cost&dfs=DS5&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", "#user_cost [data-df-toggle]"],
  ["cmp-dfs-DS5-F1", "?page=cost&df=F1&dfs=DS5&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", null],
  ["cmp-dfs-DS6", "?page=cost&dfs=DS6&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", "#user_cost [data-df-toggle]"],
- ["cmp-dfs-DS6-F1", "?page=cost&df=F1&dfs=DS6&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", null]]
+ ["cmp-dfs-DS6-F1", "?page=cost&df=F1&dfs=DS6&dept=Department%20A&sec=Department%20A%7CSection%20A3#user_cost", null],
+ ["cmp-conc-CC2", "?page=cost&conc=CC2", null],
+ ["cmp-conc-CC3", "?page=cost&conc=CC3", null],
+ ["cmp-conc-CC4", "?page=cost&conc=CC4", null],
+ ["cmp-concd-CD2", "?page=cost&concd=CD2", null],
+ ["cmp-concd-CD3", "?page=cost&concd=CD3", null],
+ ["cmp-concd-CD4", "?page=cost&concd=CD4", null],
+ ["cmp-concAt-tab", "?page=cost&concAt=tab#conc", null],
+ ["cmp-concAt-tab-CC3-CD3", "?page=cost&concAt=tab&conc=CC3&concd=CD3#conc", null]]
