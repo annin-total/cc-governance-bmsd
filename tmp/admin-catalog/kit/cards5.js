@@ -14,15 +14,17 @@
     K7: { cost_total: { part: "area", shadow: true }, per_bd: { part: "bdbars", avg: true }, per_user_bd: { part: "dist" }, forecast: { part: "cum", prev: true } },
     K6: { cost_total: { part: "split" }, per_bd: { part: "bdbars", avg: true }, per_user_bd: { part: "line", field: "per_user" }, forecast: { part: "cum", prev: true } },
   };
-  // 12 か月でも同じ部品で描くもの（ほかは目録の 12 か月の差し替え＝暦月ごとの棒）
+  // 12 か月でも同じ部品で描くもの。ほかの時系列は前の 12 か月と並べた暦月の棒（MONTHS の欄）
   const LONG_TOO = new Set(["dist", "grid", "cum"]);
+  const MONTHS = { cost_total: "cost", per_bd: "per_bd", per_user_bd: "per_user_bd", billed_users: "users" };
   const OVER = /^over_(day|week|month)_duo$/;
 
   function chart(card) {
     const spec = (CHARTS[K.look.get().chart] || {})[card.ref];
-    if (!spec) return card;
+    const months = MONTHS[card.ref] && card.long && card.long !== SAME ? { ...card.long, viz: { kind: "k5", part: "months", field: MONTHS[card.ref] }, cap: [] } : card.long;
+    if (!spec) return { ...card, long: months };
     const viz = { kind: "k5", ...spec };
-    const long = card.long === SAME || !LONG_TOO.has(spec.part) ? card.long : card.long && { ...card.long, viz, cap: [] };
+    const long = card.long === SAME ? card.long : LONG_TOO.has(spec.part) ? card.long && { ...card.long, viz, cap: [] } : months;
     return { ...card, viz, cap: [], long };
   }
 

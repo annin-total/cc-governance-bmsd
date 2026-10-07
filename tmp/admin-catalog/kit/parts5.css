@@ -116,3 +116,4 @@ rect.k5-old { fill: var(--ghost); stroke: none; }
 .conc-mk, .conc-tm { stroke: var(--card); stroke-width: .5; }
 .conc-dot { opacity: .75; stroke: var(--card); stroke-width: 1; }
 .conc-axis { stroke: var(--rule); stroke-width: 1; }
+.k5 .is-partial { opacity: var(--partial-opacity); }

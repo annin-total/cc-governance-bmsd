@@ -58,7 +58,7 @@
     return svg(body) + `<span class="legend k5-legend">${legend}</span>` + cap(fill(K.L.K5.cum_cap, ctx));
   }
 
-  const PARTS = { area: V.area, bdbars: V.bdbars, line: V.line, grid: V.grid, dist, split, cum };
+  const PARTS = { area: V.area, bdbars: V.bdbars, line: V.line, grid: V.grid, months: V.months, dist, split, cum };
   function render(card, ctx) {
     const v = card.viz;
     return PARTS[v.part] ? PARTS[v.part](v, ctx) : (console.error(`kit: 知らない部品: ${v.part}`), "");

@@ -5,6 +5,7 @@
   const K = window.KIT;
   const { esc, lookup } = K;
   const W = 300, H = 56, PAD = 4;
+  const GRID_TRANSPOSE_WEEKS = 8; // マス目の週がこれ以下なら、曜日を列にする
   const r1 = (v) => Math.round(v * 10) / 10;
   const svg = (body, cls = "") => `<svg class="k5 ${cls}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${body}</svg>`;
   const cap = (text) => `<span class="cap k5-cap"><span>${esc(text)}</span></span>`;
@@ -76,19 +77,30 @@
     return frame(body, days) + ends(series(ctx)) + cap(`${K.L.K5.per_user} · ${K.L.K5.line}`);
   }
 
-  // grid: 曜日（行）× 週（列）の濃淡。12 か月は窓の 365 日、7・28 日は前と直近
-  function grid(v, ctx) {
-    const rows = series(ctx), top = Math.max(1, ...rows.map((r) => r.cost));
-    const wd = (d) => (new Date(d * 86400000).getUTCDay() + 6) % 7;
-    const first = rows[0].day - wd(rows[0].day), weeks = Math.ceil((rows[rows.length - 1].day - first + 1) / 7);
-    const cw = Math.min(W / weeks, H / 7), ch = cw, steps = 4; // マスは正方形に近く、左から詰める
-    const cells = rows.map((r) => {
-      const level = r.cost ? Math.min(steps, Math.ceil((r.cost / top) * steps)) : 0;
-      const col = Math.floor((r.day - first) / 7);
-      return `<rect class="k5-cell lv-${level}${r.period === "prev" ? " is-prev" : ""}" x="${r1(col * cw + 0.5)}" y="${r1(wd(r.day) * ch + 0.5)}" width="${r1(cw - 1)}" height="${r1(ch - 1)}"><title>${esc(`${K.md(r.day)}（${K.weekday(r.day)}）  ${K.usd(r.cost)}`)}</title></rect>`;
-    }).join("");
-    return svg(cells, "k5-grid") + cap(K.L.K5.grid);
+  // months: 12 か月の暦月の棒。前の 12 か月（灰）と直近の 12 か月（青）を同じ軸に並べる。月の途中で切れた棒は薄く
+  function months(v, ctx) {
+    const rows = lookup(ctx, "r5[months]") || [];
+    const vals = rows.map((r) => r[v.field] || 0), y = scaleY(Math.max(...vals)), step = W / Math.max(rows.length, 1), bw = step * 0.7;
+    const fmt = v.field === "users" ? (x) => `${K.num(x)} 人` : K.usd;
+    const bars = rows.map((r, i) => `<rect class="${r.period === "recent" ? "bar-hi k5-new" : "bar-old k5-old"}${r.partial ? " is-partial" : ""}" x="${r1(i * step + (step - bw) / 2)}" y="${y(vals[i])}" width="${r1(bw)}" height="${r1(H - PAD - y(vals[i]))}"><title>${esc(`${K.ym(r.day)}  ${fmt(vals[i])}`)}</title></rect>`).join("");
+    return svg(bars).replace("<svg ", `<svg data-months="${rows.length}" `) + `<span class="k5-ends"><span>${esc(K.ym(rows[0].day))}</span><span>${esc(K.ym(rows[rows.length - 1].day))}</span></span>` + cap(K.L.K5.months);
   }
 
-  window.KIT = Object.assign(window.KIT || {}, { viz5: { ...(window.KIT.viz5 || {}), area, bdbars, line, grid, svg, cap, scaleY, xs, points, W, H, PAD, r1 } });
+  // grid: 曜日 × 週の濃淡。12 か月は直近の 365 日で曜日（行）× 週（列）、7・28 日は前と直近で週が少ないため曜日（列）× 週（行）にして幅を使う
+  function grid(v, ctx) {
+    const all = series(ctx), rows = lookup(ctx, "period[long]") ? all.filter((r) => r.period === "recent") : all;
+    const top = Math.max(1, ...rows.map((r) => r.cost)), steps = 4;
+    const wd = (d) => (new Date(d * 86400000).getUTCDay() + 6) % 7;
+    const first = rows[0].day - wd(rows[0].day), weeks = Math.ceil((rows[rows.length - 1].day - first + 1) / 7);
+    const wide = weeks > GRID_TRANSPOSE_WEEKS;
+    const [cw, ch] = wide ? [W / weeks, H / 7] : [W / 7, H / weeks]; // 枠いっぱいに敷く
+    const cells = rows.map((r) => {
+      const level = r.cost ? Math.min(steps, Math.ceil((r.cost / top) * steps)) : 0;
+      const week = Math.floor((r.day - first) / 7), [cx, cy] = wide ? [week, wd(r.day)] : [wd(r.day), week];
+      return `<rect class="k5-cell lv-${level}${r.period === "prev" ? " is-prev" : ""}" x="${r1(cx * cw + 0.5)}" y="${r1(cy * ch + 0.5)}" width="${r1(cw - 1)}" height="${r1(ch - 1)}"><title>${esc(`${K.md(r.day)}（${K.weekday(r.day)}）  ${K.usd(r.cost)}`)}</title></rect>`;
+    }).join("");
+    return svg(cells, "k5-grid") + cap(wide ? K.L.K5.grid : K.L.K5.grid_t);
+  }
+
+  window.KIT = Object.assign(window.KIT || {}, { viz5: { ...(window.KIT.viz5 || {}), area, bdbars, line, grid, months, svg, cap, scaleY, xs, points, W, H, PAD, r1 } });
 })();
