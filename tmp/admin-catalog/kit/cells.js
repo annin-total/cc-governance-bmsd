@@ -42,7 +42,7 @@
     span: (v, row) => esc(fill(L().SPAN, row)),
     rank: (v) => (isNone(v) ? sub("—") : `<b>${esc(K.num(v))}</b>`),
     // 案 51 の利用者: 名簿にいる人は氏名（触れるとメール）と、その下に部・課。名簿に無い人はメールと「不明」。どちらも状態の札を付けない
-    person: (v, row) => (isNone(row.dept) ? `<span class="u-who" title="${esc(row.email)}">${user(row.email)}</span>${sub(L().UNKNOWN)}`
+    person: (v, row) => (isNone(row.dept) ? `<span class="u-who" title="${esc(row.email)}">${user(row.email)}</span><span class="sub u-org">${esc(L().UNKNOWN)}</span>`
       : `<b class="u-who u-name" title="${esc(row.email)}">${esc(row.name)}</b><span class="sub u-org">${esc(row.dept)} · ${row.section ? esc(row.section) : esc(L().NO_SECTION)}</span>`),
     // 案 51 の部署ごと: 部の行は太字、課の行は 1 段下げ、不明の行
     dept_name: (v, row) => (row.kind === "dept" ? `<b>${esc(row.dept)}</b>` : row.kind === "unknown" ? esc(L().UNKNOWN)

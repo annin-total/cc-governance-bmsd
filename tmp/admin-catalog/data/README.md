@@ -43,7 +43,7 @@ $SP/venv/bin/python data/build_data.py --server $SP/server --scripts $SP/scripts
 | --- | --- |
 | `meta` | `today`（今日）・`csv_end`（利用明細の最終日）・`end`（期間のページの終わりの既定。利用明細が無ければ今日の 2 日前）・`first_day`（利用明細の最初の日）・`first_pick`（選べる最初の日）・`days`（日ごとの `csv`〔利用明細の行がある〕・`rec`〔記録がある〕）・`csv_stale_days`（`judge.CSV_STALE_DAYS`）・`periods`・`users` |
 | `p[7・28・12m]` | サーバの概況とスキル・コマンドの集計（`period`・`cost`・`month`・`usage`・`trend` など。窓は `meta.end` で終わる）に、次を足したもの。状態のページの値は持たない（`fixed.now`） |
-| `p[k].x` | `cost`・`models`・`tokens`・`people`・`billed`（`user_cost` の行。`state`・`cost_change`・`tags`・`dept`・`section`）。7・28 日は `active`・`active_prev`・`daily`・`days_dist`・`activity`（`user_use`・`user_calls` の行。`dept`・`section` つき）。12 か月は `months`・`model_keys` |
+| `p[k].x` | `cost`・`models`・`tokens`・`people`・`billed`（`user_cost` の行。`state`・`cost_change`・`tags`・`dept`・`section`・`name`〔架空の氏名。名簿に無い人は null〕・`who`〔画面に出す名前。名簿に無い人はメール〕。利用者の行はどれも同じ）。7・28 日は `active`・`active_prev`・`daily`・`days_dist`・`activity`（`user_use`・`user_calls` の行。`dept`・`section` つき）。12 か月は `months`・`model_keys` |
 | `p[k].m` | `new_user_count`・`retention_rate`・`left_users`（12 か月は暦月の `retention_rows` など） |
 | `p[k].calls`・`p[k].size` | 呼び出し 4 種の合計と上位・セッションの大きさ（7・28 日） |
 | `p[k].r3.cost` | `bill` の窓の `total`・`bd`・`per_bd`・`users`・`per_user_bd` と `prev_*`、`*_change`、`state`・`per_user_state`・`users_state`、`daily`。12 か月は前と状態が無い |
