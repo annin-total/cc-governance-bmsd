@@ -18,6 +18,12 @@ PAGES_JS = "window.IA.pages.map((p) => ({ id: p.id, periods: Boolean(p.periods) 
 OVERFLOW_JS = "document.documentElement.scrollWidth > document.documentElement.clientWidth"
 ASOF = "2026-09-11"
 SETTLE_MS, SETTLE_TRIES = 300, 20
+# 案 51 のヘッダーの固定（html の data-sticky）: 全体を撮るときは固定を外して上へ戻し、ヘッダーをスクロールした位置でなく上端に描く。
+# 押す要素の代わりに SCROLL と書くと、SCROLL_Y だけスクロールして画面の大きさで撮る（固定のヘッダーの見え方）
+STICKY_JS = "Boolean(document.documentElement.dataset.sticky)"
+UNSTICK_CSS = ":root[data-sticky] .top { position: relative; }"
+TOP_JS = "window.scrollTo({ top: 0, behavior: 'instant' })"
+SCROLL, SCROLL_Y = "scroll", 600
 # (名前, URL の問い合わせ, 押す要素)。押す要素があれば、押して移った先を撮る。要素はカンマで候補を並べ、最初に見えるものを押す
 FIRST_CARD = "main .kpis a.card[href^='?']"
 EXTRAS = (
@@ -32,7 +38,7 @@ EXTRAS = (
     ("x-summary-open", "?page=summary", "details summary"),
     ("x-summary-edit-s2", "?page=summary_edit&id=s2", None),
 )
-EXTRA_FILE = "shots.json"  # 案のフォルダに置くと、[名前, 問い合わせ, 押す要素] の並びを EXTRAS に足す。[名前, null, null] はその撮影をこの案では撮らない
+EXTRA_FILE = "shots.json"  # 案のフォルダに置くと、[名前, 問い合わせ, 押す要素] の並びを EXTRAS に足す。[名前, null, null] はその撮影をこの案では撮らない。押す要素は SCROLL も書ける
 
 
 def _args() -> argparse.Namespace:
@@ -62,6 +68,13 @@ def _shoot(ctx, url: str, path: Path, click=None):
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(url)
     page.wait_for_load_state("load")
+    if click == SCROLL:
+        page.evaluate(f"window.scrollTo(0, {SCROLL_Y})")
+        _settle(page)
+        overflow = page.evaluate(OVERFLOW_JS)
+        page.screenshot(path=str(path))
+        page.close()
+        return errors, overflow
     if click and not page.locator(f"{click} >> visible=true").count():  # 案にその要素が無ければ撮らない
         page.close()
         return None
@@ -70,6 +83,9 @@ def _shoot(ctx, url: str, path: Path, click=None):
         page.wait_for_load_state("load")
         _settle(page)
     overflow = page.evaluate(OVERFLOW_JS)
+    if page.evaluate(STICKY_JS):
+        page.add_style_tag(content=UNSTICK_CSS)
+        page.evaluate(TOP_JS)
     page.screenshot(path=str(path), full_page=True)
     page.close()
     return errors, overflow

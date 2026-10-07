@@ -1,8 +1,9 @@
 "use strict";
 // 区画（sections）で組むページ: サマリーの一覧・作成と編集、データと設定（全案で今のまま）。区画の部品は boot.js と summary.js。
+// now: 案 51 の帯の期間の表示は今日の「MM/DD 時点」で押せない（period5.js。案 31 は読まない）。
 (() => {
   const settings = {
-    id: "settings", title: "データと設定", nav: "end", data: "fixed.settings",
+    id: "settings", title: "データと設定", nav: "end", now: true, data: "fixed.settings",
     lead: "利用明細（CSV）の取り込み、月ごとの全ログの書き出し、営業日の数え方に使う会社の休日",
     sections: [
       { id: "import", title: "取り込む", lead: "利用明細（CSV）はコストとトークンの正本です",
@@ -32,7 +33,7 @@
   };
 
   const summary = {
-    id: "summary", title: "サマリー", nav: "end", data: "fixed.r3",
+    id: "summary", title: "サマリー", nav: "end", now: true, data: "fixed.r3",
     lead: "週ごとのまとめ · 作成日の新しい順 · 行を押すと本文が開きます",
     sections: [
       { id: "summaries", title: "サマリー", lead: "本文はプレーンテキストです。作成日と更新日は保存したときに付きます。",
@@ -40,7 +41,7 @@
     ],
   };
   const summaryEdit = {
-    id: "summary_edit", title: "サマリーの作成と編集", nav: "none", navAs: "summary", data: "fixed.r3",
+    id: "summary_edit", title: "サマリーの作成と編集", nav: "none", navAs: "summary", now: true, data: "fixed.r3",
     lead: "基準日の概況のうち、注意・要確認のカードを下書きにできます",
     sections: [{ id: "summary-form", title: "サマリー", lead: "基準日は今日まで · 下書きは概況のカードだけから作ります", blocks: [{ kind: "summary_form" }] }],
   };

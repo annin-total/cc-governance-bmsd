@@ -47,7 +47,7 @@
     const open = (cls, body) => `<button type="button" class="${cls}" data-cal-open data-cal-span="${n}" aria-expanded="false" title="${esc(L.BASE_DATE_PICK)}">${body}</button>`;
     if (cal === "CA3") {
       const by = n || 7;
-      return `<span class="asof-range cal-steps" data-period-display>${step(end - by, by, true)}<span class="asof-text">${esc(text)}</span>${step(end + by, by, false)}`
+      return `<span class="cal-steps" data-period-display>${step(end - by, by, true)}<span class="asof-text">${esc(text)}</span>${step(end + by, by, false)}`
         + `${open("cal-icon", `<span class="sr">${esc(L.CAL_OPEN)}</span>`)}</span>`;
     }
     return `<span class="asof-range" data-period-display>${open("", esc(text))}</span>`;

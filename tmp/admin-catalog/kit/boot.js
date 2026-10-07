@@ -41,7 +41,7 @@
   }
 
   function sectionsHtml(page, ctx) {
-    return page.sections.map((s) => `<section class="panel section" id="${esc(s.id)}" aria-labelledby="${esc(s.id)}-title"><header class="p-head${s.action ? " p-head-act" : ""}"><div><h2 id="${esc(s.id)}-title">${esc(s.title)}</h2><p class="scope">${esc(fill(s.lead || "", ctx))}</p></div>`
+    return page.sections.filter((s) => !s.org || K.look.get().org).map((s) => `<section class="panel section" id="${esc(s.id)}" aria-labelledby="${esc(s.id)}-title"><header class="p-head${s.action ? " p-head-act" : ""}"><div><h2 id="${esc(s.id)}-title">${esc(s.title)}</h2><p class="scope">${esc(fill(s.lead || "", ctx))}</p></div>`
       + `${s.action ? `<a class="btn" href="${esc(keep(s.action.href))}">${esc(s.action.label)}</a>` : ""}</header>`
       + s.blocks.map((b) => K.blocks[b.kind](b, ctx)).join("") + "</section>").join("");
   }

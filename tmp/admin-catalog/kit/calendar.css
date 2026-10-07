@@ -1,5 +1,6 @@
 /* 自作のカレンダー（calendar.js・calendar_strip.js。案 51）と帯の期間の表示（period5.js）。日の見せ方は 3 つで、状態の色（注意・要確認）を使わない */
-.asof-range { display: inline-flex; align-items: center; gap: var(--sp-xs); }
+.asof-range, .cal-steps { display: inline-flex; align-items: center; gap: var(--sp-xs); }
+.head-act { position: relative; } /* カレンダーを帯の右端に重ねる */
 .asof-now, .asof-text { font-size: var(--fs-label); color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .stale { font-size: var(--fs-sm); color: var(--warn); text-decoration: none; white-space: nowrap; }
 .stale::before { content: "● "; }

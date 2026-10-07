@@ -86,7 +86,7 @@
 
   function render(button) {
     close();
-    button.closest("[data-period-display]").insertAdjacentHTML("beforeend", html(Number(button.dataset.calSpan)));
+    button.closest("[data-period-display]").insertAdjacentHTML("afterend", html(Number(button.dataset.calSpan))); // 帯の右端（.head-act）に重ねる
     button.setAttribute("aria-expanded", "true");
   }
 

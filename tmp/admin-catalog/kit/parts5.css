@@ -65,3 +65,21 @@
 .df-link { border: 0; background: none; padding: 0; color: var(--accent); }
 .df-pop { position: absolute; right: 0; top: calc(100% + var(--sp-xs)); z-index: 6; width: 560px; padding: var(--sp-m); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-l); box-shadow: var(--shadow-tip); }
 .df-inline { margin: 0 0 var(--sp-m); padding: var(--sp-s) var(--sp-m); border: 1px solid var(--rule); border-radius: var(--r-m); }
+
+/* サマリーの型 S2（summary.js）: 枠の中に見出しと数 */
+.sum-s2 .sum-panel { display: grid; gap: var(--sp-3xs); }
+.sum-top { display: flex; align-items: baseline; gap: var(--sp-m); font-size: var(--fs-sm); }
+.sum-head { font-size: var(--fs-label); color: var(--ink-2); }
+.sum-tally { display: inline-flex; align-items: baseline; gap: var(--sp-2xs); color: var(--muted); }
+.sum-tally b { margin-left: var(--sp-2xs); color: var(--ink); }
+.sum-title { font-size: var(--fs-label); }
+.sum-meta { font-size: var(--fs-sm); color: var(--muted); }
+
+/* データと設定の組織 CSV の欄（pages5.js） */
+.org-import { display: grid; gap: var(--sp-m); margin-top: var(--sp-m); padding: var(--sp-l); border: 1px solid var(--rule); border-radius: var(--r-l); }
+.org-actions { display: flex; gap: var(--sp-s); }
+.org-actions button { cursor: pointer; }
+.org-stats { display: flex; flex-wrap: wrap; gap: var(--sp-m) var(--sp-3xl); margin: 0; font-size: var(--fs-sm); }
+.org-stats dt { color: var(--muted); }
+.org-stats dd { margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
+.org-import .note { margin: 0; }
