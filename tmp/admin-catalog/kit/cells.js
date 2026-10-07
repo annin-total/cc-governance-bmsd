@@ -41,8 +41,9 @@
     delete_file: (v, row) => `<form data-confirm="${esc(fill(isNone(row.first) ? "{source_file} を削除します。よろしいですか。" : "{source_file} を削除します。取り込んだ {first:day}〜{last:day} の利用明細の行も消えます。よろしいですか。", row))}" onsubmit="return false"><button type="submit" class="btn-quiet">削除</button></form>`,
     span: (v, row) => esc(fill(L().SPAN, row)),
     rank: (v) => (isNone(v) ? sub("—") : `<b>${esc(K.num(v))}</b>`),
-    // 案 51 の課の列: 名簿に無い人は「不明」、課の欄が空の人は「—」。どちらも状態の札を付けない
-    section: (v, row) => (isNone(row.dept) ? sub(L().UNKNOWN) : v ? esc(v) : sub(L().NO_SECTION)),
+    // 案 51 の利用者: 名簿にいる人は氏名（触れるとメール）と、その下に部・課。名簿に無い人はメールと「不明」。どちらも状態の札を付けない
+    person: (v, row) => (isNone(row.dept) ? `<span class="u-who" title="${esc(row.email)}">${user(row.email)}</span>${sub(L().UNKNOWN)}`
+      : `<b class="u-who u-name" title="${esc(row.email)}">${esc(row.name)}</b><span class="sub u-org">${esc(row.dept)} · ${row.section ? esc(row.section) : esc(L().NO_SECTION)}</span>`),
     // 案 51 の部署ごと: 部の行は太字、課の行は 1 段下げ、不明の行
     dept_name: (v, row) => (row.kind === "dept" ? `<b>${esc(row.dept)}</b>` : row.kind === "unknown" ? esc(L().UNKNOWN)
       : `<span class="dept-sec">${row.section ? esc(row.section) : sub(L().NO_SECTION)}</span>`),

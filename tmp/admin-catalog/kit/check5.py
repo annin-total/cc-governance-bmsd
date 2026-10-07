@@ -6,7 +6,7 @@ from urllib.parse import parse_qs, urlparse
 
 EPOCH = dt.date(1970, 1, 1)
 # 31 の画面に無いこと: カレンダー・部署の絞り込み・課の列・部署ごと・取り込みの欄・比較のパネル・51 の部品
-ABSENT_31 = ("[data-cal-open]", ".cal-strip", "[data-df]", "td.c-section", "#depts", ".org-import", "[data-cmp5]", ".k5-wrap", ".chip-note", ".sum-s2", "[data-fold]", ".fold-more")
+ABSENT_31 = ("[data-cal-open]", ".cal-strip", "[data-df]", "td.c-person", "#depts", ".org-import", "[data-cmp5]", ".k5-wrap", ".chip-note", ".sum-s2", "[data-fold]", ".fold-more")
 ABSENT_PAGES = ("?page=home", "?page=cost", "?page=cost#user_cost", "?page=settings", "?page=activity#user_use")
 USERS_31 = 40
 NOW_PAGES = ("policy", "collect")

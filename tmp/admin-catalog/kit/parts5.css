@@ -130,3 +130,4 @@ rect.k5-old { fill: var(--ghost); stroke: none; }
 /* 一覧の折りたたみ（fold5.js） */
 [data-folded] { display: none !important; }
 .fold-more { display: block; margin: var(--sp-s) auto 0; border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--card); padding: var(--sp-2xs) var(--sp-l); font-size: var(--fs-sm); color: var(--accent); cursor: pointer; }
+.tscroll td.c-person { white-space: nowrap; } .u-org { display: block; font-size: var(--fs-xs); }

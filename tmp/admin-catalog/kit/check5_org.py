@@ -40,7 +40,7 @@ def screen(page, base: str) -> list:
             out.append(f"部署ごと {period}: 利用率の列があるか、部の行が無い（{heads}）")
     for tab in UNKNOWN_TABS:
         goto(page, f"{base}?page=cost#{tab}")
-        bad = page.locator(f"#{tab} tbody tr[data-dept=unknown] :is(td.c-section, td.c-dept_name) .mark").count()
+        bad = page.locator(f"#{tab} tbody tr[data-dept=unknown] :is(td.c-person, td.c-dept_name) .mark").count()
         if bad or (tab != "over_users" and not page.locator(f"#{tab} tbody tr[data-dept=unknown]").count()):
             out.append(f"{tab}: 不明の行が無いか、不明の行に札がある（{bad}）")
     for df, dfs in [("F3", "DS1")] + [("F1", d) for d in DFS]:  # どの部品の型も: 部が未選択なら全課を押せる・課だけを選ぶとその課に絞り部も選ぶ・選んだ部に入らない課は押せない

@@ -22,6 +22,7 @@ import check5  # noqa: E402
 import check5_cards  # noqa: E402
 import check5_conc  # noqa: E402
 import check5_fold  # noqa: E402
+import check5_names  # noqa: E402
 import check5_org  # noqa: E402
 import check5_roster  # noqa: E402
 import check_screen  # noqa: E402
@@ -52,7 +53,7 @@ def _r5(browser, page, base: str, data: dict) -> list:
     meta = page.evaluate("window.DATA.meta")
     rules = [(check5.compare_panel, browser, base), (check5.now_pages, page, base, meta), (check5.calendar, page, base, meta), (check5.sticky, page, base),
              (check5_cards.cards, page, base), (check5_cards.groups_g3, page, base), (check5_cards.charts, page, base),
-             (check5_cards.over, page, base, data), (check5_cards.forecast_and_summary, page, base), (check5_cards.chip_ng, page, base), (check5_conc.conc, page, base, data), (check5_roster.rule, page, base, data), (check5_cards.months12, page, base, data), (check5_cards.long_no_prev, page, base), (check5_conc.top_sections, page, base), (check5_fold.rule, page, base), (check5_org.data, data), (check5_org.screen, page, base), (_windows, data)]
+             (check5_cards.over, page, base, data), (check5_cards.forecast_and_summary, page, base), (check5_cards.chip_ng, page, base), (check5_conc.conc, page, base, data), (check5_roster.rule, page, base, data), (check5_cards.months12, page, base, data), (check5_cards.long_no_prev, page, base), (check5_conc.top_sections, page, base), (check5_fold.rule, page, base), (check5_names.rule, page, base, data), (check5_org.data, data), (check5_org.screen, page, base), (_windows, data)]
     out = []
     for fn, *args in rules:
         try:

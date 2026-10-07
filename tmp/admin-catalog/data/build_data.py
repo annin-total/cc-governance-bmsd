@@ -90,6 +90,7 @@ def _org(raw, data: dict) -> None:
     data["fixed"]["org"], by = extras_org.roster(len(users), users, active)
     data["fixed"]["org"]["unlisted"] = extras_org.unlisted(raw, data["meta"]["csv_end"], by)
     org = data["fixed"]["org"]
+    named = extras_org.names(by)  # 氏名も部・課と同じく、期間の終わりの月に当たる名簿（最新の名簿）で引く
     org["rosters"], org["applied"] = extras_org.monthly(raw, by, data["meta"]["today"])
     use = next(x["use"] for x in org["applied"] if x["month"] == extras_org.month_start(data["meta"]["end"]))  # 期間の終わりの月に使う名簿（部・課はこの名簿で引く）
     if use != max(r["month"] for r in org["rosters"]):
@@ -98,10 +99,10 @@ def _org(raw, data: dict) -> None:
     for key in PERIOD_KEYS:
         p = data["p"][key]
         for rows in (p["x"]["billed"], p["x"].get("activity", []), p["r3"].get("over", {}).get("rows", [])):
-            extras_org.annotate(rows, by)
+            extras_org.annotate(rows, by, named)
         p["r5"]["depts"] = extras_org.depts(raw, key, p, by)
-    extras_org.annotate(data["fixed"]["r3"]["policy"]["users"], by)
-    extras_org.annotate(data["fixed"]["now"]["r3"]["silent"]["rows"], by)
+    extras_org.annotate(data["fixed"]["r3"]["policy"]["users"], by, named)
+    extras_org.annotate(data["fixed"]["now"]["r3"]["silent"]["rows"], by, named)
 
 
 def _rounded(v):

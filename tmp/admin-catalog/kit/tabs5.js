@@ -1,18 +1,17 @@
 "use strict";
-// 案 51 だけが読むタブの差し替え（look.org）: 利用者の並ぶタブ（目録の org: true）に「課」の列を利用者の右に足し、
-// 行に部署の絞り込みの data-*（deptfilter.js）を付ける。タブ「部署ごと」（depts）は部の行・課の行・不明の行。
+// 案 51 だけが読むタブの差し替え（look.org）: 利用者の並ぶタブ（目録の org: true）の利用者の列を、氏名とその下の部・課にし
+// （名簿に無い人はメールと「不明」。触れるとメール）、絞り込みは氏名とメールのどちらでも当てる。行に部署の絞り込みの data-*（deptfilter.js）を付ける。タブ「部署ごと」（depts）は部の行・課の行・不明の行。
 (() => {
   const K = window.KIT;
   const { T } = window.CATALOG;
   const UNKNOWN = "unknown";
-  const SECTION = { key: "section", kind: "section", label: "課" };
+  const PERSON = { key: "who", kind: "person", label: "利用者 · 部署" };
   const secKey = (dept, section) => `${dept}|${section ?? ""}`; // 課は部の中で一意。空の課も部ごとに 1 つ
   const userRow = (r) => ({ dept: r.dept ?? UNKNOWN, sec: r.dept === null || r.dept === undefined ? "" : secKey(r.dept, r.section) });
 
   function withSection(tab) {
-    const at = tab.cols.findIndex((c) => c.kind === "user");
-    const cols = [...tab.cols.slice(0, at + 1), SECTION, ...tab.cols.slice(at + 1)];
-    return { ...tab, cols, rowData: userRow, ...(tab.long && tab.long !== "same" ? { long: withSection(tab.long) } : {}) };
+    const cols = tab.cols.map((c) => (c.kind === "user" ? PERSON : c));
+    return { ...tab, cols, q: `{name} ${tab.q}`, search: tab.search.replace("利用者", "氏名・メール"), rowData: userRow, ...(tab.long && tab.long !== "same" ? { long: withSection(tab.long) } : {}) };
   }
 
   const adapt = (tab) => (K.look.get().org && tab.org ? withSection(tab) : tab);

@@ -106,10 +106,24 @@ def unlisted(raw, csv_end: int, by: dict) -> int:
     return sum(u not in by for (u,) in raw.execute(sql, (csv_end - UNLISTED_DAYS + 1, csv_end)))
 
 
-def annotate(rows: list, by: dict) -> None:
-    """利用者ごとの行に `dept`・`section` を足す。"""
+# 架空の氏名（よくある姓と名の組み合わせ。実在の人を指さない）。本物の seed は氏名の列にメールのローカル部を入れるため、カタログの側で差し替える
+SURNAMES = "佐藤 鈴木 高橋 田中 伊藤 渡辺 山本 中村 小林 加藤 吉田 山田 佐々木 山口 松本 井上 木村 林 斎藤 清水".split()
+GIVEN = "翔太 健太 大輔 拓也 直樹 美咲 陽子 恵 由美 彩 浩二 誠 亮 智子 裕子 隆 達也 優子 和也 真由美".split()
+NAME_SALT = 7
+
+
+def names(by: dict) -> dict:
+    """名簿にいる利用者のメール → 架空の氏名（乱数の種は固定。同姓同名もありうる）。"""
+    rng = random.Random(NAME_SALT)
+    return {u: f"{rng.choice(SURNAMES)} {rng.choice(GIVEN)}" for u in sorted(by)}
+
+
+def annotate(rows: list, by: dict, named: dict) -> None:
+    """利用者ごとの行に `dept`・`section`・`name`（名簿に無い人は None）・`who`（画面に出す名前。名簿に無い人はメール）を足す。"""
     for r in rows:
         r["dept"], r["section"] = by.get(r["email"], (None, None))
+        r["name"] = named.get(r["email"])
+        r["who"] = r["name"] or r["email"]
 
 
 def _costs(raw, a: int, b: int) -> dict:

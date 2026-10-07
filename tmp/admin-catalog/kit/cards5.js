@@ -42,5 +42,8 @@
     return { ...card, sub: "", chipNote: K.L.FC_PREV_CHIP_TPL };
   }
 
-  window.CATALOG.cardAdapters = [...(window.CATALOG.cardAdapters || []), chart, over, forecastPrev];
+  // 組織 CSV があるとき、コストの多い利用者は氏名で（幅が無いので部・課は出さない。名簿に無い人はメール）
+  const named = (card) => (K.look.get().org && card.ref === "top_spenders" ? { ...card, viz: { ...card.viz, label: "{who}" } } : card);
+
+  window.CATALOG.cardAdapters = [...(window.CATALOG.cardAdapters || []), chart, over, forecastPrev, named];
 })();
