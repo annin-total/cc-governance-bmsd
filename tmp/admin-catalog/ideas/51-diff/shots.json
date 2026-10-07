@@ -68,4 +68,5 @@
  ["cmp-oi-OI2", "?page=settings&oi=OI2", null],
  ["cmp-oi-OI3", "?page=settings&oi=OI3", null],
  ["cmp-oi-OI4", "?page=settings&oi=OI4", null],
- ["cmp-oi-OI5", "?page=settings&oi=OI5", null]]
+ ["cmp-oi-OI5", "?page=settings&oi=OI5", null],
+ ["cmp-y12-prev", "?page=home&period=12m&y12=prev", null]]
