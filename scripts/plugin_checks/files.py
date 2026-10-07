@@ -14,9 +14,18 @@ DEV_ARTIFACT_NAMES = frozenset(
         ".pytest_cache",
         "conftest.py",
         ".git",
+        "node_modules",
+        # 本体が --plugin-dir で mod を読み込むとプラグインの直下に書く
+        "tsconfig.json",
     }
 )
-DEV_ARTIFACT_PATTERNS = (re.compile(r"^test_.*\.py$"), re.compile(r".*_test\.py$"))
+DEV_ARTIFACT_PATTERNS = (
+    re.compile(r"^test_.*\.py$"),
+    re.compile(r".*_test\.py$"),
+    re.compile(r".*\.test\.tsx?$"),
+)
+# 本体が --plugin-dir で mod を読み込むと書く型定義の置き場（プラグインのルートからの相対）
+DEV_ARTIFACT_DIRS = (Path(".claude-plugin") / "types",)
 
 
 # --- plugin.json の存在・パース可否・name/version の非空文字列 ---
@@ -85,6 +94,7 @@ def _is_dev_artifact(path: Path) -> bool:
 # --- 開発用ファイルの混入なし ---
 def check_no_dev_artifacts(plugin_dir: Path) -> None:
     found = [p for p in plugin_dir.rglob("*") if _is_dev_artifact(p)]
+    found += [plugin_dir / d for d in DEV_ARTIFACT_DIRS if (plugin_dir / d).exists()]
     if found:
         for a in sorted(found):
             ng(f"開発用ファイル/ディレクトリが混入: {a}")
