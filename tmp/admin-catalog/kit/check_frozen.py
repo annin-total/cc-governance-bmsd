@@ -19,7 +19,7 @@ def _diff(a: Path, b: Path) -> str:
     x, y = Image.open(a).convert("RGBA"), Image.open(b).convert("RGBA")
     if x.size != y.size:
         return f"大きさが違う {x.size} → {y.size}"
-    box = ImageChops.difference(x, y).getbbox()
+    box = ImageChops.difference(x, y).getbbox(alpha_only=False)  # 既定（True）は RGBA のアルファだけを見て色の違いを見逃す
     return f"画素が違う（範囲 {box}）" if box else ""
 
 
