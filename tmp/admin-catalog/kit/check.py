@@ -45,12 +45,18 @@ def _design_ids() -> tuple:
 
 
 def _r5(browser, page, base: str, data: dict) -> list:
-    """案 51（compare: "r5"）の決まり（concepts5.md の 7 章）。"""
+    """案 51（compare: "r5"）の決まり（concepts5.md の 7 章）。決まりの途中で例外が出たら、その決まりの問題として数え、次の決まりへ進む。"""
     meta = page.evaluate("window.DATA.meta")
-    out = check5.now_pages(page, base, meta) + check5.calendar(page, base, meta) + check5.sticky(page, base) + check5.compare_panel(browser, base)
-    out += check5_cards.cards(page, base) + check5_cards.groups_g3(page, base) + check5_cards.charts(page, base)
-    out += check5_cards.over(page, base, data) + check5_cards.forecast_and_summary(page, base)
-    return out + check5_org.data(data) + check5_org.screen(page, base) + _windows(data)
+    rules = [(check5.compare_panel, browser, base), (check5.now_pages, page, base, meta), (check5.calendar, page, base, meta), (check5.sticky, page, base),
+             (check5_cards.cards, page, base), (check5_cards.groups_g3, page, base), (check5_cards.charts, page, base),
+             (check5_cards.over, page, base, data), (check5_cards.forecast_and_summary, page, base), (check5_org.data, data), (check5_org.screen, page, base), (_windows, data)]
+    out = []
+    for fn, *args in rules:
+        try:
+            out += fn(*args)
+        except Exception as e:  # noqa: BLE001 決まりが壊れた画面で止まったことを、問題として報告する
+            out.append(f"{fn.__module__}.{fn.__name__}: 検査が途中で止まった（{type(e).__name__}: {str(e).splitlines()[0][:160]}）")
+    return out
 
 
 def _dom(idea: Path, data: dict) -> list:

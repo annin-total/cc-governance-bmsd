@@ -139,13 +139,15 @@ def compare_panel(browser, base: str) -> list:
     page.evaluate("document.querySelector('[data-cmp5]').remove()")
     if page.evaluate(pos) != with_btn:
         out.append("比較: ボタンを外すとページの中身の位置が変わる")
-    goto(page, f"{base}?page=cost&g=G3&chart=K2")
+    goto(page, f"{base}?page=cost")
     keys = page.evaluate("Object.keys(window.KIT.compare5.SWITCHES)")
     if page.locator("[data-cmp-row]").count() != len(keys):
         out.append("比較: パネルの行の数が切り替えの表と合わない")
-    q = parse_qs(urlparse(page.evaluate("window.KIT.compare5.fullUrl()")).query)
+    q = parse_qs(urlparse(page.evaluate("window.KIT.compare5.fullUrl()")).query)  # 問い合わせに切り替えが無いページから
     missing = [k for k in keys if k not in q]
+    goto(page, f"{base}?page=cost&g=G3&chart=K2")
+    q = parse_qs(urlparse(page.evaluate("window.KIT.compare5.fullUrl()")).query)
     if missing or q.get("g") != ["G3"] or q.get("chart") != ["K2"]:
-        out.append(f"比較: コピーする URL に今の値が無い（無いキー {missing}）")
+        out.append(f"比較: コピーする URL に全切り替えの今の値が無い（無いキー {missing}）")
     page.close()
     return out

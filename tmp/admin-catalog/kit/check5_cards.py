@@ -58,7 +58,7 @@ def charts(page, base: str) -> list:
         got = tuple(page.evaluate(PART_JS, r) for r in COST_CARDS)
         if got != want:
             out.append(f"{k}: 部品が表と違う {got} ≠ {want}")
-        if k == "K4" and len({g.split("+")[0] for g in got}) != len(got):
+        if k == "K4" and len({(g or "").split("+")[0] for g in got}) != len(got):
             out.append(f"K4: 7 日の 4 枚に同じ部品がある {got}")
         goto(page, f"{base}?page=home&period=12m&chart={k}")
         sel = ", ".join(f"main .card[data-ref={r}] {s}" for r in COST_CARDS for s in (".k5-shadow", ".k5-avg", ".pair"))
