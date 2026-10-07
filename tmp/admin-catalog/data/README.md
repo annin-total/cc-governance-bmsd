@@ -1,7 +1,7 @@
 # data — ダミーデータと値
 
 - **`data.js`（40 人。案 31 が読む）は凍結している。作り直さない。**生成したスクリプトは ce60088 の版で、今のスクリプトでは作れない
-- `data5.js`（約 200 人。案 51 が読む）は `window.DATA` を定義する。作り直すのはこれだけ。値は `seed_biased.py` が作る偏りのある合成データ（200 人・400 日、メールは `userNNN@example.com`）から作る
+- `data5.js`（約 200 人。案 51 が読む）は `window.DATA` を定義する。作り直すのはこれだけ。値は `seed_biased.py` が作る偏りのある合成データ（200 人・760 日。利用明細は 24 か月分で、12 か月の前の 12 か月を含む。メールは `userNNN@example.com`）から作る
 今の画面の集計はサーバの report をそのまま呼び、足りない値を `extras*.py` が数える。状態の判定と閾値は `judge.py`（設計 4.4 の constants の名前案の写し。閾値ちょうどは該当する）。
 
 ## 作り方
@@ -52,10 +52,11 @@ $SP/venv/bin/python data/build_data.py --server $SP/server --scripts $SP/scripts
 | `p[k].r5.depts` | 部署ごと（タブ `depts`）の行。`kind`（`dept` 部の行＝部全体の合算・`section` 課の行・`unknown` 名簿に無い人）・`dept`・`section`（課の欄が空なら ""）・`users`・`cost`・`share`・`per_user_bd`。7・28 日は `prev`・`diff`・`change`・`over`（7 日は週次、28 日は月次の注意以上の人数）。部の行と不明の行の合計は `r3.cost` の人数とコストに一致する |
 | `p[k].r5.series` | 日ごとの `cost`・`users`・`bd`（営業日か）・`period`。7・28 日は前と直近の 2N 日、12 か月は 365 日 |
 | `p[k].r5.per_user` | 期間の利用者ごとの 1 人 1 営業日あたり（`values`。メールは出さない）・`median`・`mean`（`r3.cost.per_user_bd` と一致） |
+| `p.12m.r5.months` | 暦月ごとの `cost`・`users`・`per_bd`・`per_user_bd` と `period`（直近の 12 か月か前の 12 か月か）・`partial`。窓の境をまたぐ月は前と直近の 2 行に分ける。直近の合計は `r3.cost.total` に一致する |
 | `p[k].r5.prev_costs` | 前の期間の利用者ごとのコスト（多い順。メールは出さない。合計は `r3.cost.prev_total`）。12 か月は空 |
 | `fixed.now` | 状態のページの値（今日までの 7 日）。`period`・`match`（突き合わせの窓 `start`・`end`）・`events`・`users`・`errors`・`nulls`・`health`・`reconciliation`（`match7`）と `r3`（`silent`〔`user_delivery` の行に `dept`・`section`〕・`errors`・`nulls`・`changes`〔`events` の率・`senders`〕） |
 | `fixed.r3.forecast` | 月末の見込みの前月の実績との `change`・`state` |
 | `fixed.r3.policy` | 利用者単位の適用状況（今日までの 30 日。`start`・`end`）。`users`（`dept`・`section` つき）・`items`・`counts`・`states`・`core`・`plugin`・`versions` |
 | `fixed.r3.summaries` | サマリーの見本 3 件。基準日は利用明細の最終日から。`ng`・`warn` は作った時点の要確認・注意のカードの枚数。`body` が null の 1 件は、キットが概況から下書きを作り、数も下書きから数える |
-| `fixed.org` | 組織 CSV の `imported`（取り込み日）・`rows`（行数）・`depts`（部の並び）・`units`（部ごとの課の並び。空の課は ""）・`depts_n`・`sections_n`・`unlisted`（利用明細の最終日までの 30 日にコストがあった人のうち名簿に無い人数） |
+| `fixed.org` | 組織 CSV の `rosters`（取り込んだ月ごとの名簿の `month`・`file`・`rows`・`depts_n`・`sections_n`・`unlisted`〔その月にコストがあって名簿に無い人〕・`imported`。今月から 1〜4・6〜8 か月前で、先頭・途中・最新の月が欠ける）・`applied`（直近 12 か月の各月に使う名簿 `use`。その月→無ければ前の最新→前が無ければ後の最初）・`used`（期間の終わりの月に使う名簿。部・課はこれで引く）・`imported`（取り込み日）・`rows`（行数）・`depts`（部の並び）・`units`（部ごとの課の並び。空の課は ""）・`depts_n`・`sections_n`・`unlisted`（利用明細の最終日までの 30 日にコストがあった人のうち名簿に無い人数） |
 | `fixed.policy`・`fixed.effect`・`fixed.effect2`・`fixed.settings`・`fixed.m` | サーバの集計（適用状況・設定の効果・データと設定）と、適用前後のセッションの大きさ・利用明細の鮮度 |

@@ -1,6 +1,6 @@
 """カタログ用の偏りのある合成データを、空の DB（DB_DSN）に作る。本物の seed（scripts/seed_dashboard.py）は変えない。
 
-使い方: DB_DSN=sqlite:///<db> python seed_biased.py --server <server> --scripts <seed の scripts/> [--users 200] [--days 400]
+使い方: DB_DSN=sqlite:///<db> python seed_biased.py --server <server> --scripts <seed の scripts/> [--users 200] [--days 760]
 端末・設定の報告・エラーは本物の seed の関数（_terminals・_row）をそのまま使い、記録と利用明細だけを利用者の型で偏らせる。
 受信と取込はサーバの本体（ndjson.ingest・csv_import.import_all）を通し、1 行でも捨てられたら止まる。
 """
@@ -53,7 +53,7 @@ def _args() -> argparse.Namespace:
     p.add_argument("--server", required=True, type=Path)
     p.add_argument("--scripts", required=True, type=Path)
     p.add_argument("--users", type=int, default=200)
-    p.add_argument("--days", type=int, default=400)
+    p.add_argument("--days", type=int, default=760)  # 利用明細を 24 か月分（12 か月の前の 12 か月を含む）
     return p.parse_args()
 
 

@@ -89,6 +89,12 @@ def _org(raw, data: dict) -> None:
     active = [u for (u,) in raw.execute("SELECT DISTINCT user_email FROM cost_daily WHERE day BETWEEN ? AND ? AND cost > 0", (c["start"], c["end"]))]
     data["fixed"]["org"], by = extras_org.roster(len(users), users, active)
     data["fixed"]["org"]["unlisted"] = extras_org.unlisted(raw, data["meta"]["csv_end"], by)
+    org = data["fixed"]["org"]
+    org["rosters"], org["applied"] = extras_org.monthly(raw, by, data["meta"]["today"])
+    use = next(x["use"] for x in org["applied"] if x["month"] == extras_org.month_start(data["meta"]["end"]))  # 期間の終わりの月に使う名簿（部・課はこの名簿で引く）
+    if use != max(r["month"] for r in org["rosters"]):
+        sys.exit("期間の終わりの月に使う名簿が、部・課を引いた最新の名簿でない")
+    org["used"] = use
     for key in PERIOD_KEYS:
         p = data["p"][key]
         for rows in (p["x"]["billed"], p["x"].get("activity", []), p["r3"].get("over", {}).get("rows", [])):

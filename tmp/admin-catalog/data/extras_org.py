@@ -16,6 +16,10 @@ OVER_SPAN = {"7": "week", "28": "month"}  # 部署ごとの「基準を超えた
 ORG_SALT, LAGGED_OUT, ACTIVE_OUT = 3, 1, 4  # 名簿に無い（不明の）利用者: 漏れた人から 1 人・直近 7 日にコストのある人から 4 人
 SECTIONS_PER_DEPT = 10  # 本物の seed の ORG_BRANCHES（部ごとの課の数）を、名簿を作るときだけ差し替える
 UNLISTED_DAYS = 30  # 取り込みの欄の「名簿に無い利用者」は、利用明細の最終日までの 30 日にコストがあった人で数える
+# 取り込んだ名簿の月（今月から何か月前か）。先頭の欠け（8〜6 か月前）・途中の欠け（5 か月前）・最新の欠け（今月）を作り、適用の決まりを画面で読めるようにする
+ROSTER_AGO = (1, 2, 3, 4, 6, 7, 8)
+SHOWN_MONTHS = 12  # 取り込みの欄に並べる月（今月まで）
+JOINERS_PER_MONTH = 3  # 古い名簿ほど、後から入った人を月ごとに何人ずつ抜くか
 
 
 def roster(n_users: int, users: list, active: list) -> tuple:
@@ -40,13 +44,55 @@ def roster(n_users: int, users: list, active: list) -> tuple:
             rows.append({EMAIL: u, DEPT: org[0], SECTION: org[1]})
     rows = [r for r in rows if r[EMAIL] not in out]
     by = {r[EMAIL]: (r[DEPT], r[SECTION]) for r in rows if "@" in r[EMAIL]}
-    units = defaultdict(set)
-    for d, s in by.values():
-        units[d].add(s)
-    units = {d: sorted(units[d], key=_natural) for d in sorted(units)}
+    units = _units(by)
     org = {"imported": (IMPORTED - EPOCH).days, "rows": len(rows), "depts": list(units), "units": units,
            "depts_n": len(units), "sections_n": sum(len([s for s in v if s]) for v in units.values())}
     return org, by
+
+
+def _units(by: dict) -> dict:
+    units = defaultdict(set)
+    for d, s in by.values():
+        units[d].add(s)
+    return {d: sorted(units[d], key=_natural) for d in sorted(units)}
+
+
+def month_start(day: int, ago: int = 0) -> int:
+    """`day` の月から `ago` か月前の月の初日。"""
+    from ccgov.metrics.calendar import add_months, month_bounds
+
+    return month_bounds(add_months(month_bounds(day)[0], -ago))[0]
+
+
+def applied(months: list, shown: list) -> list:
+    """名簿の適用の決まり: その月の名簿があればそれ、無ければ前の最新、前が無ければ後の最初の名簿。"""
+    have = sorted(months)
+    out = []
+    for m in shown:
+        before = [x for x in have if x <= m]
+        out.append({"month": m, "use": before[-1] if before else next((x for x in have if x > m), None)})
+    return out
+
+
+def monthly(raw, by: dict, today: int) -> tuple:
+    """月ごとの名簿（取り込んだ月だけ）と、直近 12 か月の各月に使う名簿。最新の名簿は `by`、古い名簿ほど後から入った人を抜く。"""
+    from ccgov.metrics.calendar import month_bounds
+
+    order = sorted(by)
+    random.Random(ORG_SALT).shuffle(order)
+    latest = min(ROSTER_AGO)
+    rosters = []
+    for ago in sorted(ROSTER_AGO, reverse=True):
+        drop = set(order[:(ago - latest) * JOINERS_PER_MONTH])
+        m = {u: v for u, v in by.items() if u not in drop}
+        lo, hi = month_bounds(month_start(today, ago))
+        units = _units(m)
+        cost_users = {u for (u,) in raw.execute("SELECT DISTINCT user_email FROM cost_daily WHERE day BETWEEN ? AND ? AND cost > 0", (lo, hi))}
+        rosters.append({"month": lo, "file": f"org_{EPOCH + dt.timedelta(days=lo):%Y%m}.csv", "rows": len(m), "depts_n": len(units),
+                        "sections_n": sum(len([s for s in v if s]) for v in units.values()), "unlisted": len(cost_users - set(m)),
+                        "imported": month_bounds(hi + 1)[0]})
+    shown = [month_start(today, ago) for ago in range(SHOWN_MONTHS - 1, -1, -1)]
+    return rosters, applied([r["month"] for r in rosters], shown)
 
 
 def _natural(s: str) -> tuple:
