@@ -26,6 +26,7 @@
   function vizHtml(card, ctx) {
     if (!card.viz) return "";
     if (K.over.has(card.viz.kind)) return K.over.render(card, ctx);
+    if ((K.vizKinds || {})[card.viz.kind]) return K.vizKinds[card.viz.kind](card, ctx); // 案 51 の足した種類（conc5.js）
     if (K.viz5 && K.viz5.has(card.viz.kind)) return `<span class="k5-wrap" data-part="${esc(card.viz.part)}">${K.viz5.render(card, ctx)}</span>`; // 案 51 の部品
     return K.viz.render(card, ctx);
   }

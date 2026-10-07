@@ -36,6 +36,7 @@
     const head = (scope, dots) => `<header class="p-head"><h2>${esc(fill(tab.title, ctx))}</h2><p class="scope">${esc(fill(scope, ctx))}${dots}</p></header>`;
     const open = `<div class="panel" role="tabpanel" id="${esc(tab.id)}" aria-labelledby="tab-${esc(tab.id)}" data-panel="${esc(tab.id)}">`;
     if (!shown) return `${open}${head(K.L.LONG_SCOPE, "")}<p class="na">${esc(K.L.NOT_LONG_PANEL)}</p></div>`;
+    if (shown.panel) return `${open}${head(shown.scope, "")}${shown.panel(ctx)}</div>`; // 表を持たないタブ（案 51 の conc）
     const t = K.table.model(shown, ctx);
     const chart = shown.chart ? K.charts.build(shown.chart, t.source, ctx) : null;
     const hasDot = t.cols.some((c) => c.kind === "dot");

@@ -28,9 +28,15 @@
     dfs: { label: "部署の絞り込みの部品", def: "DS1", pages: USER_PAGES, variants: {
       DS1: ["チェックボックス", { dfs: "DS1" }], DS2: ["色分けのチェック", { dfs: "DS2" }], DS3: ["塗られるチップ", { dfs: "DS3" }],
       DS4: ["木の形", { dfs: "DS4" }], DS5: ["検索とタグ", { dfs: "DS5" }], DS6: ["色の四角だけ", { dfs: "DS6" }] } },
+    conc: { label: "利用者の集中", def: "CC1", pages: ["cost"], variants: {
+      CC1: ["累積の曲線", { conc: "CC1" }], CC2: ["パレート図", { conc: "CC2" }], CC3: ["状態の階級の帯", { conc: "CC3" }], CC4: ["1 人 1 マス", { conc: "CC4" }] } },
+    concd: { label: "部署と割合", def: "CD1", pages: ["cost"], variants: {
+      CD1: ["2 本の横棒", { concd: "CD1" }], CD2: ["マリメッコ", { concd: "CD2" }], CD3: ["ツリーマップ", { concd: "CD3" }], CD4: ["散布図", { concd: "CD4" }] } },
+    concAt: { label: "集中の置き場", def: "card", pages: ["cost"], variants: { card: ["カード", { concAt: "card" }], tab: ["詳細タブ", { concAt: "tab" }] } },
     stale: { label: "利用明細の古さの警告", def: "W1", pages: ALL, variants: { W0: ["なし", { stale: "W0" }], W1: ["あり", { stale: "W1" }] } },
     lag: { label: "明細の遅れの見本", def: "normal", pages: ALL, variants: { normal: ["通常", { lag: "" }], lag: ["遅れ", { lag: "lag" }] } },
   };
+  const NO_ID = ["normal", "lag", "card", "tab"]; // 値の名前だけで分かるもの（記号を前に付けない）
   const KEY = (param) => `kit5-${param}`;
   const OPEN_KEY = "kit5-compare-open";
   const store = (s, fn) => { try { return fn(s()); } catch (e) { return null; } }; // 覚えられなくても動く（読めなければ null）
@@ -51,7 +57,7 @@
   function row([param, s]) {
     const off = s.pages && !s.pages.includes(here());
     return `<div class="cmp-row${off ? " is-off" : ""}" data-cmp-row="${param}"><span class="cmp-name">${esc(s.label)}</span><span class="cmp-vals">${Object.entries(s.variants).map(([id, [name]]) =>
-      `<a href="${esc(hrefWith({ [param]: id }))}" data-cmp="${param}" data-cmp-id="${id}"${id === chosen(param) ? ' aria-current="true"' : ""}>${id === "normal" || id === "lag" ? "" : `${id} `}${esc(name)}</a>`).join("")}</span></div>`;
+      `<a href="${esc(hrefWith({ [param]: id }))}" data-cmp="${param}" data-cmp-id="${id}"${id === chosen(param) ? ' aria-current="true"' : ""}>${NO_ID.includes(id) ? "" : `${id} `}${esc(name)}</a>`).join("")}</span></div>`;
   }
 
   // 「☰ 比較」のボタンとパネル（閉じた状態で描き、開いているかは localStorage から）

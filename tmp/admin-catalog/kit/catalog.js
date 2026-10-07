@@ -21,7 +21,8 @@
   // 群 [見出し, [カード id], { win, note }] か { label, cards, win, note }。win は期間を固定した窓（rec7 など）
   function group(spec, i) {
     const s = Array.isArray(spec) ? { label: spec[0], cards: spec[1], ...(spec[2] || {}) } : spec;
-    const cards = s.cards.map(cardOf);
+    const at = KIT.look.get().concAt; // onlyAt: 置き場の切り替え（案 51 の conc。card・tab）で出すときだけ
+    const cards = s.cards.map(cardOf).filter((c) => !c.onlyAt || c.onlyAt === at);
     const base = cards[0].win;
     if (cards.some((c) => c.win !== base)) fail(`群「${s.label}」に窓の違うカード: ${[...new Set(cards.map((c) => c.win))].join(", ")}`);
     const winId = s.win || base;
@@ -55,7 +56,7 @@
 
   // ページ { id, title, lead, periods, groups: [群], tabs: [id] }
   function page(def) {
-    const all = (def.tabs || []).map(tabOf).filter((t) => !t.longOnly || LONG);
+    const all = (def.tabs || []).map(tabOf).filter((t) => (!t.longOnly || LONG) && (!t.onlyAt || t.onlyAt === KIT.look.get().concAt));
     const shown = (t) => !LONG || Boolean(t.long);
     const tabs = [...all.filter(shown), ...all.filter((t) => !shown(t))]; // 12 か月では出るタブを先に開く
     const ids = tabs.map((t) => (LONG && t.long && t.long !== SAME ? t.long.id : t.id));

@@ -21,14 +21,14 @@
           ["コスト", [...COST, "top_spenders", "model_mix", "cache_read_share"]],
           ["今月", ["forecast"]],
           ["基準を超えた利用者", OVER],
-          ["利用者", ["billed_users", "new_users", "retention"]],
+          ["利用者", ["billed_users", "new_users", "retention", "conc_users", "conc_depts"]],
         ],
         groups3: [
           ["コスト", [...COST, "top_spenders", "model_mix", "cache_read_share"]],
           ["今月", ["forecast"]],
-          ["利用者", ["billed_users", ...OVER, "new_users", "retention"], { note: "基準超えは区分ごとの注意以上の人数（基準の金額はカードの中）· 使い始めた利用者は利用明細に初めてコストが出た人" }],
+          ["利用者", ["billed_users", ...OVER, "new_users", "retention", "conc_users", "conc_depts"], { note: "基準超えは区分ごとの注意以上の人数（基準の金額はカードの中）· 使い始めた利用者は利用明細に初めてコストが出た人" }],
         ],
-        tabs: ["user_cost", "over_users", "cost_daily", "models", "month", "months", "depts"] },
+        tabs: ["user_cost", "over_users", "cost_daily", "models", "month", "months", "depts", "conc"] },
       { id: "activity", title: "利用状況", periods: true, lead: "どれだけの頻度で使い、何を呼び出し、セッションはどれだけ大きいか",
         groups: [
           ["頻度", ["days_per_user", "prompts_per_person_day", "sessions_per_person_day"]],

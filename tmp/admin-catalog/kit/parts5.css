@@ -88,3 +88,31 @@
 .k5-old { fill: none; stroke: var(--muted); stroke-width: 1.3; }
 rect.k5-old { fill: var(--ghost); stroke: none; }
 .k5-dot-old { fill: var(--muted); }
+
+/* 人数とコストの割合の関係（conc5*.js） */
+.conc-wrap { display: grid; gap: var(--sp-2xs); }
+.conc { width: 100%; height: 110px; }
+.conc-tab .conc { height: 240px; }
+.conc-tab { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3xl); margin-top: var(--sp-m); }
+.conc-tab h3 { margin: 0 0 var(--sp-s); font-size: var(--fs-label); }
+.conc-diag { stroke: var(--ghost); stroke-width: 1; stroke-dasharray: 3 3; }
+.conc-now { fill: none; stroke: var(--accent); stroke-width: 2; }
+.conc-prev { fill: none; stroke: var(--muted); stroke-width: 1.2; opacity: .6; }
+.conc-cap { margin-top: 0; }
+.conc-bands { display: grid; grid-template-columns: 3em 1fr; gap: var(--sp-2xs) var(--sp-s); align-items: center; font-size: var(--fs-xs); color: var(--muted); }
+.conc-band { display: flex; gap: 1px; height: var(--meter-h); border-radius: var(--r-xs); overflow: hidden; }
+.conc-band .ov-ng, .conc-legend .ov-ng { background: var(--ng); } .conc-band .ov-warn, .conc-legend .ov-warn { background: var(--warn); } .conc-band .ov-ok, .conc-legend .ov-ok { background: var(--ghost); }
+.conc-na { font-size: var(--fs-sm); color: var(--muted); }
+.conc-waffle { display: grid; gap: 2px; }
+.conc-cell { aspect-ratio: 1; border-radius: 1px; background: var(--track); }
+.conc-cell.lv-1 { background: var(--accent-2); } .conc-cell.lv-2 { background: var(--accent); opacity: .7; } .conc-cell.lv-3 { background: var(--accent); } .conc-cell.lv-4 { background: var(--chip-up-ink); }
+.conc-drows { display: grid; gap: var(--sp-3xs); font-size: var(--fs-xs); color: var(--ink-2); }
+.conc-drow, .conc-dhead { display: grid; grid-template-columns: minmax(0, 1fr) 30% 3.5em 30% 3.5em; gap: var(--sp-s); align-items: center; }
+.conc-dhead { color: var(--muted); }
+.conc-drow > span:first-child { border-left: 3px solid var(--dc); padding-left: var(--sp-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conc-drow.is-sec > span:first-child { padding-left: var(--sp-l); border-left-color: color-mix(in srgb, var(--dc) 45%, var(--card)); }
+.conc-drow .num { text-align: right; font-variant-numeric: tabular-nums; }
+.conc-people i { background: var(--ghost); } .conc-cost i { background: var(--accent); }
+.conc-mk, .conc-tm { stroke: var(--card); stroke-width: .5; }
+.conc-dot { opacity: .75; stroke: var(--card); stroke-width: 1; }
+.conc-axis { stroke: var(--rule); stroke-width: 1; }
