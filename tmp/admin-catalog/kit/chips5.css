@@ -1,0 +1,22 @@
+/* 案 51 の増減のチップの色の型（look.chip。boot.js が html の data-chip に写す）。CH1 は compare.css の緑と赤（p-gr）のまま。中立はどの型も灰のまま */
+:root {
+  --chip-or-bg: #f6e3cc; /* CH6 の悪化（橙）。状態の注意（--warn の茶）より明るく赤みのある橙 */
+  --chip-or-ink: #8c4a0a;
+}
+/* CH2: 悪化に要確認の札と同じ赤（文字は --ng、地は --ng-bg） */
+:root[data-chip="CH2"] .change.worse { background: var(--ng-bg); color: var(--ng); }
+/* CH3: 悪化だけ色を付け、改善は灰の地の文字 */
+:root[data-chip="CH3"] .change.better { background: none; padding: 0; color: var(--muted); font-weight: 400; }
+/* CH4: 塗らず、文字の色だけ */
+:root[data-chip="CH4"] .change.better, :root[data-chip="CH4"] .change.worse { background: none; padding: 0; }
+:root[data-chip="CH4"] .change.better { color: var(--ok); } :root[data-chip="CH4"] .change.worse { color: var(--ng); }
+/* CH5: 枠線だけ */
+:root[data-chip="CH5"] .change.better { background: none; box-shadow: inset 0 0 0 1px var(--ok); color: var(--ok); }
+:root[data-chip="CH5"] .change.worse { background: none; box-shadow: inset 0 0 0 1px var(--cmp-worse-ink); color: var(--cmp-worse-ink); }
+/* CH6: 青と橙（色覚の違いに配慮した組） */
+:root[data-chip="CH6"] .change.better { background: var(--chip-up); color: var(--chip-up-ink); }
+:root[data-chip="CH6"] .change.worse { background: var(--chip-or-bg); color: var(--chip-or-ink); }
+/* CH7: 数字の左に色の点、数字は地の文字 */
+:root[data-chip="CH7"] .change.better, :root[data-chip="CH7"] .change.worse { background: none; padding: 0; color: var(--ink); }
+:root[data-chip="CH7"] .change.better::before, :root[data-chip="CH7"] .change.worse::before { content: ""; display: inline-block; width: var(--mark-dot); height: var(--mark-dot); margin: 0 var(--sp-2xs) 1px 0; border-radius: 50%; vertical-align: middle; }
+:root[data-chip="CH7"] .change.better::before { background: var(--ok); } :root[data-chip="CH7"] .change.worse::before { background: var(--cmp-worse-ink); }

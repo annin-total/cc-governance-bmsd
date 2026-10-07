@@ -8,7 +8,7 @@
     CAL_HEAT: "濃いほどその日のコストが多い",
     CAL_PICKS: { latest: "最新", prev: "1 つ前の期間", month_end: "先月末", month_end2: "前の月末" },
     UNKNOWN: "不明", NO_SECTION: "—", SECTION: "課", DEPT: "部", DEPT_COL: "部署",
-    DF_ALL: "すべて", DF_BUTTON: "部署: {}", DF_MORE: "{} ほか {n}", DF_LINK: "部署で絞り込む", DF_CLEAR: "すべて解除", DF_NO_SECTION: "（課なし）", DF_NAV: "部署の絞り込み",
+    DF_ALL: "すべて", DF_BUTTON: "部署: {}", DF_MORE: "{} ほか {n}", DF_LINK: "部署で絞り込む", DF_CLEAR: "すべて解除", DF_NO_SECTION: "（課なし）", DF_SEARCH: "部・課を探す", DF_NAV: "部署の絞り込み",
     FC_PREV_CHIP_TPL: "{month[prev_month]:mon} 月の実績 {month[prev_actual]:usd}",
     K5: {
       area: "日ごとのコスト", area_shadow: "日ごと · 薄い線は前の期間（曜日をそろえる）",

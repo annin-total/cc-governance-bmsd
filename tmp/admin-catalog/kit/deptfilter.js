@@ -39,16 +39,7 @@
     document.querySelectorAll("[data-df]").forEach(paint);
   }
 
-  const units = () => window.DATA.fixed.org.units;
-  const box = (kind, id, label, on, off) => `<label class="df-item${off ? " is-off" : ""}"><input type="checkbox" data-df-${kind}="${esc(id)}"${on ? " checked" : ""}${off ? " disabled" : ""}>${esc(label)}</label>`;
-
-  function lists() {
-    const L = K.L, depts = [...Object.keys(units()), UNKNOWN];
-    const d = depts.map((x) => box("dept", x, x === UNKNOWN ? L.UNKNOWN : x, state.dept.has(x), false)).join("");
-    const s = Object.entries(units()).flatMap(([dept, secs]) => secs.map((x) => box("sec", `${dept}|${x}`, x || L.DF_NO_SECTION, state.sec.has(`${dept}|${x}`), state.dept.size > 0 && !state.dept.has(dept)))).join("");
-    return `<div class="df-lists"><div class="df-col"><b>${esc(L.DEPT)}</b><div class="df-items">${d}</div></div><div class="df-col"><b>${esc(L.SECTION)}</b><div class="df-items">${s}</div></div>`
-      + `<button type="button" class="df-clear" data-df-clear>${esc(L.DF_CLEAR)}</button></div>`;
-  }
+  const lists = () => K.dfParts.lists(state); // 中の部品の見た目（DS1〜DS6）は deptparts.js
 
   function buttonText() {
     const L = K.L, names = [...[...state.dept].map((x) => (x === UNKNOWN ? L.UNKNOWN : x)), ...[...state.sec].map((x) => x.split("|")[1] || L.DF_NO_SECTION)];

@@ -1,0 +1,30 @@
+/* 部署の絞り込みの中の部品の見た目（deptparts.js。look.dfs）。部の色は状態（注意・要確認）とチップ（緑・赤・青・橙）と紛れない紫と青緑、課はその薄い色、不明は灰 */
+:root { --dc-0: #7d5a8c; --dc-1: #2e7d87; }
+.df-sec { --dcs: color-mix(in srgb, var(--dc) 45%, var(--card)); }
+.df-dept { --dcs: var(--dc); }
+.df-group { display: contents; }
+/* DS2: 色分けのチェック */
+.dfs-DS2 .df-item input, .dfs-DS6 .df-item input { appearance: none; width: 12px; height: 12px; margin: 0; border: 1.5px solid var(--dcs); border-radius: 2px; background: var(--card); cursor: pointer; }
+.dfs-DS2 .df-item input:checked, .dfs-DS6 .df-item input:checked { background: var(--dcs); box-shadow: inset 0 0 0 2px var(--card); }
+/* DS3: 押すと塗られるチップ */
+.dfs-DS3 .df-item input { position: absolute; opacity: 0; pointer-events: none; }
+.dfs-DS3 .df-item { padding: var(--sp-3xs) var(--sp-s); border: 1px solid var(--dcs); border-radius: 999px; }
+.dfs-DS3 .df-item:has(input:checked) { background: var(--dcs); color: var(--on-ink); }
+.dfs-DS3 .df-sec:has(input:checked) { color: var(--ink); }
+/* DS4: 木の形 */
+.df-tree { display: grid; gap: var(--sp-2xs); }
+.df-node { display: grid; grid-template-columns: 1.4em auto; align-items: center; column-gap: var(--sp-2xs); }
+.df-open { border: 0; background: none; padding: 0; color: var(--muted); cursor: pointer; }
+.df-kids { grid-column: 2; display: flex; flex-wrap: wrap; gap: var(--sp-3xs) var(--sp-m); padding: var(--sp-2xs) 0 var(--sp-2xs) var(--sp-l); border-left: 2px solid var(--dc); }
+.df-node > .df-dept { color: var(--dc); font-weight: 600; }
+/* DS5: 検索とタグ */
+.df-tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2xs); padding: var(--sp-2xs); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--card-hover); }
+.df-tag { display: inline-flex; align-items: center; gap: var(--sp-3xs); padding: 0 var(--sp-2xs) 0 var(--sp-s); border-left: 3px solid var(--dc); border-radius: var(--r-s); background: var(--chip); }
+.df-tag button { border: 0; background: none; padding: 0 var(--sp-2xs); color: var(--muted); cursor: pointer; }
+.df-q { flex: 1; min-width: 8em; border: 0; background: none; font: inherit; color: var(--ink); }
+.df-cands { max-height: 9em; overflow-y: auto; }
+/* DS6: 色の四角だけ（名前は触れたときの吹き出し＝title） */
+.dfs-DS6 .df-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.dfs-DS6 .df-item input { width: 14px; height: 14px; }
+.dfs-DS6 .df-items { gap: var(--sp-2xs); }
+.dfs-DS6 .df-group { display: inline-flex; gap: 3px; margin-right: var(--sp-s); }

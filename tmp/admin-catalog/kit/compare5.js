@@ -22,6 +22,12 @@
     cal: { label: "カレンダー", def: "CA1", pages: PERIOD_PAGES, variants: {
       CA1: ["月の格子", { cal: "CA1" }], CA2: ["2 か月", { cal: "CA2" }], CA3: ["前後の送り", { cal: "CA3" }], CA4: ["週ごと", { cal: "CA4" }],
       CA5: ["濃淡", { cal: "CA5" }], CA6: ["よく使う選択肢", { cal: "CA6" }], CA7: ["日の帯", { cal: "CA7" }] } },
+    chip: { label: "増減のチップの色", def: "CH1", pages: ALL, variants: {
+      CH1: ["緑と独自の赤", { chip: "CH1" }], CH2: ["要確認の赤", { chip: "CH2" }], CH3: ["悪化だけ色", { chip: "CH3" }], CH4: ["文字の色だけ", { chip: "CH4" }],
+      CH5: ["枠線だけ", { chip: "CH5" }], CH6: ["青と橙", { chip: "CH6" }], CH7: ["色の点", { chip: "CH7" }] } },
+    dfs: { label: "部署の絞り込みの部品", def: "DS1", pages: USER_PAGES, variants: {
+      DS1: ["チェックボックス", { dfs: "DS1" }], DS2: ["色分けのチェック", { dfs: "DS2" }], DS3: ["塗られるチップ", { dfs: "DS3" }],
+      DS4: ["木の形", { dfs: "DS4" }], DS5: ["検索とタグ", { dfs: "DS5" }], DS6: ["色の四角だけ", { dfs: "DS6" }] } },
     stale: { label: "利用明細の古さの警告", def: "W1", pages: ALL, variants: { W0: ["なし", { stale: "W0" }], W1: ["あり", { stale: "W1" }] } },
     lag: { label: "明細の遅れの見本", def: "normal", pages: ALL, variants: { normal: ["通常", { lag: "" }], lag: ["遅れ", { lag: "lag" }] } },
   };
