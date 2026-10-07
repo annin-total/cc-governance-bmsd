@@ -1,0 +1,15 @@
+/* 比較用の切り替えのパネル（compare5.js。案 51）。画面の右下に固定し、ページの中身の場所を取らない */
+.cmp5 { position: fixed; right: var(--sp-l); bottom: var(--sp-l); z-index: 20; display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-s); }
+.cmp-open { border: 1px solid var(--muted); border-radius: var(--r-m); background: var(--card); padding: var(--sp-xs) var(--sp-m); font-size: var(--fs-sm); color: var(--ink); box-shadow: var(--shadow-tip); cursor: pointer; }
+.cmp-open:hover { border-color: var(--accent); color: var(--accent); }
+.cmp-panel { max-height: calc(100vh - 6 * var(--sp-l)); overflow-y: auto; width: min(560px, calc(100vw - 2 * var(--sp-l))); padding: var(--sp-m) var(--sp-l); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-l); box-shadow: var(--shadow-tip); font-size: var(--fs-sm); }
+.cmp-rows { display: grid; gap: var(--sp-s); }
+.cmp-row { display: grid; grid-template-columns: 9.5em 1fr; gap: var(--sp-s); align-items: baseline; }
+.cmp-row.is-off { opacity: var(--link-dim); }
+.cmp-name { color: var(--muted); }
+.cmp-vals { display: flex; flex-wrap: wrap; gap: var(--sp-2xs); }
+.cmp-vals a { padding: 0 var(--sp-s); border: 1px dashed var(--rule); border-radius: var(--r-s); color: var(--muted); text-decoration: none; white-space: nowrap; }
+.cmp-vals a[aria-current] { border-style: solid; border-color: var(--ink); color: var(--ink); font-weight: 700; }
+.cmp-foot { display: flex; justify-content: space-between; gap: var(--sp-m); margin-top: var(--sp-m); padding-top: var(--sp-s); border-top: 1px solid var(--rule); }
+.cmp-foot button { border: 0; background: none; padding: 0; font-size: var(--fs-sm); color: var(--accent); cursor: pointer; }
+.cmp-foot a { color: var(--muted); }

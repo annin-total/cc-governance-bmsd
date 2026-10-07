@@ -1,0 +1,87 @@
+"use strict";
+// 比較用の切り替え（案 51 だけ。ia.js の compare: "r5"）。切り替えは SWITCHES の表だけで定義し、表に足せばパネルに行が増える。
+// 画面の右下の「☰ 比較」から開くパネル。選んだ値は URL と sessionStorage（タブを閉じるまで）、開いているかは localStorage に覚える。
+(() => {
+  const K = window.KIT;
+  const { esc } = K;
+  const PERIOD_PAGES = ["home", "cost", "activity", "effect"];
+  const USER_PAGES = ["cost", "activity", "policy", "collect"];
+  const ALL = null; // 全ページで効く
+  // キー（問い合わせ）: 名前・既定・効くページ・値（id: [短い名前, look])
+  const SWITCHES = {
+    g: { label: "群", def: "G31", pages: ["cost"], variants: { G31: ["31 のまま", { groups: "G31" }], G3: ["基準超えを利用者に", { groups: "G3" }] } },
+    hv: { label: "ヘッダーの高さ", def: "HV1", pages: ALL, variants: { HV1: ["31 のまま", { hv: "HV1" }], HV2: ["1 段小さく", { hv: "HV2" }], HV3: ["1 行の最小", { hv: "HV3" }], HV4: ["スクロールで縮む", { hv: "HV4" }] } },
+    chart: { label: "コストのグラフ", def: "K4", pages: ["home", "cost"], variants: {
+      K1: ["31 のまま", { chart: "K1" }], K2: ["棒で揃える", { chart: "K2" }], K3: ["面と棒", { chart: "K3" }],
+      K4: ["影と基準線", { chart: "K4" }], K5: ["マス目", { chart: "K5" }], K6: ["内訳", { chart: "K6" }] } },
+    over: { label: "基準超えの新規と離脱", def: "D2", pages: ["home", "cost"], variants: {
+      D1: ["状態ごと", { over: "D1" }], D2: ["出入りと移動", { over: "D2" }], D3: ["移動の表", { over: "D3" }],
+      D4: ["悪化と改善", { over: "D4" }], D5: ["1 人 1 つの四角", { over: "D5" }], D6: ["差だけ", { over: "D6" }] } },
+    sum: { label: "サマリー", def: "S1", pages: ["home"], variants: { S1: ["31 のまま", { sum: "S1" }], S2: ["枠の中に見出し", { sum: "S2" }] } },
+    df: { label: "部署の絞り込み", def: "F2", pages: USER_PAGES, variants: { F0: ["置かない", { df: "F0" }], F1: ["常に並べる", { df: "F1" }], F2: ["ボタンとパネル", { df: "F2" }], F3: ["その場に開く", { df: "F3" }] } },
+    cal: { label: "カレンダー", def: "CA1", pages: PERIOD_PAGES, variants: {
+      CA1: ["月の格子", { cal: "CA1" }], CA2: ["2 か月", { cal: "CA2" }], CA3: ["前後の送り", { cal: "CA3" }], CA4: ["週ごと", { cal: "CA4" }],
+      CA5: ["濃淡", { cal: "CA5" }], CA6: ["よく使う選択肢", { cal: "CA6" }], CA7: ["日の帯", { cal: "CA7" }] } },
+    stale: { label: "利用明細の古さの警告", def: "W1", pages: ALL, variants: { W0: ["なし", { stale: "W0" }], W1: ["あり", { stale: "W1" }] } },
+    lag: { label: "明細の遅れの見本", def: "normal", pages: ALL, variants: { normal: ["通常", { lag: "" }], lag: ["遅れ", { lag: "lag" }] } },
+  };
+  const KEY = (param) => `kit5-${param}`;
+  const OPEN_KEY = "kit5-compare-open";
+  const store = (s, fn) => { try { return fn(s()); } catch (e) { return null; } }; // 覚えられなくても動く（読めなければ null）
+
+  function chosen(param) {
+    const v = new URLSearchParams(location.search).get(param) || store(() => sessionStorage, (s) => s.getItem(KEY(param)));
+    return v in SWITCHES[param].variants ? v : SWITCHES[param].def;
+  }
+
+  // 案の look に、選んだ値を重ねる
+  function look(base = {}) {
+    return Object.keys(SWITCHES).reduce((out, p) => ({ ...out, ...SWITCHES[p].variants[chosen(p)][1] }), { ...base });
+  }
+
+  const hrefWith = (over) => { const q = new URLSearchParams(location.search); Object.entries(over).forEach(([k, v]) => (v === null ? q.delete(k) : q.set(k, v))); return `?${q}${location.hash}`; };
+  const here = () => new URLSearchParams(location.search).get("page") || "home";
+
+  function row([param, s]) {
+    const off = s.pages && !s.pages.includes(here());
+    return `<div class="cmp-row${off ? " is-off" : ""}" data-cmp-row="${param}"><span class="cmp-name">${esc(s.label)}</span><span class="cmp-vals">${Object.entries(s.variants).map(([id, [name]]) =>
+      `<a href="${esc(hrefWith({ [param]: id }))}" data-cmp="${param}" data-cmp-id="${id}"${id === chosen(param) ? ' aria-current="true"' : ""}>${id === "normal" || id === "lag" ? "" : `${id} `}${esc(name)}</a>`).join("")}</span></div>`;
+  }
+
+  // 「☰ 比較」のボタンとパネル（閉じた状態で描き、開いているかは localStorage から）
+  function html() {
+    const L = K.L, changed = Object.keys(SWITCHES).filter((p) => chosen(p) !== SWITCHES[p].def).length;
+    const open = store(() => localStorage, (s) => s.getItem(OPEN_KEY)) === "1";
+    return `<div class="cmp5" data-cmp5><div class="cmp-panel" id="cmp-panel" role="dialog" aria-label="${esc(L.CMP_TITLE)}"${open ? "" : " hidden"}>`
+      + `<div class="cmp-rows">${Object.entries(SWITCHES).map(row).join("")}</div>`
+      + `<div class="cmp-foot"><button type="button" data-cmp-copy>${esc(L.CMP_COPY)}</button><a href="${esc(hrefWith(Object.fromEntries(Object.keys(SWITCHES).map((k) => [k, null]))))}" data-cmp-reset>${esc(L.CMP_RESET)}</a></div></div>`
+      + `<button type="button" class="cmp-open" data-cmp-toggle aria-controls="cmp-panel" aria-expanded="${open}">${esc(L.CMP_OPEN)}${changed ? ` · ${changed}` : ""}</button></div>`;
+  }
+
+  // 全切り替えの今の値を入れた URL（コピー用）
+  const fullUrl = () => location.href.split("?")[0] + hrefWith(Object.fromEntries(Object.keys(SWITCHES).map((p) => [p, chosen(p)])));
+
+  function setOpen(open) {
+    const root = document.querySelector("[data-cmp5]");
+    if (!root) return;
+    root.querySelector(".cmp-panel").hidden = !open;
+    root.querySelector("[data-cmp-toggle]").setAttribute("aria-expanded", String(open));
+    store(() => localStorage, (s) => s.setItem(OPEN_KEY, open ? "1" : "0"));
+  }
+
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t.closest("[data-cmp-toggle]")) { setOpen(document.querySelector(".cmp-panel").hidden); return; }
+    const a = t.closest("[data-cmp]");
+    if (a) store(() => sessionStorage, (s) => s.setItem(KEY(a.dataset.cmp), a.dataset.cmpId));
+    if (t.closest("[data-cmp-reset]")) store(() => sessionStorage, (s) => Object.keys(SWITCHES).forEach((p) => s.removeItem(KEY(p))));
+    const copy = t.closest("[data-cmp-copy]");
+    if (copy) {
+      copy.dataset.url = fullUrl();
+      Promise.resolve().then(() => navigator.clipboard.writeText(copy.dataset.url)).then(() => { copy.textContent = K.L.CMP_COPIED; }, (err) => console.warn(`compare5: URL をコピーできない（${err}）`));
+    }
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
+
+  K.compare5 = { look, html, chosen, fullUrl, SWITCHES };
+})();

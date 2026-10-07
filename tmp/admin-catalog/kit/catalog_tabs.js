@@ -1,6 +1,7 @@
 "use strict";
 // 目録のタブ（concepts.md の 2.3）。id はそのまま DOM の id とカードの開く先になる。
 // long: 12 か月の扱い（未指定は「出しません」・"same"・差し替え）。longOnly: 12 か月だけに出す。
+// org: 利用者の並ぶタブ（案 51 の課の列と部署の絞り込み。tabs5.js）。today: look.ends が bill のときの値の根。
 (() => {
   const { L } = window.KIT;
   const { SAME } = window.CATALOG;
@@ -23,7 +24,7 @@
         { key: "users", kind: "num", unit: "person", label: "利用者" }, { key: "sessions", kind: "num", unit: "item", label: "セッション" },
         { key: "prompts", kind: "num", unit: "item", label: "指示" }, BAR("prompts")],
       chipsBy: "period", chips: PERIOD_CHIPS, chart: { kind: "bars", key: "day", panels: [{ title: "利用者", field: "users" }, { title: "指示", field: "prompts" }] } },
-    user_use: { id: "user_use", label: "利用者ごとの頻度", hint: "{x[active][users]:num} 人 · 記録", title: "利用者ごとの頻度とセッション", unit: "人",
+    user_use: { id: "user_use", org: true, label: "利用者ごとの頻度", hint: "{x[active][users]:num} 人 · 記録", title: "利用者ごとの頻度とセッション", unit: "人",
       scope: "直近 {period[days]} 日 · 記録を送った利用者 · 利用日数の多い順 · 差と増減率は前の {period[days]} 日と比べた指示 · セッションの大きさはセッションごとの最大の中央",
       search: "利用者で絞り込み", q: "{email}", rows: "x[activity]", sort: ["active_days", "desc"],
       cols: [USER, { key: "active_days", kind: "num", unit: "day", label: "利用日数" }, { key: "sessions", kind: "num", label: "セッション" },
@@ -31,7 +32,7 @@
         { key: "session_size", kind: "tok", label: "セッションの大きさ" }, { key: "auto_share", kind: "pct", label: "自動コンパクトに達した割合" },
         { key: "bypass_rate", kind: "pct", label: "確認なしの記録" }, { key: "last_day", kind: "day", label: "最終日" }] },
     // ---- 呼び出し（記録）----
-    user_calls: { id: "user_calls", label: "利用者ごとの呼び出し", hint: "{x[active][users]:num} 人 · 記録", title: "利用者ごとの呼び出し", unit: "人",
+    user_calls: { id: "user_calls", org: true, label: "利用者ごとの呼び出し", hint: "{x[active][users]:num} 人 · 記録", title: "利用者ごとの呼び出し", unit: "人",
       scope: "直近 {period[days]} 日 · 記録を送った利用者 · よく使うものは回数の多い 3 つ", search: "利用者・名前で絞り込み",
       q: "{email} {skills_top_text} {commands_top_text} {externals_top_text}", rows: "x[activity]", sort: ["skill_calls", "desc"],
       cols: [USER, { key: "skill_calls", kind: "num", label: "スキル" }, { key: "skills_top", kind: "tops", label: "よく使うスキル", sort: null },
@@ -59,7 +60,7 @@
         { key: "count", kind: "num", label: "件数" }, { key: "share", kind: "pct", label: "割合" }, BAR("share", "100")],
       chipsBy: "field", chips: chipsOf(L.USAGE_FIELD) },
     // ---- コスト（利用明細）----
-    user_cost: { id: "user_cost", label: "利用者ごとのコスト", hint: "{x[cost][users]:num} 人 · 利用明細", title: "利用者ごとのコストと順位", unit: "人",
+    user_cost: { id: "user_cost", org: true, label: "利用者ごとのコスト", hint: "{x[cost][users]:num} 人 · 利用明細", title: "利用者ごとのコストと順位", unit: "人",
       scope: "利用明細 {x[cost][start]:md}〜{x[cost][end]:md} と前の {period[days]} 日 · コストの多い順 · 割合と累積は期間のコストのうち · 状態は期間の基準の判定（基準を超えた利用者と同じ）",
       search: "利用者で絞り込み", q: "{email}", rows: "x[billed]", sort: ["cost", "desc"],
       cols: [STATE, { key: "rank", kind: "rank", label: "順位" }, USER, { key: "cost", kind: "usd_strong", label: "コスト" },
@@ -68,7 +69,7 @@
         { key: "days", kind: "num", unit: "day", label: "コストのあった日数" }, { key: "per_day", kind: "usd", label: "1 日あたり" },
         { key: "top_model", kind: "model", label: "主なモデル" }, { key: "cache_share", kind: "pct", label: "キャッシュ読み" }],
       chipsBy: "tags", chips: [...STATE_CHIPS, ...chipsOf(L.MODEL)],
-      long: { id: "user_cost", label: "利用者ごとのコスト", hint: "{x[cost][users]:num} 人 · 利用明細", title: "利用者ごとのコストと順位", unit: "人",
+      long: { id: "user_cost", org: true, label: "利用者ごとのコスト", hint: "{x[cost][users]:num} 人 · 利用明細", title: "利用者ごとのコストと順位", unit: "人",
         scope: "利用明細 {x[cost][start]:day}〜{x[cost][end]:day} · コストの多い順 · 割合と累積は期間のコストのうち",
         search: "利用者で絞り込み", q: "{email}", rows: "x[billed]", sort: ["cost", "desc"],
         cols: [{ key: "rank", kind: "rank", label: "順位" }, USER, { key: "cost", kind: "usd_strong", label: "コスト" },
@@ -77,7 +78,7 @@
           { key: "top_model", kind: "model", label: "主なモデル" }, { key: "cache_share", kind: "pct", label: "キャッシュ読み" }],
         chipsBy: "tags", chips: chipsOf(L.MODEL) } },
     // 行は利用者 × 基準（7 日＝日次・週次、28 日＝月次）。基準で絞ると、その基準のカードの人数と合う
-    over_users: { id: "over_users", label: "基準を超えた利用者", hint: "{r3[over][row_users]:num} 人 · 利用明細", title: "基準を超えた利用者", unit: "行",
+    over_users: { id: "over_users", org: true, label: "基準を超えた利用者", hint: "{r3[over][row_users]:num} 人 · 利用明細", title: "基準を超えた利用者", unit: "行",
       scope: "利用明細 {r3[cost][start]:md}〜{r3[cost][end]:md} と前の {period[days]} 日（{r3[cost][prev_start]:md}〜{r3[cost][prev_end]:md}）· 今か前に注意以上だった人 · 基準ごとに 1 行",
       search: "利用者で絞り込み", q: "{email}", rows: "r3[over][rows]", sort: ["span_rank", "asc"],
       note: "日次は期間のいずれかの 1 日（金額はその日の値と日付）、週次は 7 日の合計、月次は 28 日の合計で判定します。基準は 日次 ${USER_COST_ELEVATED[day]}・${USER_COST_HIGH[day]}、"

@@ -59,12 +59,15 @@
     const top = page.home && page.summary ? K.blocks.summary_latest({}, contextOf("fixed.r3", period), ia) : "";
     const content = page.sections ? sectionsHtml(page, ctx) : top + (page.home ? K.page.homeHtml : K.page.screenHtml)(page, ctxOf, long);
     const act = [stateFilter(page), K.basedate.act(page, "before"), switcher(page, period), K.basedate.act(page, "after")].filter(Boolean).join("");
-    if (K.look.get().fs !== "F5") document.documentElement.dataset.fs = K.look.get().fs;
+    const look = K.look.get(), root = document.documentElement;
+    if (look.fs !== "F5") root.dataset.fs = look.fs;
+    if (look.sticky) Object.assign(root.dataset, { sticky: look.sticky, hv: look.hv }); // 案 51: ヘッダーだけを固定し、高さの型（head5.css）
     document.title = `${page.title} — ${ia.name || K.L.APP}`;
     document.body.innerHTML = nav(ia, page, period)
-      + `<main class="wrap">${ia.compare ? K.compare.html() : ""}<div class="page-head"><div><h1>${esc(page.title)}</h1><p class="lead">${esc(fill(page.lead || "", ctx))}</p></div>`
+      + `<main class="wrap">${ia.compare === true ? K.compare.html() : ""}<div class="page-head"><div><h1>${esc(page.title)}</h1><p class="lead">${esc(fill(page.lead || "", ctx))}</p></div>`
       + `${act ? `<div class="head-act">${act}</div>` : ""}</div>${content}</main>`
-      + `<footer class="wrap foot">${esc(ia.footer || K.L.FOOTER)}</footer>`;
+      + `<footer class="wrap foot">${esc(ia.footer || K.L.FOOTER)}</footer>${ia.compare === "r5" ? K.compare5.html() : ""}`;
+    if (look.hv === "HV4") addEventListener("scroll", () => root.classList.toggle("is-shrunk", scrollY > 0), { passive: true });
   }
 
   K.contextOf = contextOf;

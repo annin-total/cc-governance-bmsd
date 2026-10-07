@@ -9,6 +9,7 @@
   const RECENT = "直近 {period[days]} 日";
 
   // 窓。data は群の値の根、fixed は期間に依らない窓（12 か月でも同じに出す）、base は同じ種類の窓（期間を固定した写し）。
+  // today は look.ends が bill（案 51）のときの値の根（今日までの窓）、stamp は案 51 の概況で「MM/DD 時点」を添える窓。
   // brief は概況の「主な指標」の横に並べる期間（無い窓はカードの見出しで読める）
   const W = {
     bill: { scope: "利用明細 {r3[cost][start]:md}〜{r3[cost][end]:md} と前の {period[days]} 日 · 利用明細にコストがあった利用者",
@@ -17,9 +18,9 @@
     month: { fixed: true, scope: "{month[month]:ym} · 利用明細の最終日（{month[as_of]:md}）まで · 前月の実績と比べる" },
     rec: { scope: "直近 {period[days]} 日（{period[start]:md}〜{period[end]:md}）と前の {period[days]} 日 · 記録を送った利用者", longScope: "記録",
       brief: "記録 {period[start]:md}〜{period[end]:md}" },
-    rec7: { base: "rec", data: "p.7", fixed: true, brief: "受信 直近 7 日", scope: "直近 7 日（{period[start]:md}〜{period[end]:md}）と前の 7 日 · 記録を送った利用者 · 期間は選べません" },
-    match7: { data: "p.7", fixed: true, scope: "利用明細の最終日までの 7 日 · 記録と利用明細の突き合わせ · 期間は選べません" },
-    p30: { data: "fixed.r3.policy", fixed: true, brief: "設定の報告 直近 {POLICY_DAYS} 日",
+    rec7: { base: "rec", data: "p.7", today: "fixed.now", fixed: true, brief: "受信 直近 7 日", scope: "直近 7 日（{period[start]:md}〜{period[end]:md}）と前の 7 日 · 記録を送った利用者 · 期間は選べません" },
+    match7: { data: "p.7", today: "fixed.now", fixed: true, scope: "利用明細の最終日までの 7 日 · 記録と利用明細の突き合わせ · 期間は選べません" },
+    p30: { data: "fixed.r3.policy", fixed: true, stamp: true, brief: "設定の報告 直近 {POLICY_DAYS} 日",
       scope: "直近 {POLICY_DAYS} 日 · 利用者ごとに最新の報告（端末が複数なら最も遅れた値）· 対象は{basis:basis} {denominator:num} 人" },
     study: { data: "fixed.effect", fixed: true, scope: "{REFERENCE_KEY:setting}を {REFERENCE_VALUE} にした前後 {EVENT_STUDY_SPAN} 日 · しきい値を守り始めた利用者 · 前後の境は各利用者が守り始めた日" },
     now: { fixed: true, scope: "現時点 · 取り込んだ利用明細" },

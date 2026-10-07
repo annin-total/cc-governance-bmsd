@@ -8,7 +8,7 @@
 
   Object.assign(T, {
     // ---- 設定の適用状況（30 日・利用者単位）----
-    policy_users: { id: "policy_users", label: "利用者ごとの適用状況", hint: "{denominator:num} 人", title: "利用者ごとの適用状況", unit: "人", data: "fixed.r3.policy",
+    policy_users: { id: "policy_users", org: true, label: "利用者ごとの適用状況", hint: "{denominator:num} 人", title: "利用者ごとの適用状況", unit: "人", data: "fixed.r3.policy",
       scope: "対象 {denominator:num} 人 · バージョンと最終報告日は利用者ごとに最も古い・最も遅れたもの", search: "利用者で絞り込み", q: "{email}", rows: "users", sort: ["rank", "asc"],
       note: "端末が複数ある利用者は、1 台でも違う値の端末があれば未適用と数えます。{basis:basis_note}",
       cols: [{ key: "status", kind: "user_state", sort: "rank", label: "状態" }, USER, { key: "on", kind: "dot", each: "items", terms: L.SETTING },
@@ -39,7 +39,7 @@
         { key: "cost", kind: "usd", label: "1 人あたりコスト" }, BAR("cost")],
       chipsBy: "side", chips: chipsOf(L.SIDE) },
     // ---- 収集 ----
-    health: { id: "health", label: "受信と項目の欠け", hint: "直近 7 日と前の 7 日", title: "受信と項目の欠け", unit: "行",
+    health: { id: "health", today: "fixed.now", label: "受信と項目の欠け", hint: "直近 7 日と前の 7 日", title: "受信と項目の欠け", unit: "行",
       scope: "直近 7 日と前の 7 日 · 欠けの分母は、その項目が送られるはずの記録",
       note: "欠けは {NULL_RATE_ELEVATED}% 以上で注意、{NULL_RATE_HIGH}% 以上で要確認とします（仮の基準）。100% に跳ねたら上流の仕様変更を疑います。",
       rows: "health",
@@ -47,13 +47,13 @@
         { key: "now", kind: "measure", label: L.RECENT, sort: null }, { key: "prev", kind: "measure_sub", label: L.PREV, sort: null },
         { key: "diff", kind: "diff", label: "差", sort: null }, { key: "state", kind: "state", label: "状態", sort: null }],
       chipsBy: "group", chips: chipsOf(L.HEALTH_GROUP) },
-    errors: { id: "errors", label: "プラグインのエラー", hint: "直近 7 日 · {errors[total]:num} 件", title: "プラグインのエラー", unit: "行",
+    errors: { id: "errors", today: "fixed.now", label: "プラグインのエラー", hint: "直近 7 日 · {errors[total]:num} 件", title: "プラグインのエラー", unit: "行",
       scope: "直近 7 日 · 失った記録は戻りません", search: "エラーの種類・バージョン", q: "{error_type} {version} {stage}",
       rows: "r3[errors][rows]", sort: ["count", "desc"],
       cols: [{ key: "stage", kind: "stage", terms: L.STAGE, label: "処理段階" }, { key: "error_type", kind: "code", label: "エラーの種類" },
         { key: "count", kind: "num", label: "件数" }, { key: "users", kind: "num", unit: "person", label: "利用者数" }, { key: "version", kind: "code", label: "最後に起きたバージョン" }],
       chipsBy: "stage", chipTerms: L.STAGE },
-    user_delivery: { id: "user_delivery", label: "利用者ごとの届き方", hint: "{r3[silent][rows]:count} 人 · 記録", title: "利用者ごとの届き方", unit: "人",
+    user_delivery: { id: "user_delivery", today: "fixed.now", org: true, label: "利用者ごとの届き方", hint: "{r3[silent][rows]:count} 人 · 記録", title: "利用者ごとの届き方", unit: "人",
       scope: "直近 7 日と前の 7 日に記録か設定の報告があった利用者 · 利用明細は最終日までの 7 日", search: "利用者で絞り込み", q: "{email}",
       rows: "r3[silent][rows]",
       note: "途絶えた = 前の 7 日に記録か設定の報告があり、直近の 7 日に無い人。異動・休暇でも途絶えます。「利用明細にいない」は、記録はあるが利用明細にコストが無い人です。",

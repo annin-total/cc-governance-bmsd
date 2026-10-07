@@ -13,7 +13,7 @@
     let shown = 0;
     for (const tr of rows) {
       const tags = (tr.dataset.tags || "").split(" ");
-      const hit = (state.chip === "all" || tags.includes(state.chip)) && (!q || (tr.dataset.q || "").toLowerCase().includes(q));
+      const hit = (state.chip === "all" || tags.includes(state.chip)) && (!q || (tr.dataset.q || "").toLowerCase().includes(q)) && !tr.hasAttribute("data-dept-out");
       tr.hidden = !hit;
       if (hit) shown += 1;
     }
@@ -76,6 +76,7 @@
       const state = states.get(p.dataset.panel);
       const input = p.querySelector("[data-search]");
       if (input) input.addEventListener("input", () => { state.q = input.value.trim(); filter(p, state); });
+      p.addEventListener("kit:refilter", () => filter(p, state)); // 案 51 の部署の絞り込み（deptfilter.js）が行の data-dept-out を変えた後
       p.addEventListener("click", (e) => {
         const chip = e.target.closest("[data-chip]");
         const sorter = e.target.closest("[data-sort]");

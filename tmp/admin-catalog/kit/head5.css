@@ -1,0 +1,16 @@
+/* ヘッダーだけの固定とヘッダーの高さの型（案 51。boot.js が look.sticky・look.hv を html の data-sticky・data-hv に写す）。HV1 は 31 のまま */
+:root { --bar-h-2: calc(var(--bar-h) - var(--sp-s)); --bar-h-min: 40px; }
+:root[data-sticky="header"] .top { position: sticky; top: 0; z-index: 10; background: var(--bg); }
+/* HV2: アプリ名とページの名前を 1 段小さく、上下の余白を 1 段詰める */
+:root[data-hv="HV2"] .bar { height: var(--bar-h-2); }
+:root[data-hv="HV2"] .brand { font-size: var(--fs-sm); }
+:root[data-hv="HV2"] .top nav a, :root[data-hv="HV2"] .bar-end a { font-size: var(--fs-sm); padding: var(--sp-3xs) var(--sp-s); }
+/* HV3 と、HV4 のスクロールした後: 1 行の最小 */
+:root[data-hv="HV3"] .bar, :root[data-hv="HV4"].is-shrunk .bar { height: var(--bar-h-min); }
+:root[data-hv="HV3"] .top nav a, :root[data-hv="HV3"] .bar-end a,
+:root[data-hv="HV4"].is-shrunk .top nav a, :root[data-hv="HV4"].is-shrunk .bar-end a { font-size: var(--fs-sm); padding: 0 var(--sp-s); }
+/* HV4: ヘッダーの場所の高さは変えず（ページの中身を動かさない）、見えるヘッダーだけを縮める */
+:root[data-hv="HV4"] .top { height: calc(var(--bar-h) + 1px); border-bottom: 0; background: none; }
+:root[data-hv="HV4"] .bar { max-width: none; padding: 0 max(var(--sp-4xl), calc((100% - var(--wrap)) / 2 + var(--sp-4xl))); background: var(--bg); border-bottom: 1px solid var(--rule); transition: height .2s; }
+:root[data-hv="HV4"] .top nav a, :root[data-hv="HV4"] .bar-end a { transition: font-size .2s, padding .2s; }
+@media (prefers-reduced-motion: reduce) { :root[data-hv="HV4"] .bar, :root[data-hv="HV4"] .top nav a, :root[data-hv="HV4"] .bar-end a { transition: none; } }

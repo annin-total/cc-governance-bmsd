@@ -96,6 +96,7 @@
       total: tab.chipsAll !== false || !cs.length ? rows.length : cs[0].count, source,
       rows: rows.map((r) => ({
         tags: tags(r).join(" "), q: tab.q ? fill(tab.q, r) : "", key: key ? r[key] : null, cells: cols.map((c) => cell(c, r)),
+        attrs: tab.rowData ? tab.rowData(r) : null, // 案 51: 部署の絞り込みに使う行の data-*（tabs5.js）
       })),
     };
   }
@@ -110,7 +111,8 @@
   function tableHtml(t, id, withFilters = true) {
     const head = t.cols.map((c, i) => `<th scope="col" class="c-${c.kind}${c.num ? " num" : ""}"${c.aria ? ` aria-sort="${c.aria}"` : ""}>${c.sort
       ? `<button type="button" data-sort="${i}">${esc(c.label)}<i class="arrow"></i></button>` : esc(c.label)}${c.sub ? `<span class="th-sub">${esc(c.sub)}</span>` : ""}</th>`).join("");
-    const body = t.rows.map((r) => `<tr data-tags="${esc(r.tags)}" data-q="${esc(r.q)}"${r.key !== null && r.key !== undefined ? ` data-link="${esc(r.key)}"` : ""}>${r.cells.map((c) =>
+    const attrs = (r) => (r.attrs ? Object.entries(r.attrs).map(([k, v]) => ` data-${k}="${esc(v)}"`).join("") : "");
+    const body = t.rows.map((r) => `<tr data-tags="${esc(r.tags)}"${attrs(r)} data-q="${esc(r.q)}"${r.key !== null && r.key !== undefined ? ` data-link="${esc(r.key)}"` : ""}>${r.cells.map((c) =>
       `<td class="c-${c.col.kind}${c.col.num ? " num" : ""}" data-v="${esc(c.sort)}">${K.cells.cell(c)}</td>`).join("")}</tr>`).join("");
     return `${withFilters ? filtersHtml(t) : ""}<div class="tscroll"><table data-testid="${esc(id)}"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
 <p class="empty" data-empty${t.rows.length ? " hidden" : ""}>${esc(t.empty || K.L.EMPTY)}</p></div>`;

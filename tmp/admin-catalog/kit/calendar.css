@@ -1,0 +1,65 @@
+/* 自作のカレンダー（calendar.js・calendar_strip.js。案 51）と帯の期間の表示（period5.js）。日の見せ方は 3 つで、状態の色（注意・要確認）を使わない */
+.asof-range { display: inline-flex; align-items: center; gap: var(--sp-xs); }
+.asof-now, .asof-text { font-size: var(--fs-label); color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stale { font-size: var(--fs-sm); color: var(--warn); text-decoration: none; white-space: nowrap; }
+.stale::before { content: "● "; }
+.cal-steps .cal-step { padding: 0 var(--sp-2xs); color: var(--ink-2); text-decoration: none; }
+.cal-steps a.cal-step:hover { color: var(--accent); }
+.cal-steps .cal-step[aria-disabled] { color: var(--ghost); }
+.cal-icon { width: 1.6em; height: 1.6em; padding: 0; border: 1px solid var(--rule); border-radius: var(--r-s); background-color: var(--card); cursor: pointer;
+  background-image: linear-gradient(var(--muted), var(--muted)), repeating-linear-gradient(90deg, var(--muted) 0 2px, transparent 2px 5px); background-size: 70% 2px, 70% 40%; background-position: center 25%, center 75%; background-repeat: no-repeat; }
+.cal-icon:hover { border-color: var(--accent); }
+
+.cal { position: absolute; top: calc(100% + var(--sp-xs)); right: 0; z-index: 6; padding: var(--sp-m); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-l); box-shadow: var(--shadow-tip); white-space: normal; }
+.cal-months { display: flex; gap: var(--sp-xl); }
+.cal-month { width: calc(var(--date-w) * 2 - 2 * var(--sp-m)); }
+.cal-name { display: block; margin-bottom: var(--sp-xs); text-align: center; font-size: var(--fs-label); }
+.cal-head { position: relative; height: 0; }
+.cal-nav { position: absolute; top: calc(var(--sp-3xs) * -1); border: 0; background: none; padding: 0 var(--sp-s); font-size: var(--fs-h2); line-height: 1; color: var(--ink-2); cursor: pointer; }
+.cal-nav[data-cal-move="-1"] { left: 0; } .cal-nav[data-cal-move="1"] { right: 0; }
+.cal-nav:disabled { color: var(--ghost); cursor: default; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--sp-3xs); }
+.cal-wd { text-align: center; font-size: var(--fs-xs); color: var(--muted); }
+.cal-day { position: relative; height: 2.2em; border: 0; border-radius: var(--r-s); background: none; font-size: var(--fs-sm); color: var(--ink); cursor: pointer; font-variant-numeric: tabular-nums; }
+.cal-day:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--accent); }
+.cal-day.in-range { background: var(--chip-up); }
+.cal-day.is-sel { box-shadow: inset 0 0 0 2px var(--ink); font-weight: 700; }
+.cal-day:disabled { cursor: default; }
+.cal-day.is-off:not(.cal-wait) { opacity: var(--link-dim); }
+/* 利用明細あり: 下に点。取り込み待ち: 灰色の斜線。利用明細なし: 無地 */
+.cal-has::after, .cal-key.cal-has::after { content: ""; position: absolute; left: 50%; bottom: var(--sp-3xs); width: var(--mark-dot); height: var(--mark-dot); margin-left: calc(var(--mark-dot) / -2); border-radius: 50%; background: var(--accent); }
+.cal-wait, .cal-key.cal-wait { background: repeating-linear-gradient(135deg, var(--ghost) 0 2px, transparent 2px 6px); color: var(--muted); }
+.cal-none { color: var(--muted); }
+.cal-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-s); margin-top: var(--sp-s); }
+.cal-legend { display: grid; gap: var(--sp-3xs); font-size: var(--fs-xs); color: var(--muted); }
+.cal-legend > span { display: inline-flex; align-items: center; gap: var(--sp-xs); }
+.cal-key { position: relative; display: inline-block; width: 1.4em; height: 1.4em; border: 1px solid var(--rule); border-radius: var(--r-xs); }
+.cal-latest { border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); padding: var(--sp-2xs) var(--sp-m); font-size: var(--fs-sm); color: var(--ink-2); cursor: pointer; }
+.cal-latest:hover { color: var(--accent); }
+
+/* CA4: 週の行ごとに選ぶ（日を押すとその週の最後の選べる日） */
+.cal-CA4 .cal-day.in-range { border-radius: 0; }
+.cal-CA4 .cal-grid:hover .cal-day:hover:not(:disabled) { box-shadow: none; }
+/* CA5: その日のコストの濃さ。取り込み待ちは斜線、利用明細なしは白 */
+.cal-CA5 .cal-none:not(.heat-1, .heat-2, .heat-3, .heat-4), .cal-key.cal-none { background: var(--card-hover); }
+.cal-CA5 .cal-has::after { display: none; }
+.heat-1 { background: var(--track); } .heat-2 { background: var(--accent-2); }
+.heat-3 { background: var(--accent); color: var(--on-ink); } .heat-4 { background: var(--chip-up-ink); color: var(--on-ink); }
+.cal-CA5 .cal-day.in-range { box-shadow: inset 0 -3px 0 var(--ink); }
+.cal-CA5 .cal-day.is-sel { box-shadow: inset 0 0 0 2px var(--ink), inset 0 -3px 0 var(--ink); }
+/* CA6: 左によく使う選択肢 */
+.cal-CA6 { display: flex; gap: var(--sp-l); }
+.cal-picks { display: grid; align-content: start; gap: var(--sp-2xs); min-width: 9em; padding-right: var(--sp-l); border-right: 1px solid var(--rule); }
+.cal-picks button { display: flex; justify-content: space-between; gap: var(--sp-m); border: 0; border-radius: var(--r-s); background: none; padding: var(--sp-2xs) var(--sp-s); font-size: var(--fs-sm); color: var(--ink); text-align: left; cursor: pointer; }
+.cal-picks button span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.cal-picks button:hover:not(:disabled) { background: var(--chip-up); }
+.cal-picks button[aria-current] { font-weight: 700; box-shadow: inset 0 0 0 1px var(--ink); }
+.cal-picks button:disabled { color: var(--ghost); cursor: default; }
+/* CA7: 帯の下の日の帯（開かない） */
+.cal-strip { margin: calc(var(--sp-s) * -1) 0 var(--sp-l); }
+.strip-days { display: grid; gap: 1px; }
+.cal-strip .cal-day { height: 1.8em; padding: 0; border-radius: 0; font-size: var(--fs-xs); }
+.cal-strip .cal-day.in-range { box-shadow: inset 0 2px 0 var(--ink), inset 0 -2px 0 var(--ink); }
+.cal-strip .cal-day.is-sel { box-shadow: inset 0 2px 0 var(--ink), inset 0 -2px 0 var(--ink), inset -2px 0 0 var(--ink); }
+.cal-strip .cal-foot { align-items: center; }
+.cal-strip .cal-legend { display: flex; gap: var(--sp-l); }
