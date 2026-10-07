@@ -117,9 +117,9 @@ JS で格子の HTML を組み立てない。JS が無ければ描いた月が�
 
 ## 状態
 
-状態は `ok`（正常）・`warn`（注意）・`ng`（要確認）・`neutral`（報告停止など、良し悪しを言わないもの）の 4 つに限る。
+状態は `ok`（正常）・`warn`（注意）・`ng`（要確認）・`neutral`（良し悪しを言わないもの）の 4 つに限る。
 判定は `ccgov/metrics/`（`states.py` と各判定）で行い、しきい値は `constants.py`（`NULL_RATE_*`・`ERROR_COUNT_ELEVATED`・
-`NON_COMPLIANT_USERS_HIGH`・`NOT_INTRODUCED_ELEVATED`）に置く。**しきい値はいずれも仮の基準であり、運用で見直す。**
+`NON_COMPLIANT_USERS_HIGH`・`NOT_INTRODUCED_ELEVATED`・`CORE_OUTDATED_ELEVATED`・`PLUGIN_OUTDATED_ELEVATED`）に置く。**しきい値はいずれも仮の基準であり、運用で見直す。**
 どの状態をどの語に写すかは `labels.py` の `STATE` などにある。
 
 増減のチップは、カードの定義が持つ良し悪しの向きで色を分ける。悪化は要確認の札と同じ色（文字 `--ng`・地 `--ng-bg`）、改善は緑系、

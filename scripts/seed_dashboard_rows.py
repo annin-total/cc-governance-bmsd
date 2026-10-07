@@ -4,7 +4,7 @@ import json
 import random
 from pathlib import Path
 
-from ccgov.constants import EVENT_STUDY_SPAN, POLICY_DAYS, STALE_DAYS
+from ccgov.constants import EVENT_STUDY_SPAN, POLICY_DAYS
 from ccgov.store.queries_events import _HEALTH_NULL_SCOPES
 from ccgov.vendor import contract, policy
 from seed_dashboard_columns import CSV_RULES, RULES, Ctx, Term, apply_rules, new_uuid
@@ -17,6 +17,8 @@ CSV_LAG_DAYS = 1
 SECONDS_PER_DAY = 86400
 PLUGIN_VERSIONS = ("0.1.9", "0.2.0", "0.2.1")
 CLAUDE_CODE_VERSIONS = ("2.1.281", "2.1.282", "2.1.283")
+# 途絶えた端末の最後の報告は、今日からこの日数より前（POLICY_DAYS の集計期間の中）に置く
+STOPPED_MIN_DAYS = 14
 # (stage, error_type, hook_event)。plugin/hooks/ の append_error の呼び出しに合わせる
 ERRORS = (
     ("send", "HTTP 401", None),
@@ -53,8 +55,11 @@ def _terminals(rng: random.Random, n_users: int, today: int, days: int) -> tuple
     terms = []
     for i, user in enumerate(users[n_small:]):
         stale = i >= n_users - 2 * n_small
-        # 途絶えた端末は最終日を STALE_DAYS より前、POLICY_DAYS の集計期間の中に置く
-        stop = today - rng.randint(STALE_DAYS + 1, POLICY_DAYS - 2) if stale else today
+        stop = (
+            today - rng.randint(STOPPED_MIN_DAYS + 1, POLICY_DAYS - 2)
+            if stale
+            else today
+        )
         install = rng.randint(today - days + 1, stop - EVENT_STUDY_SPAN - 1)
         start = install + rng.randint(1, EVENT_STUDY_SPAN)
         off = frozenset(keys[i % len(keys) :] if i < n_off else [])

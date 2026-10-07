@@ -36,10 +36,10 @@ from ccgov.store import (
     queries_events,
     queries_policy,
 )
-from ccgov.vendor import contract, policy
+from ccgov.vendor import contract
 from seed_dashboard import _check_rules
 from seed_dashboard_columns import RULES
-from seed_dashboard_rows import scalar_keys
+from seed_dashboard_rows import STOPPED_MIN_DAYS, scalar_keys
 
 
 def _run(dsn: str, *args: str) -> subprocess.CompletedProcess:
@@ -80,20 +80,20 @@ def seeded(tmp_path_factory):
 
 def test_画面の全ての表と分布が埋まる(seeded):
     conn, today = seeded
-    for key in scalar_keys():
-        expected = contract.policy_text(policy.SET[key])
-        numerator, denominator, _ = policy_report.compliance_rate(
-            conn, today, key, expected
-        )[0]
-        assert 0 < numerator < denominator, key
-        assert policy_report.non_compliant(conn, today, key, expected), key
-    assert queries_policy.latest_values(conn, today, REFERENCE_KEY)
-    assert queries_policy.not_introduced(conn, today)
-    assert queries_policy.stale_terminals(conn, today)
+    report = policy_report.build(conn, today)
+    assert len(report["items"]) == len(scalar_keys())
+    for item in report["items"]:
+        assert 0 < item["numerator"] < item["denominator"], item["key"]
+        assert item["off_users"], item["key"]
+    tags = {tag for u in report["users"] for tag in u["tags"]}
+    assert tags == {"off", "none", "ok", "old"}
+    assert report["core"]["outdated"] and report["plugin"]["outdated"]
     assert (
-        len(queries_policy.plugin_version_distribution(conn, today, REFERENCE_KEY)) > 1
+        max(u["ago"] for u in report["users"] if u["ago"] is not None)
+        > STOPPED_MIN_DAYS
     )
-    assert len(queries_policy.claude_code_version_distribution(conn, today)) > 1
+    terminals = queries_policy.latest_values(conn, today, REFERENCE_KEY)
+    assert len(terminals) > len({row[0] for row in terminals})
 
     errors = queries_errors.error_summary(conn, today)
     assert ("send", "HTTP 401") in {(stage, kind) for stage, kind, *_ in errors}
