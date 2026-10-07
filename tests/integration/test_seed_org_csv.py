@@ -90,3 +90,15 @@ def test_hierarchy_has_no_child_without_parent(org) -> None:
 
 def test_output_is_reproducible(org, tmp_path) -> None:
     assert _run(tmp_path / "again.csv") == org[0]
+
+
+def test_server_reads_the_roster(org) -> None:
+    """サーバの組織 CSV の読み取りが、合成の名簿の列を引け、メールアドレスの無い行だけを捨てる。"""
+    from ccgov.ingestion import roster_csv
+
+    raw, _, rows = org
+    parsed, dropped = roster_csv.parse(raw)
+    no_email = sum(r["Email - Primary Work"] in ("", "-") for r in rows)
+    assert dropped == no_email > 0
+    assert len(parsed) == len(rows) - no_email
+    assert {r["department"] for r in parsed} == {r["Department"] for r in rows}
