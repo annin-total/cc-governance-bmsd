@@ -1,5 +1,6 @@
 """案の検査: (1) 同じページに同じカードが 2 回出ない (2) 基準を超えた利用者の区分が期間のタブに合う (3) 設計 2 章の全カード・全タブが目録にある
-(4) 状態の判定が閾値の「以上」で動き、データの札が判定と合う (5) 概況の見出し・使わない語・文字の大きさ（check_screen.py）。
+(4) 状態の判定が閾値の「以上」で動き、データの札が判定と合う (5) 概況の見出し・使わない語・文字の大きさ（check_screen.py）
+(6) 案 51 は concepts5.md の 7 章の決まり（check5*.py）、ほかの案（31）は 51 の機能が無いこと。31 の画素の一致は check_frozen.py。
 
 使い方: python kit/check.py ideas/NN-<slug>（playwright の入った Python で）。1 つでも外れたら終了コード 1。
 """
@@ -17,6 +18,9 @@ sys.path.insert(0, str(ROOT / "data"))
 import judge  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import check5  # noqa: E402
+import check5_cards  # noqa: E402
+import check5_org  # noqa: E402
 import check_screen  # noqa: E402
 
 PERIODS = ("7", "28", "12m")
@@ -40,7 +44,16 @@ def _design_ids() -> tuple:
     return cards, tabs
 
 
-def _dom(idea: Path) -> list:
+def _r5(browser, page, base: str, data: dict) -> list:
+    """案 51（compare: "r5"）の決まり（concepts5.md の 7 章）。"""
+    meta = page.evaluate("window.DATA.meta")
+    out = check5.now_pages(page, base, meta) + check5.calendar(page, base, meta) + check5.sticky(page, base) + check5.compare_panel(browser, base)
+    out += check5_cards.cards(page, base) + check5_cards.groups_g3(page, base) + check5_cards.charts(page, base)
+    out += check5_cards.over(page, base, data) + check5_cards.forecast_and_summary(page, base)
+    return out + check5_org.data(data) + check5_org.screen(page, base) + _windows(data)
+
+
+def _dom(idea: Path, data: dict) -> list:
     problems = []
     base = (idea / "index.html").as_uri()
     with sync_playwright() as p:
@@ -59,6 +72,8 @@ def _dom(idea: Path) -> list:
                 spans = {m.group(1) for m in map(OVER_REF.match, refs) if m}
                 if period and spans != (OVER_SPANS[period] if pg["over"] else set()):
                     problems.append(f"{pg['id']} {period}: 基準を超えた利用者の区分が期間に合わない: {sorted(spans)}")
+        r5 = page.evaluate("window.IA.compare === 'r5'")
+        problems += _r5(browser, page, base, data) if r5 else check5.absent_31(page, base)
         browser.close()
     cards, tabs = _design_ids()
     for kind, want, have in (("カード", cards, catalog["cards"]), ("タブ", tabs, catalog["tabs"])):
@@ -83,10 +98,34 @@ def _thresholds() -> list:
     return [f"閾値の判定 {i}: {got} ≠ {want}" for i, (got, want) in enumerate(cases) if got != want]
 
 
-def _data() -> list:
-    """data.js の札が、値と閾値から判定し直したものと合うか。"""
-    text = (ROOT / "data" / "data.js").read_text(encoding="utf-8")
-    d = json.loads(text[text.index("{"):text.rindex("}") + 1])
+USERS_RANGE = (180, 220)  # 案 51 の meta.users（約 200 名）
+DATA_SRC = re.compile(r'src="\.\./\.\./data/(data\d*\.js)"')
+
+
+def _load(idea: Path) -> dict:
+    """案の index.html が読むデータ（31 は data.js、51 は data5.js）。"""
+    name = DATA_SRC.search((idea / "index.html").read_text(encoding="utf-8")).group(1)
+    text = (ROOT / "data" / name).read_text(encoding="utf-8")
+    return json.loads(text[text.index("{"):text.rindex("}") + 1])
+
+
+def _windows(d: dict) -> list:
+    """案 51 の窓の終わり: bill・rec・match7 は利用明細の最終日、rec7・p30 は今日。人数は約 200 名。"""
+    m, out = d["meta"], []
+    ends = {f"p.{k}.period（rec）": d["p"][k]["period"]["end"] for k in PERIODS}
+    ends.update({f"p.{k}.r3.cost（bill）": d["p"][k]["r3"]["cost"]["end"] for k in PERIODS})
+    ends["fixed.now.match（match7）"] = d["fixed"]["now"]["match"]["end"]
+    out += [f"{k} の終わりが利用明細の最終日でない" for k, v in ends.items() if v != m["csv_end"]]
+    for k, v in (("fixed.now.period（rec7）", d["fixed"]["now"]["period"]["end"]), ("fixed.r3.policy（p30）", d["fixed"]["r3"]["policy"]["end"])):
+        if v != m["today"]:
+            out.append(f"{k} の終わりが今日でない")
+    if not USERS_RANGE[0] <= m["users"] <= USERS_RANGE[1]:
+        out.append(f"meta.users {m['users']} が {USERS_RANGE} に無い")
+    return out
+
+
+def _data(d: dict) -> list:
+    """データの札が、値と閾値から判定し直したものと合うか。"""
     out = []
     for key in ("7", "28"):
         c = d["p"][key]["r3"]["cost"]
@@ -116,7 +155,8 @@ def _data() -> list:
 
 def main() -> None:
     idea = Path(sys.argv[1]).resolve()
-    problems = _thresholds() + _data() + check_screen.static_fonts() + _dom(idea)
+    data = _load(idea)
+    problems = _thresholds() + _data(data) + check_screen.static_fonts() + _dom(idea, data)
     for p in problems:
         print(p)
     print("すべて合格" if not problems else f"{len(problems)} 件の問題")

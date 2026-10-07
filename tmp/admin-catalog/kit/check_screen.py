@@ -5,7 +5,7 @@ from pathlib import Path
 
 KIT = Path(__file__).resolve().parent
 TIERS = {12.0, 14.0, 16.0, 22.0, 40.0}  # tokens.css の 5 段（F5）
-BANNED = ("版", "新たに該当", "外れた", "離れた")
+BANNED = ("版", "新たに該当", "外れた", "離れた", "異常値")
 HOME_CARDS = "主な指標"
 FONT_DECL = re.compile(r"(?<![-\w])(font-size|font)\s*:\s*([^;}]+)")
 FONT_OK = re.compile(r"^(inherit|var\(--fs[\w-]*\).*)$")
