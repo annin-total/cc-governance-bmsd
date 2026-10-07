@@ -40,6 +40,18 @@ def screen(page, base: str) -> list:
         bad = page.locator(f"#{tab} tbody tr[data-dept=unknown] :is(td.c-section, td.c-dept_name) .mark").count()
         if bad or (tab != "over_users" and not page.locator(f"#{tab} tbody tr[data-dept=unknown]").count()):
             out.append(f"{tab}: 不明の行が無いか、不明の行に札がある（{bad}）")
+    for df in ("F1", "F3"):  # 部を選んでいないときは、どの課も押せる。部を選ばずに課を選ぶと、その課だけに絞り、その部も選んだ扱い
+        goto(page, f"{base}?page=cost&df={df}#user_cost")
+        if df == "F3":
+            page.locator("#user_cost [data-df-toggle]").click()
+        boxes = page.evaluate("Array.from(document.querySelectorAll('#user_cost [data-df-sec]')).map((b) => b.disabled)")
+        if not boxes or any(boxes):
+            out.append(f"絞り込み {df}: 部を選んでいないのに押せない課がある（{sum(boxes)} / {len(boxes)}）")
+            continue
+        page.locator(f"#user_cost [data-df-sec='{SEC}']").check()
+        rows = page.evaluate(VISIBLE_JS, "user_cost")
+        if not rows or any(s != SEC for _, s, _ in rows) or not page.locator(f"#user_cost [data-df-dept='{DEPT}']").is_checked():
+            out.append(f"絞り込み {df}: 部を選ばずに課を選んでも、その課に絞れないか部が選ばれない")
     goto(page, f"{base}?page=cost&df=F1#depts")
     before = page.evaluate(DEPT_ROW_JS, DEPT)
     page.locator(f"#depts [data-df-dept='{DEPT}']").check()

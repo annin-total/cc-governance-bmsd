@@ -1,6 +1,7 @@
 "use strict";
 // 案 51 の部署の絞り込み（concepts5.md の 4.6。look.df が F1〜F3、look.org のとき）。行の data-dept・data-sec（tabs5.js）で絞る。
-// 部の並びの末尾に「不明」。部を選ばなければ全員。選んだ部に入らない課は半透明で押せない。課を選ばなければ選んだ部の課をすべて。
+// 部の並びの末尾に「不明」。部を選ばなければ全員で、課はすべて押せる。部を選ぶと、選んだ部に入らない課は半透明で押せない。
+// 課を選ばなければ選んだ部の課をすべて。部を選ばずに課を選ぶと、その課の部も選んだ扱いにする。
 // 選んだ部・課は URL（dept=・sec=）に持ち、ページの中のリンクにも写してタブとページを移っても保つ。部署ごと（depts）の部の行は部全体の合算のまま出す。
 (() => {
   const K = window.KIT;
@@ -44,13 +45,13 @@
   function lists() {
     const L = K.L, depts = [...Object.keys(units()), UNKNOWN];
     const d = depts.map((x) => box("dept", x, x === UNKNOWN ? L.UNKNOWN : x, state.dept.has(x), false)).join("");
-    const s = Object.entries(units()).flatMap(([dept, secs]) => secs.map((x) => box("sec", `${dept}|${x}`, x || `${dept} ${L.NO_SECTION}`, state.sec.has(`${dept}|${x}`), !state.dept.has(dept)))).join("");
+    const s = Object.entries(units()).flatMap(([dept, secs]) => secs.map((x) => box("sec", `${dept}|${x}`, x || L.DF_NO_SECTION, state.sec.has(`${dept}|${x}`), state.dept.size > 0 && !state.dept.has(dept)))).join("");
     return `<div class="df-lists"><div class="df-col"><b>${esc(L.DEPT)}</b><div class="df-items">${d}</div></div><div class="df-col"><b>${esc(L.SECTION)}</b><div class="df-items">${s}</div></div>`
       + `<button type="button" class="df-clear" data-df-clear>${esc(L.DF_CLEAR)}</button></div>`;
   }
 
   function buttonText() {
-    const L = K.L, names = [...[...state.dept].map((x) => (x === UNKNOWN ? L.UNKNOWN : x)), ...[...state.sec].map((x) => x.split("|")[1] || L.NO_SECTION)];
+    const L = K.L, names = [...[...state.dept].map((x) => (x === UNKNOWN ? L.UNKNOWN : x)), ...[...state.sec].map((x) => x.split("|")[1] || L.DF_NO_SECTION)];
     if (!names.length) return L.DF_BUTTON.replace("{}", L.DF_ALL);
     return L.DF_BUTTON.replace("{}", names.length > 1 ? L.DF_MORE.replace("{}", names[0]).replace("{n}", names.length - 1) : names[0]);
   }
@@ -87,7 +88,7 @@
       const d = t.dataset.dfDept;
       if (t.checked) state.dept.add(d); else { state.dept.delete(d); [...state.sec].filter((x) => deptOfSec(x) === d).forEach((x) => state.sec.delete(x)); }
     } else if (t.dataset.dfSec !== undefined) {
-      if (t.checked) state.sec.add(t.dataset.dfSec); else state.sec.delete(t.dataset.dfSec);
+      if (t.checked) { state.sec.add(t.dataset.dfSec); state.dept.add(deptOfSec(t.dataset.dfSec)); } else state.sec.delete(t.dataset.dfSec);
     } else return;
     apply();
   });
