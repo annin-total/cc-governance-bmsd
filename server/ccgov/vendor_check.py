@@ -11,7 +11,7 @@ VENDOR_DIR = Path(__file__).resolve().parent / "vendor"
 NAMES = ("contract.py", "policy.py")
 
 
-# 親リポジトリの scripts/sync_contract.py の _header() と一致させる。長さのずれは統合テストが捕まえる。
+# リポジトリのルートの scripts/sync_contract.py の _header() と一致させる。長さのずれは統合テストが捕まえる。
 def _header(name: str) -> str:
     return (
         f'"""server/ccgov/vendor/{name} — 生成物。直接編集しない。\n'

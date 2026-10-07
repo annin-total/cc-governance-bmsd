@@ -4,7 +4,7 @@
 
 Claude Code 利用状況の集計サーバ。端末プラグインから NDJSON で届く利用イベント・ポリシー
 適用結果・hook の失敗を受信・保存し、AI Gateway の日次 CSV と突き合わせて 4 枚の画面で可視化する。
-単独でデプロイされる 1 プロセスの Flask アプリケーションであり、ソースは submodule
+単独でデプロイされる 1 プロセスの Flask アプリケーションであり、ソースは
 `server/` にある。全体の中での位置づけは `system.md`、
 デプロイ手順は `../guide/deploy-aip.md`、画面の見た目と部品は `design-system.md`、
 コードを書くときの規約は `server/CLAUDE.md` にある。

@@ -1,7 +1,6 @@
 # CLAUDE.md - server
 
-集計サーバ固有の規約。コマンド・共通の規約・文書の置き場は親リポジトリ `cc-governance-bmsd` の
-`CLAUDE.md` にある。
+集計サーバ固有の規約。コマンド・共通の規約・文書の置き場はリポジトリのルートの `CLAUDE.md` にある。
 
 ## 実行基盤の制約
 
@@ -9,8 +8,8 @@
 
 ## Coding
 
-- **`ccgov/vendor/` を直接編集しない**：正本は親リポジトリの
-  `plugin/hooks/contract.py` / `plugin/hooks/policy.py` であり、親リポジトリの
+- **`ccgov/vendor/` を直接編集しない**：正本は
+  `plugin/hooks/contract.py` / `plugin/hooks/policy.py` であり、
   `scripts/sync_contract.py` が複製と対応する `*.sha256` を生成する
 - **フレームワークは境界に閉じ込める**：Web フレームワークに依存するのは `ccgov/web/` だけ。
   それ以外のモジュールは素の値を受け取り、素の値を返す
@@ -35,6 +34,6 @@
   `<tr>` を行として数える。絞り込みと並べ替えのための `data-*` は行とセルに付けてよい。
   見出し行を 2 行にすると、行数が 1 つ多く数えられる
 - **生の値を画面に出さない**：`day` は epoch 日である。整形は `filters.py` のフィルタに寄せる
-- 画面の見た目と部品の規約は親リポジトリの `docs/spec/design-system.md` にある。画面を変える前に読む
+- 画面の見た目と部品の規約は `docs/spec/design-system.md` にある。画面を変える前に読む
 - 画面を目視するときはサーバを再起動する。本番モードはテンプレートをキャッシュするため、
   古い画面を見て「直った」と誤認する

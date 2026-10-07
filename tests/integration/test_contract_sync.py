@@ -2,9 +2,9 @@
 
 契約がずれても実行時に例外は出ない（サーバ側の列定義を回して値を引くだけで、
 増えた項目は黙って捨てられ、減った項目は黙って NULL になる）。同期忘れを機械的に捕まえるのは、この検査と
-`scripts/sync_contract.py --check` だけである（submodule `server/` の `ccgov/vendor_check.py` は複製の直接編集だけを捕まえる）。
+`scripts/sync_contract.py --check` だけである（`server/ccgov/vendor_check.py` は複製の直接編集だけを捕まえる）。
 
-**`import contract` に頼らない。**複製は別リポジトリ（submodule）の中にあり、
+**`import contract` に頼らない。**複製は `server/` の中にあり、
 "contract" という同名モジュールが正本・複製の 2 か所に存在しうる。どちらを import するかを
 sys.path の順序に委ねると、一致検査の結果がその順序で無言に変わりかねないため、
 ここでは正本・複製・ハッシュ記録をすべて生のバイト列として直接読み、
