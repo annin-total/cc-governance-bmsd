@@ -9,8 +9,9 @@
     K1: {},
     K2: { per_bd: { part: "bdbars" }, per_user_bd: { part: "bdbars", field: "per_user" }, forecast: { part: "cum", bars: true } },
     K3: { cost_total: { part: "area" }, per_bd: { part: "bdbars" } },
-    K4: { cost_total: { part: "area", shadow: true }, per_bd: { part: "bdbars", avg: true }, per_user_bd: { part: "dist" }, forecast: { part: "cum", prev: true } },
+    K4: { cost_total: { part: "area" }, per_bd: { part: "bdbars", avg: true }, per_user_bd: { part: "dist" }, forecast: { part: "cum", prev: true } },
     K5: { cost_total: { part: "grid" }, per_bd: { part: "bdbars", avg: true }, per_user_bd: { part: "dist", strip: true }, forecast: { part: "cum", prev: true } },
+    K7: { cost_total: { part: "area", shadow: true }, per_bd: { part: "bdbars", avg: true }, per_user_bd: { part: "dist" }, forecast: { part: "cum", prev: true } },
     K6: { cost_total: { part: "split" }, per_bd: { part: "bdbars", avg: true }, per_user_bd: { part: "line", field: "per_user" }, forecast: { part: "cum", prev: true } },
   };
   // 12 か月でも同じ部品で描くもの（ほかは目録の 12 か月の差し替え＝暦月ごとの棒）

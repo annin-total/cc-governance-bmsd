@@ -13,7 +13,7 @@
     hv: { label: "ヘッダーの高さ", def: "HV1", pages: ALL, variants: { HV1: ["31 のまま", { hv: "HV1" }], HV2: ["1 段小さく", { hv: "HV2" }], HV3: ["1 行の最小", { hv: "HV3" }], HV4: ["スクロールで縮む", { hv: "HV4" }] } },
     chart: { label: "コストのグラフ", def: "K4", pages: ["home", "cost"], variants: {
       K1: ["31 のまま", { chart: "K1" }], K2: ["棒で揃える", { chart: "K2" }], K3: ["面と棒", { chart: "K3" }],
-      K4: ["影と基準線", { chart: "K4" }], K5: ["マス目", { chart: "K5" }], K6: ["内訳", { chart: "K6" }] } },
+      K4: ["影と基準線", { chart: "K4" }], K5: ["マス目", { chart: "K5" }], K6: ["内訳", { chart: "K6" }], K7: ["影を重ねる", { chart: "K7" }] } },
     over: { label: "基準超えの新規と離脱", def: "D2", pages: ["home", "cost"], variants: {
       D1: ["状態ごと", { over: "D1" }], D2: ["出入りと移動", { over: "D2" }], D3: ["移動の表", { over: "D3" }],
       D4: ["悪化と改善", { over: "D4" }], D5: ["1 人 1 つの四角", { over: "D5" }], D6: ["差だけ", { over: "D6" }] } },

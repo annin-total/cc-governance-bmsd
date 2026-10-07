@@ -10,10 +10,15 @@ CHARTS = {  # 4.3 の型の表（部品＋足すもの）
     "K1": ("bars", "pair", "pair", "cum"),
     "K2": ("bars", "bdbars", "bdbars", "cum+bars"),
     "K3": ("area", "bdbars", "pair", "cum"),
-    "K4": ("area+shadow", "bdbars+avg", "dist", "cum+prev"),
+    "K4": ("area", "bdbars+avg", "dist", "cum+prev"),
     "K5": ("grid", "bdbars+avg", "dist+strip", "cum+prev"),
     "K6": ("split", "bdbars+avg", "line", "cum+prev"),
+    "K7": ("area+shadow", "bdbars+avg", "dist", "cum+prev"),
 }
+# 時系列の部品（K7 の影を除く）は前と直近を同じ軸に並べる: 軸の日数が期間の 2 倍で、前と直近の色が違う
+SERIES_JS = """(days) => Array.from(document.querySelectorAll('main .k5-wrap svg[data-days]')).map((s) => {
+  const col = (sel) => { const e = s.querySelector(sel); if (!e) return null; const cs = getComputedStyle(e); return e.tagName === 'rect' ? cs.fill : cs.stroke; };
+  return [s.closest('.card').dataset.ref, Number(s.dataset.days), col('.k5-old'), col('.k5-new')]; })"""
 PART_JS = """(r) => { const c = document.querySelector(`main .card[data-ref=${r}]`); if (!c) return null;
   const w = c.querySelector('.k5-wrap'), has = (s) => Boolean(c.querySelector(s));
   if (!w) return has('.fc-cum') ? 'cum' : has('.pair') ? 'pair' : has('.spark') ? 'bars' : '?';
@@ -58,6 +63,11 @@ def charts(page, base: str) -> list:
         got = tuple(page.evaluate(PART_JS, r) for r in COST_CARDS)
         if got != want:
             out.append(f"{k}: 部品が表と違う {got} ≠ {want}")
+        for ref, days, old, new in page.evaluate(SERIES_JS, 7):
+            if days != 14 or not old or not new or old == new:
+                out.append(f"{k} {ref}: 時系列が前と直近の 14 日を同じ軸に持たないか、色が 2 つでない（{days} 日 {old} {new}）")
+        if k in ("K2", "K3", "K4", "K6") and not page.evaluate(SERIES_JS, 7):
+            out.append(f"{k}: 前と直近を並べる時系列の部品が無い")
         if k == "K4" and len({(g or "").split("+")[0] for g in got}) != len(got):
             out.append(f"K4: 7 日の 4 枚に同じ部品がある {got}")
         goto(page, f"{base}?page=home&period=12m&chart={k}")
@@ -117,6 +127,16 @@ def over(page, base: str, data: dict) -> list:
                     if got["dots"] != want:
                         out.append(f"{where}: 四角の数が一覧の行と合わない {got['dots']} ≠ {want}")
     return out
+
+
+CHIP_JS = "(() => { const c = document.querySelector('main .change.worse'), m = document.querySelector('main .mark.ng'); return c && m ? [getComputedStyle(c).color, getComputedStyle(m).color] : null; })()"
+
+
+def chip_ng(page, base: str) -> list:
+    """CH2: 悪化のチップの色が要確認の札の色と同じ。"""
+    goto(page, f"{base}?page=home&chip=CH2")
+    got = page.evaluate(CHIP_JS)
+    return [] if got and got[0] == got[1] else [f"CH2: 悪化のチップの色が要確認の札の色と違う（{got}）"]
 
 
 def forecast_and_summary(page, base: str) -> list:

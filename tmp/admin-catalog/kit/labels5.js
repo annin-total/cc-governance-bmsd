@@ -11,9 +11,9 @@
     DF_ALL: "すべて", DF_BUTTON: "部署: {}", DF_MORE: "{} ほか {n}", DF_LINK: "部署で絞り込む", DF_CLEAR: "すべて解除", DF_NO_SECTION: "（課なし）", DF_SEARCH: "部・課を探す", DF_NAV: "部署の絞り込み",
     FC_PREV_CHIP_TPL: "{month[prev_month]:mon} 月の実績 {month[prev_actual]:usd}",
     K5: {
-      area: "日ごとのコスト", area_shadow: "日ごと · 薄い線は前の期間（曜日をそろえる）",
-      bdbars: "営業日ごと", bdbars_avg: "営業日ごと · 点線は前の 1 営業日あたり · 超えた日 {n} / {m}",
-      per_user: "1 人あたり", line: "営業日ごとの揺れ", grid: "曜日（行）× 週（列）· 濃いほど多い",
+      area: "日ごと · 地のある区間が直近", area_shadow: "直近の日ごと · 点線は前の期間（曜日をそろえる）",
+      bdbars: "営業日ごと · 濃い棒が直近", bdbars_avg: "営業日ごと · 点線は前の 1 営業日あたり · 直近で超えた日 {n} / {m}",
+      per_user: "1 人あたり", line: "営業日ごと · 青い線が直近", grid: "曜日（行）× 週（列）· 濃いほど多い",
       dist: "{n:num} 人の分布 · 実線は平均 · 点線は中央値 {median:usd}",
       split_parts: { users: "人数の分", per: "1 人あたりの分" }, split: "前との差 {diff:signed_usd} の内訳",
       cum: [["k5-key-line", "今月"], ["k5-key-fc", "見込み"]],

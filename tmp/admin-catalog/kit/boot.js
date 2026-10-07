@@ -62,7 +62,7 @@
     const look = K.look.get(), root = document.documentElement;
     if (look.fs !== "F5") root.dataset.fs = look.fs;
     if (look.sticky) Object.assign(root.dataset, { sticky: look.sticky, hv: look.hv }); // 案 51: ヘッダーだけを固定し、高さの型（head5.css）
-    if (look.chip) root.dataset.chip = look.chip; // 案 51: 増減のチップの色の型（chips5.css）
+    if (look.chip) root.dataset.chipColor = look.chip; // 案 51: 増減のチップの色の型（chips5.css。data-chip は表の区分のボタンが使うので別の名前）
     document.title = `${page.title} — ${ia.name || K.L.APP}`;
     document.body.innerHTML = nav(ia, page, period)
       + `<main class="wrap">${ia.compare === true ? K.compare.html() : ""}<div class="page-head"><div><h1>${esc(page.title)}</h1><p class="lead">${esc(fill(page.lead || "", ctx))}</p></div>`
