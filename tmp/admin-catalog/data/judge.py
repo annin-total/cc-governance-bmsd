@@ -14,6 +14,7 @@ ERROR_COUNT_ELEVATED = 1  # 件
 NON_COMPLIANT_USERS_HIGH = 1  # 人
 NOT_INTRODUCED_ELEVATED = 1  # 人
 NULL_RATE_ELEVATED, NULL_RATE_HIGH = 20, 50  # %
+CSV_STALE_DAYS = 3  # 日。今日 − 利用明細の最終日がこれ以上で、古さの警告と csv_freshness の注意
 
 
 def change(now, prev) -> Optional[float]:

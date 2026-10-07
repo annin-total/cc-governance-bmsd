@@ -1,6 +1,8 @@
-"""合成データの DB から window.DATA（data.js）を作る。今の画面の集計はサーバの report をそのまま呼び、足りない指標は extras*.py が数える。
+"""合成データの DB から案 51 の window.DATA（data5.js）を作る。今の画面の集計はサーバの report をそのまま呼び、足りない指標は extras*.py が数える。
 
-使い方: python build_data.py --server <server のスナップショット> --db <seed.db> [--out data.js]
+使い方: python build_data.py --server <server のスナップショット> --scripts <seed の scripts/> --db <seed.db> [--out data5.js]
+data.js（案 31 が読む 40 名）は凍結していて、このスクリプトでは作らない。
+期間のページの窓は利用明細の最終日（E の既定）で終わり、状態のページの窓（`fixed.now`・設定の適用状況）は今日で終わる。
 """
 
 import argparse
@@ -21,24 +23,28 @@ FLOAT_DIGITS = 6
 def _args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--server", required=True, type=Path)
+    p.add_argument("--scripts", required=True, type=Path)
     p.add_argument("--db", required=True, type=Path)
-    p.add_argument("--out", type=Path, default=Path(__file__).with_name("data.js"))
+    p.add_argument("--out", type=Path, default=Path(__file__).with_name("data5.js"))
     return p.parse_args()
 
 
-def _reports(conn, today: int) -> dict:
-    """今の 4 画面とデータと設定の集計結果（サーバの関数の戻り値そのまま）。"""
+def _reports(conn, today: int, end: int, csv_end) -> dict:
+    """今の 4 画面とデータと設定の集計結果（サーバの関数の戻り値そのまま）。期間は `end`（E）で、状態のページの値は今日で終わる。"""
     from ccgov.ingestion import csv_upload
     from ccgov.metrics import windows
     from ccgov.reports import assets, csv_files, effect, export, holidays, overview, policy
 
+    import extras_r4
+
     p = {}
     for key in PERIOD_KEYS:
-        period = windows.period(key, today)
+        period = windows.period(key, end)
         p[key] = {**overview.build(conn, period), **assets.build(conn, period)}
     with tempfile.TemporaryDirectory() as csv_dir:
         files = csv_files.build(conn, csv_dir, csv_upload.stored(csv_dir))
     fixed = {
+        "now": extras_r4.split_state(p, overview.build(conn, windows.period(PERIOD_KEYS[0], today)), csv_end),
         "policy": policy.build(conn, today),
         "effect": effect.build(conn),
         "settings": {"holidays": holidays.build(conn), "files": files, "export": export.build(conn)},
@@ -47,16 +53,18 @@ def _reports(conn, today: int) -> dict:
 
 
 def _round3(raw, data: dict, today: int) -> None:
-    """第 3 弾の値を `p[期間].r3` と `fixed.r3` に足す（extras_r3*.py・summaries.py）。"""
+    """第 3 弾の値を `p[期間].r3` と `fixed.r3` に足す（extras_r3*.py・summaries.py）。状態のページの値は `fixed.now.r3`。"""
     import extras_r3
     import extras_r3_more
     import extras_r3_over
     import extras_r3_policy
+    import extras_r4
+    import extras_r5
     import summaries
 
-    csv_end = data["fixed"]["m"]["csv_end"]
+    csv_end = data["meta"]["csv_end"]
     data["fixed"]["r3"] = {"forecast": extras_r3.forecast(data["p"]["7"]["month"]),
-                           "policy": extras_r3_policy.build(raw, today, data["fixed"]["policy"]), "summaries": summaries.build(today)}
+                           "policy": extras_r3_policy.build(raw, today, data["fixed"]["policy"]), "summaries": summaries.build(today, extras_r4.end_of(today, csv_end))}
     for key in PERIOD_KEYS:
         p = data["p"][key]
         long = p["period"]["long"]
@@ -68,8 +76,26 @@ def _round3(raw, data: dict, today: int) -> None:
             extras_r3_more.activity_rows(raw, p)
             r3.update(changes=extras_r3_more.changes(p), calls=extras_r3_more.calls(raw, p))
         p["r3"] = r3
-    data["p"]["7"]["r3"].update(silent=extras_r3_more.silent(raw, today, csv_end), errors=extras_r3_more.errors(raw, data["p"]["7"]),
-                                nulls=extras_r3_more.nulls(data["p"]["7"]))
+        p["r5"] = extras_r5.build(raw, p)
+    data["fixed"]["now"]["r3"] = extras_r4.now_r3(raw, data["fixed"]["now"], today, csv_end)
+
+
+def _org(raw, data: dict) -> None:
+    """組織 CSV（合成）の部・課を利用者ごとの行に足し、部署ごとの集計（`p[期間].r5.depts`）を作る。"""
+    import extras_org
+
+    users = [u for (u,) in raw.execute("SELECT user_email FROM events UNION SELECT user_email FROM cost_daily")]
+    c = data["p"]["7"]["r3"]["cost"]
+    active = [u for (u,) in raw.execute("SELECT DISTINCT user_email FROM cost_daily WHERE day BETWEEN ? AND ? AND cost > 0", (c["start"], c["end"]))]
+    data["fixed"]["org"], by = extras_org.roster(len(users), users, active)
+    data["fixed"]["org"]["unlisted"] = extras_org.unlisted(raw, data["meta"]["csv_end"], by)
+    for key in PERIOD_KEYS:
+        p = data["p"][key]
+        for rows in (p["x"]["billed"], p["x"].get("activity", []), p["r3"].get("over", {}).get("rows", [])):
+            extras_org.annotate(rows, by)
+        p["r5"]["depts"] = extras_org.depts(raw, key, p, by)
+    extras_org.annotate(data["fixed"]["r3"]["policy"]["users"], by)
+    extras_org.annotate(data["fixed"]["now"]["r3"]["silent"]["rows"], by)
 
 
 def _rounded(v):
@@ -93,6 +119,7 @@ def _check_emails(text: str) -> None:
 def main() -> None:
     args = _args()
     sys.path.insert(0, str(args.server.resolve()))
+    sys.path.insert(0, str(args.scripts.resolve()))
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     os.environ["DB_DSN"] = f"sqlite:///{args.db.resolve()}"
     from ccgov.constants import REFERENCE_KEY, REFERENCE_VALUE
@@ -102,13 +129,15 @@ def main() -> None:
     import extras_events
     import extras_more
     import extras_r2
+    import extras_r4
     from ccgov.constants import EVENT_STUDY_SPAN
 
     raw = sqlite3.connect(str(args.db))
     today = raw.execute("SELECT MAX(day) FROM events").fetchone()[0]
+    csv_end = raw.execute("SELECT MAX(day) FROM cost_daily").fetchone()[0]
     conn = db.connect()
     try:
-        data = _reports(conn, today)
+        data = _reports(conn, today, extras_r4.end_of(today, csv_end), csv_end)
         starts = queries_policy.compliance_start_dates(conn, REFERENCE_KEY, REFERENCE_VALUE)
     finally:
         conn.close()
@@ -122,9 +151,9 @@ def main() -> None:
     data["p"]["12m"]["m"].update(extras_r2.retention_12m(raw, data["p"]["12m"]["x"]["cost"]))
     data["fixed"]["m"] = extras_more.fixed(raw, today)
     data["fixed"]["effect2"] = extras_r2.effect(raw, starts, EVENT_STUDY_SPAN, extras_events._load)
+    data["meta"] = extras_r4.meta(raw, today, csv_end, extras.user_count(raw), PERIOD_KEYS)
     _round3(raw, data, today)
-    first_day = raw.execute("SELECT MIN(day) FROM cost_daily").fetchone()[0]
-    data["meta"] = {"asof": today, "first_day": first_day, "periods": list(PERIOD_KEYS), "users": extras.user_count(raw)}
+    _org(raw, data)
     text = json.dumps(_rounded(data), ensure_ascii=False, default=list, separators=(",", ":"))
     _check_emails(text)
     args.out.write_text("window.DATA = " + text + ";\n", encoding="utf-8")

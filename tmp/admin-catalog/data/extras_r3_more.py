@@ -14,15 +14,13 @@ def _pct(now, prev):
 
 
 def changes(p: dict) -> dict:
-    """利用状況と受信のカードの増減（率・差）。"""
-    x, a, b, size, calls = p["x"], p["x"]["active"], p["x"]["active_prev"], p["size"], p["calls"]
+    """利用状況のカードの増減（率・差）。受信の増減は状態のページの窓（extras_r4.now_r3）。"""
+    a, b, size, calls = p["x"]["active"], p["x"]["active_prev"], p["size"], p["calls"]
     out = {k: _pct(a[k], b[k]) for k in ("days_per_user", "prompts_per_person_day", "sessions_per_person_day")}
     out.update({f"{k}_calls": _pct(calls[k]["total"], calls[k]["prev"]) for k in calls})
     out["session_size"] = _pct(size["median"], size["prev"]["median"])
     out["autocompact_pt"] = None if size["auto_share"] is None or size["prev"]["auto_share"] is None else round(size["auto_share"] - size["prev"]["auto_share"], 1)
     out["bypass_diff"] = a["bypass_users"] - b["bypass_users"]
-    out["events"] = _pct(p["events"]["recent"], p["events"]["prev"])
-    out["senders"] = x["active"]["users"]
     return out
 
 

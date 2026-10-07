@@ -1,5 +1,6 @@
 """基準を超えた利用者（`over_day`・`over_week`・`over_month`・`over_users`）。窓は `bill`（利用明細の最終日までの N 日）と前の N 日。"""
 
+import sys
 from collections import defaultdict
 
 import judge
@@ -8,6 +9,7 @@ SPANS = {"7": ("day", "week"), "28": ("month",)}  # 期間のタブごとの区�
 VALUE = {"day": "max_day", "week": "total", "month": "total"}  # 日次は N 日のいずれかの 1 日、週次・月次は N 日の合計
 SPAN_RANK = {"day": 0, "week": 1, "month": 2}
 TOP = 3
+STATES = (judge.OK, judge.WARN, judge.NG)
 
 
 def _sums(raw, a: int, b: int) -> dict:
@@ -50,7 +52,16 @@ def _span(span: str, now_sums: dict, now: dict, prev: dict, cost: dict) -> dict:
         "ok": all_users - users, "all_users": all_users, "user_share": judge.share(users, all_users), "cost": spent, "cost_share": judge.share(spent, cost["total"]),
         "state": judge.worst(now.values()), "elevated": judge.USER_COST_ELEVATED[span], "high": judge.USER_COST_HIGH[span],
         "top": [{"email": e, "value": now_sums[e][VALUE[span]], "state": now[e]} for e in top],
+        "moves": _moves(now, prev),
     }
+
+
+def _moves(now: dict, prev: dict) -> dict:
+    """前と直近の状態の組（3×3）のうち、正常→正常を除く 8 つの移り方の人数。キーは `前_今`（例 `ok_warn`）。"""
+    out = {f"{a}_{b}": 0 for a in STATES for b in STATES if (a, b) != (judge.OK, judge.OK)}
+    for e in set(now) | set(prev):
+        out[f"{prev.get(e, judge.OK)}_{now.get(e, judge.OK)}"] += 1
+    return out
 
 
 def _row(email: str, span: str, sums: dict, now: dict, prev: dict) -> dict:
@@ -73,6 +84,10 @@ def build(raw, key: str, cost: dict) -> dict:
     out = {s: _span(s, now_sums, now[s], prev[s], cost) for s in spans}
     rows = [_row(e, s, now_sums, now[s], prev[s]) for s in spans for e in set(now[s]) | set(prev[s])]
     rows.sort(key=lambda r: (r["span_rank"], r["rank"], -r["value"]))
+    for s in spans:  # 移り方の人数は、一覧の行の前と今の状態から数え直せること
+        got = {k: sum(f"{r['prev_state']}_{r['state']}" == k for r in rows if r["span"] == s) for k in out[s]["moves"]}
+        if got != out[s]["moves"]:
+            sys.exit(f"p.{key} {s} の移り方 {out[s]['moves']} が over_users の行 {got} と合わない")
     by_user = {e: judge.worst(now[s].get(e) for s in spans) for e in now_sums}
     return {**out, "spans": list(spans), "state": judge.worst(o["state"] for o in out.values()), "rows": rows,
             "row_users": len({r["email"] for r in rows}), "by_user": by_user}
