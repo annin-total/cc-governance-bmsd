@@ -9,6 +9,7 @@
  ["cmp-chart-K3", "?page=home&chart=K3", null],
  ["cmp-chart-K5", "?page=home&chart=K5", null],
  ["cmp-chart-K6", "?page=home&chart=K6", null],
+ ["cmp-chart-K7", "?page=home&chart=K7", null],
  ["cmp-over-D1", "?page=home&over=D1", null],
  ["cmp-over-D3", "?page=home&over=D3", null],
  ["cmp-over-D4", "?page=home&over=D4", null],
