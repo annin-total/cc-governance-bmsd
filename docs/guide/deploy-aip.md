@@ -49,7 +49,7 @@ Secret ファイルに `KEY=VALUE` 形式で書く。`entry.sh` が起動時に�
    - Name: 任意（例: `cc-governance-server`）
    - Ingress Path: `/cc-governance-server`
    - Function Base: **sh-centos-science**（例: `sh-centos-science-py39`）
-   - HTTP Access Mode: **Public Access**（社内 VPN に接続できる人なら誰でも到達できる）
+   - HTTP Access Mode: **Public Access**（社内 VPN 接続が可能な全員がアクセス可）
    - Input Method: **Git Repository**
       - Git Repository Url: `対象リポジトリの SSH URL`（HTTP は使えない）
       - Branch: デプロイ対象のブランチ
