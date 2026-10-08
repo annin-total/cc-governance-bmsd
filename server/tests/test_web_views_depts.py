@@ -7,21 +7,13 @@ import re
 from html import unescape
 
 import pytest
-from conftest import card, table_body, table_rows
+from conftest import card, table_body, table_head, table_rows
 from cost_data import html_of
-
-
-def _head(html: str) -> list:
-    head = table_body(html, "depts").split("</thead>")[0]
-    return [
-        " ".join(unescape(re.sub(r"<[^>]+>", "", th)).split())
-        for th in re.findall(r"<th\b[^>]*>(.*?)</th>", head, re.DOTALL)
-    ]
 
 
 def test_dept_rows_then_sections_and_unlisted_last(named):
     html = html_of(named)
-    assert _head(html) == [
+    assert table_head(html, "depts") == [
         "部署", "利用者数", "コスト", "前との差", "増減率", "コストに占める割合", "1 人 1 営業日あたり", "基準を超えた利用者",
     ]  # fmt: skip
     assert [r["cells"] for r in table_rows(html, "depts")] == [
@@ -52,7 +44,7 @@ def test_totals_match_the_whole(named):
 
 
 def test_long_period_drops_comparison_and_over(named):
-    assert _head(html_of(named, "?period=12m")) == [
+    assert table_head(html_of(named, "?period=12m"), "depts") == [
         "部署", "利用者数", "コスト", "コストに占める割合", "1 人 1 営業日あたり",
     ]  # fmt: skip
 

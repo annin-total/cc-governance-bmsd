@@ -2,19 +2,11 @@
 
 import re
 
-from conftest import table_body, table_rows
+from conftest import table_body, table_head, table_rows
 from cost_data import html_of
 from known_data import insert_cost_daily
 
 from ccgov.constants import TAB_FOLD_ROWS, TABLE_FOLD_ROWS
-
-
-def _head(html: str, testid: str) -> list:
-    head = table_body(html, testid).split("</thead>")[0]
-    return [
-        " ".join(re.sub(r"<[^>]+>", "", th).split())
-        for th in re.findall(r"<th\b[^>]*>(.*?)</th>", head, re.DOTALL)
-    ]
 
 
 def _tabs(html: str) -> list:
@@ -46,7 +38,7 @@ def test_tabs_of_12_months_add_months(cost_client):
 
 def test_user_cost_rows(cost_client):
     html = html_of(cost_client)
-    assert _head(html, "user_cost") == [
+    assert table_head(html, "user_cost") == [
         "状態", "順位", "利用者 · 部署", "コスト", "前の期間", "前との差", "増減率",
         "コストに占める割合", "累積", "日数", "1 日あたり", "主なモデル", "キャッシュ読み",
     ]  # fmt: skip
@@ -62,7 +54,7 @@ def test_user_cost_rows(cost_client):
 
 def test_user_cost_of_12_months_drops_state_and_comparison(cost_client):
     html = html_of(cost_client, "?period=12m")
-    assert _head(html, "user_cost") == [
+    assert table_head(html, "user_cost") == [
         "順位", "利用者 · 部署", "コスト", "コストに占める割合", "累積", "日数", "1 日あたり", "主なモデル", "キャッシュ読み",
     ]  # fmt: skip
     rows = table_rows(html, "user_cost")
@@ -82,7 +74,7 @@ def test_daily_cost_rows_cover_both_windows(cost_client):
 
 def test_models_rows(cost_client):
     html = html_of(cost_client)
-    assert _head(html, "models") == [
+    assert table_head(html, "models") == [
         "モデル", "コスト", "", "割合", "前の期間", "前との差", "利用者数", "キャッシュ読み込みの割合",
     ]  # fmt: skip
     assert [r["cells"] for r in table_rows(html, "models")] == [
@@ -94,7 +86,7 @@ def test_models_rows(cost_client):
 
 def test_models_of_12_months_drop_comparison(cost_client):
     html = html_of(cost_client, "?period=12m")
-    assert "前の期間" not in _head(html, "models")
+    assert "前の期間" not in table_head(html, "models")
     assert table_rows(html, "models")[0]["cells"][:2] == ["sonnet", "$170.00"]
 
 

@@ -80,6 +80,15 @@ def table_body(html: str, testid: str, key: Optional[str] = None) -> str:
     raise AssertionError(f"table {' '.join(wanted)} が見つからない")
 
 
+def table_head(html: str, testid: str) -> list:
+    """`table_body` の `<thead>` の見出しセルの文字（タグを除き、空白を詰める）。"""
+    head = table_body(html, testid).split("</thead>")[0]
+    return [
+        " ".join(unescape(re.sub(r"<[^>]+>", "", th)).split())
+        for th in re.findall(r"<th\b[^>]*>(.*?)</th>", head, re.DOTALL)
+    ]
+
+
 def rows_in_table(html: str, testid: str, key: Optional[str] = None) -> list:
     """`table_body` の `<tr ...>`（属性つきを含む）を、最初の見出し行を除いて返す。"""
     return re.findall(r"<tr\b[^>]*>", table_body(html, testid, key))[1:]
