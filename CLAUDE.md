@@ -49,6 +49,7 @@ CCGOV_TEST_MYSQL_DSN=mysql://root:<pw>@127.0.0.1:13306 .venv/bin/python -m pytes
   完了報告で移し先を提案する（移したら記録を更新する）
 - `.local/` は一時領域。コード・`docs/`・コミット・PR から参照せず、残す事実は `docs/` か PR 本文に書く
 - 減らす作業は `.claude/skills/refactor/SKILL.md`、文書・docstring・コメントの見直しは `.claude/skills/revise-docs/SKILL.md` に従う
+- 記録した課題を片付けるときは `.claude/skills/resolve-issues/SKILL.md` に従う
 
 ## Design
 
