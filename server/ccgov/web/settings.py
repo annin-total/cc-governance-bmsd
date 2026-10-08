@@ -9,7 +9,7 @@ from ccgov.ingestion import csv_upload
 from ccgov.metrics import calendar
 from ccgov.reports import csv_files, export, holidays, roster
 from ccgov.store import db
-from ccgov.web import charts, labels
+from ccgov.web import charts, labels, text
 from ccgov.web.screens import Col, Tab, table
 
 HOLIDAYS = Tab(
@@ -73,6 +73,12 @@ def parse(form) -> tuple:
     if not 1 <= len(name) <= HOLIDAY_NAME_MAX:
         raise InputError("name")
     return list(range(start, end + 1)), name
+
+
+def rejected(errors: dict, e: csv_upload.Rejected, name: Optional[str] = None) -> dict:
+    """取込を断った知らせ。`errors` は理由ごとの文言（`labels.CSV_ERROR` など）。"""
+    detail = e.args[1] if len(e.args) > 1 else ""
+    return {"file": name, "error": text.fill(errors[e.args[0]], {"detail": detail})}
 
 
 def run(action, *args):
