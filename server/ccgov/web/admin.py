@@ -2,7 +2,7 @@
 
 import hmac
 import time
-from typing import Optional
+from typing import Callable, Optional
 
 from flask import (
     Blueprint,
@@ -38,13 +38,13 @@ from ccgov.web import (
     settings,
     summary,
 )
+from ccgov.web.screens import Screen, view
 from ccgov.web.screens import activity as activity_screen
 from ccgov.web.screens import collect as collect_screen
 from ccgov.web.screens import cost_page as cost_screen
 from ccgov.web.screens import effect as effect_screen
 from ccgov.web.screens import overview as overview_screen
 from ccgov.web.screens import policy as policy_screen
-from ccgov.web.screens import view
 
 # CSS を認証つきで配るため、静的配信はアプリ直下ではなくこの Blueprint が持つ。
 admin = Blueprint("admin", __name__, static_folder="static")
@@ -134,32 +134,34 @@ def _period() -> windows.Period:
     return windows.period(_period_key(), _basis()["end"])
 
 
-@admin.route("/", strict_slashes=False)
-def index() -> str:
+def _period_page(template: str, spec: Screen, build: Callable, *args, **context) -> str:
+    """期間のページを、`?period=` の期間の `build(conn, period, *args)` で描く。"""
     period = _period()
-    data = settings.run(overview.build, period, _basis()["today"])
-    screen = view.build(overview_screen.SCREEN, data)
+    data = settings.run(build, period, *args)
     return render_template(
-        "overview.html",
-        view=screen,
+        template,
+        view=view.build(spec, data),
         period=period.key,
         span=period,
         cal=_calendar(period),
+        **context,
+    )
+
+
+@admin.route("/", strict_slashes=False)
+def index() -> str:
+    return _period_page(
+        "overview.html",
+        overview_screen.SCREEN,
+        overview.build,
+        _basis()["today"],
         summary=settings.run(summary_report.latest),
     )
 
 
 @admin.route("/cost")
 def cost_view() -> str:
-    period = _period()
-    screen = view.build(cost_screen.SCREEN, settings.run(cost_page.build, period))
-    return render_template(
-        "cost.html",
-        view=screen,
-        period=period.key,
-        span=period,
-        cal=_calendar(period),
-    )
+    return _period_page("cost.html", cost_screen.SCREEN, cost_page.build)
 
 
 def _today() -> int:
@@ -191,15 +193,7 @@ def effect_view() -> str:
 
 @admin.route("/activity")
 def activity_view() -> str:
-    period = _period()
-    screen = view.build(activity_screen.SCREEN, settings.run(activity.build, period))
-    return render_template(
-        "activity.html",
-        view=screen,
-        period=period.key,
-        span=period,
-        cal=_calendar(period),
-    )
+    return _period_page("activity.html", activity_screen.SCREEN, activity.build)
 
 
 @admin.route("/assets")
