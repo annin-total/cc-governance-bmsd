@@ -45,14 +45,14 @@ def not_introduced(conn, today: int) -> list:
 
 
 def _latest_per_terminal(
-    conn, today: int, table: str, column: str, condition: str, params: tuple
+    conn, today: int, table: str, columns: str, condition: str, params: tuple
 ) -> list:
-    """`condition` を満たす行のうち、端末ごとに `ts` が最新の 1 行の `(user_email, host, column)`。
-    `table`・`column`・`condition` は SQL に埋め込むため、呼び出し側の固定の文字列だけを渡す。"""
+    """`condition` を満たす行のうち、端末ごとに `ts` が最新の 1 行の `(user_email, host, *columns)`。
+    `columns` はカンマ区切りの列名。`table`・`columns`・`condition` は SQL に埋め込むため、呼び出し側の固定の文字列だけを渡す。"""
     cur = db.execute(
         conn,
-        f"SELECT user_email, host, {column} FROM ("
-        f"  SELECT user_email, host, {column},"
+        f"SELECT user_email, host, {columns} FROM ("
+        f"  SELECT user_email, host, {columns},"
         "         ROW_NUMBER() OVER (PARTITION BY user_email, host ORDER BY ts DESC) AS rn"
         f"    FROM {table} WHERE {condition} AND day >= ?"
         ") t WHERE rn = 1",
