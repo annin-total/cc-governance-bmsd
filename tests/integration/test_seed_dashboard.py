@@ -25,7 +25,7 @@ from ccgov.constants import (
 )
 from ccgov.metrics.health import null_rates
 from ccgov.metrics.rates import rate_row
-from ccgov.reports import assets, effect
+from ccgov.reports import assets, effect, period_end
 from ccgov.reports import policy as policy_report
 from ccgov.store import db, queries_cost, queries_errors, queries_events, queries_policy
 from ccgov.vendor import contract, policy
@@ -102,12 +102,19 @@ def test_画面の全ての表と分布が埋まる(seeded):
     assert queries_cost.daily_cost(conn)
     assert rate_row(*queries_events.reconciliation_counts(conn, today))[0] > 0
 
-    starts = queries_policy.compliance_start_dates(conn, REFERENCE_KEY, REFERENCE_VALUE)
+    _, end = period_end.bounds(
+        conn, today
+    )  # 設定の効果は画面と同じく利用明細の最終日で切る
+    starts = queries_policy.compliance_start_dates(
+        conn, REFERENCE_KEY, REFERENCE_VALUE, end
+    )
     # 準拠開始日が散らばらないと、イベントスタディの相対日の人数の変化が見えない
     assert max(starts.values()) - min(starts.values()) >= EVENT_STUDY_SPAN
-    assert effect.event_study(conn, REFERENCE_KEY, REFERENCE_VALUE, EFFECT_PROVIDER)
+    assert effect.event_study(
+        conn, REFERENCE_KEY, REFERENCE_VALUE, EFFECT_PROVIDER, end
+    )
     for hook_event in ("PreCompact", "Stop"):
-        distribution = effect.context_distribution(conn, hook_event, starts)
+        distribution = effect.context_distribution(conn, hook_event, starts, end)
         assert set(distribution) == {"before", "after"}, hook_event
 
 
