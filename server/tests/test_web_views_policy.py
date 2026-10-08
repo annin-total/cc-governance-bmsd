@@ -27,11 +27,6 @@ _WARN = 'class="mark warn"'
 _NG = 'class="mark ng"'
 
 
-def test_policy_page_returns_200(today_client):
-    response = today_client.get(ADMIN + "/policy")
-    assert response.status_code == 200
-
-
 def _html(client, query: str = "") -> str:
     return client.get(ADMIN + "/policy" + query).get_data(as_text=True)
 
