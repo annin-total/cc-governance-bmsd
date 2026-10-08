@@ -185,14 +185,12 @@ def test_effect_has_a_calendar_without_previous_period(today_client):
     assert _pick(cal, "latest") == ADMIN + "/effect"
 
 
-@pytest.mark.parametrize("path", ["/policy", "/settings"])
-def test_pages_without_a_period_have_no_calendar(today_client, path):
-    assert _cal(today_client, path).found == 0
-
-
-@pytest.mark.parametrize("path", ["/", "/activity", "/effect"])
-def test_period_pages_have_one_calendar(today_client, path):
-    assert _cal(today_client, path).found == 1
+@pytest.mark.parametrize(
+    "path, found",
+    [("/policy", 0), ("/settings", 0), ("/", 1), ("/activity", 1), ("/effect", 1)],
+)
+def test_only_period_pages_have_one_calendar(today_client, path, found):
+    assert _cal(today_client, path).found == found
 
 
 def test_without_csv_there_is_no_calendar_and_no_warning(known_db, today_client):
