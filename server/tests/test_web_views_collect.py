@@ -170,7 +170,7 @@ def test_received_records_count_today(known_db, today_client):
 
 
 def test_overview_no_longer_has_the_delivery_group(today_client):
-    """概況から「データの届き具合」の群とそのタブが外れ、収集の状態にだけある。"""
+    """「データの届き具合」の群とそのタブは概況に無く、収集の状態にだけある。"""
     html = today_client.get(ADMIN + "/").get_data(as_text=True)
     assert "データの届き具合" not in html
     for label in ("受信した記録", "照合率", "プラグインのエラー", "項目の欠け"):

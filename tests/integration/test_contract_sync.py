@@ -36,16 +36,7 @@ def test_master_replica_hash_exist(name):
 
 
 def test_master_replica_hash_in_sync():
-    """正本・複製・ハッシュ記録の 3 つが一致している。
-
-    ずれるパターンは 2 つ:
-    - 複製を直接編集した（複製のバイト列がヘッダ+正本と一致しない）
-    - 正本を変更して sync_contract.py を実行し忘れた
-      （contract.sha256 が正本の現在のハッシュと一致しない）
-
-    `sync_contract.check()` は `scripts/sync_contract.py` の実装そのものであり、
-    ここでは import を経由せず、正本・複製・ハッシュ記録をファイルとして直接読んで比較する。
-    """
+    """正本・複製・ハッシュ記録の 3 つが一致している。"""
     errors = sync_contract.check()
     assert not errors, (
         "契約の正本とサーバ側の複製がずれている:\n"
