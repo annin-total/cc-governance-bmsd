@@ -185,7 +185,7 @@ window 関数（`ROW_NUMBER() OVER`）を使うため、DB は SQLite 3.25 以�
   コマンドは `command_source` の生値で分け、値の分類辞書を持たない
 - セッションの大きさは、セッションごとの応答終了（`Stop`）のコンテキストの最大の中央値で、応答終了の記録の無いセッションは数えない。
   自動コンパクトに達した割合は、そのうち `PreCompact` の `auto` が 1 件でもあるセッションの割合である。期間をまたぐセッションは、それぞれの期間の中の記録で数える
-- Bypass 権限モードの使用は、期間の権限モードの記録のうち `BYPASS_MODE` の割合で、件数は使われ方のタブの権限モードの行と同じである。棒は `MODE_ROWS` の値を固定の順（manual・plan・accept edits・auto）に並べ、記録の無い値も 0.0% で出す。割合は記録の全件に対する割合で、bypass permissions（値に出す）と don't ask の棒は出さないため合計は 100% にならない。前との比較は出さない
+- Bypass 権限モードの使用は、期間の権限モードの記録のうち `BYPASS_MODE` の割合で、件数は使われ方のタブの権限モードの行と同じである。棒は `MODE_ROWS` の値を固定の順（manual・plan・accept edits・auto・bypass permissions）に並べ、記録の無い値も 0.0% で出す。bypass permissions の棒だけ濃く、ほかは薄い。割合は記録の全件に対する割合で、don't ask の棒は出さないため合計は 100% にならない。前との比較は出さない
 - 利用者ごとの頻度の bypass permissions 使用率は、権限モードの記録のうち `BYPASS_MODE` の割合である
 
 ### `/policy` 設定の適用状況

@@ -35,8 +35,7 @@ CARD = {
                              "tip": "自動コンパクトに達した  {size[auto]:num} / {size[sessions]:num} セッション",
                              "cap": ("自動コンパクト（PreCompact の auto）が 1 回でもあったセッション",)},
     "bypass_mode": {"label": "Bypass 権限モードの使用", "unit": "%",
-                    "sub": "{modes[bypass][count]:num} / {modes[total]:num} 件 · 権限モードの内訳", "row": ("{share:pct}",),
-                    "cap": ("割合は権限モードの記録のうち",)},
+                    "sub": "{modes[bypass][count]:num} / {modes[total]:num} 件 · 権限モードの内訳", "row": ("{share:pct}",)},
 }
 
 _USERS_HINT = "{freq[users]:num} 人 · 記録"

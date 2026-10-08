@@ -94,7 +94,7 @@ def _use(key, count, total):
     }
 
 
-ORDER = ("default", "plan", "acceptEdits", "auto")
+ORDER = ("default", "plan", "acceptEdits", "auto", "bypassPermissions")
 
 
 def test_mode_mix_rows_follow_the_fixed_order_not_the_counts():
@@ -105,7 +105,7 @@ def test_mode_mix_rows_follow_the_fixed_order_not_the_counts():
         _use("dontAsk", 8, 20),
     ]
     mix = activity.mode_mix(rows, ORDER)
-    assert [r["value"] for r in mix["rows"]] == list(ORDER)  # bypass は行に出さない
+    assert [r["value"] for r in mix["rows"]] == list(ORDER)
     assert mix["rows"][3] == {"value": "auto", "count": 9, "share": 45.0}
 
 
