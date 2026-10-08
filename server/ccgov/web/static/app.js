@@ -269,7 +269,7 @@
   // ツールチップ: カードの小さなグラフの点・タブのグラフの列と丸めた値（data-tip）。文言は「見出し  値」で、2 つの空白の前を薄く、後ろを濃く出す。
   // JS が無ければ同じ文言の title が出る。ツールチップを出すときは title を外し、二重に出さない
   const TIP_OFFSET = 14;
-  const TIP_MARGIN = 4;
+  const TIP_MARGIN = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tip-margin"));
   const tip = Object.assign(document.createElement("div"), { className: "tip", hidden: true });
   tip.setAttribute("role", "tooltip");
 
