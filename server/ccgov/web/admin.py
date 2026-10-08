@@ -1,8 +1,6 @@
 """管理画面の Blueprint。Basic 認証・CSRF の検証・取込の大きさの上限と、6 画面（概況・コストと利用者・利用状況・policy・effect・収集の状態）・サマリー・データと設定を持つ。"""
 
-import datetime
 import hmac
-import re
 import time
 from typing import Callable, Optional
 
@@ -18,7 +16,7 @@ from flask import (
 )
 
 from ccgov.constants import CSV_UPLOAD_MAX_BYTES
-from ccgov.metrics import asof_calendar, windows
+from ccgov.metrics import asof_calendar, calendar, windows
 from ccgov.reports import (
     activity,
     collect,
@@ -55,9 +53,6 @@ admin = Blueprint("admin", __name__, static_folder="static")
 PERIOD_SCREENS = ("admin.index", "admin.cost_view", "admin.activity_view")
 # 移した画面の古い URL から引き継ぐ問い合わせ（ほかは捨てる）
 _KEPT_ARGS = ("period", "asof")
-# `date.fromisoformat` は 3.11 から `20241001` なども受けるため、受け取る形はここで決める
-_ASOF_FORMAT = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
-_EPOCH = datetime.date(1970, 1, 1)
 # 画面からファイルを受け取る経路と、大きさの上限を超えたときの応答
 _UPLOADS = {
     csv_files.ENDPOINT: csv_files.too_large,
@@ -97,23 +92,14 @@ def _require_admin_password():
     return None
 
 
-def _asof_arg() -> Optional[int]:
-    """`?asof=YYYY-MM-DD` の epoch 日。日付の形でなければ None。"""
-    raw = request.args.get("asof", "")
-    if not _ASOF_FORMAT.fullmatch(raw):
-        return None
-    try:
-        return (datetime.date.fromisoformat(raw) - _EPOCH).days
-    except ValueError:
-        return None
-
-
 def _basis() -> dict:
     """今日・選べる範囲（`first`・`last`）・選んだ基準日（範囲の外なら None）・期間のページの終わり。1 リクエストで 1 回だけ数える。"""
     if "basis" not in g:
         today = _today()
         first, last = _build(period_end.bounds, today)
-        asof = windows.pick(_asof_arg(), first, last)
+        asof = windows.pick(
+            calendar.parse_day(request.args.get("asof", "")), first, last
+        )
         end = last if asof is None else asof
         g.basis = {
             "today": today,

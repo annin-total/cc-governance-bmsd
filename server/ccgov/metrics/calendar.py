@@ -3,8 +3,12 @@
 import bisect
 import calendar as _cal
 import datetime
+import re
+from typing import Optional
 
 _EPOCH = datetime.date(1970, 1, 1)
+# 3.11 以降の `date.fromisoformat` は YYYY-MM-DD 以外の形も受けるため、形は先に正規表現で絞る
+_ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
 def to_date(day: int) -> datetime.date:
@@ -13,6 +17,16 @@ def to_date(day: int) -> datetime.date:
 
 def to_day(date: datetime.date) -> int:
     return (date - _EPOCH).days
+
+
+def parse_day(text: str) -> Optional[int]:
+    """`YYYY-MM-DD` の epoch 日。日付の形でなければ None。"""
+    if not _ISO_DATE.fullmatch(text):
+        return None
+    try:
+        return to_day(datetime.date.fromisoformat(text))
+    except ValueError:
+        return None
 
 
 def month_bounds(day: int) -> tuple:

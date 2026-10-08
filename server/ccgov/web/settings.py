@@ -1,7 +1,5 @@
 """「データと設定」のページ（取り込む・書き出す・会社の休日）の描画と、会社の休日の追加（期間でまとめて）・削除（1 日ずつ）。"""
 
-import datetime
-import re
 from typing import Optional
 
 from flask import Response, current_app, redirect, render_template, request, url_for
@@ -14,8 +12,6 @@ from ccgov.store import db
 from ccgov.web import charts, labels
 from ccgov.web.screens import Col, Tab, table
 
-# 3.11 以降の `date.fromisoformat` は YYYY-MM-DD 以外の形も受けるため、形は先に正規表現で絞る
-_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 HOLIDAYS = Tab(
     "holidays",
     "holidays",
@@ -60,12 +56,10 @@ class InputError(ValueError):
 
 
 def _day(text: str) -> int:
-    if not _DATE.fullmatch(text):
+    day = calendar.parse_day(text)
+    if day is None:
         raise InputError("format")
-    try:
-        return calendar.to_day(datetime.date.fromisoformat(text))
-    except ValueError:
-        raise InputError("format") from None
+    return day
 
 
 def parse(form) -> tuple:
