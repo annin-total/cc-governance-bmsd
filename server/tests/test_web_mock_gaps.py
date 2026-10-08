@@ -1,22 +1,11 @@
 """管理画面のモック（案 51）に合わせた見た目と文言の検査。CSS は文字列として読む。"""
 
 import re
-from pathlib import Path
 
 import pytest
 from conftest import ADMIN, card, table_body, table_rows
 from cost_data import html_of as cost_html
-
-STATIC = Path(__file__).resolve().parent.parent / "ccgov" / "web" / "static"
-
-
-def _decls(sheet: str, selector: str) -> str:
-    css = re.sub(r"/\*.*?\*/", "", (STATIC / sheet).read_text(), flags=re.DOTALL)
-    return " ".join(
-        body
-        for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css)
-        if sel.strip() == selector
-    )
+from test_web_visual_base import _decls
 
 
 def _get(client, path: str) -> str:
