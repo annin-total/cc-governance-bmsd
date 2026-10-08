@@ -4,8 +4,6 @@
 `sessions` は `{利用者: (直近のセッション数, 前のセッション数)}`（どちらも `collapse` が作る）。窓は `Period`（直近と前の N 日）。
 """
 
-from typing import Optional
-
 from ccgov.constants import BYPASS_MODE
 from ccgov.metrics import rates, series
 from ccgov.metrics.windows import Period
@@ -29,10 +27,6 @@ def collapse(rows: list, w: Period) -> tuple:
             )
     sessions = {e: (len(now), len(prev)) for e, (now, prev) in seen.items()}
     return [(e, d, *v) for (e, d), v in days.items()], sessions
-
-
-def _change(now: Optional[float], prev: Optional[float]) -> Optional[float]:
-    return None if now is None or prev is None else series.change_pct(now, prev)
 
 
 def _side(days: list, w: Period, recent: bool) -> list:
@@ -76,12 +70,12 @@ def frequency(days: list, sessions: dict, w: Period) -> dict:
     ]  # fmt: skip
     return {
         "users": now["users"], "prev_users": prev["users"],
-        "days_per_user": now["days"], "prev_days_per_user": prev["days"], "days_change": _change(now["days"], prev["days"]),
+        "days_per_user": now["days"], "prev_days_per_user": prev["days"], "days_change": series.change_pct(now["days"], prev["days"]),
         "prompts_per_day": now["prompts"], "prev_prompts_per_day": prev["prompts"],
-        "prompts_change": _change(now["prompts"], prev["prompts"]),
+        "prompts_change": series.change_pct(now["prompts"], prev["prompts"]),
         "sessions": now["sessions"], "sessions_per_day": now["sessions_per_day"],
         "prev_sessions_per_day": prev["sessions_per_day"],
-        "sessions_change": _change(now["sessions_per_day"], prev["sessions_per_day"]),
+        "sessions_change": series.change_pct(now["sessions_per_day"], prev["sessions_per_day"]),
         "dist": [{"days": d, "users": sum(1 for n in active.values() if n == d)} for d in range(1, w.days + 1)],
         "prompt_cols": _cols(by_day, w, 2),
         "session_cols": _cols(by_day, w, 1),

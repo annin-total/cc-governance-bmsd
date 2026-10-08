@@ -58,7 +58,7 @@ def rows(users: dict, models: dict, days: Optional[int]) -> list:
                 "cost": u["cost"],
                 "prev": prev,
                 "diff": u["cost"] - (prev or 0),
-                "rate": None if prev is None else series.change_pct(u["cost"], prev),
+                "rate": series.change_pct(u["cost"], prev),
                 "share": rates.rate(u["cost"], total),
                 "cum": rates.rate(cum, total),
                 "days": u["days"],

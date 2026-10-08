@@ -20,7 +20,7 @@ from ccgov.store import queries_cost, queries_holidays, queries_spend
 
 
 def _rise(now: Optional[float], prev: Optional[float]) -> dict:
-    change = None if now is None or prev is None else series.change_pct(now, prev)
+    change = series.change_pct(now, prev)
     return {
         "change": change,
         "state": states.level(change, COST_RISE_ELEVATED, COST_RISE_HIGH),

@@ -62,9 +62,7 @@ def summary(rows: list) -> dict:
         "q3": quantile(sizes["recent"], 0.75),
         "sessions": len(sized["recent"]),
         "prev_median": prev_median,
-        "change": None
-        if median is None or prev_median is None
-        else series.change_pct(median, prev_median),
+        "change": series.change_pct(median, prev_median),
         "auto": auto,
         "auto_share": share,
         "prev_auto_share": prev_share,
