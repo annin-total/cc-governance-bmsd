@@ -121,7 +121,7 @@
   {{ hits(v.geo.bars, v.geo.h) }}</svg>
 <span class="legend">{% for name in v.legend %}<span><i class="{{ 'bar-hi' if loop.last else 'bar-old' }}"></i>{{ name }}</span>{% endfor %}</span>
 {%- elif v.kind == "rates" -%}
-<span class="rates{{ ' wide' if v.wide }}">{% for r in v.rows %}<span class="rate{{ ' marked' if r.state }}"><span>{{ r.label }}</span>{{ hbar(r.pct) }}
+<span class="rates{{ ' wide' if v.wide }}">{% for r in v.rows %}<span class="rate{{ ' marked' if r.state }}"><span>{{ r.label }}</span>{{ hbar(r.pct, r.tone) }}
 {%- for right in r.right %}<span class="num{{ ' strong' if loop.last }}">{{ right }}</span>{% endfor %}{% if r.state %}{{ mark(*r.state) }}{% endif %}</span>{% endfor %}</span>
 {%- endif -%}
 {%- endmacro %}

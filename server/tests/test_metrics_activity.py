@@ -85,21 +85,36 @@ def test_frequency_without_records_is_none_not_zero():
     )
 
 
-def test_bypass_counts_people_with_at_least_one_record():
-    days = [
-        _day("a", 20022, modes=2),
-        _day("a", 20023, modes=1, bypass=1),
-        _day("b", 20028, modes=3),
-        _day("d", 20015, modes=2, bypass=2),
-        _day("e", 20016, modes=1, bypass=1),
-    ]
-    assert activity.bypass(days, W) == {
-        "users": 1,
-        "all": 2,
-        "share": 50.0,
-        "prev": 2,
-        "diff": -1,
+def _use(key, count, total):
+    return {
+        "field": "permission_mode",
+        "value": key,
+        "count": count,
+        "share": round(count / total * 100, 1),
     }
+
+
+def test_mode_mix_keeps_the_top_rows_in_count_order():
+    rows = [
+        _use("plan", 1, 10),
+        _use("auto", 5, 10),
+        _use("default", 3, 10),
+        _use("dontAsk", 1, 10),
+    ]
+    mix = activity.mode_mix(rows, 3)
+    assert [r["value"] for r in mix["rows"]] == ["auto", "default", "dontAsk"]
+    assert (mix["total"], mix["head"]) == (10, {"value": "auto", "share": 50.0})
+
+
+def test_mode_mix_shares_are_of_all_records_so_the_bars_may_not_reach_100():
+    rows = [_use(k, 1, 6) for k in "abcdef"]
+    mix = activity.mode_mix(rows, 4)
+    assert len(mix["rows"]) == 4
+    assert sum(r["share"] for r in mix["rows"]) < 100
+
+
+def test_mode_mix_without_records_has_no_head():
+    assert activity.mode_mix([], 4) == {"rows": [], "total": 0, "head": None}
 
 
 def test_user_rows_compare_prompts_and_take_the_share_of_bypass_records():

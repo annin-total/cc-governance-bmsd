@@ -7,7 +7,7 @@ from ccgov.web import charts, charts_cost, charts_hist, text
 from ccgov.web import labels as L
 from ccgov.web.screens import Viz
 
-KINDS = ("counts", "top", "sizes")
+KINDS = ("counts", "top", "sizes", "mix")
 _SIZES_CARD = (charts.SPARK_W, charts.SPARK_H, 0, 0)
 
 
@@ -22,6 +22,8 @@ def build(viz: Viz, words: dict, ctx: dict) -> Optional[dict]:
         return _top(viz, src, words)
     if viz.kind == "counts":
         return _counts(src, words)
+    if viz.kind == "mix":
+        return _mix(viz, src, words)
     return _sizes(viz, src, words, ctx)
 
 
@@ -46,6 +48,25 @@ def _top(viz: Viz, rows: list, words: dict) -> Optional[dict]:
             for r in rows
         ],
     }  # fmt: skip
+
+
+def _mix(viz: Viz, rows: list, words: dict) -> Optional[dict]:
+    """割合の棒。先頭（最多）だけ濃く、ほかは薄い。割合は全体に対する割合なので、棒の長さは百分率。"""
+    if not rows:
+        return None
+    return {
+        "kind": "rates",
+        "rows": [
+            {
+                "label": text.term(viz.terms, r["value"]),
+                "pct": charts.pct(r[viz.field], 100),
+                "tone": "ghost" if i else "",
+                "right": [text.fill(t, r) for t in words["row"]],
+                "state": None,
+            }
+            for i, r in enumerate(rows)
+        ],
+    }
 
 
 def _sizes(viz: Viz, rows: list, words: dict, ctx: dict) -> Optional[dict]:

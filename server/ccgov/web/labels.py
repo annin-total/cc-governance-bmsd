@@ -200,17 +200,25 @@ HEALTH_GROUP = {"recv": "受信", "null": "項目の欠け"}
 USAGE_FIELD = {"permission_mode": "権限モード", "effort_level": "effort（思考量）", "source": "セッションの開始"}
 USAGE_VALUE = {
     "permission_mode": {
-        "default": ("通常", "操作ごとに許可を求める"),
-        "acceptEdits": ("編集を自動承認", "ファイル編集は確認なし"),
-        "plan": ("プランモード", "計画だけ立て、変更はしない"),
-        "bypassPermissions": ("確認なし", "すべての操作を確認なし"),
+        "default": ("Manual", "操作ごとに許可を求める"),
+        "auto": ("Auto", "別のモデルが審査して自動で許可"),
+        "plan": ("Plan", "計画だけ立て、変更はしない"),
+        "acceptEdits": ("Accept Edits", "ファイル編集は確認なし"),
+        "bypassPermissions": ("Bypass Permissions", "すべての操作を確認なし"),
+        "dontAsk": ("Don't Ask", "事前に許可した操作だけ。ほかは拒否"),
     },
-    "effort_level": {"low": ("低",), "medium": ("中",), "high": ("高",)},
+    "effort_level": {
+        "low": ("Low", "低"),
+        "medium": ("Medium", "中"),
+        "high": ("High", "高"),
+        "xhigh": ("X High", "より高"),
+        "max": ("Max", "最大"),
+    },
     "source": {
-        "startup": ("新規起動",),
-        "resume": ("再開", "前のセッションを続けた"),
-        "clear": ("クリア後",),
-        "compact": ("コンパクト後",),
+        "startup": ("Startup", "新規起動"),
+        "resume": ("Resume", "前のセッションを続けた"),
+        "clear": ("Clear", "クリア後"),
+        "compact": ("Compact", "コンパクト後"),
     },
 }
 PROVIDER = {"aws-bedrock": "AWS Bedrock", "google-vertex": "Google Vertex AI"}

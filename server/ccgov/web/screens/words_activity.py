@@ -34,10 +34,8 @@ CARD = {
                              "sub": "{size[auto]:num} / {size[sessions]:num} セッション · 前 {size[prev_auto_share]:pct}",
                              "tip": "自動コンパクトに達した  {size[auto]:num} / {size[sessions]:num} セッション",
                              "cap": ("自動コンパクト（PreCompact の auto）が 1 回でもあったセッション",)},
-    "bypass_users": {"label": "確認なしモードを使った利用者", "unit": "人",
-                     "sub": "記録を送った利用者の {bypass[share]:pct} · 前 {bypass[prev]:num} 人",
-                     "tip": "確認なしモードを使った  {bypass[users]:num} / {bypass[all]:num} 人",
-                     "cap": ("権限モード「確認なし」の記録が 1 件でもあった人",)},
+    "permission_modes": {"label": "権限モードの内訳", "unit": "%", "sub": "{modes[total]:num} 件", "row": ("{share:pct}",),
+                         "cap": ("上位 {MODE_BARS} つ · 割合は権限モードの記録の件数のうち",)},
 }
 
 _USERS_HINT = "{freq[users]:num} 人 · 記録"
@@ -46,7 +44,7 @@ TAB = {
                  "scope": "直近 {period[days]} 日 · 記録を送った利用者 · 利用日数の多い順 · 差と増減率は前の {period[days]} 日と比べた指示 · "
                           "セッションの大きさはセッションごとの最大の中央",
                  "search": "氏名・メールで絞り込み",
-                 "note": "確認なしの記録は、権限モードの記録のうち「確認なし」の割合です。セッションの大きさと自動コンパクトは、"
+                 "note": "Bypass Permissions 使用率は、権限モードの記録のうち bypassPermissions の割合です。セッションの大きさと自動コンパクトは、"
                          "応答終了の記録があるセッションだけで数えます。"},
     "user_calls": {"label": "利用者ごとの呼び出し", "hint": _USERS_HINT, "title": "利用者ごとの呼び出し", "unit": "人",
                    "scope": "直近 {period[days]} 日 · 記録を送った利用者 · よく使う名前は回数の多い順に 3 つ",
@@ -67,13 +65,13 @@ TAB = {
                      "scope": "直近 {period[days]} 日と前の {period[days]} 日 · セッションごとの応答終了時のコンテキストの最大 · "
                               "区間の幅 {CONTEXT_BIN:tok} トークン · 割合は各期間の中の割合",
                      "note": "期間をまたぐセッションは、それぞれの期間の中の記録で数えます。"},
-    "usage_modes": {"label": "使われ方", "hint": "直近 {period[days]} 日 · 記録", "title": "使われ方", "unit": "行",
+    "usage_modes": {"label": "使われ方", "hint": "直近 {period[days]} 日 · 記録", "title": "権限モード・effort・セッションの開始", "unit": "行",
                     "scope": "直近 {period[days]} 日 · 記録の件数（開始のしかたはセッション開始の記録）· 割合は区分の中での割合"},
 }
 
 COL = {
     "use_days": "利用日数", "use_sessions": "セッション", "prompts": "指示", "prompts_diff": "前との差", "prompts_rate": "増減率",
-    "size": "セッションの大きさ", "auto_share": "自動コンパクトに達した割合", "bypass_share": "確認なしの記録", "use_last": "最終日",
+    "size": "セッションの大きさ", "auto_share": "自動コンパクトに達した割合", "bypass_share": "Bypass Permissions 使用率", "use_last": "最終日",
     "skill_n": "スキル", "skill_top": "よく使うスキル", "command_n": "コマンド", "command_top": "よく使うコマンド",
     "external_n": "外部ツール", "external_top": "よく使う外部ツール", "agent_n": "サブエージェントの起動",
     "call_kind": "種類", "call_name": "名前", "prev_n": "前の件数", "prev_share": "前の割合", "recent_n": "直近の件数",

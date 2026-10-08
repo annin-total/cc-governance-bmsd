@@ -55,6 +55,11 @@ FORMATS = {
     "signed_pt": lambda v: (
         filters.EM_DASH if v is None else f"{filters.signed(v, 1)} {labels.UNIT['pt']}"
     ),
+    "mode_head": lambda v: (
+        filters.EM_DASH
+        if v is None
+        else f"{term(labels.USAGE_VALUE['permission_mode'], v['value'])} {filters.dec1(v['share'])}"
+    ),
     "field": lambda v: term(labels.HEALTH_ITEM, v),
     "setting": lambda v: term(labels.SETTING, v),
     "provider": lambda v: term(labels.PROVIDER, v),

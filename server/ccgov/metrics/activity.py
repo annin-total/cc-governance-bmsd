@@ -1,4 +1,4 @@
-"""利用状況の頻度（利用日数・指示・セッション）と確認なしモード、利用者ごとの行。
+"""利用状況の頻度（利用日数・指示・セッション）と権限モードの内訳、利用者ごとの行。
 
 入力の `days` は利用者 × 日の `(利用者, 日, セッション数, 指示, 権限モードの記録, 確認なしの記録)`、
 `sessions` は `{利用者: (直近のセッション数, 前のセッション数)}`（どちらも `collapse` が作る）。窓は `Period`（直近と前の N 日）。
@@ -92,18 +92,19 @@ def frequency(days: list, sessions: dict, w: Period) -> dict:
     }  # fmt: skip
 
 
-def bypass(days: list, w: Period) -> dict:
-    """確認なしの記録が 1 件でもあった利用者の数（直近・前）と、直近の記録を送った利用者のうちの割合。"""
-    now, prev = _side(days, w, True), _side(days, w, False)
-    users = {r[0] for r in now if r[5]}
-    before = {r[0] for r in prev if r[5]}
-    everyone = len({r[0] for r in now})
+def mode_mix(usage: list, limit: int) -> dict:
+    """権限モードの記録の件数の内訳。`rows` は件数の多い上位 `limit` 件、`head` は最多の値と割合。
+
+    `usage` は `reports.activity.usage` の権限モードの行。割合は全体に対する割合で、上位だけの合計は 100% にならないことがある。
+    """
+    ranked = sorted(usage, key=lambda r: (-r["count"], r["value"]))
+    head = (
+        {"value": ranked[0]["value"], "share": ranked[0]["share"]} if ranked else None
+    )
     return {
-        "users": len(users),
-        "all": everyone,
-        "share": rates.rate(len(users), everyone),
-        "prev": len(before),
-        "diff": len(users) - len(before),
+        "rows": ranked[:limit],
+        "total": sum(r["count"] for r in ranked),
+        "head": head,
     }
 
 
