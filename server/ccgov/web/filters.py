@@ -64,10 +64,11 @@ def usd_signed(value: Any, whole: Optional[bool] = None) -> str:
     float_value = _to(value, float)
     if float_value is None:
         return EM_DASH
-    body = "$" + _scaled(abs(float_value), 2, whole)
-    if round(float_value, 2) == 0:
-        return "±" + body
-    return ("+" if float_value > 0 else "−") + body
+    return _sign(float_value, 2) + "$" + _scaled(abs(float_value), 2, whole)
+
+
+def _sign(value: float, digits: int) -> str:
+    return "±" if round(value, digits) == 0 else "+" if value > 0 else "−"
 
 
 def usd_full(value: Any) -> str:
@@ -132,10 +133,7 @@ def signed(value: Any, digits: int = 0) -> str:
     float_value = _to(value, float)
     if float_value is None:
         return EM_DASH
-    body = f"{abs(float_value):,.{digits}f}"
-    if round(float_value, digits) == 0:
-        return "±" + body
-    return ("+" if float_value > 0 else "−") + body
+    return _sign(float_value, digits) + f"{abs(float_value):,.{digits}f}"
 
 
 def md(value: Any) -> str:
