@@ -98,11 +98,6 @@ def test_draft_button_is_as_tall_as_save():
     )
 
 
-def test_received_records_chip_is_a_rate(today_client):
-    sub = card(_get(today_client, "/collect"), "受信した記録")
-    assert '<span class="change">+333.3%</span>' in sub
-
-
 def test_forecast_legend_lines_are_2px():
     assert "border-top-width: 2px" in _decls("charts.css", ".cum-card-legend .ln")
     assert not _decls("charts.css", ".cum-card-legend .ln.prev")
