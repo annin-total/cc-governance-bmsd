@@ -13,7 +13,14 @@ TOOL_HOOKS = ("PostToolUse", "PostToolUseFailure")
 TRANSCRIPT_HOOKS = ("PreCompact", "Stop")
 EFFORT_HOOKS = ("PostToolUse", "PostToolUseFailure", "Stop")
 # 権限モードの重み。実態に合わせ auto が最多
-PERMISSION_MODES = ("auto", "default", "plan", "acceptEdits", "dontAsk", "bypassPermissions")
+PERMISSION_MODES = (
+    "auto",
+    "default",
+    "plan",
+    "acceptEdits",
+    "dontAsk",
+    "bypassPermissions",
+)
 PERMISSION_WEIGHTS = (60, 20, 8, 6, 4, 2)
 TOOLS = ("Read", "Edit", "Bash", "Grep", "Skill", "Task")
 SKILLS = ("brainstorming", "systematic-debugging", "governance:reapply")
@@ -129,10 +136,10 @@ EVENT_RULES: dict = {
     "command_name": lambda c: c.command[0] if c.command else None,
     "command_source": lambda c: c.command[1] if c.command else None,
     "skill_name": lambda c: c.rng.choice(SKILLS) if c.tool == "Skill" else None,
-    "effort_level": lambda c: _pick(c, EFFORT_HOOKS, ("low", "medium", "high", "xhigh", "max")),
-    "permission_mode": lambda c: c.rng.choices(
-        PERMISSION_MODES, PERMISSION_WEIGHTS
-    )[0],
+    "effort_level": lambda c: _pick(
+        c, EFFORT_HOOKS, ("low", "medium", "high", "xhigh", "max")
+    ),
+    "permission_mode": lambda c: c.rng.choices(PERMISSION_MODES, PERMISSION_WEIGHTS)[0],
     "agent_id": lambda c: _uuid(c) if c.tool and c.rng.random() < 0.15 else None,
     "is_interrupt": lambda c: (
         c.rng.random() < 0.3 if c.hook == "PostToolUseFailure" else None

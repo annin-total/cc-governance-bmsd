@@ -35,7 +35,7 @@ CARD = {
                              "tip": "自動コンパクトに達した  {size[auto]:num} / {size[sessions]:num} セッション",
                              "cap": ("自動コンパクト（PreCompact の auto）が 1 回でもあったセッション",)},
     "permission_modes": {"label": "権限モードの内訳", "unit": "%", "sub": "{modes[total]:num} 件", "row": ("{share:pct}",),
-                         "cap": ("上位 {MODE_BARS} つ · 割合は権限モードの記録の件数のうち",)},
+                         "cap": ("上位 {MODE_BARS} つ · 割合は全体のうち",)},
 }
 
 _USERS_HINT = "{freq[users]:num} 人 · 記録"
