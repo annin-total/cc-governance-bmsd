@@ -1,10 +1,10 @@
 /* 基準日のカレンダー（期間の表示を押すと開く details）と利用明細の古さの警告。日の 3 区分に状態の色（注意・要確認）を使わない */
 .cal-wrap { position: relative; }
-.cal-wrap > summary { display: inline-flex; align-items: center; gap: var(--sp-2xs); list-style: none; cursor: pointer; padding: var(--sp-3xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--card); }
+.cal-wrap > summary { display: inline; list-style: none; cursor: pointer; border-bottom: 1px dashed var(--muted); font-size: var(--fs-label); color: var(--ink-2); }
 .cal-wrap > summary::-webkit-details-marker { display: none; }
-.cal-wrap > summary::after { content: "▾"; color: var(--muted); font-size: var(--fs-sm); }
-.cal-wrap > summary:hover { border-color: var(--accent); }
-.cal-wrap[open] > summary { border-color: var(--ink-2); }
+.cal-wrap > summary::after { content: " ▾"; color: var(--muted); }
+.cal-wrap > summary .asof { font-size: var(--fs-label); color: inherit; }
+.cal-wrap > summary:hover { color: var(--accent); }
 
 .cal { position: absolute; top: calc(100% + var(--sp-xs)); right: 0; z-index: 6; display: flex; gap: var(--sp-l); padding: var(--sp-m); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-l); box-shadow: var(--shadow-tip); }
 .cal ul { margin: 0; padding: 0; list-style: none; }
