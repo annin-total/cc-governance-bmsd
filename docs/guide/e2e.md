@@ -211,7 +211,7 @@ HTTPS・プロキシ越しの送信と、本番の受信先への到達は確か
      `docker compose -p ccgov-manual cp <ローカルのファイル> server:<パス>`（`<パス>` は `server/dev.env` の SQLite の `DB_DSN` のパス）で入れ、2 の取込はしない
 2. `http://127.0.0.1:<ポート>/<ADMIN_PATH>/`（`<ポート>` は `server/compose.yaml` の `ports` のホスト側、`<ADMIN_PATH>` は `server/dev.env` の `ADMIN_PATH`）を開き（パスワードは `dev.env` の `ADMIN_PASSWORD`、ユーザー名は任意）、
    見出し帯の右端の「データと設定」の「取り込む」で見本の CSV（`e2e/samples/cost_daily.csv`）を取り込む
-3. ブラウザの幅を 1280px にし、4 画面（`<ADMIN_PATH>` の下の `/`・`/policy`・`/effect`・`/activity`）と `/settings` を
+3. ブラウザの幅を 1280px にし、6 つのページ（`<ADMIN_PATH>` の下の `/`・`/cost`・`/activity`・`/policy`・`/effect`・`/collect`）と `/summary`・`/settings` を
    順に開く。合格: 開発者ツールのコンソールに error・warning が 0 件、
    コンソールで `document.documentElement.scrollWidth <= document.documentElement.clientWidth` が
    `true`、表のセルが切れていない。**スクリーンショットだけで判定しない**
@@ -236,3 +236,4 @@ DB は SQLite だけで、MySQL は確かめない。AIP の前段のリバー�
 - 2026-09-29: 見た目の規約の参照先を `design-system.md` にし、error 行が出る場所を刷新後の画面の語で書いた
 - 2026-09-30: CSV の取込を「データと設定」の画面で受け取る手順にし、手動確認の画面に `/settings` を加えた
 - 2026-10-08: 手動確認の画面の `/assets` を `/activity` に読み替えた
+- 2026-10-08: 手動確認で開くページを今の管理画面の構成に合わせた
