@@ -94,7 +94,7 @@
   --cell-max: 320px;
   --search-w: 240px;
   --table-max-h: 560px;
-  --tip-max-w: 320px;
+  --tip-margin: 4px;
   --ln-w: 18px;
   --cum-line: 2px;
   --cum-dash: 5 4;

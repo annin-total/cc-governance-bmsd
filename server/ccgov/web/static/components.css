@@ -185,7 +185,7 @@ th[aria-sort="descending"] .arrow::after { content: "↓"; opacity: 1; }
 .fold-more[hidden] { display: none; }
 
 /* ツールチップ（カードの小さなグラフの点と、丸めた値） */
-.tip { position: fixed; z-index: 10; max-width: var(--tip-max-w); pointer-events: none; padding: var(--sp-2xs) var(--sp-s); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-s); box-shadow: var(--shadow-tip); font-size: var(--fs-sm); line-height: 1.5; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tip { position: fixed; z-index: 10; width: max-content; max-width: calc(100vw - 2 * var(--tip-margin)); pointer-events: none; padding: var(--sp-2xs) var(--sp-s); background: var(--card); border: 1px solid var(--rule); border-radius: var(--r-s); box-shadow: var(--shadow-tip); font-size: var(--fs-sm); line-height: 1.5; color: var(--muted); font-variant-numeric: tabular-nums; }
 .tip[hidden] { display: none; }
 .tip span { margin-right: var(--sp-s); }
 .tip b { font-weight: 600; color: var(--ink); }
