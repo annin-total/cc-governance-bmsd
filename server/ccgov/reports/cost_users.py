@@ -6,10 +6,6 @@ from ccgov.constants import TOP_SPENDERS
 from ccgov.metrics import rates, series, spend
 
 
-def _share(value: float, total: float) -> Optional[float]:
-    return round(value / total * 100, 1) if total else None
-
-
 def per_user(rows: list, start: int, end: int) -> dict:
     """`(user_email, day, コスト)` を利用者ごとの `start`〜`end` のコスト・日数・1 日の最大と、それより前の行のコスト（前の期間）にまとめる。"""
     users: dict = {}
@@ -62,9 +58,9 @@ def rows(users: dict, models: dict, days: Optional[int]) -> list:
                 "cost": u["cost"],
                 "prev": prev,
                 "diff": u["cost"] - (prev or 0),
-                "rate": None if prev is None else series.change_pct(u["cost"], prev),
-                "share": _share(u["cost"], total),
-                "cum": _share(cum, total),
+                "rate": series.change_pct(u["cost"], prev),
+                "share": rates.rate(u["cost"], total),
+                "cum": rates.rate(cum, total),
                 "days": u["days"],
                 "per_day": u["cost"] / u["days"],
                 "model": models.get(email, {}).get("model"),
@@ -104,9 +100,9 @@ def models(recent: list, prev: Optional[list]) -> dict:
                 "key": model,
                 "model": model,
                 "cost": m["cost"],
-                "share": _share(m["cost"], total),
+                "share": rates.rate(m["cost"], total),
                 "prev": was,
-                "prev_share": _share(was or 0, prev_total),
+                "prev_share": rates.rate(was or 0, prev_total),
                 "diff": m["cost"] - (was or 0),
                 "users": m["users"],
                 "cache": rates.rate(m["read"], m["tokens"]),

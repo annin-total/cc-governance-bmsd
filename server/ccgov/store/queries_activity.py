@@ -6,12 +6,15 @@ from ccgov.store import db
 
 _TOOL_EVENTS = "hook_event IN ('PostToolUse', 'PostToolUseFailure')"
 _IN_WINDOW = "CASE WHEN day BETWEEN ? AND ? THEN {} END"
+SESSION_SIZE = (
+    "MAX(CASE WHEN hook_event = 'Stop' THEN context_tokens END),"
+    " MAX(CASE WHEN hook_event = 'PreCompact' AND compact_trigger = 'auto' THEN 1 ELSE 0 END)"
+)
+SESSION_EVENTS = "hook_event IN ('Stop', 'PreCompact') AND session_id IS NOT NULL"
 
 
 def _rows(conn, sql: str, params: tuple) -> list:
-    cur = conn.cursor()
-    cur.execute(db.q(sql), params)
-    return [tuple(r) for r in cur.fetchall()]
+    return [tuple(r) for r in db.execute(conn, sql, params).fetchall()]
 
 
 def user_day_sessions(conn, start: int, end: int) -> list:
@@ -35,9 +38,7 @@ def _sides(w: Period, what: str) -> tuple:
 
 def calls(conn, w: Period) -> tuple:
     """(スキル, コマンド, ツール) の利用者ごとの呼び出し回数（直近・前）。
-
-    ツールは外部ツールとサブエージェントの起動の候補だけで、本体の中（`agent_id` が無い）かを 3 列目に持つ。
-    """
+    ツールは外部ツールとサブエージェントの起動の候補だけで、本体の中（`agent_id` が無い）かを 3 列目に持つ。"""
     sides, params = _sides(w, "event_id")
     span = (w.prev_start, w.end)
     skills = _rows(
@@ -71,10 +72,8 @@ def sessions(conn, w: Period) -> list:
     side = "CASE WHEN day >= ? THEN 'recent' ELSE 'prev' END"
     return _rows(
         conn,
-        f"SELECT session_id, user_email, {side},"
-        " MAX(CASE WHEN hook_event = 'Stop' THEN context_tokens END),"
-        " MAX(CASE WHEN hook_event = 'PreCompact' AND compact_trigger = 'auto' THEN 1 ELSE 0 END)"
-        " FROM events WHERE hook_event IN ('Stop', 'PreCompact') AND session_id IS NOT NULL"
+        f"SELECT session_id, user_email, {side}, {SESSION_SIZE}"
+        f" FROM events WHERE {SESSION_EVENTS}"
         f" AND day BETWEEN ? AND ? GROUP BY session_id, user_email, {side}",
         (w.start, w.prev_start, w.end, w.start),
     )

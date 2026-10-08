@@ -4,8 +4,6 @@
 `sessions` は `{利用者: (直近のセッション数, 前のセッション数)}`（どちらも `collapse` が作る）。窓は `Period`（直近と前の N 日）。
 """
 
-from typing import Optional
-
 from ccgov.constants import BYPASS_MODE
 from ccgov.metrics import rates, series
 from ccgov.metrics.windows import Period
@@ -31,14 +29,6 @@ def collapse(rows: list, w: Period) -> tuple:
     return [(e, d, *v) for (e, d), v in days.items()], sessions
 
 
-def _per(value: float, count: int) -> Optional[float]:
-    return value / count if count else None
-
-
-def _change(now: Optional[float], prev: Optional[float]) -> Optional[float]:
-    return None if now is None or prev is None else series.change_pct(now, prev)
-
-
 def _side(days: list, w: Period, recent: bool) -> list:
     lo, hi = (w.start, w.end) if recent else (w.prev_start, w.prev_end)
     return [r for r in days if lo <= r[1] <= hi]
@@ -49,10 +39,10 @@ def _window(rows: list, sessions: int) -> dict:
     person_days = len(rows)
     return {
         "users": len(users),
-        "days": _per(person_days, len(users)),
-        "prompts": _per(sum(r[3] for r in rows), person_days),
+        "days": rates.per(person_days, len(users)),
+        "prompts": rates.per(sum(r[3] for r in rows), person_days),
         "sessions": sessions,
-        "sessions_per_day": _per(sessions, person_days),
+        "sessions_per_day": rates.per(sessions, person_days),
     }
 
 
@@ -80,12 +70,12 @@ def frequency(days: list, sessions: dict, w: Period) -> dict:
     ]  # fmt: skip
     return {
         "users": now["users"], "prev_users": prev["users"],
-        "days_per_user": now["days"], "prev_days_per_user": prev["days"], "days_change": _change(now["days"], prev["days"]),
+        "days_per_user": now["days"], "prev_days_per_user": prev["days"], "days_change": series.change_pct(now["days"], prev["days"]),
         "prompts_per_day": now["prompts"], "prev_prompts_per_day": prev["prompts"],
-        "prompts_change": _change(now["prompts"], prev["prompts"]),
+        "prompts_change": series.change_pct(now["prompts"], prev["prompts"]),
         "sessions": now["sessions"], "sessions_per_day": now["sessions_per_day"],
         "prev_sessions_per_day": prev["sessions_per_day"],
-        "sessions_change": _change(now["sessions_per_day"], prev["sessions_per_day"]),
+        "sessions_change": series.change_pct(now["sessions_per_day"], prev["sessions_per_day"]),
         "dist": [{"days": d, "users": sum(1 for n in active.values() if n == d)} for d in range(1, w.days + 1)],
         "prompt_cols": _cols(by_day, w, 2),
         "session_cols": _cols(by_day, w, 1),
@@ -95,9 +85,7 @@ def frequency(days: list, sessions: dict, w: Period) -> dict:
 
 def mode_mix(usage: list, order: tuple) -> dict:
     """権限モードの記録の件数の内訳。`rows` は `order` の値を並べた行（記録の無い値は 0 件）、`bypass` は確認なしの件数と割合。
-
-    `usage` は `reports.activity.usage` の権限モードの行。割合は記録の全件に対する割合で、`order` に無い値（don't ask など）も全件に入る。
-    """
+    `usage` は `reports.activity.usage` の権限モードの行。割合は記録の全件に対する割合で、`order` に無い値（don't ask など）も全件に入る。"""
     count = {r["value"]: r["count"] for r in usage}
     total = sum(count.values())
     rows = [

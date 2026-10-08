@@ -2,7 +2,6 @@
 
 設定ごとの適用は `True`（配布した値）・`False`（違う値か未設定）・`None`（その設定の報告なし）で表す。
 利用者の適用は `compliance.compliance_rate` と同じく、報告のある端末がすべて配布した値のときだけ `True`。
-端末が複数ある利用者の最終報告日とバージョンは、最も遅れた・最も古いものを出す。
 """
 
 OFF = "off"
@@ -38,9 +37,7 @@ def users(
     latest_by_key: dict, expected: dict, targets: set, not_introduced: set, today: int
 ) -> list:
     """`targets`（準拠率の分母）の利用者ごとの行。`latest_by_key` は設定 -> 端末ごとの最新 1 行の並び。
-
-    行は `(user_email, host, prev_value, day, ts)`。報告の無い未導入者は適用を `None` にする。
-    """
+    行は `(user_email, host, prev_value, day, ts)`。報告の無い未導入者は適用を `None` にする。"""
     by_user: dict = {}
     for (user_email, _host), t in _terminals(latest_by_key, expected).items():
         by_user.setdefault(user_email, []).append(t)
@@ -69,9 +66,7 @@ def users(
 
 def add_versions(rows: list, found: dict) -> None:
     """利用者の行に本体（`core`）とプラグイン（`plugin`）の最も古いバージョンを足し、最新でなければ `old` の区分を付ける。
-
-    `found` は種類 -> `versions.summary` の結果。
-    """
+    `found` は種類 -> `versions.summary` の結果。"""
     for row in rows:
         old = False
         for kind, s in found.items():

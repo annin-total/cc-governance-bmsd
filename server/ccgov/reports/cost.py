@@ -5,15 +5,7 @@ from ccgov.metrics.windows import Period
 from ccgov.reports import cost_weeks
 from ccgov.store import queries_cost
 
-_KEYS = (
-    "recent",
-    "prev",
-    "change",
-    "monthly",
-    "start",
-    "end",
-    "spark_start",
-)
+_KEYS = ("recent", "prev", "change", "monthly", "start", "end", "spark_start")
 _LISTS = ("spark", "days", "weeks", "months", "providers")
 
 

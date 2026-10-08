@@ -1,7 +1,5 @@
 """コストと利用者のページの組み立て。窓は利用明細の最終日（基準日を選べばその日）で終わる。
-
-7 日・28 日は直近と前の N 日を比べ、12 か月は比べずに暦月で並べる。利用明細が無ければ値は None。
-"""
+7 日・28 日は直近と前の N 日を比べ、12 か月は比べずに暦月で並べる。利用明細が無ければ値は None。"""
 
 from typing import Optional
 
@@ -19,12 +17,8 @@ from ccgov.reports import cost, cost_months, cost_users, month, roster
 from ccgov.store import queries_cost, queries_holidays, queries_spend
 
 
-def _per(value: Optional[float], count: int) -> Optional[float]:
-    return None if value is None or not count else value / count
-
-
 def _rise(now: Optional[float], prev: Optional[float]) -> dict:
-    change = None if now is None or prev is None else series.change_pct(now, prev)
+    change = series.change_pct(now, prev)
     return {
         "change": change,
         "state": states.level(change, COST_RISE_ELEVATED, COST_RISE_HIGH),
@@ -68,7 +62,7 @@ def _days(conn, w: Period, spent: dict) -> dict:
         len(bd.business_days(a, b, company))
         for a, b in ((w.start, w.end), (w.prev_start, w.prev_end))
     )
-    per_bd, prev_per_bd = _per(recent, days), _per(prev, prev_days)
+    per_bd, prev_per_bd = rates.per(recent, days), rates.per(prev, prev_days)
     cols = [
         {**c, "period": "prev"}
         for c in spend.bd_columns(totals, w.prev_start, w.prev_end, company)
@@ -84,8 +78,8 @@ def _days(conn, w: Period, spent: dict) -> dict:
     now_users = {e for e, u in users.items() if u["days"]}
     prev_users = {e for e, u in users.items() if u["prev"]}
     per_user, prev_per_user = (
-        _per(per_bd, len(now_users)),
-        _per(prev_per_bd, len(prev_users)),
+        rates.per(per_bd, len(now_users)),
+        rates.per(prev_per_bd, len(prev_users)),
     )
     change = series.change_pct(len(now_users), len(prev_users))
     kept = len(now_users & prev_users)
@@ -149,10 +143,10 @@ def _months(conn, w: Period, spent: dict) -> dict:
     months = cost_months.rows(spent["months"], found, firsts, company)
     days = sum(m["bd"] for m in months)
     total = sum(m["cost"] for m in months)
-    per_bd = _per(total, days)
+    per_bd = rates.per(total, days)
     return {
         "per_bd": {"value": per_bd, "days": days, "cols": _month_cols(months, "per_bd")},
-        "per_user": {"value": _per(per_bd, len(user_rows)), "users": len(user_rows), "days": days, **_dist(user_rows, days)},
+        "per_user": {"value": rates.per(per_bd, len(user_rows)), "users": len(user_rows), "days": days, **_dist(user_rows, days)},
         "top": cost_users.top(user_rows),
         "models": cost_users.models(queries_spend.models(conn, w.start, w.end), None),
         "billed": {"recent": len(user_rows), "cols": _month_cols(months, "users")},
