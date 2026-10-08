@@ -38,27 +38,22 @@ def _words(tab: Tab) -> dict:
     return W.TAB[tab.words or tab.id]
 
 
-def _head(tab: Tab, ctx: dict) -> dict:
+def _head(tab: Tab, hint: str, scope: str) -> dict:
     words = _words(tab)
     return {
         "id": tab.id,
         "label": words["label"],
-        "hint": text.fill(words["hint"], ctx),
+        "hint": hint,
         "title": words["title"],
-        "scope": text.fill(words["scope"], ctx),
+        "scope": scope,
     }
 
 
 def unavailable(tab: Tab, ctx: dict) -> dict:
     """12 か月で出せないタブ。同じ場所に残し、中身の代わりに注記を出す（集計していないので値を参照しない）。"""
-    words = _words(tab)
     return {
-        "id": tab.id,
-        "label": words["label"],
-        "hint": L.NOT_LONG,
-        "title": words["title"],
-        "scope": text.fill(W.LONG_SCOPE, ctx),
-        "na": words.get("na", L.NOT_LONG_PANEL),
+        **_head(tab, L.NOT_LONG, text.fill(W.LONG_SCOPE, ctx)),
+        "na": _words(tab).get("na", L.NOT_LONG_PANEL),
         "note": "",
         "cols": [],
         "rows": [],
@@ -78,7 +73,7 @@ def tab(tab: Tab, ctx: dict) -> dict:
     chips, axes, tags = chip_groups.build(tab, rows, words, ctx)
     chart = tab_charts.build(tab, source, ctx)
     return {
-        **_head(tab, ctx),
+        **_head(tab, text.fill(words["hint"], ctx), text.fill(words["scope"], ctx)),
         "note": text.fill(words.get("note", ""), ctx) + (chart or {}).get("note", ""),
         "search": words.get("search", "") if tab.search else "",
         "unit": words["unit"],
