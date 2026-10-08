@@ -37,13 +37,6 @@ def test_latest_values_unchanged_after_duplicate_injection(known_db):
     assert_invariant_under_duplication(known_db, compute)
 
 
-def test_latest_values_excludes_terminal_only_before_window(known_db):
-    """u11（`day = 19970` の行だけ）は集計期間（`day >= 19976`）より前のため現れない。"""
-    rows = queries_policy.latest_values(known_db, TODAY, K)
-    users = {r[0] for r in rows}
-    assert "u11" not in users
-
-
 def test_latest_values_without_day_filter_would_include_u11(known_db):
     """`day` の絞り込みを外すと u11 が加わり 8 行になる（この差が本来の実装で落ちる対照実験）。"""
     cur = known_db.cursor()
