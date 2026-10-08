@@ -92,6 +92,11 @@ def test_twelve_months_weekly_rows_and_monthly_totals(today_client):
     chart = html.split('data-panel="weeks_cost"')[1].split("</svg>")[0]
     assert re.search(r'class="month-name"[^>]*>2024-10（途中）</text>', chart)
     assert re.search(r'class="month-total"[^>]*>\$15\.50</text>', chart)
+    tips = re.findall(r'data-tip="([^"]*)"', chart)
+    assert len(tips) == 6
+    assert any(t.startswith("2024-10-07〜（2 日分）  合計 $9.50 · ") for t in tips), (
+        tips
+    )
 
 
 def test_activity_twelve_months_is_all_unavailable(today_client):

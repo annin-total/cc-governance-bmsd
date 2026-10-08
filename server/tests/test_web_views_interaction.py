@@ -31,19 +31,54 @@ def _panel(html: str, tab: str) -> str:
     return html.split(f'data-panel="{tab}"')[1].split('<div class="panel"')[0]
 
 
+def _tips(chart: str) -> list:
+    """グラフの列ごとの `(data-tip, title)`。棒の上でも出るよう、列のまとまり（g）に持つ。"""
+    return re.findall(
+        r'<g class="col[^"]*"[^>]*data-tip="([^"]*)"><title>([^<]*)</title>', chart
+    )
+
+
 def test_tab_charts_and_rows_share_keys(today_client):
-    """下段のグラフの棒と表の行が同じ data-link を持つ（連動の対応）。タブのグラフにはツールチップを付けない。data-key は表を見分ける属性にだけ使う。"""
+    """下段のグラフの棒と表の行が同じ data-link を持つ（連動の対応）。data-key は表を見分ける属性にだけ使う。"""
     for path, tab in (("/activity", "daily_use"), ("/cost", "cost")):
         html = _html(today_client, path)
         panel = _panel(html, tab)
         chart = panel.split('<div class="tscroll"')[0]
         rows = _keys(table_body(html, tab), "tr")
         assert rows and sorted(set(_keys(chart, "g"))) == sorted(rows), tab
-        assert "<title>" not in chart and "data-tip" not in chart
         assert "data-key" not in panel
     assert (
         _keys(table_body(_html(today_client, "/activity"), "usage_modes"), "tr") == []
     )
+
+
+def test_tab_charts_carry_a_tip_on_every_column(today_client):
+    """下段のグラフも列ごとにツールチップを持ち（JS が無ければ同じ文言の title）、文言は見出しと 1〜3 個の値。"""
+    shapes = {
+        (
+            "/activity",
+            "daily_use",
+        ): r"\d\d/\d\d（.）  利用者 \S+ 人 · セッション \S+ 件 · 指示 \S+ 件",
+        ("/cost", "cost"): r"\d\d/\d\d（.）  合計 \$\S+( · [^·]+ \$\S+){1,2}",
+    }
+    for (path, tab), shape in shapes.items():
+        chart = _panel(_html(today_client, path), tab).split('<div class="tscroll"')[0]
+        cols = re.findall(r'<g class="col', chart)
+        tips = _tips(chart)
+        assert cols and len(tips) == len(cols), tab
+        assert all(tip == title for tip, title in tips), tab
+        assert all(re.fullmatch(shape, tip) for tip, _ in tips), (tab, tips[:2])
+
+
+def test_month_tab_chart_carries_tips_in_both_modes(today_client):
+    """今月のコストのタブは、営業日と暦日の 2 枚とも点ごとにツールチップを持つ。"""
+    chart = _panel(_html(today_client, "/cost"), "month").split('<div class="tscroll"')[
+        0
+    ]
+    for mode in chart.split("data-when=")[1:]:
+        tips = _tips(mode)
+        assert tips and len(tips) == len(re.findall(r'<g class="col', mode))
+        assert all(re.fullmatch(r"\S.*  \S.*", t) for t, _ in tips)
 
 
 def test_effect_hist_links_bins(db_conn):
@@ -55,3 +90,6 @@ def test_effect_hist_links_bins(db_conn):
     chart = _panel(html, "effect_sessions").split('<div class="tscroll">')[0]
     rows = _keys(table_body(html, "effect_sessions"), "tr")
     assert rows == ["20000", "120000"] and sorted(_keys(chart, "g")) == sorted(rows)
+    tips = [t for t, _ in _tips(chart)]
+    assert len(tips) == 2
+    assert all(re.fullmatch(r"\S+  適用前 \S+% · 適用後 \S+%", t) for t in tips), tips

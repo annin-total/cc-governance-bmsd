@@ -27,14 +27,18 @@ def _tip(i: int, row: dict, prev_month: int) -> str:
     return head + "  " + " · ".join(v for v in (now, prev) if v)
 
 
+def _with_tips(geo: dict, rows: list, month: dict) -> dict:
+    tips = [_tip(i, r, month["prev_month"]) for i, r in enumerate(rows)]
+    geo["cols"] = [{**c, "tip": t} for c, t in zip(geo["cols"], tips)]
+    return geo
+
+
 def cum_card(month: dict, words: dict, ctx: dict) -> Optional[dict]:
     """営業日を横軸にした、今月の累積と見込みの線に前月の累積を薄く重ねたカードのグラフ。"""
     rows = _mode(month, "bd")
     if not any(r["cum"] is not None or r["prev"] is not None for r in rows):
         return None
-    geo = charts_cum.line(rows, charts_cum.CARD)
-    tips = [_tip(i, r, month["prev_month"]) for i, r in enumerate(rows)]
-    geo["cols"] = [{**c, "tip": t} for c, t in zip(geo["cols"], tips)]
+    geo = _with_tips(charts_cum.line(rows, charts_cum.CARD), rows, month)
     return {
         "kind": "cum",
         "geo": geo,
@@ -51,7 +55,11 @@ def chart(month: dict, ctx: dict) -> dict:
         "modes": [
             {
                 "id": mode,
-                "geo": charts_cum.line(_mode(month, mode), charts_cum.TAB),
+                "geo": _with_tips(
+                    charts_cum.line(_mode(month, mode), charts_cum.TAB),
+                    _mode(month, mode),
+                    month,
+                ),
                 "axis": words["axis"][mode],
                 "legend": legend,
                 "off": text.fill(words["off"], ctx) if mode == "cal" else "",
