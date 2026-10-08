@@ -48,8 +48,13 @@ CCGOV_TEST_MYSQL_DSN=mysql://root:<pw>@127.0.0.1:13306 .venv/bin/python -m pytes
 - 作業中に確認した依頼範囲外の課題は直さず、`.claude/templates/issues.md` の形で `.local/<作業名>/issues.md` に記録し、
   完了報告で移し先を提案する（移したら記録を更新する）
 - `.local/` は一時領域。コード・`docs/`・コミット・PR から参照せず、残す事実は `docs/` か PR 本文に書く
-- 減らす作業は `.claude/skills/refactor/SKILL.md`、文書・docstring・コメントの見直しは `.claude/skills/revise-docs/SKILL.md` に従う
-- 記録した課題を片付けるときは `.claude/skills/resolve-issues/SKILL.md` に従う
+- 作業の種類ごとに、次のスキルに従う
+  - 機能の追加・変更・不具合の修正（増やす）: `.claude/skills/plan-implement/SKILL.md`
+  - リファクタリング（減らす）: `.claude/skills/refactor/SKILL.md`
+  - 文書・docstring・コメントの見直し: `.claude/skills/revise-docs/SKILL.md`
+  - 仕様そのものを疑うレビュー: `.claude/skills/spec-bug-review/SKILL.md`
+  - 実機検証（E2E）: `.claude/skills/e2e/SKILL.md`
+  - 記録した課題（`issues.md`）の棚卸しと片付け: `.claude/skills/resolve-issues/SKILL.md`
 
 ## Design
 
