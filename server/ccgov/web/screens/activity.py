@@ -34,8 +34,8 @@ CARDS = (
          viz=Viz("sizes", "size[rows]", terms=W.PAIR)),
     Card("autocompact_sessions", "session", "session_size", "{size[auto_share]:dec1}", "{size[auto_diff]:signed_pt}",
          viz=Viz("meter", "size[auto]", den="size[sessions]")),
-    Card("bypass_users", "session", "usage_modes", "{bypass[users]:num}", "{bypass[diff]:signed} 人", better=DOWN,
-         chip="permission_mode", viz=Viz("meter", "bypass[users]", den="bypass[all]")),
+    Card("bypass_mode", "session", "usage_modes", "{modes[bypass][share]:dec1}", chip="permission_mode",
+         viz=Viz("mix", "modes[rows]", "share", terms=L.USAGE_VALUE["permission_mode"])),
 )
 
 _TOP = {"sort": None, "kind": "top"}

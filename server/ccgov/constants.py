@@ -79,6 +79,8 @@ USER_COST_HIGH = {"day": 100, "week": 150, "month": 600}
 
 # 確認なしの権限モードの値（Claude Code の `permission_mode`）
 BYPASS_MODE = "bypassPermissions"
+# 利用状況の Bypass 権限モードのカードに棒で出す値と順（don't ask は出さない）
+MODE_ROWS = ("default", "plan", "acceptEdits", "auto", BYPASS_MODE)
 # 利用状況で数えるツール（Claude Code の `tool_name`）。外部ツールは MCP（サーバごと）と Web の 2 つ、
 # サブエージェントの起動は本体から呼んだ Agent（旧名 Task）。ほかの組み込みのツールは数えない
 MCP_PREFIX = "mcp__"

@@ -85,20 +85,52 @@ def test_frequency_without_records_is_none_not_zero():
     )
 
 
-def test_bypass_counts_people_with_at_least_one_record():
-    days = [
-        _day("a", 20022, modes=2),
-        _day("a", 20023, modes=1, bypass=1),
-        _day("b", 20028, modes=3),
-        _day("d", 20015, modes=2, bypass=2),
-        _day("e", 20016, modes=1, bypass=1),
+def _use(key, count, total):
+    return {
+        "field": "permission_mode",
+        "value": key,
+        "count": count,
+        "share": round(count / total * 100, 1),
+    }
+
+
+ORDER = ("default", "plan", "acceptEdits", "auto", "bypassPermissions")
+
+
+def test_mode_mix_rows_follow_the_fixed_order_not_the_counts():
+    rows = [
+        _use("bypassPermissions", 2, 20),
+        _use("auto", 9, 20),
+        _use("default", 1, 20),
+        _use("dontAsk", 8, 20),
     ]
-    assert activity.bypass(days, W) == {
-        "users": 1,
-        "all": 2,
-        "share": 50.0,
-        "prev": 2,
-        "diff": -1,
+    mix = activity.mode_mix(rows, ORDER)
+    assert [r["value"] for r in mix["rows"]] == list(ORDER)
+    assert mix["rows"][3] == {"value": "auto", "count": 9, "share": 45.0}
+
+
+def test_mode_mix_keeps_modes_without_records_at_zero_and_counts_the_others_in_total():
+    rows = [_use("default", 3, 10), _use("dontAsk", 7, 10)]
+    mix = activity.mode_mix(rows, ORDER)
+    zero = {"count": 0, "share": 0.0}
+    assert mix["rows"][1] == {"value": "plan", **zero}
+    assert mix["total"] == 10
+    assert "dontAsk" not in [r["value"] for r in mix["rows"]]
+    assert mix["bypass"] == zero
+
+
+def test_mode_mix_bypass_is_its_share_of_all_mode_records():
+    rows = [_use("bypassPermissions", 908, 3723), _use("auto", 2815, 3723)]
+    mix = activity.mode_mix(rows, ORDER)
+    assert mix["bypass"] == {"count": 908, "share": 24.4}
+    assert mix["total"] == 3723
+
+
+def test_mode_mix_without_records_has_no_rows_and_no_share():
+    assert activity.mode_mix([], ORDER) == {
+        "rows": [],
+        "total": 0,
+        "bypass": {"count": 0, "share": None},
     }
 
 

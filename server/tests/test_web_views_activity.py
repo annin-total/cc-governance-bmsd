@@ -10,7 +10,7 @@ from conftest import ADMIN, admin_client, card, card_value, table_body, table_ro
 CARDS = (
     "1 人あたりの利用日数", "1 人 1 日あたりの指示", "1 人 1 日あたりのセッション",
     "スキルの呼び出し", "コマンドの呼び出し", "外部ツールの呼び出し", "サブエージェントの起動",
-    "セッションの大きさ（中央）", "自動コンパクトに達した割合", "確認なしモードを使った利用者",
+    "セッションの大きさ（中央）", "自動コンパクトに達した割合", "Bypass 権限モードの使用",
 )  # fmt: skip
 TABS = ["user_use", "user_calls", "daily_use", "calls", "session_size", "usage_modes"]
 
@@ -88,12 +88,6 @@ def test_groups_and_cards_in_order(act_client):
             "33.3",
             ("", "−16.7 pt"),
             "1 / 3 セッション · 前 50.0%",
-        ),
-        (
-            "確認なしモードを使った利用者",
-            "1",
-            ("", "±0 人"),
-            "記録を送った利用者の 33.3% · 前 1 人",
         ),
     ],
 )
@@ -280,8 +274,8 @@ def test_usage_modes_tab(act_client):
         r["cells"][1]: r["cells"][2] for r in rows if r["cells"][0] == "権限モード"
     }
     assert modes == {
-        "通常 操作ごとに許可を求める": "6",
-        "確認なし すべての操作を確認なし": "1",
+        "manual 操作ごとに許可を求める": "6",
+        "bypass permissions すべての操作を確認なし": "1",
     }
 
 
@@ -354,21 +348,109 @@ def test_command_without_source_is_shown_as_dash(act_client, db_conn):
     assert rows == [["コマンド", "commit", "—", "1 回"]]
 
 
-def test_more_bypass_users_is_worse(act_client, db_conn):
+def _bars(fragment: str) -> list:
+    return re.findall(
+        r'<span class="rate"><span>([^<]+)</span><span class="hbar ?([^"]*)">.*?<span class="num strong">([^<]+)</span>',
+        fragment,
+    )
+
+
+def _mode(db_conn, event_id, mode, session="sc1"):
     from known_data import insert_event
 
     insert_event(
         db_conn,
-        event_id="bp",
+        event_id=event_id,
         ts=1,
         day=20026,
         user_email="c@example.com",
         host="h",
         hook_event="UserPromptSubmit",
-        session_id="sc1",
-        permission_mode="bypassPermissions",
+        session_id=session,
+        permission_mode=mode,
     )
-    assert _chip(card(html_of(act_client), "確認なしモードを使った利用者")) == (
-        "worse",
-        "+1 人",
+
+
+def test_bypass_card_shows_the_bypass_share_and_counts(act_client):
+    html = html_of(act_client)
+    block = card(html, "Bypass 権限モードの使用")
+    assert _text(card_value(html, "Bypass 権限モードの使用")) == "14.3"
+    assert "1 / 7 件 · 権限モードの内訳" in _plain(block)
+    assert not re.search(r'class="change', block)
+    assert 'data-open="usage_modes:permission_mode"' in block
+    assert not re.search(r'class="cap"', block)
+    tab = {
+        r["cells"][1].split(" ")[0]: r["cells"][3]
+        for r in table_rows(html, "usage_modes")
+        if r["cells"][0] == "権限モード"
+    }
+    assert tab == {"manual": "85.7%", "bypass": "14.3%"}
+
+
+def test_bypass_card_bars_are_in_the_fixed_order_with_only_bypass_dark(act_client):
+    block = card(html_of(act_client), "Bypass 権限モードの使用")
+    assert _bars(block) == [
+        ("manual", "ghost", "85.7%"),
+        ("plan", "ghost", "0.0%"),
+        ("accept edits", "ghost", "0.0%"),
+        ("auto", "ghost", "0.0%"),
+        ("bypass permissions", "", "14.3%"),
+    ]
+
+
+def test_bypass_card_order_ignores_counts_and_leaves_dont_ask_out(act_client, db_conn):
+    for i, mode in enumerate(
+        ["auto"] * 9 + ["plan"] * 3 + ["acceptEdits"] * 2 + ["dontAsk"]
+    ):
+        _mode(db_conn, f"m{i}", mode)
+    html = html_of(act_client)
+    block = card(html, "Bypass 権限モードの使用")
+    assert _text(card_value(html, "Bypass 権限モードの使用")) == "4.5"
+    assert "1 / 22 件" in _plain(block)
+    assert _bars(block) == [
+        ("manual", "ghost", "27.3%"),
+        ("plan", "ghost", "13.6%"),
+        ("accept edits", "ghost", "9.1%"),
+        ("auto", "ghost", "40.9%"),
+        ("bypass permissions", "", "4.5%"),
+    ]
+    assert "don't ask" not in block
+
+
+def test_bypass_card_without_records(act_client, db_conn):
+    db_conn.cursor().execute("UPDATE events SET permission_mode = NULL")
+    db_conn.commit()
+    html = html_of(act_client)
+    block = card(html, "Bypass 権限モードの使用")
+    assert _text(card_value(html, "Bypass 権限モードの使用")) == "—"
+    assert "0 / 0 件" in _plain(block)
+    assert not _bars(block)
+
+
+def test_user_use_column_and_note_say_lowercase_bypass_permissions(act_client):
+    html = html_of(act_client)
+    assert "bypass permissions 使用率" in html
+    assert "Bypass Permissions" not in html
+    assert "確認なしの記録" not in html
+
+
+def test_usage_values_have_english_names_and_japanese_descriptions():
+    from ccgov.web import labels
+
+    names = {
+        field: {k: v[0] for k, v in terms.items()}
+        for field, terms in labels.USAGE_VALUE.items()
+    }
+    assert names == {
+        "permission_mode": {
+            "default": "manual", "auto": "auto", "plan": "plan", "acceptEdits": "accept edits",
+            "bypassPermissions": "bypass permissions", "dontAsk": "don't ask",
+        },
+        "effort_level": {
+            "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "max",
+        },
+        "source": {"startup": "startup", "resume": "resume", "clear": "clear", "compact": "compact"},
+    }  # fmt: skip
+    assert all(
+        len(v) == 2 and v[1] for t in labels.USAGE_VALUE.values() for v in t.values()
     )

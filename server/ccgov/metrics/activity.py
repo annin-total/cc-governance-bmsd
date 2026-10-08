@@ -1,4 +1,4 @@
-"""利用状況の頻度（利用日数・指示・セッション）と確認なしモード、利用者ごとの行。
+"""利用状況の頻度（利用日数・指示・セッション）と権限モードの内訳、利用者ごとの行。
 
 入力の `days` は利用者 × 日の `(利用者, 日, セッション数, 指示, 権限モードの記録, 確認なしの記録)`、
 `sessions` は `{利用者: (直近のセッション数, 前のセッション数)}`（どちらも `collapse` が作る）。窓は `Period`（直近と前の N 日）。
@@ -6,6 +6,7 @@
 
 from typing import Optional
 
+from ccgov.constants import BYPASS_MODE
 from ccgov.metrics import rates, series
 from ccgov.metrics.windows import Period
 
@@ -92,19 +93,26 @@ def frequency(days: list, sessions: dict, w: Period) -> dict:
     }  # fmt: skip
 
 
-def bypass(days: list, w: Period) -> dict:
-    """確認なしの記録が 1 件でもあった利用者の数（直近・前）と、直近の記録を送った利用者のうちの割合。"""
-    now, prev = _side(days, w, True), _side(days, w, False)
-    users = {r[0] for r in now if r[5]}
-    before = {r[0] for r in prev if r[5]}
-    everyone = len({r[0] for r in now})
-    return {
-        "users": len(users),
-        "all": everyone,
-        "share": rates.rate(len(users), everyone),
-        "prev": len(before),
-        "diff": len(users) - len(before),
+def mode_mix(usage: list, order: tuple) -> dict:
+    """権限モードの記録の件数の内訳。`rows` は `order` の値を並べた行（記録の無い値は 0 件）、`bypass` は確認なしの件数と割合。
+
+    `usage` は `reports.activity.usage` の権限モードの行。割合は記録の全件に対する割合で、`order` に無い値（don't ask など）も全件に入る。
+    """
+    count = {r["value"]: r["count"] for r in usage}
+    total = sum(count.values())
+    rows = [
+        {
+            "value": v,
+            "count": count.get(v, 0),
+            "share": rates.rate(count.get(v, 0), total),
+        }
+        for v in order
+    ]
+    bypass = {
+        "count": count.get(BYPASS_MODE, 0),
+        "share": rates.rate(count.get(BYPASS_MODE, 0), total),
     }
+    return {"rows": rows if total else [], "total": total, "bypass": bypass}
 
 
 def user_rows(days: list, sessions: dict, sizes: dict, w: Period) -> list:
