@@ -1,6 +1,6 @@
 """モジュール 5（送信）: 届かなかった分は spool に残り、送信先を直した次のセッションで実サーバに届く。
 
-401 は error 行になって同じ経路で届き、概況の「hook の失敗」の表に出る。接続できないことは記録しない。
+401 は error 行になって同じ経路で届き、収集の状態の「プラグインのエラー」の表に出る。接続できないことは記録しない。
 
 認証不要・Docker 要。送信は claude の終了後も走る切り離されたプロセスなので、判定の前に静止を待つ。
 共有 DB なので、判定は自分の event_id だけで行う。再送の打ち切り・2xx 以外の扱いは tests/ が見る。
@@ -54,6 +54,14 @@ def test_届かなければspoolに残り直した次のセッションで届く
     root.wait_quiet()
     assert list((data / "spool").glob("*.jsonl")) == []
     if broken == "wrong_token":
-        _, body, _ = server.request("GET", server.admin_path("/"), auth=True)
-        table = re.search(r'data-testid="error-summary".*?</table>', body, re.DOTALL)
-        assert table and "<td>send</td><td>HTTP 401</td>" in table.group(0)
+        _, body, _ = server.request("GET", server.admin_path("/collect"), auth=True)
+        table = re.search(r'data-testid="errors".*?</table>', body, re.DOTALL)
+        assert table, body
+        rows = [
+            [
+                " ".join(re.sub(r"<[^>]+>", "", td).split())
+                for td in re.findall(r"<td\b[^>]*>(.*?)</td>", tr, re.DOTALL)
+            ]
+            for tr in re.findall(r"<tr\b[^>]*>(.*?)</tr>", table.group(0), re.DOTALL)
+        ]
+        assert any(r[:2] == ["送信 send", "HTTP 401"] for r in rows), rows
