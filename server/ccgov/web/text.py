@@ -43,6 +43,7 @@ FORMATS = {
     "ym": filters.ym,
     "mon": filters.mon,
     "count": lambda v: filters.num(len(v)),
+    "keys": lambda v: " ".join(t["key"] for t in v or ()),
     "asof": lambda v: (
         labels.FC_NO_CSV if v is None else labels.FC_UNTIL.format(filters.md(v))
     ),

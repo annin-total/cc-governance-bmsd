@@ -127,12 +127,13 @@ def _basis() -> dict:
 
 @admin.context_processor
 def _keep_asof() -> dict:
-    """リンクに引き継ぐ基準日（検証済みの日を書き直して付け、受け取った文字列を URL に戻さない）と、利用明細の古さ。"""
+    """リンクに引き継ぐ基準日（検証済みの日を書き直して付け、受け取った文字列を URL に戻さない）と、利用明細の古さ・今日。"""
     b = _basis()
     asof, last_csv = b["asof"], None if b["first"] is None else b["last"]
     return {
         "keep_asof": {} if asof is None else {"asof": filters.day(asof)},
         "csv_stale": asof_calendar.stale(last_csv, b["today"]),
+        "today": b["today"],
     }
 
 

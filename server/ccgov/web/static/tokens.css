@@ -7,6 +7,7 @@
   --tabs: #dedad3;
   --track: #ebe7e1;
   --chip: #e3e0da;
+  --chip-up: #dde6ea;
   /* 色: 文字と線。--muted は --card・--bg・--tabs のどの面でも WCAG AA（4.5:1）を満たす */
   --ink: #2b2926;
   --ink-2: #4a4640;
@@ -93,7 +94,7 @@
   --cell-max: 320px;
   --search-w: 240px;
   --table-max-h: 560px;
-  --tip-max-w: 320px;
+  --tip-margin: 4px;
   --ln-w: 18px;
   --cum-line: 2px;
   --cum-dash: 5 4;

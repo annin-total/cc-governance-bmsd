@@ -90,7 +90,7 @@ def test_chips_are_colored_without_arrows(today_client):
         html, "1 人あたりの利用日数"
     )
     collect = today_client.get(ADMIN + "/collect").get_data(as_text=True)
-    assert '<span class="change">+10</span>' in card(collect, "受信した記録")
+    assert '<span class="change">+333.3%</span>' in card(collect, "受信した記録")
     assert "▲" not in html and "▼" not in html
 
 
@@ -137,3 +137,12 @@ def test_word_sources_say_compact_and_version():
     for name in ("labels.py", "screens/words.py", "export_notes.py"):
         source = (STATIC.parent / name).read_text().replace("大きさは圧縮後の目安", "")
         assert "版" not in source and "圧縮" not in source, name
+
+
+def test_tooltip_stretches_to_its_text_and_stays_inside_the_screen():
+    """枠は文言の長さまで伸ばし、画面の幅から左右の余白を引いた幅を超える分だけ折り返す。"""
+    tip = _decls("components.css", ".tip")
+    assert "width: max-content" in tip
+    assert "max-width: calc(100vw - 2 * var(--tip-margin))" in tip
+    assert "nowrap" not in tip
+    assert '"--tip-margin"' in (STATIC / "app.js").read_text()

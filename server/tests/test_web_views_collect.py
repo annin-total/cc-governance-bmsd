@@ -60,7 +60,7 @@ def test_cards_of_received_records(today_client):
     assert card_value(html, "受信した記録") == "13"
     sub = card(html, "受信した記録")
     assert "前 3 件" in sub and "送信した利用者 4 人" in sub
-    assert '<span class="change">+10</span>' in sub
+    assert '<span class="change">+333.3%</span>' in sub
 
 
 def test_received_records_bars_carry_values_as_tooltips(today_client):
@@ -232,3 +232,29 @@ def test_reconciliation_card_opens_the_same_numbers(known_db, today_client):
     ]
     assert "利用明細にもいた" not in delivery and "利用明細にいない" not in delivery
     assert len(_delivery(html)) == 8
+
+
+def test_null_rate_card_is_two_columns_wide(today_client):
+    assert re.search(
+        r'class="card wide"', card(_html(today_client), "項目の欠け（最大）")
+    )
+
+
+def test_small_groups_share_one_row(today_client):
+    """照合と利用明細の 2 つの群は 1 行に並べ、受信の群は並べない。"""
+    main = _html(today_client).split('<main class="wrap">')[1]
+    row = re.search(
+        r'<div class="group-row">(.*?)</div>\s*</div>\s*<section class="detail"',
+        main,
+        re.DOTALL,
+    )
+    assert row, "group-row が見つからない"
+    assert re.findall(
+        r'<section class="group packed" aria-label="([^"]*)"', row.group(1)
+    ) == [
+        "照合",
+        "利用明細",
+    ]
+    assert main.count('class="group-row"') == 1
+    assert "span 1; --cols: 1" in row.group(1)
+    assert collect_screen.SCREEN.packed == ("match7", "now")

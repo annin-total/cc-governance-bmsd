@@ -57,7 +57,7 @@ def test_user_cost_rows(cost_client):
         ["正常", "3", "c@example.com 不明", "$15.00", "$10.00", "+$5.00", "+50.0%", "6.8%", "97.7%", "2 日", "$7.50", "sonnet", "—"],
         ["正常", "4", "e@example.com 不明", "$5.00", "—", "+$5.00", "—", "2.3%", "100.0%", "1 日", "$5.00", "haiku", "—"],
     ]  # fmt: skip
-    assert [r["tags"] for r in rows] == [["ng"], ["warn"], ["ok"], ["ok"]]
+    assert [r["tags"][0] for r in rows] == ["ng", "warn", "ok", "ok"]
 
 
 def test_user_cost_of_12_months_drops_state_and_comparison(cost_client):

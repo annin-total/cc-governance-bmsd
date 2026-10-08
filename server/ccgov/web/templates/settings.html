@@ -1,6 +1,8 @@
 {# データと設定。取り込む（CSV の受け取りと取り込み済みのファイル）・組織 CSV（月ごとの名簿）・書き出す（月ごとの ZIP）・会社の休日の 4 節を縦に並べる。 #}
 {% set here = "admin.settings" %}
 {% extends "base.html" %}
+{% from "components/period.html" import at as period_at %}
+{% block head_actions %}<div class="head-act">{{ period_at(today) }}</div>{% endblock %}
 {% from "components/table.html" import table, fold_attrs %}
 {% from "components/charts.html" import hbar %}
 {% block content %}

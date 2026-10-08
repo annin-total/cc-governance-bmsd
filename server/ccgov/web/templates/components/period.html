@@ -65,9 +65,14 @@
       </section>
       {%- endfor %}
     </div>
-    <ul class="cal-legend">
-      {%- for key, text in L.CAL_LEGEND.items() %}<li><i class="cal-key cal-{{ key }}"></i>{{ text }}</li>{% endfor -%}
-    </ul>
+    <div class="cal-foot">
+      <ul class="cal-legend">
+        {%- for key, text in L.CAL_LEGEND.items() %}<li><i class="cal-key cal-{{ key }}"></i>{{ text }}</li>{% endfor -%}
+      </ul>
+      {%- for key, day, ok in cal.picks if key == "latest" and ok %}
+      <a class="cal-latest" href="{{ href(day, cal, endpoint, args) }}" data-latest>{{ L.CAL_PICKS[key] }}</a>
+      {%- endfor %}
+    </div>
   </div>
 </div>
 {%- endmacro %}

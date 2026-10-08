@@ -40,12 +40,11 @@
 .st-ok { background: var(--ghost); }
 .rates.wide .rate.marked { grid-template-columns: 1fr 30% 5.5em 3.6em 4.5em; }
 .spark .bar-part { opacity: var(--partial-opacity); }
-/* 月末の見込みのカード: 今月は濃い線、前月は薄く細い線（凡例の見本も同じ） */
+/* 月末の見込みのカード: 今月は濃い線、前月は薄く細い線（凡例の見本は線の種類だけを示し、太さは同じ） */
 .cum-card polyline { fill: none; stroke-width: 1.5; stroke-linejoin: round; }
 .cum-card .fc-cum-now { stroke: var(--accent); }
 .cum-card .fc-cum-prev { stroke: var(--ghost); stroke-width: 1; }
-.cum-card-legend .ln { border-top-width: 1.5px; }
-.cum-card-legend .ln.prev { border-top-width: 1px; }
+.cum-card-legend .ln { border-top-width: 2px; }
 /* 基準を超えた利用者のカード: 要確認と注意を 2 列の大きな数字で並べ、チップは縦に積む */
 .over { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-m); }
 .over-col { display: grid; align-content: start; gap: var(--sp-3xs); font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }

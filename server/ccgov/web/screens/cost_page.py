@@ -66,7 +66,6 @@ _DEPT_HEAD = (
     Col("cost", "usd_strong", label="spend", sort=None),
 )
 _DEPT_TAIL = (Col("share", "pct", label="spend_share", sort=None), Col("per_user_bd", "usd", sort=None))
-_SEARCH = USER_SEARCH + " {model}"
 _STATES = ("ng", "warn", "ok")
 _WEEK = Col("day", "week", label="week")
 _PROVIDERS = Col("providers", "usd", each="cost[providers]", terms=L.PROVIDER)
@@ -76,9 +75,9 @@ TABS = (
     Tab("user_cost", "users", (
         Col("state", "state"), *_USER_COLS, Col("prev", "usd_sub", label="prev_spend"), Col("diff", "usd_delta", label="spend_diff"),
         Col("rate", "pct_delta", label="spend_rate"), *_USER_TAIL,
-    ), sort=("cost", "desc"), chips_by="state", search=_SEARCH, fold=_FOLD, org=True,
-        chips=tuple(Chip(k, L.STATE[k], k) for k in _STATES),
-        long=Tab("user_cost", "users", (*_USER_COLS, *_USER_TAIL), sort=("cost", "desc"), chips_by="model", search=_SEARCH,
+    ), sort=("cost", "desc"), chips_by="state", search=USER_SEARCH, fold=_FOLD, org=True,
+        chips=tuple(Chip(k, L.STATE[k], k) for k in _STATES), axes=(Axis("model", (), "model"),),
+        long=Tab("user_cost", "users", (*_USER_COLS, *_USER_TAIL), sort=("cost", "desc"), chips_by="model", search=USER_SEARCH,
                  fold=_FOLD, org=True, words="user_cost_year")),
     Tab("over_users", "over[rows]", (
         Col("basis", "term", terms=W.OVER_BASIS), Col("prev_state", "state", label="over_prev"), Col("state", "state", label="over_now"),
