@@ -128,6 +128,16 @@ def admin_client(flask_app):
     return client
 
 
+def dated_client(monkeypatch, today: int):
+    """`app` を読み込み直し、基準日を `today` に固定したテストクライアント（認証ヘッダ付き）を返す。"""
+    import app as app_module
+    from ccgov.web import admin
+
+    importlib.reload(app_module)
+    monkeypatch.setattr(admin.time, "time", lambda: today * 86400)
+    return admin_client(app_module.app)
+
+
 @contextmanager
 def env_var(name: str, value: str):
     """`os.environ[name]` を直接書き換え、抜けるときに元へ戻す。
@@ -262,13 +272,17 @@ def cost_client(db_conn, monkeypatch):
     """`cost_data.py` の既知データを入れ、基準日を固定した `app` のテストクライアント（認証ヘッダ付き）。"""
     from cost_data import TODAY, seed
 
-    import app as app_module
-    from ccgov.web import admin
+    seed(db_conn)
+    return dated_client(monkeypatch, TODAY)
+
+
+@pytest.fixture
+def act_client(db_conn, monkeypatch):
+    """`activity_data.py` の既知データを入れ、基準日を固定した `app` のテストクライアント（認証ヘッダ付き）。"""
+    from activity_data import TODAY, seed
 
     seed(db_conn)
-    importlib.reload(app_module)
-    monkeypatch.setattr(admin.time, "time", lambda: TODAY * 86400)
-    return admin_client(app_module.app)
+    return dated_client(monkeypatch, TODAY)
 
 
 @pytest.fixture

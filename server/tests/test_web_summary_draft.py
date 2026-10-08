@@ -1,11 +1,10 @@
 """サマリーの「下書きを作る」: 基準日の概況（7 日）のカードのうち注意・要確認を、画面の並びで 1 行ずつ本文に入れる。"""
 
-import importlib
 import re
 from html import unescape
 
 import pytest
-from conftest import ADMIN, admin_client, csrf_form
+from conftest import ADMIN, csrf_form, dated_client
 from known_data import TODAY, insert_cost_daily, insert_event
 
 from ccgov.reports import summary
@@ -124,12 +123,7 @@ def test_draft_renames_a_default_shaped_title_to_the_asof(today_client):
 
 
 def test_draft_without_warn_or_ng_keeps_the_body_and_says_so(db_conn, monkeypatch):
-    import app as app_module
-    from ccgov.web import admin
-
-    importlib.reload(app_module)
-    monkeypatch.setattr(admin.time, "time", lambda: TODAY * 86400)
-    client = admin_client(app_module.app)
+    client = dated_client(monkeypatch, TODAY)
     html = _draft(client, asof="", body="手で書いた本文").get_data(as_text=True)
     assert _body(html) == "手で書いた本文"
     assert "注意・要確認のカードはありません" in html

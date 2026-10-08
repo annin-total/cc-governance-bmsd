@@ -1,13 +1,10 @@
 """管理画面のモック（案 51）に合わせた見た目と文言の検査。CSS は文字列として読む。"""
 
-import importlib
 import re
 from pathlib import Path
 
 import pytest
-from activity_data import TODAY as ACT_TODAY
-from activity_data import seed as act_seed
-from conftest import ADMIN, admin_client, card, table_body, table_rows
+from conftest import ADMIN, card, table_body, table_rows
 from cost_data import html_of as cost_html
 
 STATIC = Path(__file__).resolve().parent.parent / "ccgov" / "web" / "static"
@@ -24,17 +21,6 @@ def _decls(sheet: str, selector: str) -> str:
 
 def _get(client, path: str) -> str:
     return client.get(ADMIN + path).get_data(as_text=True)
-
-
-@pytest.fixture
-def act_client(db_conn, monkeypatch):
-    import app as app_module
-    from ccgov.web import admin
-
-    act_seed(db_conn)
-    importlib.reload(app_module)
-    monkeypatch.setattr(admin.time, "time", lambda: ACT_TODAY * 86400)
-    return admin_client(app_module.app)
 
 
 def test_card_titles_wrap_at_word_breaks():
