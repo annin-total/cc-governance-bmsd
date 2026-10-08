@@ -161,7 +161,7 @@ def index() -> str:
 
 @admin.route("/cost")
 def cost_view() -> str:
-    return _period_page("cost.html", cost_screen.SCREEN, cost_page.build)
+    return _period_page("screen.html", cost_screen.SCREEN, cost_page.build)
 
 
 def _today() -> int:
@@ -173,14 +173,14 @@ def policy_view() -> str:
     today = _basis()["today"]
     data = settings.run(policy.build, today)
     screen = view.build(policy_screen.SCREEN, data)
-    return render_template("policy.html", view=screen, at=today)
+    return render_template("screen.html", view=screen, at=today)
 
 
 @admin.route("/collect")
 def collect_view() -> str:
     today = _basis()["today"]
     screen = view.build(collect_screen.SCREEN, settings.run(collect.build, today))
-    return render_template("collect.html", view=screen, at=today)
+    return render_template("screen.html", view=screen, at=today)
 
 
 @admin.route("/effect")
@@ -188,12 +188,12 @@ def effect_view() -> str:
     end = _basis()["end"]
     data = settings.run(effect.build, end)
     screen = view.build(effect_screen.SCREEN, data)
-    return render_template("effect.html", view=screen, at=end, cal=_calendar())
+    return render_template("screen.html", view=screen, at=end, cal=_calendar())
 
 
 @admin.route("/activity")
 def activity_view() -> str:
-    return _period_page("activity.html", activity_screen.SCREEN, activity.build)
+    return _period_page("screen.html", activity_screen.SCREEN, activity.build)
 
 
 @admin.route("/assets")
