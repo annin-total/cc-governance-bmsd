@@ -55,8 +55,8 @@ class InputError(ValueError):
     """フォームの誤り。`args[0]` は `labels.HOLIDAY_ERROR` のキー。"""
 
 
-def _day(text: str) -> int:
-    day = calendar.parse_day(text)
+def _day(raw: str) -> int:
+    day = calendar.parse_day(raw)
     if day is None:
         raise InputError("format")
     return day
