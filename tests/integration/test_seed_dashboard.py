@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 import time
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -54,13 +55,10 @@ def _run(dsn: str, *args: str) -> subprocess.CompletedProcess:
 
 def _count(dsn: str, table: str, monkeypatch) -> int:
     monkeypatch.setenv("DB_DSN", dsn)
-    conn = db.connect()
-    try:
+    with closing(db.connect()) as conn:
         cur = conn.cursor()
         cur.execute(f"SELECT COUNT(*) FROM {table}")
         return cur.fetchone()[0]
-    finally:
-        conn.close()
 
 
 @pytest.fixture(scope="module")
