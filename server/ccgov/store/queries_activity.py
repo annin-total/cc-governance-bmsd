@@ -9,9 +9,7 @@ _IN_WINDOW = "CASE WHEN day BETWEEN ? AND ? THEN {} END"
 
 
 def _rows(conn, sql: str, params: tuple) -> list:
-    cur = conn.cursor()
-    cur.execute(db.q(sql), params)
-    return [tuple(r) for r in cur.fetchall()]
+    return [tuple(r) for r in db.execute(conn, sql, params).fetchall()]
 
 
 def user_day_sessions(conn, start: int, end: int) -> list:

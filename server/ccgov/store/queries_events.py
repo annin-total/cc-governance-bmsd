@@ -17,9 +17,9 @@ _DISTRIBUTION_COLUMNS = ("permission_mode", "effort_level", "source")
 
 def days(conn, start: int, end: int) -> list:
     """`start`〜`end` に記録がある日（昇順）。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q("SELECT DISTINCT day FROM events WHERE day BETWEEN ? AND ? ORDER BY day"),
+    cur = db.execute(
+        conn,
+        "SELECT DISTINCT day FROM events WHERE day BETWEEN ? AND ? ORDER BY day",
         (start, end),
     )
     return [row[0] for row in cur.fetchall()]
@@ -30,13 +30,11 @@ def distribution(conn, today: int, column: str, days: int = RECENT_DAYS) -> list
     if column not in _DISTRIBUTION_COLUMNS:
         raise ValueError(f"未対応の列: {column}")
     recent_start, recent_end = recent_window(today, days)
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            f"SELECT {column}, COUNT(DISTINCT event_id) FROM events"
-            f" WHERE {column} IS NOT NULL AND day BETWEEN ? AND ?"
-            f" GROUP BY {column} ORDER BY COUNT(DISTINCT event_id) DESC, {column}"
-        ),
+    cur = db.execute(
+        conn,
+        f"SELECT {column}, COUNT(DISTINCT event_id) FROM events"
+        f" WHERE {column} IS NOT NULL AND day BETWEEN ? AND ?"
+        f" GROUP BY {column} ORDER BY COUNT(DISTINCT event_id) DESC, {column}",
         (recent_start, recent_end),
     )
     return cur.fetchall()
@@ -49,12 +47,10 @@ def _health_window_stats(conn, start: int, end: int) -> dict:
         f" COUNT(DISTINCT CASE WHEN {scope} AND {col} IS NULL THEN event_id END)"
         for col, scope in _HEALTH_NULL_SCOPES.items()
     )
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            f"SELECT COUNT(DISTINCT event_id), COUNT(DISTINCT user_email), {scope_sql}"
-            f" FROM events WHERE day BETWEEN ? AND ?"
-        ),
+    cur = db.execute(
+        conn,
+        f"SELECT COUNT(DISTINCT event_id), COUNT(DISTINCT user_email), {scope_sql}"
+        f" FROM events WHERE day BETWEEN ? AND ?",
         (start, end),
     )
     events, terminals, *counts = cur.fetchone()
@@ -81,17 +77,15 @@ def reconciliation_counts(conn, today: int, days: int = RECENT_DAYS) -> tuple:
     if end is None:
         return 0, 0
     recent_start, recent_end = recent_window(end, days)
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            "SELECT"
-            " (SELECT COUNT(DISTINCT user_email) FROM events WHERE day BETWEEN ? AND ?),"
-            " (SELECT COUNT(DISTINCT e.user_email) FROM events e"
-            "   WHERE e.day BETWEEN ? AND ?"
-            "     AND e.user_email IN ("
-            "       SELECT DISTINCT user_email FROM cost_daily WHERE day BETWEEN ? AND ?"
-            "     ))"
-        ),
+    cur = db.execute(
+        conn,
+        "SELECT"
+        " (SELECT COUNT(DISTINCT user_email) FROM events WHERE day BETWEEN ? AND ?),"
+        " (SELECT COUNT(DISTINCT e.user_email) FROM events e"
+        "   WHERE e.day BETWEEN ? AND ?"
+        "     AND e.user_email IN ("
+        "       SELECT DISTINCT user_email FROM cost_daily WHERE day BETWEEN ? AND ?"
+        "     ))",
         (recent_start, recent_end, recent_start, recent_end, recent_start, recent_end),
     )
     denominator, numerator = cur.fetchone()

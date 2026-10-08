@@ -14,24 +14,22 @@ _LATEST_VALUES_SQL = (
 
 def latest_values(conn, today: int, key_name: str) -> list:
     """`POLICY_DAYS` 日の集計期間で、端末ごとの `ts` が最新の 1 行を返す。"""
-    cur = conn.cursor()
-    cur.execute(db.q(_LATEST_VALUES_SQL), (key_name, policy_window_start(today)))
+    cur = db.execute(conn, _LATEST_VALUES_SQL, (key_name, policy_window_start(today)))
     return cur.fetchall()
 
 
 def csv_imported(conn) -> bool:
     """`cost_daily` に行が 1 つでもあるか（CSV を一度でも取り込んだか）。"""
-    cur = conn.cursor()
-    cur.execute(db.q("SELECT 1 FROM cost_daily LIMIT 1"))
+    cur = db.execute(conn, "SELECT 1 FROM cost_daily LIMIT 1")
     return cur.fetchone() is not None
 
 
 def denominator_users(conn, today: int) -> set:
     """準拠率の分母の `user_email` の集合。CSV があれば `cost_daily`、無ければ `policy_state` の、今日で終わる集計期間に現れる利用者。"""
-    cur = conn.cursor()
     table = "cost_daily" if csv_imported(conn) else "policy_state"
-    cur.execute(
-        db.q(f"SELECT DISTINCT user_email FROM {table} WHERE day >= ?"),
+    cur = db.execute(
+        conn,
+        f"SELECT DISTINCT user_email FROM {table} WHERE day >= ?",
         (policy_window_start(today),),
     )
     return {row[0] for row in cur.fetchall()}
@@ -39,16 +37,14 @@ def denominator_users(conn, today: int) -> set:
 
 def not_introduced(conn, today: int) -> list:
     """今日で終わる集計期間に `cost_daily` に現れ、`policy_state` に行が無い利用者。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            "SELECT c.user_email FROM ("
-            "  SELECT DISTINCT user_email FROM cost_daily WHERE day >= ?"
-            ") c LEFT JOIN ("
-            "  SELECT DISTINCT user_email FROM policy_state WHERE day >= ?"
-            ") p ON c.user_email = p.user_email"
-            " WHERE p.user_email IS NULL ORDER BY c.user_email"
-        ),
+    cur = db.execute(
+        conn,
+        "SELECT c.user_email FROM ("
+        "  SELECT DISTINCT user_email FROM cost_daily WHERE day >= ?"
+        ") c LEFT JOIN ("
+        "  SELECT DISTINCT user_email FROM policy_state WHERE day >= ?"
+        ") p ON c.user_email = p.user_email"
+        " WHERE p.user_email IS NULL ORDER BY c.user_email",
         (policy_window_start(today),) * 2,
     )
     return cur.fetchall()
@@ -61,15 +57,13 @@ def _latest_per_terminal(
 
     `table`・`column`・`condition` は SQL に埋め込むため、呼び出し側の固定の文字列だけを渡す。
     """
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            f"SELECT user_email, host, {column} FROM ("
-            f"  SELECT user_email, host, {column},"
-            "         ROW_NUMBER() OVER (PARTITION BY user_email, host ORDER BY ts DESC) AS rn"
-            f"    FROM {table} WHERE {condition} AND day >= ?"
-            ") t WHERE rn = 1"
-        ),
+    cur = db.execute(
+        conn,
+        f"SELECT user_email, host, {column} FROM ("
+        f"  SELECT user_email, host, {column},"
+        "         ROW_NUMBER() OVER (PARTITION BY user_email, host ORDER BY ts DESC) AS rn"
+        f"    FROM {table} WHERE {condition} AND day >= ?"
+        ") t WHERE rn = 1",
         (*params, policy_window_start(today)),
     )
     return cur.fetchall()
@@ -96,12 +90,10 @@ def claude_code_versions(conn, today: int) -> list:
 
 def compliance_start_dates(conn, key_name: str, expected_value: str, end: int) -> dict:
     """利用者ごとの準拠開始日（`prev_value` が一致する行の `MIN(day)`）。`end` までの全期間を見る。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            "SELECT user_email, MIN(day) FROM policy_state"
-            " WHERE key_name = ? AND prev_value = ? AND day <= ? GROUP BY user_email"
-        ),
+    cur = db.execute(
+        conn,
+        "SELECT user_email, MIN(day) FROM policy_state"
+        " WHERE key_name = ? AND prev_value = ? AND day <= ? GROUP BY user_email",
         (key_name, expected_value, end),
     )
     return dict(cur.fetchall())
@@ -109,14 +101,12 @@ def compliance_start_dates(conn, key_name: str, expected_value: str, end: int) -
 
 def cost_by_user_day(conn, provider: str) -> dict:
     """`provider` の `(user_email, day)` -> `(コスト, 処理トークン（入力とキャッシュの読み書きの和）)`。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            "SELECT user_email, day, COALESCE(SUM(cost), 0),"
-            " COALESCE(SUM(COALESCE(input_tokens, 0) + COALESCE(cache_read_tokens, 0)"
-            "   + COALESCE(cache_write_tokens, 0)), 0)"
-            " FROM cost_daily WHERE provider = ? GROUP BY user_email, day"
-        ),
+    cur = db.execute(
+        conn,
+        "SELECT user_email, day, COALESCE(SUM(cost), 0),"
+        " COALESCE(SUM(COALESCE(input_tokens, 0) + COALESCE(cache_read_tokens, 0)"
+        "   + COALESCE(cache_write_tokens, 0)), 0)"
+        " FROM cost_daily WHERE provider = ? GROUP BY user_email, day",
         (provider,),
     )
     return {(u, d): (c, t) for u, d, c, t in cur.fetchall()}
