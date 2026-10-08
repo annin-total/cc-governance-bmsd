@@ -3,7 +3,7 @@
 すべて記録から数えるため、12 か月ではカードを出さず、タブは「出しません」にする（`long` を持たない）。
 """
 
-from ccgov.constants import TABLE_FOLD_ROWS
+from ccgov.constants import TAB_FOLD_ROWS
 from ccgov.web import labels as L
 from ccgov.web.screens import USER_SEARCH, Card, Chip, Col, Screen, Tab, Viz
 from ccgov.web.screens import words as W
@@ -11,7 +11,7 @@ from ccgov.web.text import HIGHER_IS_BETTER as UP
 from ccgov.web.text import LOWER_IS_BETTER as DOWN
 
 GROUPS = ("freq", "calls", "session")
-_FOLD = TABLE_FOLD_ROWS
+_FOLD = TAB_FOLD_ROWS
 
 
 def _calls(kind: str, card: str, viz: Viz) -> Card:

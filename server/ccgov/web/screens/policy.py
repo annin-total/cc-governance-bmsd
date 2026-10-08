@@ -3,13 +3,13 @@
 今日の時点の状態を数えるため、期間を持たない。数える単位は利用者で、端末の区分を持たない。
 """
 
-from ccgov.constants import TABLE_FOLD_ROWS
+from ccgov.constants import TAB_FOLD_ROWS
 from ccgov.web import labels as L
 from ccgov.web.screens import USER_SEARCH, Card, Chip, Col, Screen, Tab, Viz
 
 GROUPS = ("set", "ver")
 _USER_CHIPS = tuple(Chip(k, label, tone) for k, (tone, label) in L.USER_STATE.items())
-_FOLD = TABLE_FOLD_ROWS
+_FOLD = TAB_FOLD_ROWS
 
 
 def _outdated(kind: str) -> Card:

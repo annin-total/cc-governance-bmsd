@@ -3,14 +3,14 @@
 今日の時点の状態を数えるため、期間を持たない。数える単位は利用者で、端末の区分を持たない。
 """
 
-from ccgov.constants import TABLE_FOLD_ROWS
+from ccgov.constants import TAB_FOLD_ROWS
 from ccgov.web import labels as L
 from ccgov.web.screens import USER_SEARCH, Card, Chip, Col, Screen, Tab, Viz
 from ccgov.web.screens import words_collect as W
 from ccgov.web.text import LOWER_IS_BETTER as DOWN
 
 GROUPS = ("rec7", "match7", "now")
-_FOLD = TABLE_FOLD_ROWS
+_FOLD = TAB_FOLD_ROWS
 _DELIVERY_CHIPS = (
     *(Chip(k, label, tone) for k, (tone, label) in L.DELIVERY.items()),
     *(Chip(k, label) for k, label in W.BILLED_CHIPS.items()),

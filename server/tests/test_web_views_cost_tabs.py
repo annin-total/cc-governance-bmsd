@@ -2,12 +2,11 @@
 
 import re
 
-import pytest
 from conftest import table_body, table_rows
 from cost_data import html_of
 from known_data import insert_cost_daily
 
-from ccgov.constants import TABLE_FOLD_ROWS
+from ccgov.constants import TAB_FOLD_ROWS, TABLE_FOLD_ROWS
 
 
 def _head(html: str, testid: str) -> list:
@@ -113,29 +112,40 @@ def test_month_tab_is_the_current_month(cost_client):
     assert len(table_rows(html_of(cost_client), "month")) > 0
 
 
-@pytest.fixture
-def many(db_conn):
-    for i in range(TABLE_FOLD_ROWS + 2):
+def _add_users(db_conn, n: int) -> None:
+    for i in range(n):
         insert_cost_daily(
             db_conn,
             day=20004,
-            user_email=f"x{i:02d}@example.com",
+            user_email=f"x{i:04d}@example.com",
             provider="aws-bedrock",
             model="haiku",
             cost=1.0,
         )
 
 
-def test_long_user_list_folds_but_renders_every_row(many, cost_client):
+def _user_cost_box(html: str) -> str:
+    return re.search(
+        r'<div class="tscroll"([^>]*)>\s*<table data-testid="user_cost"', html
+    ).group(1)
+
+
+def test_tab_list_past_the_settings_threshold_does_not_fold(db_conn, cost_client):
+    """詳細タブの一覧は、設定の一覧が畳む件数を超えても畳まない。"""
+    _add_users(db_conn, TABLE_FOLD_ROWS + 2)
+    html = html_of(cost_client)
+    assert len(table_rows(html, "user_cost")) == 4 + TABLE_FOLD_ROWS + 2
+    assert "data-fold" not in _user_cost_box(html)
+
+
+def test_tab_list_past_its_threshold_folds_but_renders_every_row(db_conn, cost_client):
     """JS が無くても全行が読める（サーバは全行を描き、data-fold を付けるだけ）。"""
+    _add_users(db_conn, TAB_FOLD_ROWS + 1 - 4)
     html = html_of(cost_client)
     rows = re.findall(r"<tr\b[^>]*>", table_body(html, "user_cost"))[1:]
-    assert len(rows) == 4 + TABLE_FOLD_ROWS + 2
+    assert len(rows) == TAB_FOLD_ROWS + 1
     assert not [r for r in rows if "hidden" in r]
-    box = re.search(
-        r'<div class="tscroll"([^>]*)>\s*<table data-testid="user_cost"', html
-    )
-    assert f'data-fold="{TABLE_FOLD_ROWS}"' in box.group(1)
+    assert f'data-fold="{TAB_FOLD_ROWS}"' in _user_cost_box(html)
 
 
 def test_short_lists_do_not_fold(cost_client):
