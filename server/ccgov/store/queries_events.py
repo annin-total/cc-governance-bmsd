@@ -1,4 +1,4 @@
-"""概況の集計クエリ（記録の日・受信・利用者とセッションの推移・使われ方・照合）。"""
+"""`events` の集計クエリ（記録のある日・列の値ごとの件数・受信と項目の欠け・照合）。"""
 
 from ccgov.constants import RECENT_DAYS
 from ccgov.metrics.windows import previous_window, recent_window
