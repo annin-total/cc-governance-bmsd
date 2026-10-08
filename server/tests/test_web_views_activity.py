@@ -386,14 +386,13 @@ def test_bypass_card_shows_the_bypass_share_and_counts(act_client):
     assert tab == {"manual": "85.7%", "bypass": "14.3%"}
 
 
-def test_bypass_card_bars_are_in_the_fixed_order_with_only_bypass_dark(act_client):
+def test_bypass_card_bars_are_in_the_fixed_order_all_light(act_client):
     block = card(html_of(act_client), "Bypass 権限モードの使用")
     assert _bars(block) == [
         ("manual", "ghost", "85.7%"),
         ("plan", "ghost", "0.0%"),
         ("accept edits", "ghost", "0.0%"),
         ("auto", "ghost", "0.0%"),
-        ("bypass permissions", "", "14.3%"),
     ]
 
 
@@ -411,9 +410,8 @@ def test_bypass_card_order_ignores_counts_and_leaves_dont_ask_out(act_client, db
         ("plan", "ghost", "13.6%"),
         ("accept edits", "ghost", "9.1%"),
         ("auto", "ghost", "40.9%"),
-        ("bypass permissions", "", "4.5%"),
     ]
-    assert "don't ask" not in block
+    assert "don't ask" not in block and "bypass permissions" not in block
 
 
 def test_bypass_card_without_records(act_client, db_conn):

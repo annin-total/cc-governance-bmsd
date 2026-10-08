@@ -2,7 +2,6 @@
 
 from typing import Optional
 
-from ccgov.constants import BYPASS_MODE
 from ccgov.metrics import session_size
 from ccgov.web import charts, charts_cost, charts_hist, text
 from ccgov.web import labels as L
@@ -52,7 +51,7 @@ def _top(viz: Viz, rows: list, words: dict) -> Optional[dict]:
 
 
 def _mix(viz: Viz, rows: list, words: dict) -> Optional[dict]:
-    """割合の棒。確認なしの行だけ濃く、ほかは薄い。割合は全体に対する割合なので、棒の長さは百分率。"""
+    """割合の棒（すべて薄い）。割合は全体に対する割合なので、棒の長さは百分率。"""
     if not rows:
         return None
     return {
@@ -61,7 +60,7 @@ def _mix(viz: Viz, rows: list, words: dict) -> Optional[dict]:
             {
                 "label": text.term(viz.terms, r["value"]),
                 "pct": charts.pct(r[viz.field], 100),
-                "tone": "" if r["value"] == BYPASS_MODE else "ghost",
+                "tone": "ghost",
                 "right": [text.fill(t, r) for t in words["row"]],
                 "state": None,
             }
