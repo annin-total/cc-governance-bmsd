@@ -6,7 +6,6 @@ from ccgov.store import db
 
 COLUMNS = ("id", "created", "updated", "asof", "title", "body")
 _SELECT = f"SELECT {', '.join(COLUMNS)} FROM summaries"
-# 作成時刻の新しい順。同じ秒に作った行は作った順（seq は作るたびに 1 つ増える）
 _NEWEST = " ORDER BY created DESC, seq DESC"
 
 

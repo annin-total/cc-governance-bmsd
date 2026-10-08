@@ -6,7 +6,6 @@
 from ccgov.store import db
 
 _HAS_COST = "SUM(CASE WHEN cost > 0 THEN 1 ELSE 0 END) > 0"
-# 全トークン（入力・出力・キャッシュの読み書き）と、キャッシュ読み込みのトークン
 _TOKENS = (
     " COALESCE(SUM(COALESCE(input_tokens, 0) + COALESCE(output_tokens, 0)"
     " + COALESCE(cache_read_tokens, 0) + COALESCE(cache_write_tokens, 0)), 0),"

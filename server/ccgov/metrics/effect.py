@@ -41,7 +41,6 @@ def summary(study: list) -> dict:
     """`event_study` の行を相対日の前（負）と後（正）に分け、のべ人日で重み付けした 1 人 1 日あたりの値にする。
 
     `rows` は行ごとの dict（`side` が前後）、`people_min`・`people_max` は相対日ごとの分母人数の最小と最大。
-    相対日 0 の行は数えない。
     """
     sides = {
         "before": [r for r in study if r[0] < 0],
