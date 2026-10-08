@@ -253,3 +253,15 @@ def test_range_is_tinted_with_chip_up():
     css = (_STATIC / "calendar.css").read_text()
     assert re.search(r"\.cal-day\.in-range \{ background: var\(--chip-up\); \}", css)
     assert re.search(r"--chip-up: #[0-9a-f]{6};", (_STATIC / "tokens.css").read_text())
+
+
+@pytest.mark.parametrize("cls", ["cal-picks", "cal-legend"])
+def test_lists_in_the_calendar_have_no_default_margin_padding_or_marker(cls):
+    css = (_STATIC / "calendar.css").read_text()
+    applied = "".join(
+        body
+        for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css)
+        if any(s.strip() in (f".{cls}", ".cal ul") for s in sel.split(","))
+    )
+    for prop in (r"margin:\s*0\b", r"padding:\s*0\b", r"list-style:\s*none"):
+        assert re.search(prop, applied), f"{cls}: {prop}"
