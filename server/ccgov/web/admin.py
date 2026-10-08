@@ -2,7 +2,7 @@
 
 import hmac
 import time
-from typing import Callable, Optional
+from typing import Optional
 
 from flask import (
     Blueprint,
@@ -27,7 +27,6 @@ from ccgov.reports import (
     policy,
 )
 from ccgov.reports import summary as summary_report
-from ccgov.store import db
 from ccgov.vendor import contract
 from ccgov.web import (
     csrf,
@@ -60,15 +59,6 @@ _UPLOADS = {
 }
 
 
-def _build(build: Callable, *args) -> dict:
-    """接続を開いて `build(conn, *args)` を呼び、閉じてから結果を返す。"""
-    conn = db.connect()
-    try:
-        return build(conn, *args)
-    finally:
-        conn.close()
-
-
 @admin.before_request
 def _limit_upload() -> None:
     """取込の経路にだけ本文の大きさの上限を掛ける。CSRF の照合が本文を読む前に決めるため、認証より先に登録する。"""
@@ -96,7 +86,7 @@ def _basis() -> dict:
     """今日・選べる範囲（`first`・`last`）・選んだ基準日（範囲の外なら None）・期間のページの終わり。1 リクエストで 1 回だけ数える。"""
     if "basis" not in g:
         today = _today()
-        first, last = _build(period_end.bounds, today)
+        first, last = settings.run(period_end.bounds, today)
         asof = windows.pick(
             calendar.parse_day(request.args.get("asof", "")), first, last
         )
@@ -130,7 +120,7 @@ def _calendar(period: Optional[windows.Period] = None) -> Optional[dict]:
         return None
     start = None if period is None else period.start
     prev = None if period is None else period.start - 1
-    return _build(period_end.calendar, basis, start, prev)
+    return settings.run(period_end.calendar, basis, start, prev)
 
 
 def _period_key() -> str:
@@ -147,7 +137,7 @@ def _period() -> windows.Period:
 @admin.route("/", strict_slashes=False)
 def index() -> str:
     period = _period()
-    data = _build(overview.build, period, _basis()["today"])
+    data = settings.run(overview.build, period, _basis()["today"])
     screen = view.build(overview_screen.SCREEN, data)
     return render_template(
         "overview.html",
@@ -155,14 +145,14 @@ def index() -> str:
         period=period.key,
         span=period,
         cal=_calendar(period),
-        summary=_build(summary_report.latest),
+        summary=settings.run(summary_report.latest),
     )
 
 
 @admin.route("/cost")
 def cost_view() -> str:
     period = _period()
-    screen = view.build(cost_screen.SCREEN, _build(cost_page.build, period))
+    screen = view.build(cost_screen.SCREEN, settings.run(cost_page.build, period))
     return render_template(
         "cost.html",
         view=screen,
@@ -179,7 +169,7 @@ def _today() -> int:
 @admin.route("/policy")
 def policy_view() -> str:
     today = _basis()["today"]
-    data = _build(policy.build, today)
+    data = settings.run(policy.build, today)
     screen = view.build(policy_screen.SCREEN, data)
     return render_template("policy.html", view=screen, at=today)
 
@@ -187,14 +177,14 @@ def policy_view() -> str:
 @admin.route("/collect")
 def collect_view() -> str:
     today = _basis()["today"]
-    screen = view.build(collect_screen.SCREEN, _build(collect.build, today))
+    screen = view.build(collect_screen.SCREEN, settings.run(collect.build, today))
     return render_template("collect.html", view=screen, at=today)
 
 
 @admin.route("/effect")
 def effect_view() -> str:
     end = _basis()["end"]
-    data = _build(effect.build, end)
+    data = settings.run(effect.build, end)
     screen = view.build(effect_screen.SCREEN, data)
     return render_template("effect.html", view=screen, at=end, cal=_calendar())
 
@@ -202,7 +192,7 @@ def effect_view() -> str:
 @admin.route("/activity")
 def activity_view() -> str:
     period = _period()
-    screen = view.build(activity_screen.SCREEN, _build(activity.build, period))
+    screen = view.build(activity_screen.SCREEN, settings.run(activity.build, period))
     return render_template(
         "activity.html",
         view=screen,
