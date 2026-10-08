@@ -3,19 +3,12 @@
 from ccgov.metrics.windows import around, policy_window_start
 from ccgov.store import db
 
-_LATEST_VALUES_SQL = (
-    "SELECT user_email, host, prev_value, day, ts FROM ("
-    "  SELECT user_email, host, prev_value, day, ts,"
-    "         ROW_NUMBER() OVER (PARTITION BY user_email, host ORDER BY ts DESC) AS rn"
-    "    FROM policy_state WHERE key_name = ? AND day >= ?"
-    ") t WHERE rn = 1"
-)
-
 
 def latest_values(conn, today: int, key_name: str) -> list:
     """`POLICY_DAYS` 日の集計期間で、端末ごとの `ts` が最新の 1 行を返す。"""
-    cur = db.execute(conn, _LATEST_VALUES_SQL, (key_name, policy_window_start(today)))
-    return cur.fetchall()
+    return _latest_per_terminal(
+        conn, today, "policy_state", "prev_value, day, ts", "key_name = ?", (key_name,)
+    )
 
 
 def csv_imported(conn) -> bool:
