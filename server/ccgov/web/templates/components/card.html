@@ -19,7 +19,10 @@
 {% macro card_groups(groups) -%}
 <div class="kpis">
 {%- for g in groups %}
-  <section class="group" aria-label="{{ g.label }}">
+  {%- if g.packed and not (loop.previtem and loop.previtem.packed) %}
+  <div class="group-row">
+  {%- endif %}
+  <section class="group{{ ' packed' if g.packed }}" aria-label="{{ g.label }}"{% if g.packed %} style="grid-column: span {{ g.span }}; --cols: {{ g.span }}"{% endif %}>
     <h2 class="glabel">{{ g.label }}<span>{{ g.scope }}</span></h2>
     {%- if g.cards %}
     <div class="cards">{% for c in g.cards %}{{ card(c) }}{% endfor %}</div>
@@ -28,6 +31,9 @@
     <p class="gnote">{{ g.note }}</p>
     {%- endif %}
   </section>
+  {%- if g.packed and not (loop.nextitem and loop.nextitem.packed) %}
+  </div>
+  {%- endif %}
 {%- endfor %}
 </div>
 {%- endmacro %}

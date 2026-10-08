@@ -122,6 +122,9 @@ class Tab:
 
 @dataclass(frozen=True)
 class Screen:
+    """`packed` は、続けて並ぶ小さな群（カードの幅の合計が 4 以下）の id。続く群を 1 行に並べる。"""
+
     groups: tuple
     cards: tuple
     tabs: tuple
+    packed: tuple = ()

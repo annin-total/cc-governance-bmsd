@@ -82,12 +82,15 @@ def build(screen: Screen, data: dict) -> dict:
         missing = _missing(screen, g) if long else []
         note = W.GROUP_NOT_LONG.get(g, L.NOT_LONG_CARDS)
         scope = W.GROUP_LONG.get(g, W.LONG_SCOPE) if long else W.GROUP[g][1]
+        shown = [_card(c, ctx) for c in cards if c]
         groups.append(
             {
                 "id": g,
+                "packed": g in screen.packed,
+                "span": max(sum(2 if c["wide"] else 1 for c in shown), 1),
                 "label": W.GROUP[g][0],
                 "scope": text.fill(scope, ctx),
-                "cards": [_card(c, ctx) for c in cards if c],
+                "cards": shown,
                 "note": note.format(names=L.LIST_SEP.join(missing)) if missing else "",
             }
         )

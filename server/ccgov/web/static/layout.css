@@ -12,7 +12,7 @@ nav { display: flex; gap: var(--sp-2xs); }
 nav a { color: var(--ink-2); text-decoration: none; padding: var(--sp-2xs) var(--sp-m); border-radius: var(--r-m); white-space: nowrap; }
 nav a:hover { color: var(--accent); }
 nav a[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 700; }
-.asof { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.asof { color: var(--ink-2); font-size: var(--fs-label); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bar-end { margin-left: auto; display: flex; align-items: center; gap: var(--sp-l); }
 .bar-end a { color: var(--ink-2); text-decoration: none; padding: var(--sp-2xs) var(--sp-m); border-radius: var(--r-m); white-space: nowrap; }
 .bar-end a:hover { color: var(--accent); }
@@ -29,6 +29,11 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 .gnote { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
 .cards + .gnote { margin-top: var(--sp-s); }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-min-w), 1fr)); gap: var(--sp-m); }
+.group-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-m); }
+.group.packed { display: flex; flex-direction: column; }
+.group.packed .cards { flex: 1; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
+.group.packed .glabel { min-height: calc(var(--fs-label) * var(--lh) + 2 * var(--fs-sm) * var(--lh)); }
+.group.packed .glabel span { display: block; margin: 0; }
 .detail { margin-top: var(--sp-3xl); scroll-margin-top: calc(var(--bar-h) + var(--sp-m)); }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4xl); }
 .foot { padding-top: var(--sp-3xl); padding-bottom: var(--sp-4xl); font-size: var(--fs-sm); color: var(--muted); }
@@ -40,6 +45,8 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
   .bar { flex-wrap: wrap; height: auto; padding: var(--sp-m) 0; gap: var(--sp-s) var(--sp-l); }
   .page-head, .head-act { flex-wrap: wrap; }
   .card.wide { grid-column: auto; }
+  .group-row { grid-template-columns: 1fr; }
+  .group.packed { grid-column: auto !important; }
   .two { grid-template-columns: 1fr; }
   .tabs { grid-auto-flow: row; }
 }

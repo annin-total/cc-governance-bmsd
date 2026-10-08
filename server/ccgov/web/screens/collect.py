@@ -23,7 +23,7 @@ CARDS = (
     Card("went_silent", "rec7", "user_delivery", "{silent[now]:num}", "{silent[diff]:signed}", chip="silent", better=DOWN),
     Card("plugin_errors", "rec7", "errors", "{errors[total]:num}", state="errors[state]",
          viz=Viz("stack", "errors[stages]", tone="warn", terms=L.STAGE)),
-    Card("null_rate", "rec7", "health", "{nulls[rate]:dec1}", state="nulls[state]", chip="null",
+    Card("null_rate", "rec7", "health", "{nulls[rate]:dec1}", state="nulls[state]", chip="null", wide=True,
          viz=Viz("rates", "nulls[fields]", "rate", terms=L.HEALTH_ITEM)),
     Card("reconciliation", "match7", "health", "{reconciliation[rate]:dec1}", chip="recv",
          viz=Viz("meter", "reconciliation[numerator]", den="reconciliation[denominator]")),
@@ -48,4 +48,4 @@ TABS = (
 )
 # fmt: on
 
-SCREEN = Screen(GROUPS, CARDS, TABS)
+SCREEN = Screen(GROUPS, CARDS, TABS, packed=("match7", "now"))
