@@ -13,6 +13,11 @@ def rate_row(numerator: int, denominator: int) -> tuple:
     return numerator, denominator, rate(numerator, denominator)
 
 
+def per(value: Optional[float], count: int) -> Optional[float]:
+    """1 件あたりの値。`value` が None か `count` が 0 なら None。"""
+    return None if value is None or not count else value / count
+
+
 def delta(recent: int, previous: int) -> int:
     """直近から前の期間を引いた差。"""
     return recent - previous

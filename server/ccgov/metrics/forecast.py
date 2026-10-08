@@ -7,10 +7,7 @@ from typing import Optional
 
 from ccgov.constants import FORECAST_MIN_BUSINESS_DAYS
 from ccgov.metrics import business_days as bd
-
-
-def _ratio(value: float, count: int) -> Optional[float]:
-    return value / count if count else None
+from ccgov.metrics import rates
 
 
 def month(
@@ -25,7 +22,7 @@ def month(
         if as_of is None
         else sum(totals.get(d, 0) for d in range(first, as_of + 1))
     )
-    per_bd = None if actual is None else _ratio(actual, len(done))
+    per_bd = None if actual is None else rates.per(actual, len(done))
     enough = len(done) >= FORECAST_MIN_BUSINESS_DAYS
     rows = _business_rows(
         totals, first, days, target, done, as_of, per_bd if enough else None

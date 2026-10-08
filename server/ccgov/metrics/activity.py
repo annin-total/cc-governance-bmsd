@@ -31,10 +31,6 @@ def collapse(rows: list, w: Period) -> tuple:
     return [(e, d, *v) for (e, d), v in days.items()], sessions
 
 
-def _per(value: float, count: int) -> Optional[float]:
-    return value / count if count else None
-
-
 def _change(now: Optional[float], prev: Optional[float]) -> Optional[float]:
     return None if now is None or prev is None else series.change_pct(now, prev)
 
@@ -49,10 +45,10 @@ def _window(rows: list, sessions: int) -> dict:
     person_days = len(rows)
     return {
         "users": len(users),
-        "days": _per(person_days, len(users)),
-        "prompts": _per(sum(r[3] for r in rows), person_days),
+        "days": rates.per(person_days, len(users)),
+        "prompts": rates.per(sum(r[3] for r in rows), person_days),
         "sessions": sessions,
-        "sessions_per_day": _per(sessions, person_days),
+        "sessions_per_day": rates.per(sessions, person_days),
     }
 
 
