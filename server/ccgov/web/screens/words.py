@@ -38,7 +38,7 @@ GROUP_LONG = {
 _SHORT = "・".join(n for n in PERIOD_NAMES.values() if n != LONG_NAME)
 GROUP_NOT_LONG = {"billed": "{names}は、" + _SHORT + "の期間で基準を判定するため " + LONG_NAME + "では出しません"}
 # 群の下の固定の注記（日数の期間だけ。12 か月では出さないカードの注記を出す）
-GROUP_NOTE = {"billed": "基準超えは区分ごとの注意以上の人数（基準の金額はカードの中）· 使い始めた利用者は利用明細に初めてコストが出た人"}
+GROUP_NOTE = {"billed": "基準超えは区分ごとの注意以上の人数（基準の金額はカードの中）"}
 # 基準を超えた利用者: 基準と区分の名前、カードの 2 つの数字の下の行
 OVER_BASIS = {"day": "日次", "week": "週次", "month": "月次"}
 OVER_KIND = {"new": "新規", "kept": "継続", "left": "離脱"}

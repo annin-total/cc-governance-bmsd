@@ -47,8 +47,7 @@ def test_users_group_note_in_7_and_28_days_not_in_12_months(cost_client):
     for query in ("", "?period=28"):
         html = cost_html(cost_client, query)
         assert (
-            '<p class="gnote">基準超えは区分ごとの注意以上の人数（基準の金額はカードの中）'
-            "· 使い始めた利用者は利用明細に初めてコストが出た人</p>"
+            '<p class="gnote">基準超えは区分ごとの注意以上の人数（基準の金額はカードの中）</p>'
         ) in html
     assert "基準超えは区分ごと" not in cost_html(cost_client, "?period=12m")
 
