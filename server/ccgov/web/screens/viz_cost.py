@@ -27,7 +27,8 @@ def build(viz: Viz, words: dict, ctx: dict) -> Optional[dict]:
     return _bands(src, words)
 
 
-def _shown(value, fmt: str, words: dict) -> str:
+def shown(value, fmt: str, words: dict) -> str:
+    """値を `fmt` で整形し、`words` に単位があれば添える。"""
     unit = words.get("unit", "")
     return text.FORMATS[fmt](value) + (f" {unit}" if unit else "")
 
@@ -59,7 +60,7 @@ def _cols(viz: Viz, rows: list, words: dict, ctx: dict) -> Optional[dict]:
     if not geo:
         return None
     for bar, row, value in zip(geo["bars"], rows, values):
-        bar["tip"] = f"{_head(row, long)}  {_shown(value, viz.fmt, words)}"
+        bar["tip"] = f"{_head(row, long)}  {shown(value, viz.fmt, words)}"
     return {"kind": "cols", "geo": geo}
 
 

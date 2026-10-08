@@ -183,9 +183,7 @@ def _caps(words: dict, ctx: dict) -> tuple:
 
 
 def _tip(row: dict, value: float, fmt: str, words: dict) -> str:
-    unit = words.get("unit", "")
-    shown = text.FORMATS[fmt](value) + (f" {unit}" if unit else "")
-    return text.fill(L.SPARK_TIP, {**row, "value": shown})
+    return text.fill(L.SPARK_TIP, {**row, "value": viz_cost.shown(value, fmt, words)})
 
 
 def _viz(card: Card, words: dict, ctx: dict) -> Optional[dict]:
