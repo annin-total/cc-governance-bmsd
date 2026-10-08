@@ -6,6 +6,11 @@ from ccgov.store import db
 
 _TOOL_EVENTS = "hook_event IN ('PostToolUse', 'PostToolUseFailure')"
 _IN_WINDOW = "CASE WHEN day BETWEEN ? AND ? THEN {} END"
+SESSION_SIZE = (
+    "MAX(CASE WHEN hook_event = 'Stop' THEN context_tokens END),"
+    " MAX(CASE WHEN hook_event = 'PreCompact' AND compact_trigger = 'auto' THEN 1 ELSE 0 END)"
+)
+SESSION_EVENTS = "hook_event IN ('Stop', 'PreCompact') AND session_id IS NOT NULL"
 
 
 def _rows(conn, sql: str, params: tuple) -> list:
@@ -69,10 +74,8 @@ def sessions(conn, w: Period) -> list:
     side = "CASE WHEN day >= ? THEN 'recent' ELSE 'prev' END"
     return _rows(
         conn,
-        f"SELECT session_id, user_email, {side},"
-        " MAX(CASE WHEN hook_event = 'Stop' THEN context_tokens END),"
-        " MAX(CASE WHEN hook_event = 'PreCompact' AND compact_trigger = 'auto' THEN 1 ELSE 0 END)"
-        " FROM events WHERE hook_event IN ('Stop', 'PreCompact') AND session_id IS NOT NULL"
+        f"SELECT session_id, user_email, {side}, {SESSION_SIZE}"
+        f" FROM events WHERE {SESSION_EVENTS}"
         f" AND day BETWEEN ? AND ? GROUP BY session_id, user_email, {side}",
         (w.start, w.prev_start, w.end, w.start),
     )

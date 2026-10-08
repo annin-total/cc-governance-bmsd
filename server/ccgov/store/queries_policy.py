@@ -2,6 +2,7 @@
 
 from ccgov.metrics.windows import around, policy_window_start
 from ccgov.store import db
+from ccgov.store.queries_activity import SESSION_EVENTS, SESSION_SIZE
 
 
 def latest_values(conn, today: int, key_name: str) -> list:
@@ -108,10 +109,8 @@ def cost_by_user_day(conn, provider: str) -> dict:
 def session_sizes(conn, start_dates: dict, end: int) -> list:
     """利用者ごとに準拠開始日の前後（`end` まで）のセッションの `(準拠開始日, 最初の日, 応答終了の最大, 自動コンパクトの有無)`。"""
     sql = db.q(
-        "SELECT MIN(day), MAX(CASE WHEN hook_event = 'Stop' THEN context_tokens END),"
-        " MAX(CASE WHEN hook_event = 'PreCompact' AND compact_trigger = 'auto' THEN 1 ELSE 0 END)"
-        " FROM events WHERE hook_event IN ('Stop', 'PreCompact') AND user_email = ?"
-        "   AND session_id IS NOT NULL AND day BETWEEN ? AND ? GROUP BY session_id"
+        f"SELECT MIN(day), {SESSION_SIZE} FROM events WHERE {SESSION_EVENTS}"
+        " AND user_email = ? AND day BETWEEN ? AND ? GROUP BY session_id"
     )
     rows = []
     cur = conn.cursor()
