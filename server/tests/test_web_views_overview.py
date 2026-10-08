@@ -87,17 +87,13 @@ def test_cards_and_their_order_follow_the_period(today_client, period):
 
 
 @pytest.mark.parametrize("period", ["7", "28", "12m"])
-def test_no_plugin_errors_no_tabs_no_group_notes(today_client, period):
+def test_only_the_main_heading_without_a_summary(today_client, period):
+    """見出しはサマリーのタイトルと「主な指標」の 2 つだけ。サマリーが無ければ「主な指標」だけで、空の枠も出さない。
+    プラグインのエラー・タブ・群の注記も出さない。"""
     html = _html(today_client, f"?period={period}")
     assert "プラグインのエラー" not in html
     assert "data-tabs" not in html and "詳しい一覧" not in html
     assert 'class="gnote"' not in html and "出しません" not in html
-
-
-@pytest.mark.parametrize("period", ["7", "28", "12m"])
-def test_only_the_main_heading_without_a_summary(today_client, period):
-    """見出しはサマリーのタイトルと「主な指標」の 2 つだけ。サマリーが無ければ「主な指標」だけで、空の枠も出さない。"""
-    html = _html(today_client, f"?period={period}")
     assert re.findall(r"<h2\b[^>]*>(.*?)</h2>", html, re.DOTALL) == ["主な指標"]
 
 
