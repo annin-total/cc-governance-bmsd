@@ -94,27 +94,44 @@ def _use(key, count, total):
     }
 
 
-def test_mode_mix_keeps_the_top_rows_in_count_order():
+ORDER = ("default", "plan", "acceptEdits", "auto", "bypassPermissions")
+
+
+def test_mode_mix_rows_follow_the_fixed_order_not_the_counts():
     rows = [
-        _use("plan", 1, 10),
-        _use("auto", 5, 10),
-        _use("default", 3, 10),
-        _use("dontAsk", 1, 10),
+        _use("bypassPermissions", 2, 20),
+        _use("auto", 9, 20),
+        _use("default", 1, 20),
+        _use("dontAsk", 8, 20),
     ]
-    mix = activity.mode_mix(rows, 3)
-    assert [r["value"] for r in mix["rows"]] == ["auto", "default", "dontAsk"]
-    assert (mix["total"], mix["head"]) == (10, {"value": "auto", "share": 50.0})
+    mix = activity.mode_mix(rows, ORDER)
+    assert [r["value"] for r in mix["rows"]] == list(ORDER)
+    assert mix["rows"][3] == {"value": "auto", "count": 9, "share": 45.0}
 
 
-def test_mode_mix_shares_are_of_all_records_so_the_bars_may_not_reach_100():
-    rows = [_use(k, 1, 6) for k in "abcdef"]
-    mix = activity.mode_mix(rows, 4)
-    assert len(mix["rows"]) == 4
-    assert sum(r["share"] for r in mix["rows"]) < 100
+def test_mode_mix_keeps_modes_without_records_at_zero_and_counts_the_others_in_total():
+    rows = [_use("default", 3, 10), _use("dontAsk", 7, 10)]
+    mix = activity.mode_mix(rows, ORDER)
+    zero = {"count": 0, "share": 0.0}
+    assert mix["rows"][1] == {"value": "plan", **zero}
+    assert mix["total"] == 10
+    assert "dontAsk" not in [r["value"] for r in mix["rows"]]
+    assert mix["bypass"] == zero
 
 
-def test_mode_mix_without_records_has_no_head():
-    assert activity.mode_mix([], 4) == {"rows": [], "total": 0, "head": None}
+def test_mode_mix_bypass_is_its_share_of_all_mode_records():
+    rows = [_use("bypassPermissions", 908, 3723), _use("auto", 2815, 3723)]
+    mix = activity.mode_mix(rows, ORDER)
+    assert mix["bypass"] == {"count": 908, "share": 24.4}
+    assert mix["total"] == 3723
+
+
+def test_mode_mix_without_records_has_no_rows_and_no_share():
+    assert activity.mode_mix([], ORDER) == {
+        "rows": [],
+        "total": 0,
+        "bypass": {"count": 0, "share": None},
+    }
 
 
 def test_user_rows_compare_prompts_and_take_the_share_of_bypass_records():

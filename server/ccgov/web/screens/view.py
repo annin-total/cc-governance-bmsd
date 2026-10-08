@@ -28,7 +28,6 @@ CONSTANTS = {
         "NULL_RATE_HIGH",
         "EVENT_STUDY_SPAN",
         "CONTEXT_BIN",
-        "MODE_BARS",
         "REFERENCE_KEY",
         "REFERENCE_VALUE",
         "EFFECT_PROVIDER",

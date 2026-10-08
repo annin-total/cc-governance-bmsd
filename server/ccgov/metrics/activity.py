@@ -6,6 +6,7 @@
 
 from typing import Optional
 
+from ccgov.constants import BYPASS_MODE
 from ccgov.metrics import rates, series
 from ccgov.metrics.windows import Period
 
@@ -92,20 +93,26 @@ def frequency(days: list, sessions: dict, w: Period) -> dict:
     }  # fmt: skip
 
 
-def mode_mix(usage: list, limit: int) -> dict:
-    """権限モードの記録の件数の内訳。`rows` は件数の多い上位 `limit` 件、`head` は最多の値と割合。
+def mode_mix(usage: list, order: tuple) -> dict:
+    """権限モードの記録の件数の内訳。`rows` は `order` の値を並べた行（記録の無い値は 0 件）、`bypass` は確認なしの件数と割合。
 
-    `usage` は `reports.activity.usage` の権限モードの行。割合は全体に対する割合で、上位だけの合計は 100% にならないことがある。
+    `usage` は `reports.activity.usage` の権限モードの行。割合は記録の全件に対する割合で、`order` に無い値（don't ask など）も全件に入る。
     """
-    ranked = sorted(usage, key=lambda r: (-r["count"], r["value"]))
-    head = (
-        {"value": ranked[0]["value"], "share": ranked[0]["share"]} if ranked else None
-    )
-    return {
-        "rows": ranked[:limit],
-        "total": sum(r["count"] for r in ranked),
-        "head": head,
+    count = {r["value"]: r["count"] for r in usage}
+    total = sum(count.values())
+    rows = [
+        {
+            "value": v,
+            "count": count.get(v, 0),
+            "share": rates.rate(count.get(v, 0), total),
+        }
+        for v in order
+    ]
+    bypass = {
+        "count": count.get(BYPASS_MODE, 0),
+        "share": rates.rate(count.get(BYPASS_MODE, 0), total),
     }
+    return {"rows": rows if total else [], "total": total, "bypass": bypass}
 
 
 def user_rows(days: list, sessions: dict, sizes: dict, w: Period) -> list:

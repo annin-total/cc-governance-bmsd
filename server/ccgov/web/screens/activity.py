@@ -34,7 +34,7 @@ CARDS = (
          viz=Viz("sizes", "size[rows]", terms=W.PAIR)),
     Card("autocompact_sessions", "session", "session_size", "{size[auto_share]:dec1}", "{size[auto_diff]:signed_pt}",
          viz=Viz("meter", "size[auto]", den="size[sessions]")),
-    Card("permission_modes", "session", "usage_modes", "{modes[head]:mode_head}", chip="permission_mode",
+    Card("bypass_mode", "session", "usage_modes", "{modes[bypass][share]:dec1}", chip="permission_mode",
          viz=Viz("mix", "modes[rows]", "share", terms=L.USAGE_VALUE["permission_mode"])),
 )
 

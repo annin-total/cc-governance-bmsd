@@ -34,8 +34,9 @@ CARD = {
                              "sub": "{size[auto]:num} / {size[sessions]:num} セッション · 前 {size[prev_auto_share]:pct}",
                              "tip": "自動コンパクトに達した  {size[auto]:num} / {size[sessions]:num} セッション",
                              "cap": ("自動コンパクト（PreCompact の auto）が 1 回でもあったセッション",)},
-    "permission_modes": {"label": "権限モードの内訳", "unit": "%", "sub": "{modes[total]:num} 件", "row": ("{share:pct}",),
-                         "cap": ("上位 {MODE_BARS} つ · 割合は全体のうち",)},
+    "bypass_mode": {"label": "Bypass 権限モードの使用", "unit": "%",
+                    "sub": "{modes[bypass][count]:num} / {modes[total]:num} 件 · 権限モードの内訳", "row": ("{share:pct}",),
+                    "cap": ("割合は権限モードの記録のうち",)},
 }
 
 _USERS_HINT = "{freq[users]:num} 人 · 記録"
@@ -44,7 +45,7 @@ TAB = {
                  "scope": "直近 {period[days]} 日 · 記録を送った利用者 · 利用日数の多い順 · 差と増減率は前の {period[days]} 日と比べた指示 · "
                           "セッションの大きさはセッションごとの最大の中央",
                  "search": "氏名・メールで絞り込み",
-                 "note": "Bypass Permissions 使用率は、権限モードの記録のうち bypassPermissions の割合です。セッションの大きさと自動コンパクトは、"
+                 "note": "bypass permissions 使用率は、権限モードの記録のうち bypassPermissions の割合です。セッションの大きさと自動コンパクトは、"
                          "応答終了の記録があるセッションだけで数えます。"},
     "user_calls": {"label": "利用者ごとの呼び出し", "hint": _USERS_HINT, "title": "利用者ごとの呼び出し", "unit": "人",
                    "scope": "直近 {period[days]} 日 · 記録を送った利用者 · よく使う名前は回数の多い順に 3 つ",
@@ -71,7 +72,7 @@ TAB = {
 
 COL = {
     "use_days": "利用日数", "use_sessions": "セッション", "prompts": "指示", "prompts_diff": "前との差", "prompts_rate": "増減率",
-    "size": "セッションの大きさ", "auto_share": "自動コンパクトに達した割合", "bypass_share": "Bypass Permissions 使用率", "use_last": "最終日",
+    "size": "セッションの大きさ", "auto_share": "自動コンパクトに達した割合", "bypass_share": "bypass permissions 使用率", "use_last": "最終日",
     "skill_n": "スキル", "skill_top": "よく使うスキル", "command_n": "コマンド", "command_top": "よく使うコマンド",
     "external_n": "外部ツール", "external_top": "よく使う外部ツール", "agent_n": "サブエージェントの起動",
     "call_kind": "種類", "call_name": "名前", "prev_n": "前の件数", "prev_share": "前の割合", "recent_n": "直近の件数",

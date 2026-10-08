@@ -3,7 +3,7 @@
 12 か月では何も数えない（すべて記録から数える項目のため）。
 """
 
-from ccgov.constants import MODE_BARS
+from ccgov.constants import MODE_ROWS
 from ccgov.metrics import activity, calls, rates, session_size
 from ccgov.metrics import roster as names
 from ccgov.metrics.windows import Period
@@ -52,7 +52,7 @@ def build(conn, period: Period) -> dict:
         "calls": called,
         "size": size,
         "modes": activity.mode_mix(
-            [r for r in used if r["field"] == _MODE_FIELD], MODE_BARS
+            [r for r in used if r["field"] == _MODE_FIELD], MODE_ROWS
         ),
         "user_use": names.named(people, users),
         "user_calls": names.named(people, _user_calls(users, called["per_user"])),
