@@ -1,0 +1,203 @@
+{# 小さなグラフ。座標は charts.py が計算済み。色はクラスで指定し、直値を書かない。 #}
+{% from "components/values.html" import parts %}
+{% from "components/marks.html" import mark %}
+{% macro caps(parts) -%}
+<span class="cap">{% for p in parts %}<span>{{ p }}</span>{% endfor %}</span>
+{%- endmacro %}
+
+{% macro hbar(pct, tone="") -%}
+<span class="hbar {{ tone }}"><i style="width: {{ pct|round(1) }}%"></i></span>
+{%- endmacro %}
+
+{% macro spark(g) -%}
+<svg class="spark" viewBox="0 0 {{ g.w }} {{ g.h }}" preserveAspectRatio="none" aria-hidden="true">
+  <rect class="spark-shade" x="{{ g.shade_x }}" y="0" width="{{ g.w - g.shade_x }}" height="{{ g.h }}"/>
+  <path class="spark-area" d="{{ g.area }}"/>
+  <polyline class="spark-old" points="{{ g.old }}" vector-effect="non-scaling-stroke"/>
+  <polyline class="spark-new" points="{{ g.new }}" vector-effect="non-scaling-stroke"/>
+  <circle class="spark-dot" cx="{{ g.last[0] }}" cy="{{ g.last[1] }}" r="3"/>
+  <line class="spark-guide" x1="0" x2="0" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>
+  {%- for h in g.hits %}
+  <rect class="hit" x="{{ h.x }}" y="0" width="{{ h.w }}" height="{{ g.h }}" data-tip="{{ h.tip }}" data-gx="{{ h.gx }}"><title>{{ h.tip }}</title></rect>
+  {%- endfor %}
+</svg>
+{%- endmacro %}
+
+{# 下段のグラフの 1 本分。data-link で表の行と結び、当たり判定の透明な面を敷く（app.js が連動させる） #}
+{% macro col(b, h) -%}
+<g class="col{{ ' is-partial' if b.dim }}" data-link="{{ b.key }}"><rect class="hit" x="{{ b.hit_x }}" y="0" width="{{ b.hit_w }}" height="{{ h }}"/>{{ caller() }}</g>
+{%- endmacro %}
+
+{% macro hist_segs(g, b) -%}
+{%- for s in b.segs %}<rect class="{{ 'bar-hi' if loop.last else 'bar-old' }}" x="{{ s.x }}" y="{{ s.y }}" width="{{ g.bw }}" height="{{ s.h }}"/>{% endfor -%}
+{%- endmacro %}
+
+{# 当たり判定の面。値のツールチップ（data-tip）と、JS が無いときの title を持つ #}
+{% macro hits(cols, h) -%}
+{%- for c in cols %}<rect class="hit" x="{{ c.hit_x }}" y="0" width="{{ c.hit_w }}" height="{{ h }}" data-tip="{{ c.tip }}" data-gx="{{ c.gx if c.gx is defined else c.cx }}"><title>{{ c.tip }}</title></rect>{% endfor -%}
+{%- endmacro %}
+
+{# 縦棒（前は薄く、直近は濃く。基準線があれば点線で重ね、下回る直近の棒は淡くする） #}
+{% macro cols(v) -%}
+{%- set g = v.geo -%}
+<svg class="spark" viewBox="0 0 {{ g.w }} {{ g.h }}" preserveAspectRatio="none" aria-hidden="true">
+  {%- for b in g.bars %}<rect class="{{ b.cls }}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}"/>{% endfor %}
+  {%- if g.avg_y is not none %}<line class="avg" x1="0" x2="{{ g.w }}" y1="{{ g.avg_y }}" y2="{{ g.avg_y }}" vector-effect="non-scaling-stroke"/>{% endif %}
+  <line class="spark-guide" x1="0" x2="0" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>
+  {{ hits(g.bars, g.h) }}
+</svg>
+{%- endmacro %}
+
+{# 分布（区間ごとの人数の棒）と、平均の実線・中央値の点線 #}
+{% macro dist(v) -%}
+{%- set g = v.geo -%}
+<svg class="spark" viewBox="0 0 {{ g.w }} {{ g.h }}" preserveAspectRatio="none" aria-hidden="true">
+  {%- for b in g.bars %}<rect class="{{ b.cls }}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}"/>{% endfor %}
+  {%- if g.mean_x is not none %}<line class="mean" x1="{{ g.mean_x }}" x2="{{ g.mean_x }}" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>{% endif %}
+  {%- if g.median_x is not none %}<line class="median" x1="{{ g.median_x }}" x2="{{ g.median_x }}" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>{% endif %}
+  <line class="spark-guide" x1="0" x2="0" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>
+  {{ hits(g.bars, g.h) }}
+</svg>
+{%- endmacro %}
+
+{# 月末の見込みのカード: 今月の累積・見込みの破線・前月の累積（薄い線） #}
+{% macro cum_card(v) -%}
+{%- set g = v.geo -%}
+<svg class="spark cum-card" viewBox="0 0 {{ g.w }} {{ g.h }}" preserveAspectRatio="none" aria-hidden="true">
+  {%- if g.prev %}<polyline class="fc-cum-prev" points="{{ g.prev }}" vector-effect="non-scaling-stroke"/>{% endif %}
+  {%- if g.fc %}<polyline class="fc-cum-fc" points="{{ g.fc }}" vector-effect="non-scaling-stroke"/>{% endif %}
+  {%- if g.now %}<polyline class="fc-cum-now" points="{{ g.now }}" vector-effect="non-scaling-stroke"/>{% endif %}
+  {%- if g.last %}<circle class="spark-dot" cx="{{ g.last[0] }}" cy="{{ g.last[1] }}" r="2.5"/>{% endif %}
+  <line class="spark-guide" x1="0" x2="0" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>
+  {{ hits(g.cols, g.h) }}
+</svg>
+<span class="legend cum-card-legend"><span><i class="ln now"></i>{{ v.legend[0] }}</span><span><i class="ln fc"></i>{{ v.legend[1] }}</span><span><i class="ln prev"></i>{{ v.legend[2] }}</span></span>
+{%- endmacro %}
+
+{# 状態ごとの帯: コストと人数の 100% の帯を上下にそろえる #}
+{% macro bands(v) -%}
+<span class="bands">{% for line in v.lines %}<span class="band"><span class="band-name">{{ line.name }}</span><span class="band-bar">
+{%- for s in line.segs %}<i class="st-{{ s.cls }}" style="flex: {{ s.pct|round(1) }}" data-tip="{{ s.tip }}" title="{{ s.tip }}"></i>{% endfor %}</span></span>{% endfor %}</span>
+<span class="legend">{% for state, text in v.legend %}<span><i class="st-{{ state }}"></i>{{ text }}</span>{% endfor %}</span>
+{%- endmacro %}
+
+{# コストの多い課: 課ごとに人数の割合とコストの割合の 2 本の横棒。課の名前の前に部の色の印 #}
+{% macro secs(v) -%}
+<span class="secs"><span class="sec-row sec-head"><span></span>{% for h in v.heads %}<span>{{ h }}</span>{% endfor %}</span>
+{%- for r in v.rows %}<span class="sec-row"><span class="sec-name"><i class="{{ r.tone }}"></i>{{ r.name }}</span>
+{%- for b in r.bars %}<span class="sec-bar" data-tip="{{ b.tip }}" title="{{ b.tip }}">{{ hbar(b.pct, b.tone) }}<span class="num">{{ b.text }}</span></span>{% endfor %}</span>{% endfor %}</span>
+{%- endmacro %}
+
+{# 基準を超えた利用者: 要確認と注意の 2 つの数字と、その下の新規・離脱のチップ、注意⇄要確認の移動 #}
+{% macro over(v) -%}
+<span class="over">{% for c in v.cols %}<span class="over-col" data-state="{{ c.state }}"><span class="over-name">{{ c.name }}</span>
+<span class="over-num">{{ c.value }}<span class="u">{{ c.unit }}</span></span>{% for line in c.lines %}<span class="over-line">{{ line }}</span>{% endfor %}
+<span class="over-chips">{% for tone, text in c.chips %}<span class="change{{ ' ' ~ tone if tone }}">{{ text }}</span>{% endfor %}</span></span>{% endfor %}</span>
+<span class="over-move">{{ v.move }}</span>
+{%- endmacro %}
+
+{% macro viz(v) -%}
+{%- if v.kind == "spark" -%}{{ spark(v.geo) }}
+{%- elif v.kind == "meter" -%}<span class="meter {{ v.tone }}"{% if v.tip %} data-tip="{{ v.tip }}" title="{{ v.tip }}"{% endif %}><i style="width: {{ v.pct|round(1) }}%"></i></span>
+{%- elif v.kind == "cols" -%}{{ cols(v) }}
+{%- elif v.kind == "dist" -%}{{ dist(v) }}
+{%- elif v.kind == "cum" -%}{{ cum_card(v) }}
+{%- elif v.kind == "bands" -%}{{ bands(v) }}
+{%- elif v.kind == "over" -%}{{ over(v) }}
+{%- elif v.kind == "secs" -%}{{ secs(v) }}
+{%- elif v.kind == "pair" -%}
+{%- for label, pct, tone, tip in v.rows %}<span class="pair" data-tip="{{ tip }}" title="{{ tip }}"><span>{{ label }}</span>{{ hbar(pct, tone) }}</span>{% endfor -%}
+{%- elif v.kind == "stack" -%}
+<span class="stack">{% for p in v.parts %}<i class="{{ p.cls }}" style="flex: {{ p.value }}"></i>{% endfor %}</span>
+<span class="legend">{% for p in v.parts %}<span><i class="{{ p.cls }}"></i>{{ p.label }} {{ p.value|num }}</span>{% endfor %}</span>
+{%- elif v.kind == "sizes" -%}
+<svg class="spark" viewBox="0 0 {{ v.geo.w }} {{ v.geo.h }}" preserveAspectRatio="none" aria-hidden="true">{% for b in v.geo.bars %}{{ hist_segs(v.geo, b) }}{% endfor %}
+  <line class="spark-guide" x1="0" x2="0" y1="0" y2="{{ v.geo.h }}" vector-effect="non-scaling-stroke"/>
+  {{ hits(v.geo.bars, v.geo.h) }}</svg>
+<span class="legend">{% for name in v.legend %}<span><i class="{{ 'bar-hi' if loop.last else 'bar-old' }}"></i>{{ name }}</span>{% endfor %}</span>
+{%- elif v.kind == "rates" -%}
+<span class="rates{{ ' wide' if v.wide }}">{% for r in v.rows %}<span class="rate{{ ' marked' if r.state }}"><span>{{ r.label }}</span>{{ hbar(r.pct) }}
+{%- for right in r.right %}<span class="num{{ ' strong' if loop.last }}">{{ right }}</span>{% endfor %}{% if r.state %}{{ mark(*r.state) }}{% endif %}</span>{% endfor %}</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro bars(title, g) -%}
+<div><h3>{{ title }}</h3>
+<svg viewBox="0 0 {{ g.w }} {{ g.h }}" aria-hidden="true">
+{%- for b in g.bars %}
+  {% call col(b, g.base) %}<rect class="{{ 'bar-hi' if b.hi else 'bar-old' }}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="1.5"/>
+  {%- if g["values"] %}<text x="{{ b.cx }}" y="{{ b.y - 4 }}" text-anchor="middle">{{ b.v|num }}</text>{% endif %}
+  {%- if b.label %}<text x="{{ b.cx }}" y="{{ g.h - 4 }}" text-anchor="middle">{{ b.label }}</text>{% endif %}{% endcall %}
+{%- endfor %}
+  <line class="axis" x1="0" x2="{{ g.w }}" y1="{{ g.base }}" y2="{{ g.base }}"/>
+</svg></div>
+{%- endmacro %}
+
+{# 今月のコストの累積（今月の実績・月末までの見込みの破線・前月）。暦日では休みの日に薄い帯を敷く #}
+{% macro cum(m) -%}
+{%- set g = m.geo -%}
+<svg class="chart cum" viewBox="0 0 {{ g.w }} {{ g.h }}" aria-hidden="true">
+{%- for b in g.bands %}<rect class="off" x="{{ b.x }}" y="{{ g.top }}" width="{{ b.w }}" height="{{ g.base - g.top }}"/>{% endfor %}
+{%- for t in g.ticks %}
+  <line class="gridline" x1="{{ g.left }}" x2="{{ g.w }}" y1="{{ t.y }}" y2="{{ t.y }}"/>
+  <text x="{{ g.left - 8 }}" y="{{ t.y + 4 }}" text-anchor="end">{{ t.v|usd0 }}</text>
+{%- endfor %}
+  {%- if g.prev %}<polyline class="cum-prev" points="{{ g.prev }}"/>{% endif %}
+  {%- if g.fc %}<polyline class="cum-fc" points="{{ g.fc }}"/>{% endif %}
+  {%- if g.now %}<polyline class="cum-now" points="{{ g.now }}"/>{% endif %}
+{%- for c in g.cols %}
+  <g class="col" data-link="{{ c.key }}"><rect class="hit" x="{{ c.hit_x }}" y="0" width="{{ c.hit_w }}" height="{{ g.h }}"/>
+  <line class="guide" x1="{{ c.cx }}" x2="{{ c.cx }}" y1="{{ g.top }}" y2="{{ g.base }}"/>
+  {%- if c.prev_y is not none %}<circle class="dot-prev" cx="{{ c.cx }}" cy="{{ c.prev_y }}" r="3"/>{% endif %}
+  {%- if c.y is not none %}<circle class="{{ 'dot-now' if c.actual else 'dot-fc' }}" cx="{{ c.cx }}" cy="{{ c.y }}" r="3"/>{% endif %}
+  <text x="{{ c.cx }}" y="{{ g.h - 4 }}" text-anchor="middle">{{ c.label }}</text></g>
+{%- endfor %}
+</svg>
+<div class="legend cum-legend"><span><i class="ln now"></i>{{ m.legend[0] }}</span><span><i class="ln fc"></i>{{ m.legend[1] }}</span><span><i class="ln prev"></i>{{ m.legend[2] }}</span>
+{%- if m.off %}<span><i class="off"></i>{{ m.off }}</span>{% endif %}<span>{{ m.axis }}</span></div>
+{%- endmacro %}
+
+{% macro tab_chart(c) -%}
+{%- if c.kind == "trend" -%}
+<div class="two">{% for title, g in c.charts %}{{ bars(title, g) }}{% endfor %}</div>
+{%- elif c.kind == "cost" -%}
+{%- set g = c.geo -%}
+<svg class="chart" viewBox="0 0 {{ g.w }} {{ g.view_h or g.h }}" aria-hidden="true">
+{%- if g.shade_x is not none %}
+  <rect class="spark-shade" x="{{ g.shade_x }}" y="0" width="{{ g.w - g.shade_x }}" height="{{ g.base }}"/>
+{%- endif %}
+{%- for t in g.ticks %}
+  <line class="gridline" x1="{{ g.left }}" x2="{{ g.w }}" y1="{{ t.y }}" y2="{{ t.y }}"/>
+  <text x="{{ g.left - 8 }}" y="{{ t.y + 4 }}" text-anchor="end">{{ t.v|usd0 if c.fmt == "usd" else t.v|num }}</text>
+{%- endfor %}
+{%- for m in g.foot or [] %}
+  <line class="month-sep" x1="{{ m.x }}" x2="{{ m.x }}" y1="{{ g.base }}" y2="{{ m.sep_y }}"/>
+  <text class="month-name" x="{{ m.text_x }}" y="{{ m.name_y }}">{{ m.name }}</text>
+  <text class="month-total" x="{{ m.text_x }}" y="{{ m.value_y }}">{{ m.value }}</text>
+{%- endfor %}
+{%- for b in g.bars %}
+  {% call col(b, g.base) %}
+  {%- for s in b.segs %}<rect class="series-{{ s.series }}" x="{{ b.x }}" y="{{ s.y }}" width="{{ b.w }}" height="{{ s.h }}"/>{% endfor %}
+  {%- if b.tick %}<text x="{{ b.cx }}" y="{{ g.h - 4 }}" text-anchor="middle">{{ b.key|md }}</text>{% endif %}{% endcall %}
+{%- endfor %}
+</svg>
+<div class="legend">{% for name in c.series %}<span><i class="series-{{ loop.index0 }}"></i>{{ name }}</span>{% endfor %}
+{%- for text in c.legend %}<span>{{ text }}</span>{% endfor %}</div>
+{%- elif c.kind == "month" -%}
+{%- for m in c.modes %}
+<div data-when="{{ m.id }}">{{ cum(m) }}</div>
+{%- endfor %}
+{%- elif c.kind == "hist" -%}
+{%- set g = c.geo -%}
+<svg viewBox="0 0 {{ g.w }} {{ g.h }}" aria-hidden="true">
+{%- for t in g.ticks %}
+  <line class="gridline" x1="{{ g.left }}" x2="{{ g.w }}" y1="{{ t.y }}" y2="{{ t.y }}"/>
+  <text x="{{ g.left - 8 }}" y="{{ t.y + 4 }}" text-anchor="end">{{ t.v|round|int }}%</text>
+{%- endfor %}
+{%- for b in g.bars %}
+  {% call col(b, g.base) %}{{ hist_segs(g, b) }}<text x="{{ b.cx }}" y="{{ g.h - 4 }}" text-anchor="middle">{{ b.key|bin }}</text>{% endcall %}
+{%- endfor %}
+</svg>
+<div class="legend">{% for name in c.series %}<span><i class="{{ 'bar-hi' if loop.last else 'bar-old' }}"></i>{{ name }}</span>{% endfor %}</div>
+{%- endif -%}
+{%- endmacro %}

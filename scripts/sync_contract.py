@@ -3,7 +3,7 @@
 
 対象は契約（`contract.py`）と標準設定（`policy.py`）の 2 つで、扱いは同じである。
 正本: `plugin/hooks/<name>`（配布物。端末に同梱される）
-複製: `server/ccgov/vendor/<name>`（submodule の中。このスクリプトの生成物。直接編集しない）
+複製: `server/ccgov/vendor/<name>`（このスクリプトの生成物。直接編集しない）
 記録: `server/ccgov/vendor/<name の拡張子を .sha256 にしたもの>`（正本のハッシュ。複製と一緒にコミットする）
 
 複製は固定の生成物ヘッダ（`_header`）＋正本のバイト列そのもの、という構成を取る。
