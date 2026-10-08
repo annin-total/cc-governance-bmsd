@@ -2,7 +2,7 @@
 
 import datetime
 import math
-from typing import Any, Optional
+from typing import Any, Callable, Optional, TypeVar
 
 from ccgov.constants import CONTEXT_BIN
 
@@ -12,29 +12,21 @@ WHOLE_FROM = 1_000
 TOKEN_K, TOKEN_M, TOKEN_M_WHOLE_FROM = 1_000, 1_000_000, 10_000_000
 KB, MB = 1_000, 1_000_000
 _TOKEN_COL_M_DIGITS = 2
+_T = TypeVar("_T")
 
 
-def _to_int(value: Any) -> Optional[int]:
+def _to(value: Any, cast: Callable[[Any], _T]) -> Optional[_T]:
     if value is None:
         return None
     try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _to_float(value: Any) -> Optional[float]:
-    if value is None:
-        return None
-    try:
-        return float(value)
+        return cast(value)
     except (TypeError, ValueError):
         return None
 
 
 def day(value: Any) -> str:
     """`contract.to_day` の逆変換。JST 基準の epoch 日を `YYYY-MM-DD` にする。"""
-    day_value = _to_int(value)
+    day_value = _to(value, int)
     if day_value is None:
         return EM_DASH
     ts = day_value * _SECONDS_PER_DAY
@@ -43,7 +35,7 @@ def day(value: Any) -> str:
 
 
 def num(value: Any) -> str:
-    int_value = _to_int(value)
+    int_value = _to(value, int)
     if int_value is None:
         return EM_DASH
     return f"{int_value:,}"
@@ -61,7 +53,7 @@ def _scaled(value: float, digits: int, whole: Optional[bool]) -> str:
 
 
 def usd(value: Any, whole: Optional[bool] = None) -> str:
-    float_value = _to_float(value)
+    float_value = _to(value, float)
     if float_value is None:
         return EM_DASH
     return "$" + _scaled(float_value, 2, whole)
@@ -69,7 +61,7 @@ def usd(value: Any, whole: Optional[bool] = None) -> str:
 
 def usd_signed(value: Any, whole: Optional[bool] = None) -> str:
     """金額の増減。符号は `signed` と同じ（0 は ±、マイナスは U+2212）。"""
-    float_value = _to_float(value)
+    float_value = _to(value, float)
     if float_value is None:
         return EM_DASH
     body = "$" + _scaled(abs(float_value), 2, whole)
@@ -83,14 +75,14 @@ def usd_full(value: Any) -> str:
 
 
 def usd0(value: Any) -> str:
-    float_value = _to_float(value)
+    float_value = _to(value, float)
     if float_value is None:
         return EM_DASH
     return f"${float_value:,.0f}"
 
 
 def dec1(value: Any, whole: Optional[bool] = None) -> str:
-    float_value = _to_float(value)
+    float_value = _to(value, float)
     if float_value is None:
         return EM_DASH
     return _scaled(float_value, 1, whole)
@@ -109,7 +101,7 @@ def tok_unit(top: float) -> str:
 
 def tok(value: Any, unit: Optional[str] = None) -> str:
     """トークン数。`unit`（`tok_unit` の値）を省くと大きさで選ぶ。単位の解像度に満たない 0 でない値は `<1k` の形。"""
-    n = _to_float(value)
+    n = _to(value, float)
     if n is None:
         return EM_DASH
     if unit is None:
@@ -137,7 +129,7 @@ def _tok_auto(n: float) -> str:
 
 def signed(value: Any, digits: int = 0) -> str:
     """増減を符号付きで表記する。0 は ±、マイナスは U+2212（−）を使う。"""
-    float_value = _to_float(value)
+    float_value = _to(value, float)
     if float_value is None:
         return EM_DASH
     body = f"{abs(float_value):,.{digits}f}"
@@ -166,7 +158,7 @@ def mon(value: Any) -> str:
 
 def size(value: Any) -> str:
     """ファイルの大きさ。1 KB 未満・整数の KB・小数 1 桁の MB（1 KB = 1,000 バイト）。"""
-    n = _to_int(value)
+    n = _to(value, int)
     if n is None:
         return EM_DASH
     if _half_up(n / KB) >= KB:
@@ -175,7 +167,7 @@ def size(value: Any) -> str:
 
 
 def pct(value: Any) -> str:
-    float_value = _to_float(value)
+    float_value = _to(value, float)
     if float_value is None:
         return EM_DASH
     return f"{float_value:.1f}%"
@@ -183,7 +175,7 @@ def pct(value: Any) -> str:
 
 def bin_range(value: Any, bin_size: int = CONTEXT_BIN) -> str:
     """コンテキストトークン数のビン下限値から範囲表記を組み立てる。"""
-    int_value = _to_int(value)
+    int_value = _to(value, int)
     if int_value is None:
         return EM_DASH
     lower_k = int_value // 1000
@@ -194,7 +186,7 @@ def bin_range(value: Any, bin_size: int = CONTEXT_BIN) -> str:
 
 def rel(value: Any) -> str:
     """相対日を符号付きで表記する。マイナスは U+2212（−）を使う。"""
-    int_value = _to_int(value)
+    int_value = _to(value, int)
     if int_value is None:
         return EM_DASH
     if int_value < 0:
