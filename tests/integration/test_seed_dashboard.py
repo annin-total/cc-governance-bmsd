@@ -25,9 +25,17 @@ from ccgov.constants import (
 )
 from ccgov.metrics.health import null_rates
 from ccgov.metrics.rates import rate_row
-from ccgov.reports import assets, effect, period_end
+from ccgov.metrics.windows import period
+from ccgov.reports import effect, period_end
 from ccgov.reports import policy as policy_report
-from ccgov.store import db, queries_cost, queries_errors, queries_events, queries_policy
+from ccgov.store import (
+    db,
+    queries_activity,
+    queries_cost,
+    queries_errors,
+    queries_events,
+    queries_policy,
+)
 from ccgov.vendor import contract, policy
 from seed_dashboard import _check_rules
 from seed_dashboard_columns import RULES
@@ -95,10 +103,10 @@ def test_画面の全ての表と分布が埋まる(seeded):
     assert all(rate and rate < 100 for rate in health["null_rates"].values()), health
     for column in ("permission_mode", "effort_level", "source"):
         assert queries_events.distribution(conn, today, column), column
-    assert queries_events.skill_usage(conn, today)
-    sources = {source for _, source, *_ in queries_events.command_usage(conn, today)}
-    assert {"plugin", "userSettings"} <= sources
-    assert assets.subagent_ratio(conn, today)[0][0] > 0
+    skills, commands, tools = queries_activity.calls(conn, period("7", today))
+    assert skills
+    assert {"plugin", "userSettings"} <= {source for _, _, source, *_ in commands}
+    assert {"Agent", "Task"} & {tool for _, tool, *_ in tools}
     assert queries_cost.daily_cost(conn)
     assert rate_row(*queries_events.reconciliation_counts(conn, today))[0] > 0
 
