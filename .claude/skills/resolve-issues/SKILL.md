@@ -22,7 +22,7 @@ description: 作業中に記録した依頼外の課題（`.local/<作業名>/is
 ### 1. 対象を決める（自分で）
 
 引数で作業名を受け取ったら `.local/<作業名>/issues.md` を読む（`.local/` は本体の作業ツリーのルート。git 管理外で、worktree には無い）。
-省略されたら `.local/*/issues.md` を作成日時（macOS は `stat -f %SB`）つきで一覧にし、選択式で聞く。
+省略されたら `.local/*/issues.md` を作成日時（Python の `os.stat().st_birthtime`。Windows の Python 3.11 以前は `st_ctime` が作成日時）つきで一覧にし、選択式で聞く。
 作成日時と、本文にある記録日・基点のコミットを控える。無ければ、作成日時と本文の PR 番号で代える。
 
 ### 2. 棚卸しする
