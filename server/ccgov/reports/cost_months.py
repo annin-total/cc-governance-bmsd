@@ -12,9 +12,8 @@ from ccgov.metrics import calendar, rates
 def rows(cost_months: list, user_days: list, firsts: list, company: dict) -> list:
     """`cost_months` は `cost_weeks.cost` の暦月の行。`user_days` は `(user_email, day, コスト)`、`firsts` は `(user_email, 最初の日)`。"""
     spans = [(m["day"], m["end"]) for m in cost_months]
-    users = calendar.distinct_by_spans([(d, e) for e, d, _ in user_days], spans)
+    sets = calendar.keys_by_spans([(d, e) for e, d, _ in user_days], spans)
     new = calendar.distinct_by_spans([(d, e) for e, d in firsts], spans)
-    sets = _sets(user_days, spans)
     result = []
     for i, m in enumerate(cost_months):
         days = len(bd.business_days(m["day"], m["end"], company))
@@ -25,7 +24,7 @@ def rows(cost_months: list, user_days: list, firsts: list, company: dict) -> lis
                 "end": m["end"],
                 "partial": m["partial"],
                 "cost": m["total"],
-                "users": users[i],
+                "users": len(sets[i]),
                 "new": new[i],
                 "bd": days,
                 "per_bd": m["total"] / days if days else None,
@@ -36,16 +35,6 @@ def rows(cost_months: list, user_days: list, firsts: list, company: dict) -> lis
             }
         )
     return result
-
-
-def _sets(user_days: list, spans: list) -> list:
-    found = [set() for _ in spans]
-    for email, day, _ in user_days:
-        for i, (a, b) in enumerate(spans):
-            if a <= day <= b:
-                found[i].add(email)
-                break
-    return found
 
 
 def retention(months: list) -> dict:
