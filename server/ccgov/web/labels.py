@@ -235,7 +235,7 @@ NO_REPORT = "報告なし"
 TODAY = "今日"
 DAYS_AGO = "{} 日前"
 LATEST = "最新"
-VERSION_KIND = {"core": "Claude Code 本体", "plugin": "プラグイン"}
+VERSION_KIND = {"core": "本体", "plugin": "プラグイン"}
 BASIS = {
     "csv": f"今日までの {POLICY_DAYS} 日に利用明細（CSV）でコストがある",
     "policy": f"直近 {POLICY_DAYS} 日に設定の報告があった",

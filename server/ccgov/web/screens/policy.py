@@ -43,7 +43,8 @@ TABS = (
     Tab("versions", "versions", (
         Col("kind", "tag", terms=L.VERSION_KIND), Col("version", "version", label="versions", sort="order"),
         Col("count", "count_of", label="version_users"), Col("share", "pct"), Col("count", "bar", label="bar", sort=None, den="total"),
-    ), chips_by="kind", chips=tuple(Chip(k, v) for k, v in L.VERSION_KIND.items()), fold=_FOLD),
+    ), chips_by="kind", chips=tuple(Chip(k, v) for k, v in L.VERSION_KIND.items()), chips_all=False,
+        fold=_FOLD),
 )
 # fmt: on
 

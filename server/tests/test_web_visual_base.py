@@ -90,7 +90,7 @@ def test_chips_are_colored_without_arrows(today_client):
         html, "1 人あたりの利用日数"
     )
     collect = today_client.get(ADMIN + "/collect").get_data(as_text=True)
-    assert '<span class="change">+10</span>' in card(collect, "受信した記録")
+    assert '<span class="change">+333.3%</span>' in card(collect, "受信した記録")
     assert "▲" not in html and "▼" not in html
 
 

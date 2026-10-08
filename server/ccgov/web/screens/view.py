@@ -81,6 +81,7 @@ def build(screen: Screen, data: dict) -> dict:
         cards = [pick(c, long, days) for c in screen.cards if c.group == g]
         missing = _missing(screen, g) if long else []
         note = W.GROUP_NOT_LONG.get(g, L.NOT_LONG_CARDS)
+        fixed = "" if long else W.GROUP_NOTE.get(g, "")
         scope = W.GROUP_LONG.get(g, W.LONG_SCOPE) if long else W.GROUP[g][1]
         shown = [_card(c, ctx) for c in cards if c]
         groups.append(
@@ -91,7 +92,9 @@ def build(screen: Screen, data: dict) -> dict:
                 "label": W.GROUP[g][0],
                 "scope": text.fill(scope, ctx),
                 "cards": shown,
-                "note": note.format(names=L.LIST_SEP.join(missing)) if missing else "",
+                "note": note.format(names=L.LIST_SEP.join(missing))
+                if missing
+                else fixed,
             }
         )
     tabs = [

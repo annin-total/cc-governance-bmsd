@@ -31,7 +31,8 @@
 {%- endmacro %}
 
 {% macro top(v) -%}
-{%- for t in v %}{% if t.via == "mcp" %}{{ L.MCP_NAME.format(t.key) }}{% else %}{{ t.key }}{% endif %} {{ sub(t.calls|num) }}{% if not loop.last %}{{ sub(" · ") }}{% endif %}{% endfor -%}
+{%- for t in v %}{% if t.via == "mcp" %}{{ L.MCP_NAME.format(t.key) }}{% else %}{{ t.key }}{% endif %} {{ sub(t.calls|num) }}{% if not loop.last %}<br>
+{% endif %}{% endfor -%}
 {%- endmacro %}
 
 {% macro cell(c) -%}

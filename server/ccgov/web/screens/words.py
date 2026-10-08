@@ -37,6 +37,8 @@ GROUP_LONG = {
 # 12 か月で出さないカードの注記（無ければ `labels.NOT_LONG_CARDS`）
 _SHORT = "・".join(n for n in PERIOD_NAMES.values() if n != LONG_NAME)
 GROUP_NOT_LONG = {"billed": "{names}は、" + _SHORT + "の期間で基準を判定するため " + LONG_NAME + "では出しません"}
+# 群の下の固定の注記（日数の期間だけ。12 か月では出さないカードの注記を出す）
+GROUP_NOTE = {"billed": "基準超えは区分ごとの注意以上の人数（基準の金額はカードの中）"}
 # 基準を超えた利用者: 基準と区分の名前、カードの 2 つの数字の下の行
 OVER_BASIS = {"day": "日次", "week": "週次", "month": "月次"}
 OVER_KIND = {"new": "新規", "kept": "継続", "left": "離脱"}
@@ -136,10 +138,10 @@ TAB.update({
                    "na": "12 か月では出しません。基準は 7 日・28 日の期間で判定します。"},
     "user_cost": {"label": "利用者ごとのコスト", "hint": "{billed[recent]:num} 人 · 利用明細", "title": "利用者ごとのコストと順位", "unit": "人",
                   "scope": "利用明細 {cost[start]:md}〜{cost[end]:md} と前の {period[days]} 日 · コストの多い順 · 割合と累積は期間のコストのうち",
-                  "search": "氏名・メール・モデルで絞り込み", "note": _USER_COST_NOTE},
+                  "search": "氏名・メールで絞り込み", "note": _USER_COST_NOTE},
     "user_cost_year": {"label": "利用者ごとのコスト", "hint": "{billed[recent]:num} 人 · 利用明細", "title": "利用者ごとのコストと順位",
                        "unit": "人", "scope": "利用明細 {cost[start]:day}〜{cost[end]:day} · コストの多い順 · 割合と累積は期間のコストのうち",
-                       "search": "氏名・メール・モデルで絞り込み"},
+                       "search": "氏名・メールで絞り込み"},
     "models": {"label": "モデル", "hint": "{models[rows]:count} 種類 · 利用明細", "title": "モデルごとのコスト", "unit": "行",
                "scope": "利用明細 {cost[start]:md}〜{cost[end]:md} と前の {period[days]} 日 · 割合は期間のコストのうち · "
                         "キャッシュ読み込みの割合はそのモデルのトークンのうち"},

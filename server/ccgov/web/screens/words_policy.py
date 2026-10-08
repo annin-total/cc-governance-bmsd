@@ -2,12 +2,12 @@
 
 # fmt: off
 _SCOPE = "直近 {POLICY_DAYS} 日 · 利用者ごとに最新の報告（端末が複数なら最も遅れた値）· 対象は{basis:basis} {denominator:num} 人"
-_OF_TARGETS = ("対象 {denominator:num} 人のうち",)
+_OF_TARGETS = ("直近 {POLICY_DAYS} 日の対象 {denominator:num} 人のうち",)
 
 GROUP = {"set": ("設定", _SCOPE), "ver": ("バージョン", _SCOPE)}
 
 CARD = {
-    "all_applied": {"label": "すべての設定を適用", "unit": "人", "sub": "対象 {denominator:num} 人のうち {counts[ok_rate]:pct}",
+    "all_applied": {"label": "すべての設定を適用", "unit": "人", "sub": "直近 {POLICY_DAYS} 日の対象 {denominator:num} 人のうち {counts[ok_rate]:pct}",
                     "cap": ("{counts[items]:num} つの設定がすべて配布した値",)},
     "off": {"label": "未適用のある利用者", "unit": "人", "sub": "違う値か未設定の設定がある", "cap": _OF_TARGETS},
     "none": {"label": "プラグイン未導入", "unit": "人", "sub": "コストがあるのに報告が無い", "cap": _OF_TARGETS},
@@ -28,7 +28,7 @@ TAB = {
     "policy_settings": {"label": "設定ごと", "hint": "{counts[items]:num} 設定", "title": "設定ごとの適用率", "unit": "行",
                         "scope": "直近 {POLICY_DAYS} 日 · 分母は{basis:basis}利用者 {denominator:num} 人",
                         "search": "設定名・キーで絞り込み", "note": "{basis:basis_note}"},
-    "versions": {"label": "バージョン", "hint": "本体・プラグイン", "title": "バージョンの分布", "unit": "行",
+    "versions": {"label": "バージョン", "hint": "本体・プラグイン", "title": "本体とプラグインのバージョンの分布", "unit": "行",
                  "scope": "直近 {POLICY_DAYS} 日 · 利用者ごとに最も古いバージョン · 対象のうちバージョンの報告がある利用者"},
 }
 

@@ -146,5 +146,8 @@ def test_over_users_filters_by_basis_state_and_kind(named):
     ]
 
 
-def test_single_axis_tabs_keep_one_group(named):
-    assert [i for i, _ in _axes(_panel(html_of(named), "user_cost"))] == [0]
+def test_user_cost_has_state_and_model_axes_in_7_days_and_one_in_12_months(named):
+    assert [i for i, _ in _axes(_panel(html_of(named), "user_cost"))] == [0, 1]
+    assert [
+        i for i, _ in _axes(_panel(html_of(named, "?period=12m"), "user_cost"))
+    ] == [0]

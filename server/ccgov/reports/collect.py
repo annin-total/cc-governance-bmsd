@@ -114,7 +114,7 @@ def build(conn, today: int) -> dict:
         "events": {
             "recent": recent["events"],
             "prev": prev["events"],
-            "delta": rates.delta(recent["events"], prev["events"]),
+            "change": series.change_pct(recent["events"], prev["events"]),
             "users": recent["terminals"],
         },
         "silent": found["silent"],
