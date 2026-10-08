@@ -3,12 +3,9 @@
 基準日は 20005。直近 7 日は `19999..20005`。
 """
 
-from known_data import TODAY
+from known_data import TODAY, insert_error
 
-from ccgov.store import db, queries_errors
-from ccgov.vendor import contract
-
-_COLUMNS = tuple(name for name, _ in contract.ERROR_COLUMNS)
+from ccgov.store import queries_errors
 
 # fmt: off
 _FIELDS = ("event_id", "ts", "day", "user_email", "host", "plugin_version", "stage", "error_type")
@@ -26,14 +23,8 @@ _ROWS = (
 
 
 def _seed(conn, rows=_ROWS) -> None:
-    """`errors` に行を投入する。未指定の列は NULL。"""
-    placeholders = ", ".join("?" for _ in _COLUMNS)
-    sql = db.q(f"INSERT INTO errors ({', '.join(_COLUMNS)}) VALUES ({placeholders})")
-    cur = conn.cursor()
     for row in rows:
-        values = dict(zip(_FIELDS, row))
-        cur.execute(sql, tuple(values.get(name) for name in _COLUMNS))
-    conn.commit()
+        insert_error(conn, **dict(zip(_FIELDS, row)))
 
 
 def test_empty_errors_returns_no_rows(db_conn):
