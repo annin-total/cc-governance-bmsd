@@ -1,5 +1,7 @@
 {# サマリーの一覧。行（summary）を押すと本文が開く（書き出すの月の一覧と同じ部品）。新しい順で、長い一覧は畳む。 #}
 {% extends "base.html" %}
+{% from "components/period.html" import at as period_at %}
+{% block head_actions %}<div class="head-act">{{ period_at(today) }}</div>{% endblock %}
 {% from "components/table.html" import fold_attrs %}
 {% block content %}
 <section class="panel section" aria-labelledby="sm-list-title">

@@ -4,10 +4,13 @@
 """
 
 import re
+from pathlib import Path
 
 import pytest
 from conftest import ADMIN, card, card_value, table_rows
 from known_data import TODAY, insert_event
+
+_STATIC = Path(__file__).resolve().parent.parent / "ccgov" / "web" / "static"
 
 ASOF = "2024-10-03"
 
@@ -154,3 +157,21 @@ def test_twelve_months_does_not_compare(today_client):
     assert all(
         'class="change' not in c and not re.search(r"前の \d", c) for c in others
     )
+
+
+@pytest.mark.parametrize("path", ["/summary", "/summary/new", "/settings"])
+def test_pages_outside_the_period_show_today_as_a_time_point(today_client, path):
+    """サマリー・その作成と編集・データと設定は、押せない「MM/DD 時点」（今日）を見出しの右に出す。"""
+    html = today_client.get(ADMIN + path + "?asof=2024-10-03").get_data(as_text=True)
+    assert re.findall(r"data-range>([^<]*)<", html) == ["10/09 時点"]
+    assert "data-cal" not in html
+
+
+def test_time_point_looks_like_the_period_display():
+    """「時点」は期間の表示（カレンダーの summary）と同じ 14px 相当・`--ink-2`。"""
+    css = (_STATIC / "layout.css").read_text()
+    summary = (_STATIC / "calendar.css").read_text()
+    assert re.search(
+        r"\.asof \{ color: var\(--ink-2\); font-size: var\(--fs-label\);", css
+    )
+    assert "font-size: var(--fs-label); color: var(--ink-2)" in summary

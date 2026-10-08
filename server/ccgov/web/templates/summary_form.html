@@ -2,6 +2,8 @@
    textarea の開きタグ直後の改行は、本文の先頭の改行をブラウザに捨てさせないため。
    novalidate は、保存した基準日が選べる範囲の外になった行でも送れるようにするため（範囲の外はサーバが既定に戻す）。 #}
 {% extends "base.html" %}
+{% from "components/period.html" import at as period_at %}
+{% block head_actions %}<div class="head-act">{{ period_at(today) }}</div>{% endblock %}
 {% block content %}
 <section class="panel section" aria-labelledby="sm-form-title">
   <header class="p-head"><h2 id="sm-form-title">{{ L.SUMMARY.title }}</h2><p class="scope">{{ L.SUMMARY.form_lead }}</p></header>

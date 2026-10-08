@@ -4,7 +4,9 @@
 """
 
 import datetime
+import re
 from html.parser import HTMLParser
+from pathlib import Path
 
 import pytest
 from conftest import ADMIN
@@ -14,6 +16,8 @@ from ccgov.constants import CALENDAR_MONTHS_AROUND
 from ccgov.metrics.calendar import add_months, to_date, to_day
 from ccgov.store import db, queries_cost, queries_events
 from ccgov.web import labels
+
+_STATIC = Path(__file__).resolve().parent.parent / "ccgov" / "web" / "static"
 
 
 class _Calendar(HTMLParser):
@@ -231,3 +235,21 @@ def test_day_sets_are_limited_to_the_range(known_db):
     assert queries_cost.days(known_db, 19970, 20003) == expected
     assert queries_cost.days(known_db, 19971, 19999) == []
     assert queries_events.days(known_db, 20002, 20003) == [20002, 20003]
+
+
+@pytest.mark.parametrize("args", [{}, {"asof": "2024-10-03"}, {"period": "28"}])
+def test_latest_button_goes_where_the_latest_pick_goes(today_client, args):
+    query = "&".join(f"{k}={v}" for k, v in args.items())
+    html = today_client.get(ADMIN + "/activity?" + query).get_data(as_text=True)
+    pick = re.search(r'<a href="([^"]*)" data-pick="latest"', html)
+    button = re.search(
+        r'<a class="cal-latest" href="([^"]*)" data-latest>最新</a>', html
+    )
+    assert pick and button
+    assert button.group(1) == pick.group(1)
+
+
+def test_range_is_tinted_with_chip_up():
+    css = (_STATIC / "calendar.css").read_text()
+    assert re.search(r"\.cal-day\.in-range \{ background: var\(--chip-up\); \}", css)
+    assert re.search(r"--chip-up: #[0-9a-f]{6};", (_STATIC / "tokens.css").read_text())
