@@ -19,7 +19,7 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 | ディレクトリ | 中身 |
 | --- | --- |
 | `plugin/` | 端末プラグイン `governance`。そのまま配布される |
-| `server/` | 集計サーバと管理画面（submodule） |
+| `server/` | 集計サーバと管理画面 |
 | `docs/` | 仕様・設計判断・手順書 |
 | `tests/` | プラグインと契約のテスト、統合テスト |
 | `e2e/` | 実機検証（`pytest e2e`） |
@@ -53,14 +53,12 @@ Claude Code を開き直し、お知らせが表示されれば導入できて�
 
 ### 開発環境の準備
 
-submodule（`server/`）を含めて clone する。
-
 ```bash
-git clone --recurse-submodules https://github.com/annin-total/cc-governance-bmsd.git
+git clone https://github.com/annin-total/cc-governance-bmsd.git
 cd cc-governance-bmsd
 ```
 
-venv を親と `server/` にそれぞれ作る。
+venv をリポジトリのルートと `server/` にそれぞれ作る。
 
 macOS:
 
@@ -98,13 +96,13 @@ docker compose up --build
 
 ### テストの実行
 
-親（プラグインと統合テスト）と `server/` で、それぞれ実行する。
+リポジトリのルート（プラグインと統合テスト）と `server/` で、それぞれ実行する。
 
 | | macOS | Windows |
 | --- | --- | --- |
 | テスト | `.venv/bin/python -m pytest -q` | `.venv\Scripts\python -m pytest -q` |
 | リンター | `.venv/bin/ruff check .` | `.venv\Scripts\ruff check .` |
-| プラグインの検証（親のみ） | `.venv/bin/python scripts/validate_plugin.py` | `.venv\Scripts\python scripts\validate_plugin.py` |
+| プラグインの検証（ルートのみ） | `.venv/bin/python scripts/validate_plugin.py` | `.venv\Scripts\python scripts\validate_plugin.py` |
 
 ## 設定項目
 

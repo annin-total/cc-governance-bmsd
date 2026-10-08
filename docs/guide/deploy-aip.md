@@ -4,7 +4,7 @@ AI Platform (AIP) の FaaS（WebApp Function type, Git mode）に、Bitbucket �
 
 ## 前提
 
-- デプロイ単位はこのリポジトリのルートである。サーバのソースは submodule `server/` にある
+- デプロイ単位はこのリポジトリのルートである。サーバのソースは `server/` にある
 - DB は SQLite を使う。DB ファイルと CSV は永続領域 `/mnt/data/` に置く
 - MySQL を採るときは、その前に `db.init` が MySQL の表を `DEFAULT CHARSET=utf8mb4` で作り、起動時に文字コードを検査するようにする。
   今の DDL（`contract.py` の `ddl()`）は文字コードを指定しないため、既定が utf8mb3・latin1 の DB では
@@ -108,7 +108,6 @@ push だけでは反映されない。ソースの更新も Secret の変更も�
 
 - **Public Access が HTTPS かどうかは未検証**: 平文の HTTP なら、Basic 認証のパスワードと `ADMIN_PATH` が VPN の中を平文で流れる
 - **前段のリバースプロキシが `Authorization` ヘッダをアプリに渡すかどうかは未検証**: 渡さなければ、正しいパスワードでも画面は常に `401` になる
-- **submodule の取得は未検証**: AIP が clone 時に submodule `server/` を取得するか、取得元に到達できるかを確かめていない。取得できなければ `server/entry.sh` が存在せず起動しない
 - `sh-centos-science` は公式ドキュメント上 alpha 版扱いのため、AIP 側の仕様変更・非推奨化のリスクが残る
 
 ## その他
