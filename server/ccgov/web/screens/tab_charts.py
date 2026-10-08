@@ -31,42 +31,59 @@ def build(tab: Tab, rows: list, ctx: dict) -> Optional[dict]:
     if tab.chart == "weeks_cost" and rows:
         return _weeks(tab, rows, ctx)
     if tab.chart == "hist" and rows:
-        return {
-            "kind": "hist",
-            "geo": charts_hist.hist(rows, effect.SIDES, *HIST_CHART),
-            "series": list(L.SIDE.values()),
-        }
+        return _hist(rows, effect.SIDES, list(L.SIDE.values()))
     if tab.chart == "sizes" and rows:
-        return {
-            "kind": "hist",
-            "geo": charts_hist.hist(rows, session_size.SIDES, *HIST_CHART),
-            "series": [text.fill(L.PERIOD[s], ctx) for s in session_size.SIDES],
-        }
+        names = [text.fill(L.PERIOD[s], ctx) for s in session_size.SIDES]
+        return _hist(rows, session_size.SIDES, names)
     if tab.chart == "month":
         return month_view.chart(ctx["month"], ctx)
     return None
+
+
+def _tip(head: str, values: list) -> str:
+    return head + "  " + L.TIP_SEP.join(values)
+
+
+def _day_tip(row: dict, values: list) -> str:
+    return text.fill(L.SPARK_TIP, {**row, "value": L.TIP_SEP.join(values)})
+
+
+def _cost_values(row: dict, providers: list) -> list:
+    """合計と提供元ごとのコスト。"""
+    return [L.TIP_TOTAL.format(filters.usd(row["total"]))] + [
+        f"{text.term(L.PROVIDER, p)} {filters.usd(row['providers'].get(p, 0))}"
+        for p in providers
+    ]
+
+
+def _hist(rows: list, sides: tuple, names: list) -> dict:
+    geo = charts_hist.hist(rows, sides, *HIST_CHART)
+    for bar, row in zip(geo["bars"], rows):
+        shares = (f"{n} {filters.pct(row[f'{s}_share'])}" for s, n in zip(sides, names))
+        bar["tip"] = _tip(filters.bin_range(row["bin"]), list(shares))
+    return {"kind": "hist", "geo": geo, "series": names}
 
 
 def _trend(tab: Tab, rows: list, ctx: dict) -> dict:
     days = [r["day"] for r in rows]
     labels = [filters.md(d) for d in days]
     recent = ctx["period"]["days"]
-    return {
-        "kind": "trend",
-        "charts": [
-            (
-                title,
-                charts.bars([r[k] for r in rows], labels, days, recent, *TREND_CHART),
-            )
-            for title, k in W.TAB[tab.words or tab.id]["charts"]
-        ],
-    }
+    words = W.TAB[tab.words or tab.id]
+    tips = [_day_tip(r, [text.fill(words["tip"], r)]) for r in rows]
+    result = []
+    for title, k in words["charts"]:
+        geo = charts.bars([r[k] for r in rows], labels, days, recent, *TREND_CHART)
+        geo["bars"] = [{**b, "tip": t} for b, t in zip(geo["bars"], tips)]
+        result.append((title, geo))
+    return {"kind": "trend", "charts": result}
 
 
 def _cost(rows: list, ctx: dict) -> dict:
     providers = text.lookup(ctx, "cost[providers]")
     columns = [(r["day"], [r["providers"].get(p, 0) for p in providers]) for r in rows]
     geo = charts.stacked(columns, *COST_CHART)
+    for bar, row in zip(geo["bars"], rows):
+        bar["tip"] = _day_tip(row, _cost_values(row, providers))
     recent = [b for b, r in zip(geo["bars"], rows) if r["period"] == "recent"]
     geo["shade_x"] = recent[0]["hit_x"] if recent else None
     return {
@@ -85,6 +102,8 @@ def _weeks(tab: Tab, rows: list, ctx: dict) -> dict:
     geo = charts.stacked(columns, *COST_CHART, day_labels=False)
     for bar, row in zip(geo["bars"], rows):
         bar["dim"] = row["partial"]
+        week = L.WEEK_PARTIAL + L.WEEK_DAYS if row["partial"] else L.WEEK
+        bar["tip"] = _tip(text.fill(week, row), _cost_values(row, providers))
     months = text.lookup(ctx, "cost[months]")
     shown = [
         m for i, m in enumerate(months)

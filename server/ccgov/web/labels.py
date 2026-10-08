@@ -52,6 +52,8 @@ OPEN_LIST = "一覧"
 EXACT = "正確な値"
 # カードの小さなグラフのツールチップ。2 つの空白の前が見出し、後ろが値（app.js が組む）
 SPARK_TIP = "{day:md}（{day:weekday}）  {value}"
+# 下段のタブのグラフのツールチップで、値を並べる区切りと合計
+TIP_SEP, TIP_TOTAL = " · ", "合計 {}"
 # 分布の区間と、状態ごとの帯のツールチップ
 BIN_TIP = "{lo}〜{hi}  {n} 人"
 BAND_TIP = "{state}  {value} · {pct:pct}"
