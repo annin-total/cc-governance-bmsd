@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""管理画面 4 画面（/・/policy・/effect・/activity）の表と分布が空にならない合成データを、`DB_DSN` の DB に作る。
+"""管理画面の 6 画面（/・/cost・/activity・/policy・/effect・/collect）の表と分布が空にならない合成データを、`DB_DSN` の DB に作る。
 
 使い方: DB_DSN=<DSN> python3 scripts/seed_dashboard.py [--users 人数] [--days 日数] [--no-csv]
   DSN の形はサーバと同じ（`server/ccgov/store/db.py`）。契約の表に 1 行でも在る DB には入れずに止まる。
