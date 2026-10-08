@@ -1,7 +1,5 @@
 """収集の状態の組み立て。基準日を持たず今日の時点で数える。
-
-受信は今日までの `RECENT_DAYS` 日と前の `RECENT_DAYS` 日、照合は利用明細の最終日までの `RECENT_DAYS` 日。
-"""
+受信は今日までの `RECENT_DAYS` 日と前の `RECENT_DAYS` 日、照合は利用明細の最終日までの `RECENT_DAYS` 日。"""
 
 from ccgov.constants import ERROR_COUNT_ELEVATED, RECENT_DAYS
 from ccgov.metrics import asof_calendar, delivery, health, rates, series, states

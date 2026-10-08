@@ -38,9 +38,7 @@ def _sides(w: Period, what: str) -> tuple:
 
 def calls(conn, w: Period) -> tuple:
     """(スキル, コマンド, ツール) の利用者ごとの呼び出し回数（直近・前）。
-
-    ツールは外部ツールとサブエージェントの起動の候補だけで、本体の中（`agent_id` が無い）かを 3 列目に持つ。
-    """
+    ツールは外部ツールとサブエージェントの起動の候補だけで、本体の中（`agent_id` が無い）かを 3 列目に持つ。"""
     sides, params = _sides(w, "event_id")
     span = (w.prev_start, w.end)
     skills = _rows(

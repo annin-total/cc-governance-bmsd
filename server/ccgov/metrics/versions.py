@@ -28,9 +28,7 @@ def _oldest_by_user(rows: list) -> dict:
 
 def summary(rows: list, users: set) -> dict:
     """`users` の利用者ごとに最も古いバージョンの分布（新しい順）と、最新でない人数。
-
-    最新は、報告された全端末の中で最も新しいバージョンとする。
-    """
+    最新は、報告された全端末の中で最も新しいバージョンとする。"""
     latest = max(
         (v for _, _, v in rows if v is not None), key=version_key, default=None
     )

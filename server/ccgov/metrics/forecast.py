@@ -1,7 +1,5 @@
 """月末のコストの見込みと、営業日ごと・暦日ごとの累積。
-
-見込み = 今月の実績 × 月の営業日数 ÷ 経過営業日。経過営業日が `FORECAST_MIN_BUSINESS_DAYS` 未満なら出さない。
-"""
+見込み = 今月の実績 × 月の営業日数 ÷ 経過営業日。経過営業日が `FORECAST_MIN_BUSINESS_DAYS` 未満なら出さない。"""
 
 from typing import Optional
 

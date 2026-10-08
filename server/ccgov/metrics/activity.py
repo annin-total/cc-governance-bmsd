@@ -85,9 +85,7 @@ def frequency(days: list, sessions: dict, w: Period) -> dict:
 
 def mode_mix(usage: list, order: tuple) -> dict:
     """権限モードの記録の件数の内訳。`rows` は `order` の値を並べた行（記録の無い値は 0 件）、`bypass` は確認なしの件数と割合。
-
-    `usage` は `reports.activity.usage` の権限モードの行。割合は記録の全件に対する割合で、`order` に無い値（don't ask など）も全件に入る。
-    """
+    `usage` は `reports.activity.usage` の権限モードの行。割合は記録の全件に対する割合で、`order` に無い値（don't ask など）も全件に入る。"""
     count = {r["value"]: r["count"] for r in usage}
     total = sum(count.values())
     rows = [
