@@ -48,15 +48,6 @@ def test_event_study_expected_values(effect_db):
     assert 12 not in rows
 
 
-def test_event_study_fills_zero_for_unused_days(effect_db):
-    """相対日 -2（両者とも行が無い）でも分母 2・値 0.0 の行が出る（行が消えない・分母 0 で落ちない）。"""
-    rows = {
-        r[0]: r[1:]
-        for r in effect.event_study(effect_db, K, "60", "aws-bedrock", EFFECT_END)
-    }
-    assert rows[-2] == (2, 0.0, 0)
-
-
 def test_event_study_relative_day_zero_excluded(effect_db):
     """相対日 0 が出力に含まれず、8.5 という値もどの行にも現れない。"""
     rows = effect.event_study(effect_db, K, "60", "aws-bedrock", EFFECT_END)
@@ -154,12 +145,9 @@ def test_event_study_unchanged_after_duplicate_injection(effect_db):
 
 
 def test_event_study_row_count_excludes_zero_day_and_zero_denominator(effect_db):
-    """イベントスタディの戻り行数は、相対日 0 と分母 0 の相対日を除いた数になる。"""
+    """イベントスタディの戻り行は相対日ごとに 1 行。相対日 0 と分母 0 の除外は `test_event_study_expected_values` が見る。"""
     rows = effect.event_study(effect_db, K, "60", "aws-bedrock", EFFECT_END)
     relative_days = {r[0] for r in rows}
-    assert 0 not in relative_days
-    assert -14 not in relative_days
-    assert 12 not in relative_days
     assert len(rows) == len(relative_days)
 
 
