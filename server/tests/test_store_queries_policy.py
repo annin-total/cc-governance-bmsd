@@ -98,24 +98,6 @@ def test_compliance_rate_a(known_db):
     assert rate == 80.0
 
 
-def test_compliance_rate_k_unchanged_after_duplicate_injection(known_db):
-    """重複行を注入しても K の準拠率は 20.0% のまま。100% を超える経路も無い。"""
-
-    def compute():
-        return policy.compliance_rate(known_db, TODAY, K, "60")
-
-    assert_invariant_under_duplication(known_db, compute)
-
-
-def test_compliance_rate_a_unchanged_after_duplicate_injection(known_db):
-    """重複行を注入しても A の準拠率は 80.0% のまま。"""
-
-    def compute():
-        return policy.compliance_rate(known_db, TODAY, A, "true")
-
-    assert_invariant_under_duplication(known_db, compute)
-
-
 def test_compliance_rate_without_user_folding_would_differ(known_db):
     """利用者単位に畳まず数えると K の準拠者が 2・率が 40.0% になる（本来は 1・20.0%）。"""
     rows = queries_policy.latest_values(known_db, TODAY, K)
@@ -168,17 +150,6 @@ def test_plugin_versions_pick_max_ts_not_max_day(known_db):
         plugin_version="1.3.0",
     )
     assert _plugin(known_db)[("uy", "hy")] == "1.4.0"
-
-
-def test_plugin_versions_unchanged_after_duplicate_injection(known_db):
-    """重複行を注入しても端末ごとのバージョンは変わらない。"""
-
-    def compute():
-        return sorted(
-            queries_policy.plugin_versions(known_db, TODAY, REFERENCE_KEY), key=str
-        )
-
-    assert_invariant_under_duplication(known_db, compute)
 
 
 def test_all_numbers_survive_full_duplication_at_once(known_db):
