@@ -10,10 +10,7 @@ SIDES = ("before", "after")
 
 
 def event_study(
-    start_dates: dict,
-    cost_by_key: dict,
-    min_day: Optional[int],
-    max_day: Optional[int],
+    start_dates: dict, cost_by_key: dict, min_day: Optional[int], max_day: Optional[int]
 ) -> list:
     """相対日ごとの `(相対日, 分母人数, 1 人あたりコスト, 1 人あたり処理トークン)` を返す。
 
