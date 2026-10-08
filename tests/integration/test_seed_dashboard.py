@@ -108,9 +108,8 @@ def test_画面の全ての表と分布が埋まる(seeded):
     assert queries_cost.daily_cost(conn)
     assert rate_row(*queries_events.reconciliation_counts(conn, today))[0] > 0
 
-    _, end = period_end.bounds(
-        conn, today
-    )  # 設定の効果は画面と同じく利用明細の最終日で切る
+    # 設定の効果は画面と同じく利用明細の最終日で切る
+    _, end = period_end.bounds(conn, today)
     starts = queries_policy.compliance_start_dates(
         conn, REFERENCE_KEY, REFERENCE_VALUE, end
     )
