@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
+REPO = HERE.parents[2]
 RUN = HERE / "run"
 CONFIG = RUN / "config"
 MP = RUN / "mp"
