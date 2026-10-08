@@ -115,7 +115,6 @@ def render(
     org=(),
 ):
     """ページ全体を描く。`error`・`form` は休日の知らせと入力、`imported`・`org` は取込の結果、`export_error` は書き出しの知らせ。
-
     `form` を `request.form` から読まないのは、大きさの上限を超えた取込の応答でも描くため（本文を読むと 413 を繰り返す）。
     """
     data = run(_build)
