@@ -1,6 +1,6 @@
 """コストと利用者の定義。カードを足すなら `CARDS` に、タブを足すなら `TABS` に 1 要素足す（文言は `words.py`）。"""
 
-from ccgov.constants import TABLE_FOLD_ROWS
+from ccgov.constants import TAB_FOLD_ROWS
 from ccgov.metrics.spend import BASES
 from ccgov.web import labels as L
 from ccgov.web.screens import SAME, USER_SEARCH, Axis, Card, Chip, Col, Screen, Tab, Viz
@@ -9,7 +9,7 @@ from ccgov.web.text import HIGHER_IS_BETTER as UP
 from ccgov.web.text import LOWER_IS_BETTER as DOWN
 
 GROUPS = ("bill", "month", "billed")
-_FOLD = TABLE_FOLD_ROWS
+_FOLD = TAB_FOLD_ROWS
 
 
 def _cols(src: str, fmt: str = "num", avg: str = "") -> Viz:

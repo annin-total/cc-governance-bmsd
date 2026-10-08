@@ -17,7 +17,7 @@
 .org-chip { font: inherit; font-size: var(--fs-sm); padding: var(--sp-3xs) var(--sp-s); border: 1px solid var(--tone); border-radius: var(--r-m); background: var(--card); color: var(--ink-2); cursor: pointer; }
 .org-chip[data-sec] { border-color: var(--tone-2); }
 .org-chip[data-dept][aria-pressed="true"] { background: var(--tone); color: var(--on-ink); }
-.org-chip[data-sec][aria-pressed="true"] { background: var(--tone-2); border-color: var(--tone); color: var(--ink); }
+.org-chip[data-sec][aria-pressed="true"] { background: var(--tone-2); color: var(--ink); }
 .org-chip:disabled { opacity: var(--org-off); cursor: default; }
 .org-clear { justify-self: start; padding: 0; border: 0; background: none; font: inherit; font-size: var(--fs-sm); color: var(--accent); cursor: pointer; }
 
