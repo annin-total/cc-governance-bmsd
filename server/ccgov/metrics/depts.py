@@ -6,12 +6,8 @@
 from typing import Optional
 
 from ccgov.constants import TOP_SECTIONS
-from ccgov.metrics import over, roster, series, states
+from ccgov.metrics import over, rates, roster, series, states
 from ccgov.metrics.spend import BASES
-
-
-def _share(value: float, total: float) -> Optional[float]:
-    return round(value / total * 100, 1) if total else None
 
 
 def _empty() -> dict:
@@ -41,7 +37,8 @@ def _row(level: str, dept, sec, acc: dict, total: dict, compare: bool, bd: int) 
         "users": users, "cost": cost, "prev": acc["prev"],
         "diff": cost - acc["prev"] if compare else None,
         "rate": series.change_pct(cost, acc["prev"]) if compare else None,
-        "share": _share(cost, total["cost"]), "people_pct": _share(users, total["users"]),
+        "share": rates.rate(cost, total["cost"]),
+        "people_pct": rates.rate(users, total["users"]),
         "per_user_bd": cost / bd / users if users and bd else None,
         "over": acc["over"] if compare else None,
     }  # fmt: skip
