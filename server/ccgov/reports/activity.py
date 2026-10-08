@@ -9,7 +9,9 @@ from ccgov.metrics.windows import Period
 from ccgov.reports import roster
 from ccgov.store import queries_activity, queries_events
 
-_NO_CALLS = {k: 0 for k in calls.KINDS}
+_NO_CALLS = {k: 0 for k in calls.KINDS} | {
+    f"{k}_top": [] for k in calls.KINDS if k != "agent"
+}
 _USAGE_FIELDS = ("permission_mode", "effort_level", "source")
 
 

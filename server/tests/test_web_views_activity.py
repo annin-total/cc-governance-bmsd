@@ -216,12 +216,12 @@ def test_user_calls_rows(act_client):
         "1",
         "/review 1",
         "3",
-        "github（MCP） 2 · WebSearch 1",
+        "github（MCP） 2 WebSearch 1",
         "1",
     ]
     assert rows["b@example.com"] == [
         "2",
-        "pdf 1 · xlsx 1",
+        "pdf 1 xlsx 1",
         "0",
         "—",
         "1",

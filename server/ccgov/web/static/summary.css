@@ -17,7 +17,7 @@
 .sm-form input:focus, .sm-form textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--card-hover); }
 .sm-buttons { display: flex; align-items: center; gap: var(--sp-m); margin: var(--sp-l) 0 0; }
 .sm-form .sm-buttons { margin: 0; }
-.sm-buttons .btn-sub { border: 0; cursor: pointer; }
+.sm-buttons .btn-sub { border: 0; cursor: pointer; padding: var(--sp-s) var(--sp-l); }
 .sm-buttons .sm-draft { order: -1; }
 .sm-buttons a { font-size: var(--fs-sm); color: var(--ink-2); }
 

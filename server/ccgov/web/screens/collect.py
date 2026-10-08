@@ -18,7 +18,7 @@ _DELIVERY_CHIPS = (
 
 # fmt: off
 CARDS = (
-    Card("events_received", "rec7", "health", "{events[recent]:num}", "{events[delta]:signed}", chip="recv",
+    Card("events_received", "rec7", "health", "{events[recent]:num}", "{events[change]:signed_pct}", chip="recv",
          viz=Viz("pair", "events", terms=W.PAIR)),
     Card("went_silent", "rec7", "user_delivery", "{silent[now]:num}", "{silent[diff]:signed}", chip="silent", better=DOWN),
     Card("plugin_errors", "rec7", "errors", "{errors[total]:num}", state="errors[state]",

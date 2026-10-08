@@ -60,7 +60,7 @@ def test_cards_of_received_records(today_client):
     assert card_value(html, "受信した記録") == "13"
     sub = card(html, "受信した記録")
     assert "前 3 件" in sub and "送信した利用者 4 人" in sub
-    assert '<span class="change">+10</span>' in sub
+    assert '<span class="change">+333.3%</span>' in sub
 
 
 def test_received_records_bars_carry_values_as_tooltips(today_client):

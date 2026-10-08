@@ -39,6 +39,7 @@ CARDS = (
 )
 
 _TOP = {"sort": None, "kind": "top"}
+_CALLS_SEARCH = USER_SEARCH + " {skill_top:keys} {command_top:keys} {external_top:keys}"
 TABS = (
     Tab("user_use", "user_use", (
         Col("name", "user", label="user"), Col("days", "num", label="use_days", unit="day"), Col("sessions", "num", label="use_sessions"),
@@ -50,7 +51,7 @@ TABS = (
         Col("command", "num", label="command_n"), Col("command_top", label="command_top", **_TOP),
         Col("external", "num", label="external_n"), Col("external_top", label="external_top", **_TOP),
         Col("agent", "num", label="agent_n"),
-    ), sort=("skill", "desc"), search=USER_SEARCH, fold=_FOLD, org=True),
+    ), sort=("skill", "desc"), search=_CALLS_SEARCH, fold=_FOLD, org=True),
     Tab("daily_use", "freq[daily]", (
         Col("day", "date"), Col("period", "tag", terms=L.PERIOD), Col("users", "num", unit="person"),
         Col("sessions", "num", unit="item", label="use_sessions"), Col("prompts", "num", unit="item"),
