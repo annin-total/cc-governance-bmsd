@@ -16,13 +16,7 @@ USER_SEARCH = "{name} {email}"
 
 @dataclass(frozen=True)
 class Viz:
-    """カードの小さなグラフ。`kind` は spark・meter・pair・stack・rates・cols・dist・cum・bands。
-
-    pair は `terms` の順に 2 本の棒を並べ、最初を薄くする（`field` があれば `src[キー][field]` を比べる）。
-    棒のツールチップはカードの文言の `bar_tip`（`label` と `value` で埋める）。
-    spark は `src` の行の `day` と `field` を点にし、ツールチップの値を `fmt`（`text.FORMATS` の名前）で書く。
-    rates の棒は `top` なら行の最大に対する長さ、偽なら百分率。cols・dist・cum・bands は `viz_cost.py`。
-    """
+    """カードの小さなグラフ。`kind` ごとの組み立ては `view._viz`（spark・meter・pair・stack・rates）と `viz_*.py` の `KINDS` にある。"""
 
     kind: str
     src: str = ""
@@ -36,9 +30,7 @@ class Viz:
 
 @dataclass(frozen=True)
 class Card:
-    """要点のカード 1 枚。文言は `words.CARD[words or id]`（label・unit・sub・cap・row）。
-
-    `better` は増減のチップの良し悪しの向き（`text.HIGHER_IS_BETTER`・`LOWER_IS_BETTER`）。空なら向きの無い差（灰）。
+    """要点のカード 1 枚。文言は `words.CARD[words or id]`。`better` は増減のチップの良し悪しの向き（`text.HIGHER_IS_BETTER` など。空なら向きの無い差）。
     `page` があれば、押すとその画面（endpoint）の `tab` へ移る。`at` なら値の下の 1 行の頭に今日の時点（集計結果の `at`）を添える。
     """
 
@@ -95,10 +87,8 @@ class Axis:
 
 @dataclass(frozen=True)
 class Tab:
-    """下段のタブ 1 つ。文言は `words.TAB[words or id]`（label・hint・title・scope・note・search・all・unit）。
-
-    `fold` は一覧を折りたたむ行の数（0 は畳まない）。`chips_present` なら、決まった区分のうち行の無いものを出さない（どの軸も）。
-    `axes` は区分の 2 つ目以降の軸（軸ごとに 1 つ選び、すべての軸に当たる行を出す）。`org` なら部署の絞り込みを置く。
+    """下段のタブ 1 つ。文言は `words.TAB[words or id]`。`fold` は一覧を折りたたむ行の数（0 は畳まない）、`org` なら部署の絞り込みを置く。
+    `chips_present` なら決まった区分のうち行の無いものを出さない（どの軸も）。`axes` は区分の 2 つ目以降の軸（軸ごとに 1 つ選び、すべての軸に当たる行を出す）。
     """
 
     id: str
