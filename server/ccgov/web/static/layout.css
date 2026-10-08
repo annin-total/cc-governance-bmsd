@@ -32,6 +32,7 @@ h1 { font-size: var(--fs-h1); font-weight: 700; margin: 0; letter-spacing: .04em
 .group-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-m); }
 .group.packed { display: flex; flex-direction: column; }
 .group.packed .cards { flex: 1; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
+.group.packed .glabel { min-height: calc(var(--fs-label) * var(--lh) + 2 * var(--fs-sm) * var(--lh)); }
 .group.packed .glabel span { display: block; margin: 0; }
 .detail { margin-top: var(--sp-3xl); scroll-margin-top: calc(var(--bar-h) + var(--sp-m)); }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4xl); }
