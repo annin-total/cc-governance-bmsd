@@ -10,7 +10,7 @@ from html import unescape
 import pytest
 from conftest import ADMIN, table_body
 from cost_data import html_of
-from names_data import OCT, put, seed_rosters
+from names_data import OCT, put
 
 _USER_TABS = {
     "/cost": ("user_cost", "over_users"),
@@ -18,12 +18,6 @@ _USER_TABS = {
     "/policy": ("policy_users",),
     "/collect": ("user_delivery",),
 }
-
-
-@pytest.fixture
-def named(cost_client, db_conn):
-    seed_rosters(db_conn)
-    return cost_client
 
 
 def _panel(html: str, tab: str) -> str:

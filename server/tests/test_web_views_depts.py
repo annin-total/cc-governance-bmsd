@@ -9,13 +9,6 @@ from html import unescape
 import pytest
 from conftest import card, table_body, table_rows
 from cost_data import html_of
-from names_data import seed_rosters
-
-
-@pytest.fixture
-def named(cost_client, db_conn):
-    seed_rosters(db_conn)
-    return cost_client
 
 
 def _head(html: str) -> list:

@@ -272,6 +272,15 @@ def cost_client(db_conn, monkeypatch):
 
 
 @pytest.fixture
+def named(cost_client, db_conn):
+    """`cost_client` に `names_data.py` の名簿を足したテストクライアント。"""
+    from names_data import seed_rosters
+
+    seed_rosters(db_conn)
+    return cost_client
+
+
+@pytest.fixture
 def csv_dir(tmp_path):
     """取り込み先（`CSV_DIR`）にする空のディレクトリ。外に置かれたファイルを見分けるため `tmp_path` の 1 段下にする。"""
     path = tmp_path / "csv"
