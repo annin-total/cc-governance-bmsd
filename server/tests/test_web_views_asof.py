@@ -60,7 +60,7 @@ def test_header_no_longer_shows_today(today_client):
 
 
 def test_events_after_the_last_csv_day_are_not_counted(known_db, today_client):
-    """記録の窓も利用明細の最終日で切る。今日の記録は日ごとの利用にもスキルの利用にも入らない。"""
+    """記録を数える範囲も利用明細の最終日で切る。今日の記録は日ごとの利用にもスキルの利用にも入らない。"""
     insert_event(
         known_db, event_id="x1", day=TODAY, user_email="u1", hook_event="PostToolUse",
         session_id="s1", tool_name="Skill", skill_name="pdf",

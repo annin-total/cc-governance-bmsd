@@ -1,4 +1,4 @@
-"""利用状況のページの集計クエリ。窓は直近と前の N 日（`Period`）。件数はすべて `event_id` で一意化する。"""
+"""利用状況のページの集計クエリ。期間は直近と前の N 日（`Period`）。件数はすべて `event_id` で一意化する。"""
 
 from ccgov.constants import AGENT_TOOLS, BYPASS_MODE, MCP_PREFIX, WEB_TOOLS
 from ccgov.metrics.windows import Period
@@ -31,7 +31,7 @@ def user_day_sessions(conn, start: int, end: int) -> list:
 
 
 def _sides(w: Period, what: str) -> tuple:
-    """直近と前の窓で数える 2 列の SQL と、その引数。"""
+    """直近と前の N 日で数える 2 列の SQL と、その引数。"""
     sql = f"COUNT(DISTINCT {_IN_WINDOW.format(what)}), COUNT(DISTINCT {_IN_WINDOW.format(what)})"
     return sql, (w.start, w.end, w.prev_start, w.prev_end)
 
@@ -68,7 +68,7 @@ def calls(conn, w: Period) -> tuple:
 
 
 def sessions(conn, w: Period) -> list:
-    """セッション × 窓の (利用者, 窓, 応答終了時のコンテキストの最大, 自動コンパクトに達したか)。"""
+    """セッション × 直近か前かの (利用者, 直近か前か, 応答終了時のコンテキストの最大, 自動コンパクトに達したか)。"""
     side = "CASE WHEN day >= ? THEN 'recent' ELSE 'prev' END"
     return _rows(
         conn,

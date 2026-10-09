@@ -1,4 +1,4 @@
-"""利用明細（CSV）のコストの組み立て。窓は CSV の最終日で終わる。"""
+"""利用明細（CSV）のコストの組み立て。期間は CSV の最終日で終わる。"""
 
 from ccgov.metrics import series
 from ccgov.metrics.windows import Period

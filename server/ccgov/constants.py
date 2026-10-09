@@ -9,7 +9,7 @@ EVENT_STUDY_SPAN = 14
 # 月数の期間は比べずに週ごとに並べる。最初の日数が既定
 PERIOD_DAYS = (RECENT_DAYS, 28)
 LONG_MONTHS = 12
-# 基準日に選べる最初の日は、利用明細の最初の日からこの日数の窓が満ちる日
+# 基準日に選べる最初の日は、利用明細の最初の日から数えてこの日数目の日
 ASOF_FILLED_DAYS = max(PERIOD_DAYS)
 # カレンダーに描く月の数（選んだ日の月の前後それぞれ）。それより先へは、端の月の日を選んで移る
 CALENDAR_MONTHS_AROUND = 2
