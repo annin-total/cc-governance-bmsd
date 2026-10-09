@@ -5,6 +5,8 @@ import re
 from conftest import card, card_value, dated_client
 from cost_data import TODAY, html_of
 
+from ccgov.store import queries_holidays
+
 LABELS = {
     "total": "コスト（利用明細）",
     "per_bd": "1 営業日あたりのコスト",
@@ -168,3 +170,10 @@ def test_page_without_csv_shows_dashes(db_conn, monkeypatch):
         html = html_of(cost_client, query)
         assert card_value(html, LABELS["total"]) == "—"
         assert card_value(html, LABELS["billed"]) == "—"
+
+
+def test_recent_window_without_business_days_shows_dashes(cost_client, db_conn):
+    queries_holidays.add(db_conn, [19998, 19999, 20000, 20003, 20004], "年末年始")
+    html = html_of(cost_client)
+    assert card_value(html, LABELS["per_bd"]) == "—"
+    assert card_value(html, LABELS["per_user"]) == "—"
