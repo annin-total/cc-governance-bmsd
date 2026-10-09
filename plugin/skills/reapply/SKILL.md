@@ -26,7 +26,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/hooks/reapply.py"
 
 最後に次の 2 点を添える。
 
-- 書き込む直前の settings.json は `<config_dir>/governance/backups/` に保存されている（config_dir は通常 `~/.claude`）
+- 書き込む直前の settings.json は `<config_dir>/settings-backups/` の日時のフォルダに保存されている（config_dir は通常 `~/.claude`）
 - 設定によっては、反映に Claude Code の再起動が要る
 
 コマンドが失敗した場合は、エラーの内容をそのまま見せ、`python3` が使えるかを確かめるよう伝える。

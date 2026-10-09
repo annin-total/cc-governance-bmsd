@@ -92,8 +92,10 @@ def test_SETが入り本体の書き込みも残る(root, gitsrv):
     _assert_holds(after, pol)
     kept = {k: v for k, v in before.items() if k not in expected}
     assert {k: _leaves(after).get(k) for k in kept} == kept
-    # hook が実際に書いたことの唯一の証拠（値の一致だけなら本体が書いた可能性を消せない）
-    backups = list((root.config / "governance" / "backups").iterdir())
+    # hook が実際に書いた証拠（値の一致だけなら本体が書いた可能性を消せない）
+    assert {r["apply_result"] for r in _policy_rows(root).values()} == {"applied"}
+    # 導入後の最初のセッションの保存と書き換える直前の保存は同じ内容なので、1 つにまとまる
+    backups = list((root.config / "settings-backups").glob("*/settings.json"))
     assert [b.read_bytes() for b in backups] == [before_bytes]
 
 

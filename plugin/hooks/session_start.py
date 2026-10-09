@@ -15,6 +15,7 @@ import sys
 import time
 from typing import Any, Optional
 
+import _backup
 import _govdir
 import _identity
 import _notices
@@ -72,6 +73,11 @@ def _apply_settings_step() -> None:
         )
 
 
+def _backup_step() -> None:
+    """導入・更新の後の最初のセッションで、適用より前の settings.json を保存する。"""
+    _backup.backup_if_updated(_identity.get_plugin_version())
+
+
 def _mark_seen(notice: dict, seen: set) -> None:
     """表示した 1 件を既読にする。非対話の起動では書かない（人が見ていないため）。"""
     if _notices.is_headless():
@@ -120,6 +126,11 @@ def main() -> None:
         _govdir.sync_statusline(_govdir.governance_dir())
     except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
         append_error("statusline", type(e).__name__, hook_event)
+
+    try:
+        _backup_step()
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error("backup", type(e).__name__, hook_event)
 
     try:
         _apply_settings_step()

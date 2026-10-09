@@ -58,6 +58,7 @@ def _plugin_version() -> str:
 _STAGE_CASES = {
     "identity": (_identity, "get_user_email", _raise_on_refresh, "identity"),
     "statusline": (_govdir, "sync_statusline", _raiser, "statusline"),
+    "backup": (session_start, "_backup_step", _raiser, "backup"),
     "apply_settings": (
         session_start,
         "_apply_settings_step",

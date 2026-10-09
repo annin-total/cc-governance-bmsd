@@ -1,9 +1,8 @@
-"""`<config_dir>/governance/`（バックアップ・ONCE の記録・statusline.js）の管理。
+"""`<config_dir>/governance/`（ONCE の記録・statusline.js）の管理。
 
 プラグインの削除後も残す場所（利用者の設定から参照されうるため `CLAUDE_PLUGIN_DATA` に置かない）。
 """
 
-import datetime
 import json
 import os
 from pathlib import Path
@@ -11,10 +10,6 @@ from pathlib import Path
 _CONFIG_DIR_ENV = "CLAUDE_CONFIG_DIR"
 _SETTINGS_FILENAME = "settings.json"
 _GOVERNANCE_DIRNAME = "governance"
-_BACKUP_DIRNAME = "backups"
-_BACKUP_KEEP = 10
-# 本人だけが読める権限で作る。settings.json の env にはトークンが入りうる（Windows では無害）
-_BACKUP_MODE = 0o600
 _ONCE_FILENAME = "once.json"
 _STATUSLINE_FILENAME = "statusline.js"
 _STATUSLINE_SRC = (
@@ -34,41 +29,6 @@ def settings_path() -> Path:
 
 def governance_dir() -> Path:
     return config_dir().absolute() / _GOVERNANCE_DIRNAME
-
-
-def backup(settings: Path, gov_dir: Path) -> bool:
-    """settings.json を日時付きで保存し、直近 `_BACKUP_KEEP` 世代だけ残す。保存できれば真。
-
-    最新の世代と同じ内容なら保存せず真を返す（同じ内容で世代を埋めない）。
-    時計の粒度が粗い OS でも衝突しないよう連番を付け、O_EXCL で既存を上書きしない。
-    """
-    backup_dir = gov_dir / _BACKUP_DIRNAME
-    stamp = datetime.datetime.now().astimezone().strftime("%Y%m%d-%H%M%S-%f")
-    try:
-        content = settings.read_bytes()
-        backup_dir.mkdir(parents=True, exist_ok=True)
-        existing = sorted(backup_dir.glob("settings-*.json"))
-        if existing and existing[-1].read_bytes() == content:
-            return True
-        for n in range(_BACKUP_KEEP):
-            try:
-                name = backup_dir / f"settings-{stamp}-{n:02d}.json"
-                fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, _BACKUP_MODE)
-                with os.fdopen(fd, "wb") as f:
-                    f.write(content)
-                break
-            except FileExistsError:
-                continue
-        else:
-            return False
-    except OSError:
-        return False
-    for old in sorted(backup_dir.glob("settings-*.json"))[:-_BACKUP_KEEP]:
-        try:
-            old.unlink()
-        except OSError:
-            pass
-    return True
 
 
 def load_once(gov_dir: Path) -> set:
