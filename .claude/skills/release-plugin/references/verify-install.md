@@ -29,7 +29,8 @@
 
    合格: プラグインが `enabled` で現れ、版が上げた版と一致する（main の版のままなら ref が効いていない）。
    `<owner>/<repo>#<ref>` の短縮形は GitHub を SSH で clone する（SSH 鍵が無いと失敗し、GitHub 以外では使えない）。URL を使う。
-   URL に ref を付けた形は `governance.md` にある。`/` を含むブランチ名を ref に付けた導入は実機で確かめていない
+   URL に ref を付けた形は `governance.md` にある。`/` を含むブランチ名を ref に付けた導入は、Claude Code 2.1.295 と GitHub の https の URL で、
+   指定したブランチの版が導入されることを確かめている。社内 Bitbucket の URL では確かめていない
 
 4. 認証を環境変数で渡し（会社は Bedrock。渡す変数は `docs/guide/e2e.md` の「認証」）、空のディレクトリからセッションを開いて
    `/plugin` の版と動作を確かめる。起動のしかたは `docs/guide/e2e.md` の「手動確認の準備」と同じにし
