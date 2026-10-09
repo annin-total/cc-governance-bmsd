@@ -175,7 +175,7 @@ def test_month_ends_follow_the_length_of_each_month(known_db, today_client):
 
 def test_previous_period_of_twelve_months(known_db, today_client):
     _add_cost(known_db, "2023-08-01")
-    assert "asof=2023-10-08" in _pick(_cal(today_client, period="12m"), "prev")
+    assert "asof=2023-10-31" in _pick(_cal(today_client, period="12m"), "prev")
 
 
 def test_effect_has_a_calendar_without_previous_period(today_client):

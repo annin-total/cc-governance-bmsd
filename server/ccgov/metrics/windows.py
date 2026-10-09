@@ -11,7 +11,7 @@ from ccgov.constants import (
     POLICY_DAYS,
     RECENT_DAYS,
 )
-from ccgov.metrics.calendar import add_months
+from ccgov.metrics.calendar import add_months, month_bounds
 
 LONG_KEY = f"{LONG_MONTHS}m"
 KEYS = tuple(str(d) for d in PERIOD_DAYS) + (LONG_KEY,)
@@ -53,7 +53,7 @@ def around(day: int) -> tuple:
 
 @dataclass(frozen=True)
 class Period:
-    """画面の期間。日数の期間は直近 `days` 日とその前の `days` 日、月数の期間は比べない `months` か月。"""
+    """画面の期間。日数の期間は直近 `days` 日とその前の `days` 日、月数の期間は終わりの月までの `months` 個の暦月で比べない。"""
 
     key: str
     start: int
@@ -90,7 +90,7 @@ class Period:
 def period(key: str, end: int) -> Period:
     """`KEYS` の 1 つで、`end` に終わる期間。"""
     if key == LONG_KEY:
-        start = add_months(end, -LONG_MONTHS) + 1
+        start = add_months(month_bounds(end)[0], 1 - LONG_MONTHS)
         return Period(key, start, end, months=LONG_MONTHS)
     if key not in KEYS:
         raise ValueError(f"未知の期間: {key}")
