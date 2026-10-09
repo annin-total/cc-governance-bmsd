@@ -144,7 +144,7 @@ claude plugin update governance
 - `version` を上げて配り直す
 - 即時の撤回手段は無い。全端末に行き渡るまで数日かかる
 
-**`policy.py` から項目を消すだけでは撤回にならない。**消した項目は以後何もされず、既に書き込まれた値が全端末に残り続ける。`ONCE` で配った値も同じで、戻すには値を変えて配り直す。**前の版の中身を配り直しても（版を下げても）元には戻らない。**`ADD` で足した要素は残り、`ONCE` の値は前の値へ戻した時点で再び 1 回書かれ、利用者が変えた値を上書きする（`ONCE` の記録の範囲は `../spec/plugin.md` の「設定の自動適用」）。端末ごとに書き換える直前の `settings.json` は `<config_dir>/governance/backups/` に残っている（世代数は `plugin/hooks/_govdir.py` の `_BACKUP_KEEP`）。
+**`policy.py` から項目を消すだけでは撤回にならない。**消した項目は以後何もされず、既に書き込まれた値が全端末に残り続ける。`ONCE` で配った値も同じで、戻すには値を変えて配り直す。**前の版の中身を配り直しても（版を下げても）元には戻らない。**`ADD` で足した要素は残り、`ONCE` の値は前の値へ戻した時点で再び 1 回書かれ、利用者が変えた値を上書きする（`ONCE` の記録の範囲は `../spec/plugin.md` の「設定の自動適用」）。端末ごとに書き換える直前の `settings.json` は `<config_dir>/settings-backups/` の日時のフォルダに残っている（`../spec/plugin.md` の「設定の自動適用」）。
 
 **本体の検証で捨てられる値（型違いなど）を配ると、配り直しでは戻らない。**本体が `settings.json` を丸ごと無視して hook も動かず（`../knowledge/claude-code-behavior.md` の「settings.json の読み込み」）、直した版を配っても端末では動かない。行も届かないので、収集の状態のプラグインのエラーには出ない。端末では `claude doctor` の `Invalid settings` と、`claude plugin list` でプラグインが無効（`enabled: false`）に見えることで気づく（`claude plugin list` の表示は 2.1.283 で確認）。復旧は次の順に行う（逆にすると、古い版の hook が同じ値を書き直す。推定）。
 
@@ -185,3 +185,4 @@ claude plugin update governance
 - 2026-09-28: 章番号での参照を見出し名に替え、staging の対話起動を `e2e.md` の手動確認に寄せ、knowledge・スクリプトと重なる記述を参照に縮めた
 - 2026-10-08: 版の分布とエラーを見る場所を、設定の適用状況のバージョンのタブと収集の状態のプラグインのエラーにし、staging の合格を分母に依らない「最新」の版で見るようにした
 - 2026-10-09: お知らせを `notices.json` の末尾に足すことを確認項目に加えた
+- 2026-10-09: 書き換える直前の `settings.json` の置き場を `settings-backups/` にした

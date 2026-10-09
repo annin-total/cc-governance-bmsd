@@ -9,7 +9,7 @@ Claude Code の端末プラグイン。設定の自動適用・お知らせの�
 hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `session_start.py`
 （`SessionStart`）の 2 つだけであり、`_` 始まりの
 ファイルは内部モジュールである。ほかに利用者が呼ぶ `/governance:reapply`（入口は
-`reapply.py`）がある。端末の状態（識別子のキャッシュ・既読・送信待ち）は `${CLAUDE_PLUGIN_DATA}`
+`reapply.py`）がある。端末の状態（識別子のキャッシュ・既読・送信待ち・前回動いた版）は `${CLAUDE_PLUGIN_DATA}`
 （無ければ `~/.claude/cc-governance/`）に置く。アンインストールすると `${CLAUDE_PLUGIN_DATA}` は消え、既読と
 未送信分（`queue.jsonl`・`spool/`）も失われる（上流の挙動は `../knowledge/claude-code-behavior.md`）。
 
@@ -105,8 +105,14 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
   `../knowledge/claude-code-behavior.md` の「settings.json の読み込み」、気づき方と復旧の順は `../guide/release.md`）。
   本体が読めてプラグインが読めないとき（BOM 付き・非 UTF-8 など）は hook が動き、適用を飛ばして全項目を
   `parse_failed` として記録する
-- 書き換える直前に、元のファイルを丸ごと `<config_dir>/governance/backups/` に日時付きで保存し、
-  新しい一定の世代数だけを残す。最新の世代と同じ内容なら保存しない。保存に失敗したら書かない
+- 書き換える直前に、元のファイルを丸ごと `<config_dir>/settings-backups/<YYYY_MMDD_HHMM>/`（ローカル時刻。
+  同じ名前があれば `-2`, `-3`…）に保存する。`statusLine` を書き換えるときだけ、書き換え前の `statusLine.command` に
+  書かれたパスのうち、`~` と環境変数を展開した後の絶対パスで実在する通常ファイルも写す（フォルダ・読めないファイル・
+  `plugin/hooks/_backup.py` の `MAX_STATUSLINE_FILE_BYTES` を超えるファイルは写さない）。
+  直前のフォルダ（連番は数値で並べる）と内容が同じなら作らない。`settings.json` を保存できなければ書かない。自動では消さない
+- 導入・更新の後の最初の `SessionStart` でも、適用より前の `settings.json` を同じ形で保存する。
+  前回動いた版を `${CLAUDE_PLUGIN_DATA}` に記録して今の版と比べ（記録が無いときも保存する）、
+  保存できなかったときは記録を更新せず次のセッションでまた試す
 - 結果はキーごとに policy イベントとして記録する。`key_name` は `SET` ならパスそのまま、ほかは
   `add:` / `remove:` / `once:` を前に付ける。`value` は `SET` / `ONCE` なら配る値（dict・list は
   JSON 文字列）、`ADD` / `REMOVE` なら今回足した・消した要素の JSON 配列（無ければ NULL）。
@@ -121,9 +127,9 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
 **責務は標準設定を利用者の `settings.json` に書き戻すところまでである。**プロジェクトの設定や
 セッション中の変更による上書きは追わない。
 
-`<config_dir>/governance/` には、バックアップ・`ONCE` の記録（`once.json`）・`statusline.js` を置く。
+`<config_dir>/governance/` には、`ONCE` の記録（`once.json`）と `statusline.js` だけを置く。
 `statusline.js` は同梱の `plugin/statusline/statusline.js` を毎セッション、内容が違うときだけ複製する。
-この同期の失敗はほかの工程に波及させない。**このディレクトリはアンインストールしても残る。**
+この同期の失敗はほかの工程に波及させない。**このディレクトリと `settings-backups/` はアンインストールしても残る。**
 
 ## お知らせの配信
 
@@ -157,3 +163,4 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
 - 2026-09-28: 本体が読めない settings.json・アンインストールで消える状態・ONCE の記録の範囲・送る値・同じ内容のバックアップを取らないことを書いた。送る値に MCP の `tool_name` を含め、収集の分岐の範囲を実装にそろえた
 - 2026-09-28: `config.json` が無いときに退避も破棄もしないことと、spool が送信先を持たないことを書いた
 - 2026-10-09: お知らせを `startup` と `clear` のときに未読の先頭から 1 件ずつ出すことを書いた
+- 2026-10-09: バックアップの置き場を `settings-backups/` の日時のフォルダにし、自動では消さないこと・`statusLine` の指すファイルを写すこと・導入・更新の後にも保存することを書いた
