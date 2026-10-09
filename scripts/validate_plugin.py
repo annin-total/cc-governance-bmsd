@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""プラグインの差し込み前検証（上流の形式検証と、契約・標準ライブラリ・hook の exit 0・py39 の不変条件）。
+"""プラグインの差し込み前検証（上流の形式検証と、契約・標準ライブラリ・hook の exit 0・py39・お知らせの id の不変条件）。
 
 「在ること」だけを見る。列名・キー・件数・設定値は見ない（頻繁に変わるため足さないこと）。
 使い方: python scripts/validate_plugin.py [プラグインのディレクトリ名]（既定: plugin）
@@ -33,6 +33,7 @@ def main(argv: list) -> int:
     tools.check_upstream_validate(plugin_dir)
     files.check_all_json_parse(plugin_dir)
     files.check_all_py_syntax(plugin_dir)
+    files.check_notices_unique_ids(plugin_dir)
     hooks.check_hooks_json_files(hooks_json, hook_commands, plugin_dir)
     files.check_no_dev_artifacts(plugin_dir)
     tools.check_no_gitignored_files(repo_root, plugin_name)
