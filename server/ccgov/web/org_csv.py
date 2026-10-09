@@ -3,6 +3,7 @@
 import datetime
 import re
 import time
+from functools import partial
 
 from flask import Response, redirect, request, url_for
 
@@ -11,10 +12,11 @@ from ccgov.ingestion.csv_upload import Rejected
 from ccgov.metrics import calendar
 from ccgov.reports import roster
 from ccgov.vendor import contract
-from ccgov.web import labels, settings, text
+from ccgov.web import labels, settings
 
 ENDPOINT = "admin.upload_org"
 _MONTH = re.compile(r"([0-9]{4})-([0-9]{2})")
+_rejected = partial(settings.rejected, labels.ORG_ERROR)
 
 
 def _month(raw: str) -> int:
@@ -27,14 +29,6 @@ def _month(raw: str) -> int:
     except ValueError:
         raise Rejected("month") from None
     return calendar.to_day(first)
-
-
-def _rejected(e: Rejected, name=None) -> dict:
-    detail = e.args[1] if len(e.args) > 1 else ""
-    return {
-        "file": name,
-        "error": text.fill(labels.ORG_ERROR[e.args[0]], {"detail": detail}),
-    }
 
 
 def upload():

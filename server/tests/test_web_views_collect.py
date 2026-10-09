@@ -83,7 +83,7 @@ def test_went_silent_counts_people_and_compares_one_week_earlier(today_client):
 
 
 def test_user_delivery_rows_and_tags(today_client):
-    """一覧は前か直近の 7 日にいた 7 人。途絶えたのは u9 だけ。利用明細にいたかは照合の窓で見る。"""
+    """一覧は前か直近の 7 日にいた 7 人。途絶えたのは u9 だけ。利用明細にいたかは照合と同じ 7 日で見る。"""
     rows = _delivery(_html(today_client))
     assert sorted(rows) == ["u1", "u10", "u2", "u3", "u5", "u8", "u9"]
     assert [u for u, r in rows.items() if "silent" in r["tags"]] == ["u9"]
@@ -108,7 +108,7 @@ def test_reconciliation_window_ends_at_the_last_csv_day(known_db, today_client):
 
 
 def test_billed_column_uses_the_reconciliation_window(known_db, today_client):
-    """照合の窓より前（10/01）にだけコストがある u8 は「なし」。"""
+    """照合の 7 日より前（10/01）にだけコストがある u8 は「なし」。"""
     insert_cost_daily(known_db, day=TODAY - 8, user_email="u8", provider="p", cost=1.0)
     rows = _delivery(_html(today_client))
     assert "unbilled" in rows["u8"]["tags"]
@@ -164,13 +164,13 @@ def test_health_table_lists_received_and_null_rates(today_client):
 
 
 def test_received_records_count_today(known_db, today_client):
-    """受信の窓は今日で終わる（利用明細の最終日で切らない）。"""
+    """受信を数える範囲は今日で終わる（利用明細の最終日で切らない）。"""
     insert_event(known_db, event_id="x1", day=TODAY, user_email="u1", hook_event="Stop")
     assert card_value(_html(today_client), "受信した記録") == "14"
 
 
 def test_overview_no_longer_has_the_delivery_group(today_client):
-    """概況から「データの届き具合」の群とそのタブが外れ、収集の状態にだけある。"""
+    """「データの届き具合」の群とそのタブは概況に無く、収集の状態にだけある。"""
     html = today_client.get(ADMIN + "/").get_data(as_text=True)
     assert "データの届き具合" not in html
     for label in ("受信した記録", "照合率", "プラグインのエラー", "項目の欠け"):

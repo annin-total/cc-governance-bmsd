@@ -27,11 +27,6 @@ _WARN = 'class="mark warn"'
 _NG = 'class="mark ng"'
 
 
-def test_policy_page_returns_200(today_client):
-    response = today_client.get(ADMIN + "/policy")
-    assert response.status_code == 200
-
-
 def _html(client, query: str = "") -> str:
     return client.get(ADMIN + "/policy" + query).get_data(as_text=True)
 
@@ -197,7 +192,7 @@ def test_last_report_day_is_the_most_delayed_terminal(known_db, today_client):
 
 
 def test_denominator_window_ends_today(known_db, today_client):
-    """分母は今日までの `POLICY_DAYS` 日に利用明細のある利用者。窓の最初の日は入り、その前の日は入らない。"""
+    """分母は今日までの `POLICY_DAYS` 日に利用明細のある利用者。その最初の日は入り、その前の日は入らない。"""
     insert_cost_daily(
         known_db,
         day=TODAY - POLICY_DAYS + 1,
@@ -219,7 +214,7 @@ def test_denominator_window_ends_today(known_db, today_client):
 
 
 def test_counts_as_of_today_not_the_chosen_day(known_db, today_client):
-    """状態のページは基準日を持たない。今日の報告で K が違う値になった u1 は、基準日を選んでも未適用に数え、分母も今日までの窓で数える。"""
+    """状態のページは基準日を持たない。今日の報告で K が違う値になった u1 は、基準日を選んでも未適用に数え、分母も今日までの `POLICY_DAYS` 日で数える。"""
     insert_compliant_policy(
         known_db, "x1", TODAY, "u1", "h1", ts=10**9, prev_value="80"
     )
@@ -296,17 +291,13 @@ def test_add_once_prefixed_rows_do_not_enter_compliance_rate(known_db, today_cli
     response = today_client.get(ADMIN + "/policy")
     assert response.status_code == 200
     rows = rows_in_table(response.get_data(as_text=True), "policy_settings")
-    from ccgov.vendor import policy as policy_module
-
-    assert len(rows) == len(policy_module.SET)
+    assert len(rows) == len(policy.SET)
 
 
 def test_set_dict_and_none_are_excluded_from_compliance_rate(today_client, monkeypatch):
     """`policy.SET` の値が dict や None の項目は、準拠率の表に出ない。"""
-    from ccgov.vendor import policy as policy_module
-
     monkeypatch.setattr(
-        policy_module,
+        policy,
         "SET",
         {
             REFERENCE_KEY: "60",

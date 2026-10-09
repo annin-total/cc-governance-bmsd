@@ -104,12 +104,11 @@ svg text { font: var(--fs-xs) var(--sans); fill: var(--muted); font-variant-nume
 .section + .section { margin-top: var(--sp-2xl); }
 .section .notice { margin: var(--sp-m) 0 0; }
 .holiday-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-m); margin: var(--sp-l) 0 0; }
-.holiday-form label { display: grid; gap: var(--sp-2xs); font-size: var(--fs-sm); color: var(--muted); }
+.holiday-form label, .upload-form label { display: grid; gap: var(--sp-2xs); font-size: var(--fs-sm); color: var(--muted); }
 .holiday-form input { font: inherit; font-size: var(--fs-label); padding: var(--sp-2xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); width: var(--date-w); }
 .holiday-form .grow input { width: var(--name-w); }
-.holiday-form input:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--card-hover); }
+.holiday-form input:focus, .search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--card-hover); }
 .upload-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-l); margin: var(--sp-l) 0 0; }
-.upload-form label { display: grid; gap: var(--sp-2xs); font-size: var(--fs-sm); color: var(--muted); }
 .upload-form input[type="file"] { font: inherit; font-size: var(--fs-label); color: var(--ink); }
 .upload-form input[type="month"] { font: inherit; font-size: var(--fs-label); padding: var(--sp-2xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--card); color: var(--ink); }
 .upload-form input[type="file"]::file-selector-button { font: inherit; margin-right: var(--sp-s); padding: var(--sp-2xs) var(--sp-m); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); cursor: pointer; }
@@ -140,7 +139,6 @@ svg text { font: var(--fs-xs) var(--sans); fill: var(--muted); font-variant-nume
 .filters { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-s) var(--sp-l); margin: var(--sp-l) 0 var(--sp-s); }
 .filters[hidden] { display: none; }
 .search input { width: var(--search-w); font: inherit; font-size: var(--fs-label); padding: var(--sp-2xs) var(--sp-s); border: 1px solid var(--rule); border-radius: var(--r-m); background: var(--bg); color: var(--ink); }
-.search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--card-hover); }
 .chipbar { display: flex; gap: var(--sp-3xs); background: var(--tabs); padding: var(--sp-3xs); border-radius: var(--r-m); }
 .chipbar[hidden] { display: none; }
 .chipbar button { display: inline-flex; align-items: center; gap: var(--sp-xs); border: 0; background: transparent; padding: var(--sp-3xs) var(--sp-s); border-radius: var(--r-s); font-size: var(--fs-label); color: var(--ink-2); cursor: pointer; white-space: nowrap; }

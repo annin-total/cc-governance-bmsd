@@ -1,6 +1,7 @@
 """サマリーの表（サーバ専用・行の識別子を持つ）と、作成・更新・削除・一覧・最新の 1 件。"""
 
 import re
+from contextlib import closing
 
 from ccgov.constants import SUMMARY_BODY_MAX, SUMMARY_TITLE_MAX
 from ccgov.reports import summary
@@ -30,13 +31,10 @@ def test_init_creates_the_summary_table_with_an_identifier(db_conn):
 
 def test_init_twice_keeps_the_rows(db_dsn):
     db.init()
-    conn = db.connect()
-    try:
+    with closing(db.connect()) as conn:
         summary.create(conn, _V, 20005 * _DAY)
         db.init()
         assert [r["title"] for r in summary.rows(conn)] == [_V["title"]]
-    finally:
-        conn.close()
 
 
 def test_create_dates_the_row_and_returns_its_id(db_conn):

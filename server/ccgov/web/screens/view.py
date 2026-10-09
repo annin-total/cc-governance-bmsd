@@ -41,11 +41,6 @@ CONSTANTS = {
 _SHADES = 3
 
 
-def is_long(data: dict) -> bool:
-    """12 か月の画面か（期間の無い画面は偽）。"""
-    return bool((data.get("period") or {}).get("long"))
-
-
 def pick(item, long: bool, days: Optional[int] = None):
     """期間で出すカード・タブ。その期間で出さないものは None。"""
     if not long:
@@ -72,8 +67,8 @@ def _words(card: Card) -> dict:
 
 
 def build(screen: Screen, data: dict) -> dict:
-    long = is_long(data)
-    days = (data.get("period") or {}).get("days")
+    period = data.get("period") or {}
+    long, days = bool(period.get("long")), period.get("days")
     ctx = {**CONSTANTS, **data}
     ctx[org.CTX] = _org(screen, ctx, long)
     groups = []
@@ -183,9 +178,7 @@ def _caps(words: dict, ctx: dict) -> tuple:
 
 
 def _tip(row: dict, value: float, fmt: str, words: dict) -> str:
-    unit = words.get("unit", "")
-    shown = text.FORMATS[fmt](value) + (f" {unit}" if unit else "")
-    return text.fill(L.SPARK_TIP, {**row, "value": shown})
+    return text.fill(L.SPARK_TIP, {**row, "value": viz_cost.shown(value, fmt, words)})
 
 
 def _viz(card: Card, words: dict, ctx: dict) -> Optional[dict]:

@@ -1,10 +1,9 @@
 """コストと利用者のページの「基準を超えた利用者」のカードとタブ。既知データは `over_data.py`。"""
 
-import importlib
 import re
 
 import pytest
-from conftest import admin_client, card, table_body, table_rows
+from conftest import card, dated_client, table_body, table_rows
 from cost_data import html_of
 
 LABEL = {
@@ -18,13 +17,8 @@ STATE = {"要確認": "ng", "注意": "warn", "正常": "ok"}
 def over_client(db_conn, monkeypatch):
     from over_data import TODAY, seed
 
-    import app as app_module
-    from ccgov.web import admin
-
     seed(db_conn)
-    importlib.reload(app_module)
-    monkeypatch.setattr(admin.time, "time", lambda: TODAY * 86400)
-    return admin_client(app_module.app)
+    return dated_client(monkeypatch, TODAY)
 
 
 def _cards(html: str) -> list:

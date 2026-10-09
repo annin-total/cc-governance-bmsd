@@ -1,6 +1,5 @@
 """サマリーの一覧・作成と編集（下書きを作る・保存）・削除の確認。すべてフォームで動き、JS を要らない。"""
 
-import datetime
 import re
 import time
 from typing import Optional
@@ -15,8 +14,6 @@ from ccgov.web.screens import overview as overview_screen
 from ccgov.web.screens import view
 
 _ID = re.compile(r"[0-9a-f]{32}")
-# 3.11 以降の `date.fromisoformat` は YYYY-MM-DD 以外の形も受けるため、形は先に正規表現で絞る
-_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
 def page() -> str:
@@ -32,13 +29,7 @@ def _found(sid: str) -> dict:
 
 def _asof(raw: str, basis: dict) -> int:
     """選べる範囲（`first`〜`last`）の日。範囲の外・日付の形でないものは既定（期間の終わり）。"""
-    day = None
-    if _DATE.fullmatch(raw):
-        try:
-            day = calendar.to_day(datetime.date.fromisoformat(raw))
-        except ValueError:
-            day = None
-    picked = windows.pick(day, basis["first"], basis["last"])
+    picked = windows.pick(calendar.parse_day(raw), basis["first"], basis["last"])
     return basis["end"] if picked is None else picked
 
 

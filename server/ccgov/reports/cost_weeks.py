@@ -1,7 +1,5 @@
 """12 か月の、利用明細（CSV）の週ごと（月曜始まり）と暦月ごとのコスト。
-
-CSV が 12 か月に満たなければ、CSV の最初の日から数える（記録の無い週を 0 で埋めない）。
-"""
+CSV が 12 か月に満たなければ、CSV の最初の日から数える（記録の無い週を 0 で埋めない）。"""
 
 import dataclasses
 
@@ -38,15 +36,9 @@ def _month_rows(months: list, weeks: list, values: list) -> list:
 
 
 def _from_data(window: Period, days) -> Period:
-    """窓の始まりを、記録のある最初の日まで遅らせる。"""
+    """期間の始まりを、記録のある最初の日まで遅らせる。"""
     return dataclasses.replace(
         window, start=max(window.start, min(days, default=window.start))
-    )
-
-
-def _spans(window: Period) -> tuple:
-    return calendar.weeks(window.start, window.end), calendar.months(
-        window.start, window.end
     )
 
 
@@ -54,7 +46,8 @@ def cost(found: dict, providers: list, window: Period) -> dict:
     """`found` は `{day: {provider: 合計}}`。月平均は CSV のある日数から 1 か月分に直す。"""
     totals = {day: sum(amounts.values()) for day, amounts in found.items()}
     window = _from_data(window, totals)
-    weeks, months = _spans(window)
+    weeks = calendar.weeks(window.start, window.end)
+    months = calendar.months(window.start, window.end)
     sums = {
         p: calendar.sum_by_spans({d: a.get(p, 0) for d, a in found.items()}, weeks)
         for p in providers

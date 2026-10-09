@@ -22,6 +22,13 @@ def test_rate_is_none_when_denominator_is_zero():
     assert rates.rate_row(0, 0) == (0, 0, None)
 
 
+def test_per_is_none_when_value_is_none():
+    """営業日 0 の期間は 1 営業日あたりが None になり、人数で割る段にも None が来る。"""
+    assert rates.per(None, 3) is None
+    assert rates.per(6.0, 0) is None
+    assert rates.per(6.0, 3) == 2.0
+
+
 def test_delta_subtracts_previous_from_recent():
     assert rates.delta(3, 5) == -2
     assert rates.delta(5, 3) == 2

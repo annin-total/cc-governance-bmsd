@@ -12,9 +12,11 @@ def total_between(values_by_day: dict, start: int, end: int) -> float:
     return sum(v for day, v in values_by_day.items() if start <= day <= end)
 
 
-def change_pct(recent: float, previous: float) -> Optional[float]:
-    """前の期間からの増減の百分率（小数 1 桁）。前の期間が 0 なら None。"""
-    return round((recent - previous) / previous * 100, 1) if previous else None
+def change_pct(recent: Optional[float], previous: Optional[float]) -> Optional[float]:
+    """前の期間からの増減の百分率（小数 1 桁）。どちらかが None か、前の期間が 0 なら None。"""
+    if recent is None or not previous:
+        return None
+    return round((recent - previous) / previous * 100, 1)
 
 
 def group_totals(pairs: list) -> list:

@@ -1,6 +1,7 @@
 """DB 方言（SQLite / MySQL）の差をこの 1 ファイルに閉じ込める層。"""
 
 import sqlite3
+from typing import Optional
 from urllib.parse import urlparse
 
 from ccgov.config import db_dsn
@@ -113,6 +114,16 @@ def q(sql: str) -> str:
     if _dialect() == "mysql":
         return sql.replace("?", "%s")
     return sql
+
+
+def execute(conn, sql: str, params: Optional[tuple] = None):
+    """`sql` を実行したカーソル（`?` は `q` で置き換える）。`params` を省くと引数なしで実行する。"""
+    cur = conn.cursor()
+    if params is None:
+        cur.execute(q(sql))
+    else:
+        cur.execute(q(sql), params)
+    return cur
 
 
 def _index_name(table: str, columns: tuple) -> str:

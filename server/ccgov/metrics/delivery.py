@@ -56,9 +56,7 @@ def summarize(
     event_days: list, report_days: list, billed: Optional[set], today: int
 ) -> dict:
     """`event_days` は `(利用者, 日, 件数)`、`report_days` は `(利用者, 日)`。`billed` は利用明細の利用者（明細が無ければ None）。
-
-    一覧は前か直近の `RECENT_DAYS` 日に届いた人。途絶えた人数の前の値は、同じ数え方を `RECENT_DAYS` 日前にずらしたもの。
-    """
+    一覧は前か直近の `RECENT_DAYS` 日に届いた人。途絶えた人数の前の値は、同じ数え方を `RECENT_DAYS` 日前にずらしたもの。"""
     weeks = _weeks(today)
     recent_w, prev_w, before_w = weeks
     seen: dict = {}

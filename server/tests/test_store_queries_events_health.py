@@ -36,15 +36,6 @@ def test_health_counts_prev_window(known_db):
     }
 
 
-def test_health_counts_unchanged_after_duplicate_injection(known_db):
-    """重複行を注入しても、イベント件数・端末数・NULL 率のいずれも変わらない。"""
-
-    def compute():
-        return collect.health_counts(known_db, TODAY)
-
-    assert_invariant_under_duplication(known_db, compute)
-
-
 def _seed_scoped_nulls(conn) -> None:
     """各列の分母に入るイベントと入らないイベントを、NULL を交えて 11 件投入する。"""
     rows = (
@@ -119,16 +110,6 @@ def test_reconciliation_rate_is_none_without_cost_daily(db_conn):
     """`cost_daily` が空なら、events があっても率は None。"""
     insert_event(db_conn, event_id="x1", day=TODAY, user_email="u1")
     assert collect.reconciliation_rate(db_conn, TODAY) == [(0, 0, None)]
-
-
-def test_reconciliation_rate_unchanged_after_duplicate_injection(known_db):
-    """重複行を注入しても突合率は 75.0% のまま。100% を超える経路も無い。"""
-
-    def compute():
-        return collect.reconciliation_rate(known_db, TODAY)
-
-    result = assert_invariant_under_duplication(known_db, compute)
-    assert result[0][2] <= 100.0
 
 
 def test_all_health_numbers_survive_full_duplication_at_once(known_db):

@@ -1,4 +1,4 @@
-"""利用状況の集計クエリ。窓の端と、再送の重複で値が変わらないこと。既知データは `activity_data.py`。"""
+"""利用状況の集計クエリ。期間の端と、再送の重複で値が変わらないこと。既知データは `activity_data.py`。"""
 
 import pytest
 from activity_data import BYPASS, END, A, B, C, D, seed

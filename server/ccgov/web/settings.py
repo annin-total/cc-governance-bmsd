@@ -1,7 +1,5 @@
 """「データと設定」のページ（取り込む・書き出す・会社の休日）の描画と、会社の休日の追加（期間でまとめて）・削除（1 日ずつ）。"""
 
-import datetime
-import re
 from typing import Optional
 
 from flask import Response, current_app, redirect, render_template, request, url_for
@@ -11,11 +9,9 @@ from ccgov.ingestion import csv_upload
 from ccgov.metrics import calendar
 from ccgov.reports import csv_files, export, holidays, roster
 from ccgov.store import db
-from ccgov.web import charts, labels
+from ccgov.web import charts, labels, text
 from ccgov.web.screens import Col, Tab, table
 
-# 3.11 以降の `date.fromisoformat` は YYYY-MM-DD 以外の形も受けるため、形は先に正規表現で絞る
-_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 HOLIDAYS = Tab(
     "holidays",
     "holidays",
@@ -59,13 +55,11 @@ class InputError(ValueError):
     """フォームの誤り。`args[0]` は `labels.HOLIDAY_ERROR` のキー。"""
 
 
-def _day(text: str) -> int:
-    if not _DATE.fullmatch(text):
+def _day(raw: str) -> int:
+    day = calendar.parse_day(raw)
+    if day is None:
         raise InputError("format")
-    try:
-        return calendar.to_day(datetime.date.fromisoformat(text))
-    except ValueError:
-        raise InputError("format") from None
+    return day
 
 
 def parse(form) -> tuple:
@@ -79,6 +73,12 @@ def parse(form) -> tuple:
     if not 1 <= len(name) <= HOLIDAY_NAME_MAX:
         raise InputError("name")
     return list(range(start, end + 1)), name
+
+
+def rejected(errors: dict, e: csv_upload.Rejected, name: Optional[str] = None) -> dict:
+    """取込を断った知らせ。`errors` は理由ごとの文言（`labels.CSV_ERROR` など）。"""
+    detail = e.args[1] if len(e.args) > 1 else ""
+    return {"file": name, "error": text.fill(errors[e.args[0]], {"detail": detail})}
 
 
 def run(action, *args):
@@ -115,7 +115,6 @@ def render(
     org=(),
 ):
     """ページ全体を描く。`error`・`form` は休日の知らせと入力、`imported`・`org` は取込の結果、`export_error` は書き出しの知らせ。
-
     `form` を `request.form` から読まないのは、大きさの上限を超えた取込の応答でも描くため（本文を読むと 413 を繰り返す）。
     """
     data = run(_build)

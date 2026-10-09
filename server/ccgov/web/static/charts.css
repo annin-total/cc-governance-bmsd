@@ -1,13 +1,12 @@
 /* 見込みのカード・累積のグラフ・週ごとの棒の月の行。値は tokens.css の変数だけを使う */
 
 /* 累積の線: 今月の実績・見込みの破線・前月 */
-.cum polyline { fill: none; stroke-linejoin: round; }
+.cum polyline { fill: none; stroke-linejoin: round; stroke-width: var(--cum-line); }
 .fc-cum-now, .cum .cum-now { stroke: var(--accent); }
 .fc-cum-fc, .cum .cum-fc { stroke: var(--accent); stroke-dasharray: var(--cum-dash); }
 .fc-cum-prev, .cum .cum-prev { stroke: var(--ghost); }
 
 /* 今月のコストの累積: 今月の実績・見込みの破線・前月と、休みの日の帯 */
-.cum polyline { stroke-width: var(--cum-line); }
 .cum .dot-now { fill: var(--accent); }
 .cum .dot-fc { fill: var(--card); stroke: var(--accent); stroke-width: 1.5; }
 .cum .dot-prev { fill: var(--ghost); visibility: hidden; }

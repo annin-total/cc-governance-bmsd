@@ -1,4 +1,4 @@
-"""利用状況のページの集計クエリ。窓は直近と前の N 日（`Period`）。件数はすべて `event_id` で一意化する。"""
+"""利用状況のページの集計クエリ。期間は直近と前の N 日（`Period`）。件数はすべて `event_id` で一意化する。"""
 
 from ccgov.constants import AGENT_TOOLS, BYPASS_MODE, MCP_PREFIX, WEB_TOOLS
 from ccgov.metrics.windows import Period
@@ -6,12 +6,15 @@ from ccgov.store import db
 
 _TOOL_EVENTS = "hook_event IN ('PostToolUse', 'PostToolUseFailure')"
 _IN_WINDOW = "CASE WHEN day BETWEEN ? AND ? THEN {} END"
+SESSION_SIZE = (
+    "MAX(CASE WHEN hook_event = 'Stop' THEN context_tokens END),"
+    " MAX(CASE WHEN hook_event = 'PreCompact' AND compact_trigger = 'auto' THEN 1 ELSE 0 END)"
+)
+SESSION_EVENTS = "hook_event IN ('Stop', 'PreCompact') AND session_id IS NOT NULL"
 
 
 def _rows(conn, sql: str, params: tuple) -> list:
-    cur = conn.cursor()
-    cur.execute(db.q(sql), params)
-    return [tuple(r) for r in cur.fetchall()]
+    return [tuple(r) for r in db.execute(conn, sql, params).fetchall()]
 
 
 def user_day_sessions(conn, start: int, end: int) -> list:
@@ -28,16 +31,14 @@ def user_day_sessions(conn, start: int, end: int) -> list:
 
 
 def _sides(w: Period, what: str) -> tuple:
-    """直近と前の窓で数える 2 列の SQL と、その引数。"""
+    """直近と前の N 日で数える 2 列の SQL と、その引数。"""
     sql = f"COUNT(DISTINCT {_IN_WINDOW.format(what)}), COUNT(DISTINCT {_IN_WINDOW.format(what)})"
     return sql, (w.start, w.end, w.prev_start, w.prev_end)
 
 
 def calls(conn, w: Period) -> tuple:
     """(スキル, コマンド, ツール) の利用者ごとの呼び出し回数（直近・前）。
-
-    ツールは外部ツールとサブエージェントの起動の候補だけで、本体の中（`agent_id` が無い）かを 3 列目に持つ。
-    """
+    ツールは外部ツールとサブエージェントの起動の候補だけで、本体の中（`agent_id` が無い）かを 3 列目に持つ。"""
     sides, params = _sides(w, "event_id")
     span = (w.prev_start, w.end)
     skills = _rows(
@@ -67,14 +68,12 @@ def calls(conn, w: Period) -> tuple:
 
 
 def sessions(conn, w: Period) -> list:
-    """セッション × 窓の (利用者, 窓, 応答終了時のコンテキストの最大, 自動コンパクトに達したか)。"""
+    """セッション × 直近か前かの (利用者, 直近か前か, 応答終了時のコンテキストの最大, 自動コンパクトに達したか)。"""
     side = "CASE WHEN day >= ? THEN 'recent' ELSE 'prev' END"
     return _rows(
         conn,
-        f"SELECT session_id, user_email, {side},"
-        " MAX(CASE WHEN hook_event = 'Stop' THEN context_tokens END),"
-        " MAX(CASE WHEN hook_event = 'PreCompact' AND compact_trigger = 'auto' THEN 1 ELSE 0 END)"
-        " FROM events WHERE hook_event IN ('Stop', 'PreCompact') AND session_id IS NOT NULL"
+        f"SELECT session_id, user_email, {side}, {SESSION_SIZE}"
+        f" FROM events WHERE {SESSION_EVENTS}"
         f" AND day BETWEEN ? AND ? GROUP BY session_id, user_email, {side}",
         (w.start, w.prev_start, w.end, w.start),
     )

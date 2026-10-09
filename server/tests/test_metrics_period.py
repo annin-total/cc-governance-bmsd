@@ -1,4 +1,4 @@
-"""期間の窓（`metrics.windows`）と、日付・週・月へのまとめ（`metrics.calendar`）の検証。"""
+"""期間の開始日・終了日（`metrics.windows`）と、日付・週・月へのまとめ（`metrics.calendar`）の検証。"""
 
 import datetime
 
@@ -29,7 +29,7 @@ def test_long_period_is_twelve_months_without_comparison():
 
 
 def test_period_can_move_its_end_keeping_the_length():
-    """利用明細の窓は CSV の最終日で終わる。長さと種類は変えずに終わりだけを動かす。"""
+    """利用明細の期間は CSV の最終日で終わる。長さと種類は変えずに終わりだけを動かす。"""
     moved = windows.period("28", 100).ending(90)
     assert (moved.start, moved.end, moved.prev_start, moved.prev_end) == (
         63,
