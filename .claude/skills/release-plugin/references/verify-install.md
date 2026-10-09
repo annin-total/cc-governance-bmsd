@@ -1,18 +1,14 @@
-# staging で確かめる
+# 作業ブランチから導入して確かめる
 
-配布リポジトリの main へ入れる前に、作業ブランチを `staging` ブランチへ反映し、
-使い捨ての隔離環境（`CLAUDE_CONFIG_DIR`）に ref 付きで導入して確かめる。利用者本人の実環境には触れない。
-名前と URL は `governance.md` にある。
+配布リポジトリの main へ入れる前に、PR に出す作業ブランチ（`release/<版>`）そのものを push し、
+使い捨ての隔離環境（`CLAUDE_CONFIG_DIR`）にそのブランチを ref に付けて導入して確かめる。利用者本人の実環境には触れない。
+確かめたブランチをそのまま PR にする。名前と URL は `governance.md` にある。
 
-1. 配布リポジトリで、作業ブランチを push し、`staging` へ反映する（どちらも利用者の承認を得てから）
+1. 配布リポジトリで、作業ブランチを push する（利用者の承認を得てから）
 
    ```bash
    git -C <置き場> push -u origin release/<版>
-   git -C <置き場> push origin release/<版>:staging
    ```
-
-   `staging` がまだ無ければこの push が作成を兼ねる。fast-forward できないとき（前のリリースの staging が残っているなど）は `--force` が要る。
-   `staging` は検証専用で履歴を保存する対象ではないため、force push してよい。force は `staging` にだけ使う
 
 2. 使い捨ての隔離ディレクトリを用意する
 
@@ -23,23 +19,24 @@
    **出たパスを、以降の各コマンドに直接書く（下の `<隔離ディレクトリ>`）。シェル変数に入れない。**
    Claude Code の Bash ツールは呼び出しごとに変数を引き継がず、`CLAUDE_CONFIG_DIR` が空になると本人の実環境に書き込むおそれがある
 
-3. ref に `staging` を付けて登録し、導入する。`CLAUDE_CONFIG_DIR` はコマンドごとに前置し、export しない。CLI では `#` の後ろに ref を書く
+3. ref に作業ブランチを付けて登録し、導入する。`CLAUDE_CONFIG_DIR` はコマンドごとに前置し、export しない。CLI では `#` の後ろに ref を書く
 
    ```bash
-   CLAUDE_CONFIG_DIR="<隔離ディレクトリ>" claude plugin marketplace add "<配布リポジトリの URL>#staging" --scope user
+   CLAUDE_CONFIG_DIR="<隔離ディレクトリ>" claude plugin marketplace add "<配布リポジトリの URL>#release/<版>" --scope user
    CLAUDE_CONFIG_DIR="<隔離ディレクトリ>" claude plugin install <プラグイン名>@<マーケットプレイス名> --scope user
    CLAUDE_CONFIG_DIR="<隔離ディレクトリ>" claude plugin list
    ```
 
    合格: プラグインが `enabled` で現れ、版が上げた版と一致する（main の版のままなら ref が効いていない）。
-   `<owner>/<repo>#staging` の短縮形は GitHub を SSH で clone する（SSH 鍵が無いと失敗する）。URL を使う
+   `<owner>/<repo>#<ref>` の短縮形は GitHub を SSH で clone する（SSH 鍵が無いと失敗し、GitHub 以外では使えない）。URL を使う。
+   URL に ref を付けた形は `governance.md` にある。`/` を含むブランチ名を ref に付けた導入は実機で確かめていない
 
 4. 認証を環境変数で渡し（会社は Bedrock。渡す変数は `docs/guide/e2e.md` の「認証」）、空のディレクトリからセッションを開いて
    `/plugin` の版と動作を確かめる。起動のしかたは `docs/guide/e2e.md` の「手動確認の準備」と同じにし
    （`env -i` で親の変数を断ち、`--settings` で本体の自動更新を止める）、`CLAUDE_CONFIG_DIR` には `<隔離ディレクトリ>` を渡す。
    対話でしか見えないもの（お知らせの表示など）は、コマンドを渡して利用者に別のターミナルで見てもらう
 
-5. 行が本番の受信先に届いたことを確かめる。staging で配る `config.json` は本番の送信先を持つので、
+5. 行が本番の受信先に届いたことを確かめる。作業ブランチの `config.json` は本番の送信先を持つので、
    この端末（開発者本人）の行は本番の DB に入る。これは許容する
 
    合格: 設定の適用状況（`/policy`）の「プラグインが古いバージョンの利用者」のカードの「最新」に上げた版が出る（行が届いた証拠）。
