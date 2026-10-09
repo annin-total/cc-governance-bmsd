@@ -109,6 +109,8 @@ def _insert(conn, table: str, columns: tuple, rows) -> None:
     sql = db.q(f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})")
     cur = conn.cursor()
     for row in rows:
+        if unknown := set(row) - set(columns):
+            raise ValueError(f"{table} に無い列: {sorted(unknown)}")
         values = tuple(row.get(name) for name in columns)
         cur.execute(sql, values)
     conn.commit()
