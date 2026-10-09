@@ -1,9 +1,8 @@
 """コストと利用者のページ（`/cost`）のカードの検証。既知データは `cost_data.py`。"""
 
-import importlib
 import re
 
-from conftest import admin_client, card, card_value
+from conftest import card, card_value, dated_client
 from cost_data import TODAY, html_of
 
 LABELS = {
@@ -164,12 +163,7 @@ def test_12_months_do_not_compare_or_judge(cost_client):
 
 
 def test_page_without_csv_shows_dashes(db_conn, monkeypatch):
-    import app as app_module
-    from ccgov.web import admin
-
-    importlib.reload(app_module)
-    monkeypatch.setattr(admin.time, "time", lambda: TODAY * 86400)
-    cost_client = admin_client(app_module.app)
+    cost_client = dated_client(monkeypatch, TODAY)
     for query in ("", "?period=28", "?period=12m"):
         html = html_of(cost_client, query)
         assert card_value(html, LABELS["total"]) == "—"

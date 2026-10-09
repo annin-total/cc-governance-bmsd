@@ -27,11 +27,6 @@ _WARN = 'class="mark warn"'
 _NG = 'class="mark ng"'
 
 
-def test_policy_page_returns_200(today_client):
-    response = today_client.get(ADMIN + "/policy")
-    assert response.status_code == 200
-
-
 def _html(client, query: str = "") -> str:
     return client.get(ADMIN + "/policy" + query).get_data(as_text=True)
 
@@ -296,17 +291,13 @@ def test_add_once_prefixed_rows_do_not_enter_compliance_rate(known_db, today_cli
     response = today_client.get(ADMIN + "/policy")
     assert response.status_code == 200
     rows = rows_in_table(response.get_data(as_text=True), "policy_settings")
-    from ccgov.vendor import policy as policy_module
-
-    assert len(rows) == len(policy_module.SET)
+    assert len(rows) == len(policy.SET)
 
 
 def test_set_dict_and_none_are_excluded_from_compliance_rate(today_client, monkeypatch):
     """`policy.SET` の値が dict や None の項目は、準拠率の表に出ない。"""
-    from ccgov.vendor import policy as policy_module
-
     monkeypatch.setattr(
-        policy_module,
+        policy,
         "SET",
         {
             REFERENCE_KEY: "60",

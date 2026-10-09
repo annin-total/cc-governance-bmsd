@@ -1,11 +1,10 @@
 """利用状況のページ（`/activity`）。既知データは `activity_data.py`、7 日の直近は 20022〜20028。"""
 
-import importlib
 import re
 
 import pytest
-from activity_data import TODAY, html_of, seed
-from conftest import ADMIN, admin_client, card, card_value, table_body, table_rows
+from activity_data import html_of
+from conftest import ADMIN, card, card_value, table_body, table_rows
 
 CARDS = (
     "1 人あたりの利用日数", "1 人 1 日あたりの指示", "1 人 1 日あたりのセッション",
@@ -13,17 +12,6 @@ CARDS = (
     "セッションの大きさ（中央）", "自動コンパクトに達した割合", "Bypass 権限モードの使用",
 )  # fmt: skip
 TABS = ["user_use", "user_calls", "daily_use", "calls", "session_size", "usage_modes"]
-
-
-@pytest.fixture
-def act_client(db_conn, monkeypatch):
-    import app as app_module
-    from ccgov.web import admin
-
-    seed(db_conn)
-    importlib.reload(app_module)
-    monkeypatch.setattr(admin.time, "time", lambda: TODAY * 86400)
-    return admin_client(app_module.app)
 
 
 def _chip(fragment: str) -> tuple:

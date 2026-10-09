@@ -11,13 +11,11 @@ from conftest import ADMIN, table_rows
 from known_data import (
     K,
     insert_cost_daily,
+    insert_error,
     insert_event,
     insert_policy_state,
 )
 from names_data import OCT, put
-
-from ccgov.store import db
-from ccgov.vendor import contract
 
 _DAY = 20004
 # 日次の基準（注意 50）を超え、同じ日に同じ額を使った名前のある利用者と並べ替えの順が決まらない額
@@ -43,15 +41,6 @@ _PAGES = [
 ]
 
 
-def _insert_error(conn, **values) -> None:
-    columns = tuple(name for name, _ in contract.ERROR_COLUMNS)
-    sql = db.q(
-        f"INSERT INTO errors ({', '.join(columns)}) VALUES ({', '.join('?' for _ in columns)})"
-    )
-    conn.cursor().execute(sql, tuple(values.get(name) for name in columns))
-    conn.commit()
-
-
 @pytest.fixture
 def null_client(known_db, today_client):
     put(known_db, OCT, (("u1", "十月 一郎", "開発部", "第1課"),))
@@ -75,7 +64,7 @@ def null_client(known_db, today_client):
             provider="aws-bedrock",
             cost=_TIED_COST,
         )
-    _insert_error(
+    insert_error(
         known_db, event_id="xn", ts=100, day=_DAY, user_email=None, host="hn",
         plugin_version="1.4.0", stage="hook_entry", error_type="KeyError",
     )  # fmt: skip

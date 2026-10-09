@@ -126,6 +126,10 @@ def insert_cost_daily(conn, **overrides) -> None:
     _insert(conn, "cost_daily", _cost_columns(), [overrides])
 
 
+def insert_error(conn, **overrides) -> None:
+    _insert(conn, "errors", tuple(n for n, _ in contract.ERROR_COLUMNS), [overrides])
+
+
 def insert_compliant_policy(
     conn, event_id: str, day: int, user_email: str, host: str, **overrides
 ) -> None:
