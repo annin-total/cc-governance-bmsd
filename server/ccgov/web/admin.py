@@ -161,7 +161,7 @@ def index() -> str:
 
 @admin.route("/cost")
 def cost_view() -> str:
-    return _period_page("screen.html", cost_screen.SCREEN, cost_page.build)
+    return _period_page("cost.html", cost_screen.SCREEN, cost_page.build)
 
 
 def _today() -> int:

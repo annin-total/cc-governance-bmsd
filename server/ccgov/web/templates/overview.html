@@ -1,3 +1,4 @@
+{% set here = "admin.index" %}
 {% extends "base.html" %}
 {#- 概況: 先頭に最新のサマリー（無ければ出さない）。専用ページのカードを 1 つの格子に流す。カードを押すと専用ページのタブへ、期間（期間のページだけ）と基準日を引き継いで移る -#}
 {% from "components/period.html" import switcher, span as period_span, stale %}
