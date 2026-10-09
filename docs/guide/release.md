@@ -131,12 +131,7 @@ python scripts/validate.py
 
 数日後に設定の適用状況（`/policy`）のバージョンのタブで `plugin_version` の分布を見る。この列はセッションを開始した時点の版であり、長く開いたままのセッションは古い版を報告し続ける。更新の直後に新旧が混じるのは正常で、**古い版が何日も残り続けることが、配布の届いていない端末の印である。**
 
-対話でメッセージを送ってからしばらく経っても版が上がらない端末では（自動更新が走る条件は `../knowledge/claude-code-behavior.md`）、手動更新の 2 段階を両方行う（1 段目はカタログを更新するだけで、本体の版は上がらない）。
-
-```
-claude plugin marketplace update cc-marketplace-governance-bmsd
-claude plugin update governance
-```
+hook からの更新の確認は、前回から `plugin/hooks/_updater.py` の `UPDATE_INTERVAL_SEC` 以上たった対話の起動でだけ走る（条件は `../spec/plugin.md` の「プラグインの更新」）。その間隔を過ぎて対話で起動し直しても版が上がらない端末では、`onboarding.md` の案内文の「更新が届かない場合」の 2 つを両方実行してもらう（1 つ目はカタログを更新するだけで、プラグインの版は上がらない）。
 
 ## 10. 誤った設定値を配ってしまったとき
 
@@ -186,3 +181,4 @@ claude plugin update governance
 - 2026-10-08: 版の分布とエラーを見る場所を、設定の適用状況のバージョンのタブと収集の状態のプラグインのエラーにし、staging の合格を分母に依らない「最新」の版で見るようにした
 - 2026-10-09: お知らせを `notices.json` の末尾に足すことを確認項目に加えた
 - 2026-10-09: 書き換える直前の `settings.json` の置き場を `settings-backups/` にした
+- 2026-10-09: 手動更新の手順を `onboarding.md` の案内文に寄せた

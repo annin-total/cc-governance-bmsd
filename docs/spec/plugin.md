@@ -2,14 +2,14 @@
 
 ## 概要
 
-Claude Code の端末プラグイン。設定の自動適用・お知らせの表示・利用イベントの収集と送信を
+Claude Code の端末プラグイン。設定の自動適用・お知らせの表示・利用イベントの収集と送信・自身の更新の起動を
 行う。配布名は `governance`、ソースは `plugin/`。全体像と契約（`plugin/hooks/contract.py`）
 の位置づけは `system.md` にある。
 
 hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `session_start.py`
 （`SessionStart`）の 2 つだけであり、`_` 始まりの
 ファイルは内部モジュールである。ほかに利用者が呼ぶ `/governance:reapply`（入口は
-`reapply.py`）がある。端末の状態（識別子のキャッシュ・既読・送信待ち・前回動いた版）は `${CLAUDE_PLUGIN_DATA}`
+`reapply.py`）がある。端末の状態（識別子のキャッシュ・既読・送信待ち・前回動いた版・前回更新を起動した時刻）は `${CLAUDE_PLUGIN_DATA}`
 （無ければ `~/.claude/cc-governance/`）に置く。アンインストールすると `${CLAUDE_PLUGIN_DATA}` は消え、既読と
 未送信分（`queue.jsonl`・`spool/`）も失われる（上流の挙動は `../knowledge/claude-code-behavior.md`）。
 
@@ -48,7 +48,7 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 `command_name`・`command_source`）、`tool_name`（MCP のツールはサーバ名を含む）、端末のホスト名（`host`）、`user_email` だけである。
 
 環境変数 `CC_GOVERNANCE_DISABLE` が空でないとき、**利用ログの収集とお知らせの表示**を
-止める。設定の適用と policy イベントの記録・送信（`SessionStart` での送信判定）は続ける。`Stop` では送信しない。
+止める。設定の適用と policy イベントの記録・送信（`SessionStart` での送信判定）・プラグインの更新の起動は続ける。`Stop` では送信しない。
 
 ## 蓄積と送信
 
@@ -149,6 +149,28 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
 1 件ずつ出す理由と、`resume`・`compact` で出さない理由は `../decisions/plugin.md` にある。
 表示の接頭辞と長文の退避の挙動は `../knowledge/claude-code-behavior.md` にある。
 
+## プラグインの更新
+
+`session_start.py` は、`SessionStart` の `source` が `startup` で、非対話（`CLAUDE_CODE_ENTRYPOINT` が `sdk-` 始まり）
+でなく、前回起動してから `plugin/hooks/_updater.py` の `UPDATE_INTERVAL_SEC` 以上たっていれば、切り離したプロセスで
+次の 2 つを順に実行する。hook は待たずに終わり、新しい版が効くのは次の起動からである。
+
+```
+claude plugin marketplace update <marketplace>
+claude plugin update <plugin>@<marketplace> --scope user
+```
+
+- `<plugin>` は `plugin.json` の `name`、`<marketplace>` は `plugin/hooks/policy.py` の `MARKETPLACE`。
+  `name` が取れないときは起動しない
+- 起動の前に、時刻を `${CLAUDE_PLUGIN_DATA}` の `update_at`（mtime）に書く。書けなければ起動しない。
+  記録の時刻が未来なら起動する
+- `claude` が `PATH` の絶対パスの項目に無いとき・コマンドが失敗したとき・`COMMAND_TIMEOUT_SEC` で打ち切ったときは何もしない
+  （error 行も積まない）。1 つ目が失敗しても 2 つ目は実行する
+- 更新するのは user スコープの導入だけである。local・project スコープだけの導入では 2 つ目が失敗で終わる
+- 無効化スイッチでは止めない
+
+理由は `../decisions/plugin.md` にある。
+
 ## 改訂履歴
 
 - 2026-09-25: 設定の定義を `policy.py` に分け、`SET` / `ADD` / `REMOVE` / `ONCE`・バックアップ・
@@ -164,3 +186,4 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
 - 2026-09-28: `config.json` が無いときに退避も破棄もしないことと、spool が送信先を持たないことを書いた
 - 2026-10-09: お知らせを `startup` と `clear` のときに未読の先頭から 1 件ずつ出すことを書いた
 - 2026-10-09: バックアップの置き場を `settings-backups/` の日時のフォルダにし、自動では消さないこと・`statusLine` の指すファイルを写すこと・導入・更新の後にも保存することを書いた
+- 2026-10-09: 対話の `startup` でプラグインの更新を切り離して起動することと、無効化スイッチで止めないことを書いた

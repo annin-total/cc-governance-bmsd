@@ -14,6 +14,10 @@
 
 利用者へそのまま送れる文面である。`<...>` の箇所を差し込んで使う。
 
+マーケットプレイスは git 型（ssh）で、user スコープに導入させる。URL は scp 形式（`git@<別名>:<パス>.git`）にし、
+ポートは ssh の設定の別名で与える（受け付ける URL の形は `../knowledge/claude-code-behavior.md`）。
+プラグインの更新は user スコープの導入だけを対象にする（`../decisions/plugin.md`）。
+
 ---
 
 **件名: Claude Code ガバナンスプラグインの導入について**
@@ -40,11 +44,21 @@ git config --global user.email
 
 **導入手順**
 
-Claude Code の中で、次の 2 つを順に実行してください。
+社内リポジトリへは ssh で接続します。鍵の登録がまだの方は `<鍵の登録の案内>` に従って登録してください。
+次に、`~/.ssh/config`（Windows は `%USERPROFILE%\.ssh\config`）に次の設定を足してください。
 
 ```
-/plugin marketplace add <社内リポジトリの git URL（https、末尾 .git）>
-/plugin install governance@cc-marketplace-governance-bmsd
+Host <別名>
+  HostName <社内リポジトリのホスト名>
+  Port <ポート>
+  User git
+```
+
+ターミナルで次の 2 つを順に実行してください。
+
+```
+claude plugin marketplace add git@<別名>:<リポジトリのパス>.git --scope user
+claude plugin install governance@cc-marketplace-governance-bmsd --scope user
 ```
 
 **導入できたことの確認**
@@ -58,11 +72,11 @@ Claude Code の利用状況（利用日時・利用したツールの種別・�
 
 **更新が届かない場合**
 
-通常は自動で更新されますが、環境によっては手動での更新が必要です。その場合は次の 2 つを両方実行してください（1 つ目だけでは更新されません）。
+通常は Claude Code を起動したときに自動で更新され、次に起動したときから新しい版になります。届かない場合は次の 2 つを両方実行してください（1 つ目だけでは更新されません）。
 
 ```
 claude plugin marketplace update cc-marketplace-governance-bmsd
-claude plugin update governance
+claude plugin update governance@cc-marketplace-governance-bmsd --scope user
 ```
 
 **困ったときの連絡先**
@@ -112,3 +126,4 @@ claude plugin update governance
 - 2026-10-07: 収集する項目の案内に、組織の名簿との照合と、管理者が利用者ごとのコストと利用状況を確認することを加えた
 - 2026-10-08: 施策が効いたかを見る指標をセッションの大きさと自動コンパクトに達した割合にした
 - 2026-10-08: 導入していない人を見る場所を、設定の適用状況の利用者ごとの適用状況にした
+- 2026-10-09: 導入を git 型（ssh の別名と scp 形式の URL）と user スコープにそろえ、更新が次の起動から効くことを書いた
