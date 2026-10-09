@@ -15,7 +15,6 @@ import sys
 import time
 from typing import Any, Optional
 
-import _browser
 import _govdir
 import _identity
 import _notices
@@ -73,16 +72,11 @@ def _apply_settings_step() -> None:
         )
 
 
-def _mark_seen_and_open(unread: list, seen: set) -> None:
-    """`CLAUDE_CODE_ENTRYPOINT` が `sdk-` 始まりの起動では何もしない。それ以外は未読を既読にし、書けたら対話起動（`cli`）に限り先頭の URL を開く（書けない端末で毎回開かないため）。"""
-    if _browser.is_headless():
+def _mark_seen(notice: dict, seen: set) -> None:
+    """表示した 1 件を既読にする。非対話の起動では書かない（人が見ていないため）。"""
+    if _notices.is_headless():
         return
-    if not _notices._write_seen(seen | {n["id"] for n in unread}):
-        return
-    if _browser.is_interactive():
-        url = _notices.first_url(unread)
-        if url:
-            _browser.open_url(url)
+    _notices._write_seen(seen | {notice["id"]})
 
 
 def _emit_output(output: dict) -> bool:
@@ -103,13 +97,9 @@ def _emit_output(output: dict) -> bool:
         return False
 
 
-def _collect_step(hook_event: Optional[str], disabled: bool) -> None:
-    """利用ログを収集し、送信条件を判定する。送信判定は無効化スイッチの外側で行う。
-
-    標準入力の読み取り（`RecursionError` などを投げうる）もここに置き、失敗を他の段へ波及させない。
-    """
+def _collect_step(raw_input: Any, hook_event: Optional[str], disabled: bool) -> None:
+    """利用ログを収集し、送信条件を判定する。送信判定は無効化スイッチの外側で行う。"""
     if not disabled:
-        raw_input = _read_stdin_json()
         _spool.append(extract_event(raw_input, hook_event))
 
     send_if_due()
@@ -136,21 +126,37 @@ def main() -> None:
     except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
         append_error("apply_settings", type(e).__name__, hook_event)
 
+    # 標準入力は 1 回しか読めないので、お知らせ（source）と収集で共有する。
+    # 読み取りは RecursionError などを投げうるため、失敗は収集の段として記録し、他の段へ波及させない。
+    raw_input: Any = None
+    read_failed = False
+    if not disabled:
+        try:
+            raw_input = _read_stdin_json()
+        except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+            read_failed = True
+            append_error("collect", type(e).__name__, hook_event)
+    source = raw_input.get("source") if isinstance(raw_input, dict) else None
+
     try:
-        output, unread, seen = _notices.notices_step(disabled, _notices._NOTICES_PATH)
+        output, notice, seen = _notices.notices_step(
+            disabled, source, _notices._NOTICES_PATH
+        )
     except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
-        output, unread, seen = {}, [], set()
+        output, notice, seen = {}, None, set()
         append_error("notices", type(e).__name__, hook_event)
 
     # 出力は必ず 1 回だけ行う。ここより上で何が失敗しても、少なくとも空の JSON を出す。
-    if _emit_output(output) and unread:
+    if _emit_output(output) and notice is not None:
         try:
-            _mark_seen_and_open(unread, seen)
+            _mark_seen(notice, seen)
         except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
             append_error("mark_seen", type(e).__name__, hook_event)
 
+    if read_failed:
+        return
     try:
-        _collect_step(hook_event, disabled)
+        _collect_step(raw_input, hook_event, disabled)
     except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
         append_error("collect", type(e).__name__, hook_event)
 

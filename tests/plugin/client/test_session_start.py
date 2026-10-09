@@ -228,11 +228,11 @@ def test_output_no_unread_omits_system_message_key(notices_file, tmp_path, capsy
     assert "systemMessage" not in out
 
 
-def test_output_seen_file_contains_both_ids(notices_file, tmp_path, capsys):
+def test_output_seen_file_contains_shown_id_only(notices_file, tmp_path, capsys):
     session_start.main()
     capsys.readouterr()
     seen = json.loads(_seen_file(tmp_path).read_text(encoding="utf-8"))
-    assert set(seen) == {"n-001", "n-002"}
+    assert set(seen) == {"n-001"}
 
 
 def test_output_write_failure_keeps_seen_unchanged(
@@ -273,7 +273,7 @@ def test_output_retried_after_failure_shows_again(notices_file, capsys, raising_
     session_start.main()
     out = json.loads(capsys.readouterr().out)
     assert MARKER in out["systemMessage"]
-    assert "本文2" in out["systemMessage"]
+    assert "本文2" not in out["systemMessage"]
 
 
 def test_output_existing_seen_entry_is_preserved(notices_file, tmp_path, capsys):
@@ -284,17 +284,10 @@ def test_output_existing_seen_entry_is_preserved(notices_file, tmp_path, capsys)
     assert set(seen) == {"n-001", "n-002"}
 
 
-def test_output_two_items_are_joined_by_blank_line(notices_file, capsys):
+def test_output_is_first_unread_only_without_decoration(notices_file, capsys):
     session_start.main()
     out = json.loads(capsys.readouterr().out)
-    message = out["systemMessage"]
-    assert isinstance(message, str)
-    parts = message.split("\n\n")
-    assert len(parts) == 2
-    assert MARKER in parts[0]
-    assert "本文2" in parts[1]
-    for decoration in ("【お知らせ】", "SessionStart:"):
-        assert decoration not in message
+    assert out["systemMessage"] == f"件名1\n本文1 {MARKER}"
 
 
 # ---- 実行順序 ----
@@ -327,7 +320,7 @@ def test_order_collect_failure_leaves_earlier_steps_done(
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
     assert "systemMessage" in out
     seen = json.loads(_seen_file(tmp_path).read_text(encoding="utf-8"))
-    assert set(seen) == {"n-001", "n-002"}
+    assert set(seen) == {"n-001"}
     assert captured.err == ""
 
 
@@ -398,11 +391,11 @@ def test_order_call_order_is_settings_notice_collect(notices_file, monkeypatch, 
     assert calls == ["settings", "notices", "collect"]
 
 
-def test_order_stdin_read_failure_does_not_silence_settings_and_notices(
-    notices_file, tmp_path, monkeypatch, capsys
+def test_order_stdin_read_failure_does_not_silence_settings(
+    notices_file, tmp_path, monkeypatch, capsys, spy_launch
 ):
-    """標準入力の読み取りの失敗（深い入れ子で RecursionError）は収集だけに留まる。
-    読み取りが 3 ステップの try の外にあると、設定の適用・お知らせ・キューへの記録が丸ごと消える。
+    """標準入力の読み取りの失敗（深い入れ子で RecursionError）でも、設定の適用と policy 行は残る。
+    開始の種類が読めないので、お知らせは出さず既読にもしない。収集の段（送信判定を含む）は動かない。
     """
     _write_settings(tmp_path, {})
     monkeypatch.setattr(
@@ -416,10 +409,12 @@ def test_order_stdin_read_failure_does_not_silence_settings_and_notices(
 
     assert captured.err == ""
     out = json.loads(captured.out)
-    assert "systemMessage" in out
+    assert "systemMessage" not in out
+    assert not _seen_file(tmp_path).exists()
     settings = json.loads(_settings_file(tmp_path).read_text(encoding="utf-8"))
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
     assert len(_policy_rows(tmp_path)) == _policy_key_count()
+    assert spy_launch == []
 
 
 # ---- 無効化スイッチ ----
@@ -434,7 +429,7 @@ def test_disable_unset_runs_everything(notices_file, tmp_path, capsys):
     assert settings["env"]["CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"] == "60"
     assert "systemMessage" in out
     seen = json.loads(_seen_file(tmp_path).read_text(encoding="utf-8"))
-    assert len(seen) == 2
+    assert len(seen) == 1
     assert len(_event_rows(tmp_path)) == 1
 
 

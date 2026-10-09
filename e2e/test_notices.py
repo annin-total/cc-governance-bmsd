@@ -1,7 +1,6 @@
-"""モジュール 3（お知らせ）: installPath の notices.json が SessionStart の systemMessage に現れる。
+"""モジュール 3（お知らせ）: installPath の notices.json の先頭の未読が SessionStart の systemMessage に現れる。
 
 見本 `samples/notices.json` を組み立てたコピーに重ね、期待値は見本から導く。すべて認証不要。
-url は持たせない。起動形態の判定が上流の変更で崩れたとき、本物のブラウザを開かないため。
 """
 
 import json
@@ -37,9 +36,9 @@ def _session_start_output(root, extra_env=None) -> dict:
 
 
 def _assert_shown(output: dict, notices: list) -> None:
+    """先頭の 1 件だけが出る。"""
     message = output["systemMessage"]
-    for n in notices:
-        assert n["title"] in message and n["body"] in message, message
+    assert message == f"{notices[0]['title']}\n{notices[0]['body']}", message
 
 
 def test_未読のお知らせが出て_pでは既読にしない(root, gitsrv):

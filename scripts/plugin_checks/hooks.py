@@ -119,7 +119,7 @@ def _run_hook_commands(
         env["CC_GOVERNANCE_USER_EMAIL"] = ISOLATED_USER_EMAIL
         # 無効化スイッチを立てると hook が冒頭で return し、収集経路を通らずに合格してしまう。
         env.pop("CC_GOVERNANCE_DISABLE", None)
-        # 対話を示す値を継承すると、hook がお知らせの URL を本物のブラウザで開く。
+        # 起動形態の値を継承すると、呼び出し元によって hook の既読の扱いが変わる。
         env.pop("CLAUDE_CODE_ENTRYPOINT", None)
         env["PYTHONDONTWRITEBYTECODE"] = "1"
 

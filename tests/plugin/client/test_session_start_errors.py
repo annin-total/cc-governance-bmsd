@@ -65,7 +65,7 @@ _STAGE_CASES = {
         "apply_settings",
     ),
     "notices": (_notices, "notices_step", _raiser, "notices"),
-    "mark_seen": (session_start, "_mark_seen_and_open", _raiser, "mark_seen"),
+    "mark_seen": (session_start, "_mark_seen", _raiser, "mark_seen"),
     "collect": (session_start, "_collect_step", _raiser, "collect"),
 }
 
