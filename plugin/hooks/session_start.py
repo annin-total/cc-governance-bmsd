@@ -1,6 +1,6 @@
 """SessionStart hook のエントリ。各段を個別に例外から守り、1 つの失敗で残りを止めない。
 
-無効化スイッチが止めるのはお知らせと利用ログの収集だけ。設定の適用・policy イベント・送信判定は止めない。
+無効化スイッチが止めるのはお知らせと利用ログの収集だけ。設定の適用・policy イベント・送信判定・プラグインの更新は止めない。
 """
 
 if __name__ == "__main__":
@@ -20,6 +20,7 @@ import _govdir
 import _identity
 import _notices
 import _spool
+import _updater
 from _settings import apply_settings
 from collect import (
     _DISABLE_ENV,
@@ -137,14 +138,15 @@ def main() -> None:
     except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
         append_error("apply_settings", type(e).__name__, hook_event)
 
-    # 標準入力は 1 回しか読めないので、お知らせ（source）と収集で共有する。
+    # 標準入力は 1 回しか読めないので、お知らせ・更新（source）と収集で共有する。更新は無効化スイッチでも止めない。
     # 読み取りは RecursionError などを投げうるため、失敗は収集の段として記録し、他の段へ波及させない。
     raw_input: Any = None
     read_failed = False
-    if not disabled:
-        try:
-            raw_input = _read_stdin_json()
-        except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+    try:
+        raw_input = _read_stdin_json()
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        # 無効化した端末は収集しないので、記録せずに送信判定まで進める
+        if not disabled:
             read_failed = True
             append_error("collect", type(e).__name__, hook_event)
     source = raw_input.get("source") if isinstance(raw_input, dict) else None
@@ -163,6 +165,11 @@ def main() -> None:
             _mark_seen(notice, seen)
         except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
             append_error("mark_seen", type(e).__name__, hook_event)
+
+    try:
+        _updater.update_if_due(source)
+    except Exception as e:  # noqa: BLE001 (hook は例外を外に出さない)
+        append_error("update", type(e).__name__, hook_event)
 
     if read_failed:
         return

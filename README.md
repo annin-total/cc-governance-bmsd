@@ -41,15 +41,8 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 
 ### プラグインの導入（利用者向け）
 
-Claude Code の中で、次の 2 つを順に実行する。
-
-```
-/plugin marketplace add <マーケットプレイスの URL>
-/plugin install governance@cc-marketplace-governance-bmsd
-```
-
-Claude Code を開き直し、お知らせが表示されれば導入できている。
-案内文の雛形と展開の進め方は [`docs/guide/onboarding.md`](docs/guide/onboarding.md)。
+手順（ssh の設定・git 型のマーケットプレイスの登録・user スコープでの導入・導入できたことの確認）と、案内文の雛形・展開の進め方は
+[`docs/guide/onboarding.md`](docs/guide/onboarding.md) にある。
 
 ### 開発環境の準備
 

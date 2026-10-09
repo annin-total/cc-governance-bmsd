@@ -26,6 +26,7 @@
 | `CLAUDE_CODE_ENTRYPOINT` の値 | 対話起動・`claude -p` それぞれで macOS と同じ `cli` / `sdk-cli` になるか |
 | 起動時間 | hook の応答を体感できるほど遅らせないか |
 | 収集と送信 | 並列の hook の追記で `queue.jsonl` の行が欠けないか。切り離した送信プロセスが Claude Code の終了後も送り切るか（`start_new_session` は POSIX でしか効かない） |
+| プラグインの更新の起動 | `PATH` の `claude` が `claude.cmd` のときも 2 段階の更新が起動し、切り離した子が hook の終了後も最後まで走って次の起動で新しい版になるか。コンソールの窓が出ないか。`%USERPROFILE%\.ssh\config` の別名で社内リポジトリに届くか |
 | E2E | `pytest e2e` が通るか。通らなければ、つまずいた点を `../guide/e2e.md` に反映する |
 
 **完了条件** — 結果を `../knowledge/claude-code-behavior.md` に記録すること。不合格なら報告する。

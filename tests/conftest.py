@@ -37,6 +37,14 @@ os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 # 子プロセスも継承する。起動形態を再現するテストは monkeypatch で個別に立てる。
 os.environ.pop("CLAUDE_CODE_ENTRYPOINT", None)
 
+# 本物の `claude` を起動させない。SessionStart は対話の startup で、PATH から探した `claude` で
+# プラグインの更新を切り離して起動する。子プロセスもこの PATH を継承する。
+os.environ["PATH"] = os.pathsep.join(
+    d
+    for d in os.environ.get("PATH", "").split(os.pathsep)
+    if shutil.which("claude", path=d) is None
+)
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "plugin" / "hooks"))
 

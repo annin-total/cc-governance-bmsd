@@ -105,8 +105,8 @@ def _plugin_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
-def get_plugin_version() -> Optional[str]:
-    """`plugin.json` の `version`。読めない・文字列でなければ None。"""
+def _manifest_str(key: str) -> Optional[str]:
+    """`plugin.json` の `key` の値。読めない・文字列でなければ None。"""
     path = _plugin_root().joinpath(*_PLUGIN_JSON_RELATIVE)
     try:
         with open(path, encoding="utf-8") as f:
@@ -115,5 +115,13 @@ def get_plugin_version() -> Optional[str]:
         return None
     if not isinstance(data, dict):
         return None
-    version = data.get("version")
-    return version if isinstance(version, str) else None
+    value = data.get(key)
+    return value if isinstance(value, str) else None
+
+
+def get_plugin_version() -> Optional[str]:
+    return _manifest_str("version")
+
+
+def get_plugin_name() -> Optional[str]:
+    return _manifest_str("name")
