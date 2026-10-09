@@ -20,10 +20,20 @@ def test_rolling_periods_compare_with_the_same_length_before():
     assert (p28.days, p28.long, p28.unit) == (28, False, "day")
 
 
-def test_long_period_is_twelve_months_without_comparison():
-    """12 か月は、終わりの日の 1 年前の翌日から。前の期間を持たず、週ごとに並べる。"""
-    p = windows.period("12m", D("2026-09-28"))
-    assert (p.start, p.end) == (D("2025-09-29"), D("2026-09-28"))
+@pytest.mark.parametrize(
+    "end, start",
+    [
+        ("2026-09-30", "2025-10-01"),
+        ("2026-09-01", "2025-10-01"),
+        ("2026-09-28", "2025-10-01"),
+        ("2026-01-31", "2025-02-01"),
+    ],
+)
+def test_long_period_is_twelve_months_without_comparison(end, start):
+    """12 か月は、終わりの月を含む 12 個の暦月の最初の日から。前の期間を持たず、週ごとに並べる。"""
+    p = windows.period("12m", D(end))
+    assert (p.start, p.end) == (D(start), D(end))
+    assert len(calendar.months(p.start, p.end)) == 12
     assert (p.prev_start, p.prev_end, p.days) == (None, None, None)
     assert (p.long, p.unit, p.months) == (True, "week", 12)
 
@@ -37,8 +47,8 @@ def test_period_can_move_its_end_keeping_the_length():
         35,
         62,
     )
-    long = windows.period("12m", D("2026-09-29")).ending(D("2026-09-28"))
-    assert long.start == D("2025-09-29")
+    long = windows.period("12m", D("2026-10-01")).ending(D("2026-09-30"))
+    assert long.start == D("2025-10-01")
 
 
 def test_unknown_period_key_is_rejected():

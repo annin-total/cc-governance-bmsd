@@ -1,5 +1,7 @@
 """利用明細（CSV）のコストの組み立て。期間は CSV の最終日で終わる。"""
 
+import dataclasses
+
 from ccgov.metrics import series
 from ccgov.metrics.windows import Period
 from ccgov.reports import cost_weeks
@@ -28,12 +30,14 @@ def _providers(found: dict) -> list:
 
 
 def build(conn, period: Period) -> dict:
-    """7 日・28 日は日ごと（直近と前の期間）、12 か月は週ごと（`cost_weeks`）。CSV が無ければ値は None。"""
+    """7 日・28 日は日ごと（直近と前の期間）、12 か月は週ごと（`cost_weeks`。CSV が期間より後に始まれば CSV の最初の日から）。CSV が無ければ値は None。"""
     end = queries_cost.cost_window_end(conn, period.end)
     if end is None:
         return empty()
     window = period.ending(end)
     if window.long:
+        first, _ = queries_cost.day_range(conn)
+        window = dataclasses.replace(window, start=max(window.start, first))
         found = _by_day(conn, window.start, end)
         return {**empty(), **cost_weeks.cost(found, _providers(found), window)}
     found = _by_day(conn, window.prev_start, end)
