@@ -69,7 +69,7 @@ def test_users_merge_hosts_and_null_stage_is_a_group(db_conn):
 
 
 def test_error_users_counts_people_in_the_window(db_conn):
-    """直近 7 日にエラーのあった利用者（u1・u2・u9。窓の外の u3 は数えない）。"""
+    """直近 7 日にエラーのあった利用者（u1・u2・u9。7 日より前の u3 は数えない）。"""
     _seed(db_conn)
     assert queries_errors.error_users(db_conn, TODAY) == 3
     assert queries_errors.error_users(db_conn, TODAY + 30) == 0

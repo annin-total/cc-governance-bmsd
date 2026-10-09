@@ -36,7 +36,7 @@ def _month_rows(months: list, weeks: list, values: list) -> list:
 
 
 def _from_data(window: Period, days) -> Period:
-    """窓の始まりを、記録のある最初の日まで遅らせる。"""
+    """期間の始まりを、記録のある最初の日まで遅らせる。"""
     return dataclasses.replace(
         window, start=max(window.start, min(days, default=window.start))
     )

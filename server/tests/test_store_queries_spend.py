@@ -21,7 +21,7 @@ def test_user_days_skip_days_without_cost(db_conn):
 
 
 def test_build_ends_at_the_last_csv_day_even_when_asked_for_today(db_conn):
-    """今日（利用明細の最終日の翌日）で頼んでも、窓は利用明細の最終日で切る。"""
+    """今日（利用明細の最終日の翌日）で頼んでも、期間は利用明細の最終日で切る。"""
     seed(db_conn)
     late = cost_page.build(db_conn, windows.period("7", TODAY))
     last = cost_page.build(db_conn, windows.period("7", TODAY - 1))
