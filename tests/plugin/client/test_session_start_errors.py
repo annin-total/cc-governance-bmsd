@@ -6,6 +6,7 @@ from pathlib import Path
 import _govdir
 import _identity
 import _notices
+import _updater
 import pytest
 import session_start
 
@@ -58,6 +59,7 @@ def _plugin_version() -> str:
 _STAGE_CASES = {
     "identity": (_identity, "get_user_email", _raise_on_refresh, "identity"),
     "statusline": (_govdir, "sync_statusline", _raiser, "statusline"),
+    "backup": (session_start, "_backup_step", _raiser, "backup"),
     "apply_settings": (
         session_start,
         "_apply_settings_step",
@@ -65,7 +67,8 @@ _STAGE_CASES = {
         "apply_settings",
     ),
     "notices": (_notices, "notices_step", _raiser, "notices"),
-    "mark_seen": (session_start, "_mark_seen_and_open", _raiser, "mark_seen"),
+    "mark_seen": (session_start, "_mark_seen", _raiser, "mark_seen"),
+    "update": (_updater, "update_if_due", _raiser, "update"),
     "collect": (session_start, "_collect_step", _raiser, "collect"),
 }
 

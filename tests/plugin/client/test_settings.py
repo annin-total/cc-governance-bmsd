@@ -20,14 +20,14 @@ pytestmark = pytest.mark.usefixtures("fixed_policy")
 
 
 def _apply(path):
-    """`fixed_policy` の policy を適用する。バックアップと ONCE の記録は settings.json の隣に置く。"""
+    """`fixed_policy` の policy を適用する。ONCE の記録は settings.json の隣の governance/ に置く。"""
     import policy
 
     return _settings.apply_settings(path, policy, path.parent / "governance")
 
 
 def _entries(tmp_path):
-    """tmp_path 直下のうち、governance/（バックアップ等の置き場）を除いたもの。"""
+    """tmp_path 直下のうち、governance/（ONCE の記録等の置き場）を除いたもの。"""
     return [p for p in tmp_path.iterdir() if p.name != "governance"]
 
 

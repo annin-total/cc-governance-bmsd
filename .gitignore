@@ -30,3 +30,6 @@ Thumbs.db
 # --- scripts/ の実採取データ（実行のたびに用意する作業ディレクトリ。生データは追跡しない） ---
 /scripts/raw/
 /scripts/captured/
+
+# --- pdev.py の隔離環境（CLAUDE_CONFIG_DIR とログイン情報を含む） ---
+/tmp/user-guide/plugin-local/run/

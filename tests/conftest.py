@@ -32,10 +32,18 @@ os.environ["CLAUDE_CONFIG_DIR"] = str(_SESSION_HOME / ".claude")
 sys.dont_write_bytecode = True
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
-# hook は `CLAUDE_CODE_ENTRYPOINT` が対話を示すときにお知らせの URL をブラウザで開く。
-# Claude Code の中から pytest を動かすとこの変数を継承するため、消して本物のブラウザを開かせない。
-# 子プロセスも継承する。対話を再現するテストは monkeypatch で個別に立てる。
+# hook は `CLAUDE_CODE_ENTRYPOINT` が `sdk-` で始まるとき、お知らせを既読にしない。
+# Claude Code の中から pytest を動かすとこの変数を継承し、結果が呼び出し元で変わるため消す。
+# 子プロセスも継承する。起動形態を再現するテストは monkeypatch で個別に立てる。
 os.environ.pop("CLAUDE_CODE_ENTRYPOINT", None)
+
+# 本物の `claude` を起動させない。SessionStart は対話の startup で、PATH から探した `claude` で
+# プラグインの更新を切り離して起動する。子プロセスもこの PATH を継承する。
+os.environ["PATH"] = os.pathsep.join(
+    d
+    for d in os.environ.get("PATH", "").split(os.pathsep)
+    if shutil.which("claude", path=d) is None
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "plugin" / "hooks"))

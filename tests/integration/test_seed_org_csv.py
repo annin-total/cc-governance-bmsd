@@ -90,3 +90,31 @@ def test_hierarchy_has_no_child_without_parent(org) -> None:
 
 def test_output_is_reproducible(org, tmp_path) -> None:
     assert _run(tmp_path / "again.csv") == org[0]
+
+
+def test_server_reads_the_roster(org) -> None:
+    """サーバの組織 CSV の読み取りが、合成の名簿の列を引け、メールアドレスの無い行だけを捨てる。"""
+    from ccgov.ingestion import roster_csv
+
+    raw, _, rows = org
+    parsed, dropped = roster_csv.parse(raw)
+    no_email = sum(r["Email - Primary Work"] in ("", "-") for r in rows)
+    assert dropped == no_email > 0
+    assert len(parsed) == len(rows) - no_email
+    assert {r["department"] for r in parsed} == {r["Department"] for r in rows}
+
+
+def test_server_finds_cost_users_in_the_roster(org) -> None:
+    """サーバの氏名・部・課の引き当てが、合成の明細の利用者を合成の名簿で引ける（名簿に無い人は不明になる）。"""
+    from ccgov.ingestion import roster_csv
+    from ccgov.metrics import roster
+
+    parsed, _ = roster_csv.parse(org[0])
+    people = {r["email"]: r for r in parsed}
+    _, costs = generate(random.Random(SEED), DEFAULT_USERS, DEFAULT_DAYS, 1790000000)
+    found = {e: roster.person(people, e) for e in {c["User Email"] for c in costs}}
+    unlisted = {e for e, p in found.items() if not p["listed"]}
+    assert unlisted == {e for e in found if e.lower() not in people} != set()
+    listed = [p for p in found.values() if p["listed"]]
+    assert listed and all(p["name"] and p["dept"] for p in listed)
+    assert {p["dept"] for p in listed} <= {r["department"] for r in parsed}

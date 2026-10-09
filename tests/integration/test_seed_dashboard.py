@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 import time
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -25,13 +26,21 @@ from ccgov.constants import (
 )
 from ccgov.metrics.health import null_rates
 from ccgov.metrics.rates import rate_row
-from ccgov.reports import assets, effect
+from ccgov.metrics.windows import period
+from ccgov.reports import effect, period_end
 from ccgov.reports import policy as policy_report
-from ccgov.store import db, queries_cost, queries_errors, queries_events, queries_policy
-from ccgov.vendor import contract, policy
+from ccgov.store import (
+    db,
+    queries_activity,
+    queries_cost,
+    queries_errors,
+    queries_events,
+    queries_policy,
+)
+from ccgov.vendor import contract
 from seed_dashboard import _check_rules
 from seed_dashboard_columns import RULES
-from seed_dashboard_rows import scalar_keys
+from seed_dashboard_rows import STOPPED_MIN_DAYS, scalar_keys
 
 
 def _run(dsn: str, *args: str) -> subprocess.CompletedProcess:
@@ -46,13 +55,10 @@ def _run(dsn: str, *args: str) -> subprocess.CompletedProcess:
 
 def _count(dsn: str, table: str, monkeypatch) -> int:
     monkeypatch.setenv("DB_DSN", dsn)
-    conn = db.connect()
-    try:
+    with closing(db.connect()) as conn:
         cur = conn.cursor()
         cur.execute(f"SELECT COUNT(*) FROM {table}")
         return cur.fetchone()[0]
-    finally:
-        conn.close()
 
 
 @pytest.fixture(scope="module")
@@ -72,20 +78,20 @@ def seeded(tmp_path_factory):
 
 def test_画面の全ての表と分布が埋まる(seeded):
     conn, today = seeded
-    for key in scalar_keys():
-        expected = contract.policy_text(policy.SET[key])
-        numerator, denominator, _ = policy_report.compliance_rate(
-            conn, today, key, expected
-        )[0]
-        assert 0 < numerator < denominator, key
-        assert policy_report.non_compliant(conn, today, key, expected), key
-    assert queries_policy.latest_values(conn, today, REFERENCE_KEY)
-    assert queries_policy.not_introduced(conn, today)
-    assert queries_policy.stale_terminals(conn, today)
+    report = policy_report.build(conn, today)
+    assert len(report["items"]) == len(scalar_keys())
+    for item in report["items"]:
+        assert 0 < item["numerator"] < item["denominator"], item["key"]
+        assert item["off_users"], item["key"]
+    tags = {tag for u in report["users"] for tag in u["tags"]}
+    assert tags == {"off", "none", "ok", "old"}
+    assert report["core"]["outdated"] and report["plugin"]["outdated"]
     assert (
-        len(queries_policy.plugin_version_distribution(conn, today, REFERENCE_KEY)) > 1
+        max(u["ago"] for u in report["users"] if u["ago"] is not None)
+        > STOPPED_MIN_DAYS
     )
-    assert len(queries_policy.claude_code_version_distribution(conn, today)) > 1
+    terminals = queries_policy.latest_values(conn, today, REFERENCE_KEY)
+    assert len(terminals) > len({row[0] for row in terminals})
 
     errors = queries_errors.error_summary(conn, today)
     assert ("send", "HTTP 401") in {(stage, kind) for stage, kind, *_ in errors}
@@ -95,20 +101,26 @@ def test_画面の全ての表と分布が埋まる(seeded):
     assert all(rate and rate < 100 for rate in health["null_rates"].values()), health
     for column in ("permission_mode", "effort_level", "source"):
         assert queries_events.distribution(conn, today, column), column
-    assert queries_events.skill_usage(conn, today)
-    sources = {source for _, source, *_ in queries_events.command_usage(conn, today)}
-    assert {"plugin", "userSettings"} <= sources
-    assert assets.subagent_ratio(conn, today)[0][0] > 0
+    skills, commands, tools = queries_activity.calls(conn, period("7", today))
+    assert skills
+    assert {"plugin", "userSettings"} <= {source for _, _, source, *_ in commands}
+    assert {"Agent", "Task"} & {tool for _, tool, *_ in tools}
     assert queries_cost.daily_cost(conn)
     assert rate_row(*queries_events.reconciliation_counts(conn, today))[0] > 0
 
-    starts = queries_policy.compliance_start_dates(conn, REFERENCE_KEY, REFERENCE_VALUE)
+    # 設定の効果は画面と同じく利用明細の最終日で切る
+    _, end = period_end.bounds(conn, today)
+    starts = queries_policy.compliance_start_dates(
+        conn, REFERENCE_KEY, REFERENCE_VALUE, end
+    )
     # 準拠開始日が散らばらないと、イベントスタディの相対日の人数の変化が見えない
     assert max(starts.values()) - min(starts.values()) >= EVENT_STUDY_SPAN
-    assert effect.event_study(conn, REFERENCE_KEY, REFERENCE_VALUE, EFFECT_PROVIDER)
-    for hook_event in ("PreCompact", "Stop"):
-        distribution = effect.context_distribution(conn, hook_event, starts)
-        assert set(distribution) == {"before", "after"}, hook_event
+    assert effect.event_study(
+        conn, REFERENCE_KEY, REFERENCE_VALUE, EFFECT_PROVIDER, end
+    )
+    sessions = effect.session_sizes(conn, starts, end)
+    for side in ("before", "after"):
+        assert sessions[side]["sessions"] and sessions[side]["auto_sessions"], side
 
 
 def test_CSVなし_行の在るDB_下限を割る引数を扱う(tmp_path, monkeypatch):

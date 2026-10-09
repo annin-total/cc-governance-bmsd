@@ -13,11 +13,11 @@ import pytest
 from _server import BASE_PATH, CSV_DIR, DockerServer, build_context, docker
 
 _SAMPLE_CSV = Path(__file__).resolve().parent / "samples" / "cost_daily.csv"
-_PAGES = ("/", "/policy", "/effect", "/assets")
+_PAGES = ("/", "/cost", "/activity", "/policy", "/effect", "/collect", "/summary")
 _VENDOR = Path("ccgov") / "vendor" / "contract.py"
 
 
-def test_BASE_PATH配下で管理画面4つとCSSが返り外は404(server):
+def test_BASE_PATH配下で管理画面とCSSが返り外は404(server):
     for page in _PAGES:
         status, _, _ = server.request("GET", server.admin_path(page), auth=True)
         assert status == 200, (page, status)

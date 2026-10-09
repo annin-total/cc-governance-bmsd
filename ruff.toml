@@ -1,5 +1,5 @@
 target-version = "py39"
-# server/ は submodule（別リポジトリ）であり、lint はそちらの責務。tmp/ は使い捨ての検証の記録。
+# server/ は自分の venv と ruff.toml を持つので、lint は server/ で行う。tmp/ は使い捨ての検証の記録。
 extend-exclude = ["docs/", "server/", "tmp/"]
 
 [lint]

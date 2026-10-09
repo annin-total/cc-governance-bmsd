@@ -2,9 +2,9 @@
 
 契約がずれても実行時に例外は出ない（サーバ側の列定義を回して値を引くだけで、
 増えた項目は黙って捨てられ、減った項目は黙って NULL になる）。同期忘れを機械的に捕まえるのは、この検査と
-`scripts/sync_contract.py --check` だけである（submodule `server/` の `ccgov/vendor_check.py` は複製の直接編集だけを捕まえる）。
+`scripts/sync_contract.py --check` だけである（`server/ccgov/vendor_check.py` は複製の直接編集だけを捕まえる）。
 
-**`import contract` に頼らない。**複製は別リポジトリ（submodule）の中にあり、
+**`import contract` に頼らない。**複製は `server/ccgov/vendor/` にあり、
 "contract" という同名モジュールが正本・複製の 2 か所に存在しうる。どちらを import するかを
 sys.path の順序に委ねると、一致検査の結果がその順序で無言に変わりかねないため、
 ここでは正本・複製・ハッシュ記録をすべて生のバイト列として直接読み、
@@ -36,16 +36,7 @@ def test_master_replica_hash_exist(name):
 
 
 def test_master_replica_hash_in_sync():
-    """正本・複製・ハッシュ記録の 3 つが一致している。
-
-    ずれるパターンは 2 つ:
-    - 複製を直接編集した（複製のバイト列がヘッダ+正本と一致しない）
-    - 正本を変更して sync_contract.py を実行し忘れた
-      （contract.sha256 が正本の現在のハッシュと一致しない）
-
-    `sync_contract.check()` は `scripts/sync_contract.py` の実装そのものであり、
-    ここでは import を経由せず、正本・複製・ハッシュ記録をファイルとして直接読んで比較する。
-    """
+    """正本・複製・ハッシュ記録の 3 つが一致している。"""
     errors = sync_contract.check()
     assert not errors, (
         "契約の正本とサーバ側の複製がずれている:\n"

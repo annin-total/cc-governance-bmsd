@@ -1,6 +1,6 @@
 # CLAUDE.md - cc-governance-bmsd
 
-Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/`、submodule）。
+Claude Code の端末プラグイン（`plugin/`）と集計サーバ（`server/`）。
 両者は契約の正本 `plugin/hooks/contract.py` と標準設定の正本 `plugin/hooks/policy.py` を共有する。
 
 文書はすべて `docs/` にある。どれを読むかは `docs/README.md`、文書を書くときの判断基準と規約は
@@ -36,7 +36,7 @@ CCGOV_TEST_MYSQL_DSN=mysql://root:<pw>@127.0.0.1:13306 .venv/bin/python -m pytes
 - 未使用コードを放置しない
 - 型注釈を付ける。例外を握り潰さない（hook は除く）
 - docstring は原則 1 行（多くても 2 行）。自明なら書かない
-- コメントは、込み入ったロジックか、コードから読めず失うと事故になる理由にだけ書く。作業の経緯や検証番号（`# K-1` など）を書かない
+- コメントは、込み入ったロジックか、コードから読めず失うと事故になる理由にだけ書く。作業の経緯や検証番号（`# K-1` など）を書かない。docstring とコメントの言い回しは `docs/CLAUDE.md` の記述ルールに従う
 - 値のハードコードは避けて定数に分離する。ただし過剰にはしない
 - 内部関数・内部メソッドは識別子を付与して区別する
 - `tests/fixtures/hook_inputs/` を書き換えない。実採取した hook stdin の記録であり、一括置換は改竄になる。
@@ -48,7 +48,14 @@ CCGOV_TEST_MYSQL_DSN=mysql://root:<pw>@127.0.0.1:13306 .venv/bin/python -m pytes
 - 作業中に確認した依頼範囲外の課題は直さず、`.claude/templates/issues.md` の形で `.local/<作業名>/issues.md` に記録し、
   完了報告で移し先を提案する（移したら記録を更新する）
 - `.local/` は一時領域。コード・`docs/`・コミット・PR から参照せず、残す事実は `docs/` か PR 本文に書く
-- 減らす作業は `.claude/skills/refactor/SKILL.md`、文書・docstring・コメントの見直しは `.claude/skills/revise-docs/SKILL.md` に従う
+- 作業の種類ごとに、次のスキルに従う
+  - 機能の追加・変更・不具合の修正（増やす）: `.claude/skills/plan-implement/SKILL.md`
+  - リファクタリング（減らす）: `.claude/skills/refactor/SKILL.md`
+  - 文書・docstring・コメントの見直し: `.claude/skills/revise-docs/SKILL.md`
+  - 仕様そのものを疑うレビュー: `.claude/skills/spec-bug-review/SKILL.md`
+  - 実機検証（E2E）: `.claude/skills/e2e/SKILL.md`
+  - リリース（配布リポジトリへの差し込みから PR まで）: `.claude/skills/release-plugin/SKILL.md`
+  - 記録した課題（`issues.md`）の棚卸しと片付け: `.claude/skills/resolve-issues/SKILL.md`
 
 ## Design
 

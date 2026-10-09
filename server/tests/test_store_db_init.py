@@ -1,0 +1,149 @@
+"""`db.init()` の DDL 適用とインデックス作成（冪等性を含む）を確かめる。"""
+
+from contextlib import closing
+
+import pytest
+from conftest import MISSING_TABLE_ERRORS
+
+from ccgov.store import db
+
+_EXPECTED_INDEX_NAMES = [
+    "ix_cost_daily_day_user_email",
+    "ix_events_day_hook_event_context_tokens",
+    "ix_events_day_user_email_event_id",
+    "ix_events_hook_event_user_email_day_context_tokens_event_id",
+    "ix_events_skill_name_day_user_email_event_id",
+    "ix_events_tool_name_day_user_email_event_id",
+    "ix_policy_state_key_name_prev_value_user_email",
+    "ix_policy_state_user_email_ts",
+]
+
+_EXPECTED_INDEXES = {
+    ("events", ("day", "user_email", "event_id")),
+    ("events", ("skill_name", "day", "user_email", "event_id")),
+    ("events", ("tool_name", "day", "user_email", "event_id")),
+    ("events", ("day", "hook_event", "context_tokens")),
+    ("events", ("hook_event", "user_email", "day", "context_tokens", "event_id")),
+    ("policy_state", ("key_name", "prev_value", "user_email")),
+    ("policy_state", ("user_email", "ts")),
+    ("cost_daily", ("day", "user_email")),
+}
+
+
+def _table_names(conn) -> set:
+    """sqlite_master からユーザーテーブル名の集合を取る。"""
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    return {row[0] for row in cur.fetchall()}
+
+
+def _has_table(conn, table: str) -> bool:
+    """表が在るか。DB に依らない形で、行を返さない SELECT が通るかで見る。"""
+    try:
+        conn.cursor().execute(f"SELECT * FROM {table} WHERE 1 = 0")
+    except MISSING_TABLE_ERRORS:
+        return False
+    return True
+
+
+def _assert_expected_indexes(conn) -> None:
+    """8 本のインデックスが期待どおりの列順と名前で揃っている。"""
+    cur = conn.cursor()
+    indexes, names = set(), []
+    for table in ("events", "policy_state", "cost_daily"):
+        cur.execute(f"PRAGMA index_list({table})")
+        for row in cur.fetchall():
+            cur.execute(f"PRAGMA index_info({row[1]})")
+            indexes.add((table, tuple(info_row[2] for info_row in cur.fetchall())))
+            names.append(row[1])
+    assert indexes == _EXPECTED_INDEXES
+    assert sorted(names) == _EXPECTED_INDEX_NAMES
+
+
+@pytest.mark.sqlite_only
+def test_init_creates_contract_and_server_tables(db_conn):
+    """1 回の init() で契約の 4 表（events / policy_state / cost_daily / errors）と、サーバ専用の 4 表ができる。"""
+    assert _table_names(db_conn) == {
+        "events",
+        "policy_state",
+        "cost_daily",
+        "errors",
+        "company_holidays",
+        "org_roster",
+        "org_roster_files",
+        "summaries",
+    }
+
+
+def test_init_adds_errors_table_to_existing_db(db_dsn):
+    """errors の無い既存 DB でも、init() で errors ができ、既存の行は残る。"""
+    db.init()
+    with closing(db.connect()) as conn:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO cost_daily (day, cost) VALUES (1, 1.0)")
+        cur.execute("DROP TABLE errors")
+        conn.commit()
+        assert not _has_table(conn, "errors")
+
+    db.init()
+
+    with closing(db.connect()) as conn:
+        assert _has_table(conn, "errors")
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM cost_daily")
+        assert cur.fetchone()[0] == 1
+
+
+@pytest.mark.sqlite_only
+def test_init_creates_eight_indexes_with_expected_columns(db_conn):
+    """1 回の init() で 8 本のインデックスが期待どおりの列順で作られる。"""
+    _assert_expected_indexes(db_conn)
+
+
+@pytest.mark.sqlite_only
+def test_init_twice_keeps_eight_indexes(db_dsn):
+    """2 回目の init() でインデックスが重複して作られない。"""
+    db.init()
+    db.init()
+    with closing(db.connect()) as conn:
+        _assert_expected_indexes(conn)
+
+
+@pytest.mark.sqlite_only
+def test_init_recreates_dropped_index(db_dsn):
+    """インデックスを 1 本 DROP した状態から init() すれば 8 本に戻る。"""
+    db.init()
+    with closing(db.connect()) as conn:
+        cur = conn.cursor()
+        cur.execute("PRAGMA index_list(events)")
+        dropped_name = cur.fetchall()[0][1]
+        cur.execute(f"DROP INDEX {dropped_name}")
+        conn.commit()
+
+    db.init()
+
+    with closing(db.connect()) as conn:
+        _assert_expected_indexes(conn)
+
+
+def test_init_does_not_touch_existing_rows(db_dsn):
+    """init() 済みのテーブルに INSERT した行は、再度の init() でも消えない。"""
+    db.init()
+    with closing(db.connect()) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO events (event_id, ts, day, user_email, host, hook_event,"
+            " context_tokens, session_id, prompt_id, tool_name, source,"
+            " compact_trigger, command_name, command_source, skill_name,"
+            " effort_level, permission_mode, agent_id, is_interrupt)"
+            " VALUES ('e1', 1, 1, 'a@example.com', 'h', 'Stop', NULL, NULL, NULL,"
+            " NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)"
+        )
+        conn.commit()
+
+    db.init()
+
+    with closing(db.connect()) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM events")
+        assert cur.fetchone()[0] == 1

@@ -1,0 +1,54 @@
+/* 見込みのカード・累積のグラフ・週ごとの棒の月の行。値は tokens.css の変数だけを使う */
+
+/* 累積の線: 今月の実績・見込みの破線・前月 */
+.cum polyline { fill: none; stroke-linejoin: round; stroke-width: var(--cum-line); }
+.fc-cum-now, .cum .cum-now { stroke: var(--accent); }
+.fc-cum-fc, .cum .cum-fc { stroke: var(--accent); stroke-dasharray: var(--cum-dash); }
+.fc-cum-prev, .cum .cum-prev { stroke: var(--ghost); }
+
+/* 今月のコストの累積: 今月の実績・見込みの破線・前月と、休みの日の帯 */
+.cum .dot-now { fill: var(--accent); }
+.cum .dot-fc { fill: var(--card); stroke: var(--accent); stroke-width: 1.5; }
+.cum .dot-prev { fill: var(--ghost); visibility: hidden; }
+.cum .guide { stroke: var(--muted); stroke-width: 1; visibility: hidden; }
+.cum g.col.is-hot .guide, .cum g.col.is-hot .dot-prev { visibility: visible; }
+.cum g.col.is-hot circle { r: 4.5; }
+.cum .off, .legend i.off { fill: var(--chip); background: var(--chip); }
+.legend i.off { width: var(--sp-m); height: var(--sp-m); vertical-align: -1px; }
+.legend .ln { width: var(--ln-w); height: 0; border-radius: 0; vertical-align: middle; border-top: var(--cum-line) solid var(--accent); }
+.legend .ln.fc { border-top-style: dashed; }
+.legend .ln.prev { border-top-color: var(--ghost); }
+.js [data-when][hidden] { display: none; }
+
+/* 週ごとの棒: 途中の週は薄く、軸の下に暦月の名前と合計 */
+.chart .is-partial rect:not(.hit) { opacity: var(--partial-opacity); }
+.chart .month-sep { stroke: var(--rule); }
+.chart .month-name { fill: var(--muted); }
+.chart .month-total { fill: var(--ink-2); font-weight: 600; }
+
+/* コストと利用者のカード: 営業日の棒と前の平均の点線・分布と平均と中央値・状態ごとの帯 */
+.bar-lo, .bar-dist { fill: var(--accent-2); }
+.spark .avg, .spark .median { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: var(--cum-dash); }
+.spark .mean { stroke: var(--ink); stroke-width: 1.5; }
+.bands { display: grid; gap: var(--sp-2xs); }
+.band { display: grid; grid-template-columns: 3em 1fr; align-items: center; gap: var(--sp-s); font-size: var(--fs-xs); color: var(--muted); }
+.band-bar { display: flex; height: var(--meter-h); border-radius: var(--r-xs); overflow: hidden; background: var(--track); }
+.band-bar i { display: block; }
+.st-ng { background: var(--ng); }
+.st-warn { background: var(--warn); }
+.st-ok { background: var(--ghost); }
+.rates.wide .rate.marked { grid-template-columns: 1fr 30% 5.5em 3.6em 4.5em; }
+.spark .bar-part { opacity: var(--partial-opacity); }
+/* 月末の見込みのカード: 今月は濃い線、前月は薄く細い線（凡例の見本は線の種類だけを示し、太さは同じ） */
+.cum-card polyline { fill: none; stroke-width: 1.5; stroke-linejoin: round; }
+.cum-card .fc-cum-now { stroke: var(--accent); }
+.cum-card .fc-cum-prev { stroke: var(--ghost); stroke-width: 1; }
+.cum-card-legend .ln { border-top-width: 2px; }
+/* 基準を超えた利用者のカード: 要確認と注意を 2 列の大きな数字で並べ、チップは縦に積む */
+.over { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-m); }
+.over-col { display: grid; align-content: start; gap: var(--sp-3xs); font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.over-num { font-family: var(--fig); font-size: var(--fs-val); font-weight: var(--fw-val); line-height: 1.12; color: var(--ink); }
+.over-num .u { font-family: var(--sans); font-size: var(--fs-unit); margin-left: var(--sp-2xs); color: var(--ink-2); }
+.over-chips { display: grid; justify-items: start; gap: var(--sp-3xs); margin-top: var(--sp-2xs); }
+.over-chips .change { margin-right: 0; font-weight: 400; }
+.over-move { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }

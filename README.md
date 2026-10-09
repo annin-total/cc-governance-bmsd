@@ -13,17 +13,17 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 集計サーバ ◀── AI Gateway の日次 CSV（コスト）
   │
   ▼
-管理画面（概況・policy・effect・assets）
+管理画面（概況・コストと利用者・利用状況・設定の適用状況・設定の効果・収集の状態）
 ```
 
 | ディレクトリ | 中身 |
 | --- | --- |
 | `plugin/` | 端末プラグイン `governance`。そのまま配布される |
-| `server/` | 集計サーバと管理画面（submodule） |
+| `server/` | 集計サーバと管理画面 |
 | `docs/` | 仕様・設計判断・手順書 |
 | `tests/` | プラグインと契約のテスト、統合テスト |
 | `e2e/` | 実機検証（`pytest e2e`） |
-| `scripts/` | 契約の同期、プラグインの検証、fixture の再生成、hook stdin の採取、性能計測 |
+| `scripts/` | 開発と検証の道具（使い方は各スクリプトの冒頭） |
 
 ## 技術スタック
 
@@ -41,26 +41,17 @@ BMSD 本部で使う Claude Code の利用を把握し、推進するための�
 
 ### プラグインの導入（利用者向け）
 
-Claude Code の中で、次の 2 つを順に実行する。
-
-```
-/plugin marketplace add <マーケットプレイスの URL>
-/plugin install governance@cc-marketplace-governance-bmsd
-```
-
-Claude Code を開き直し、お知らせが表示されれば導入できている。
-案内文の雛形と展開の進め方は [`docs/guide/onboarding.md`](docs/guide/onboarding.md)。
+手順（ssh の設定・git 型のマーケットプレイスの登録・user スコープでの導入・導入できたことの確認）と、案内文の雛形・展開の進め方は
+[`docs/guide/onboarding.md`](docs/guide/onboarding.md) にある。
 
 ### 開発環境の準備
 
-submodule（`server/`）を含めて clone する。
-
 ```bash
-git clone --recurse-submodules https://github.com/annin-total/cc-governance-bmsd.git
+git clone https://github.com/annin-total/cc-governance-bmsd.git
 cd cc-governance-bmsd
 ```
 
-venv を親と `server/` にそれぞれ作る。
+venv をリポジトリのルートと `server/` にそれぞれ作る。
 
 macOS:
 
@@ -98,13 +89,13 @@ docker compose up --build
 
 ### テストの実行
 
-親（プラグインと統合テスト）と `server/` で、それぞれ実行する。
+リポジトリのルート（プラグインと統合テスト）と `server/` で、それぞれ実行する。
 
 | | macOS | Windows |
 | --- | --- | --- |
 | テスト | `.venv/bin/python -m pytest -q` | `.venv\Scripts\python -m pytest -q` |
 | リンター | `.venv/bin/ruff check .` | `.venv\Scripts\ruff check .` |
-| プラグインの検証（親のみ） | `.venv/bin/python scripts/validate_plugin.py` | `.venv\Scripts\python scripts\validate_plugin.py` |
+| プラグインの検証（ルートのみ） | `.venv/bin/python scripts/validate_plugin.py` | `.venv\Scripts\python scripts\validate_plugin.py` |
 
 ## 設定項目
 

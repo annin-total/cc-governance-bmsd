@@ -1,0 +1,75 @@
+"""収集の状態に出す `errors` の集計（`queries_errors.error_summary`・`error_users`）の検証。
+
+基準日は 20005。直近 7 日は `19999..20005`。
+"""
+
+from known_data import TODAY, insert_error
+
+from ccgov.store import queries_errors
+
+# fmt: off
+_FIELDS = ("event_id", "ts", "day", "user_email", "host", "plugin_version", "stage", "error_type")
+_ROWS = (
+    ("x1", 100, 20005, "u1", "h1", "0.2.0", "hook_entry", "KeyError"),
+    ("x2", 90, 20004, "u2", "h2", "0.3.0", "hook_entry", "KeyError"),
+    ("x3", 50, 20000, "u1", "h1", "0.1.0", "hook_entry", "KeyError"),
+    ("x4", 80, 20003, "u1", "h1", "0.2.0", "sender", "HTTP 403"),
+    ("x5", 40, 19998, "u3", "h3", "0.2.0", "sender", "HTTP 403"),
+    ("x6", 45, 19999, "u1", "h1", "0.1.0", "sender", "SSLError"),
+    # 別人が同じ host 名を使う。利用者で数えるので u1 とは別の人
+    ("x7", 60, 20001, "u9", "h1", "0.1.0", "hook_entry", "KeyError"),
+)
+# fmt: on
+
+
+def _seed(conn, rows=_ROWS) -> None:
+    for row in rows:
+        insert_error(conn, **dict(zip(_FIELDS, row)))
+
+
+def test_empty_errors_returns_no_rows(db_conn):
+    """errors が空なら 0 行。"""
+    assert queries_errors.error_summary(db_conn, TODAY) == []
+
+
+def test_summary_groups_by_stage_and_error_type(db_conn):
+    """直近 7 日だけを数え、人数は利用者で、最新版は ts の最も新しい行の値。"""
+    _seed(db_conn)
+    assert queries_errors.error_summary(db_conn, TODAY) == [
+        ("hook_entry", "KeyError", 4, 3, "0.2.0"),
+        ("sender", "HTTP 403", 1, 1, "0.2.0"),
+        ("sender", "SSLError", 1, 1, "0.1.0"),
+    ]
+
+
+def test_summary_unchanged_after_duplicate_rows(db_conn):
+    """同じ行を再送しても件数・人数・最新版は変わらない。"""
+    _seed(db_conn)
+    before = queries_errors.error_summary(db_conn, TODAY)
+    _seed(db_conn)
+    assert queries_errors.error_summary(db_conn, TODAY) == before
+
+
+def test_users_merge_hosts_and_null_stage_is_a_group(db_conn):
+    """同じ利用者の別 host は 1 人。stage・user_email が NULL の行も 1 つの群・1 人として数える。"""
+    _seed(
+        db_conn,
+        (
+            ("y1", 10, 20005, "u1", "h1", "0.1.0", "collect", "KeyError"),
+            ("y2", 20, 20005, "u1", "h2", "0.2.0", "collect", "KeyError"),
+            ("y3", 30, 20005, None, "h3", "0.3.0", None, "KeyError"),
+            ("y4", 40, 20005, None, "h3", "0.4.0", None, "KeyError"),
+        ),
+    )
+    assert queries_errors.error_summary(db_conn, TODAY) == [
+        (None, "KeyError", 2, 1, "0.4.0"),
+        ("collect", "KeyError", 2, 1, "0.2.0"),
+    ]
+    assert queries_errors.error_users(db_conn, TODAY) == 2
+
+
+def test_error_users_counts_people_in_the_window(db_conn):
+    """直近 7 日にエラーのあった利用者（u1・u2・u9。7 日より前の u3 は数えない）。"""
+    _seed(db_conn)
+    assert queries_errors.error_users(db_conn, TODAY) == 3
+    assert queries_errors.error_users(db_conn, TODAY + 30) == 0

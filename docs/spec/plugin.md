@@ -2,14 +2,14 @@
 
 ## 概要
 
-Claude Code の端末プラグイン。設定の自動適用・お知らせの表示・利用イベントの収集と送信を
+Claude Code の端末プラグイン。設定の自動適用・お知らせの表示・利用イベントの収集と送信・自身の更新の起動を
 行う。配布名は `governance`、ソースは `plugin/`。全体像と契約（`plugin/hooks/contract.py`）
 の位置づけは `system.md` にある。
 
 hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `session_start.py`
 （`SessionStart`）の 2 つだけであり、`_` 始まりの
 ファイルは内部モジュールである。ほかに利用者が呼ぶ `/governance:reapply`（入口は
-`reapply.py`）がある。端末の状態（識別子のキャッシュ・既読・送信待ち）は `${CLAUDE_PLUGIN_DATA}`
+`reapply.py`）がある。端末の状態（識別子のキャッシュ・既読・送信待ち・前回動いた版・前回更新を起動した時刻）は `${CLAUDE_PLUGIN_DATA}`
 （無ければ `~/.claude/cc-governance/`）に置く。アンインストールすると `${CLAUDE_PLUGIN_DATA}` は消え、既読と
 未送信分（`queue.jsonl`・`spool/`）も失われる（上流の挙動は `../knowledge/claude-code-behavior.md`）。
 
@@ -47,9 +47,8 @@ hook の入口は `plugin/hooks/collect.py`（全 hook 共通の収集）と `se
 書き込み前の値（`prev_value`。スカラだけ。「設定の自動適用」）、スキル名とコマンド名（`skill_name`・
 `command_name`・`command_source`）、`tool_name`（MCP のツールはサーバ名を含む）、端末のホスト名（`host`）、`user_email` だけである。
 
-環境変数 `CC_GOVERNANCE_DISABLE` が空でないとき、**利用ログの収集とお知らせの表示**
-（ブラウザの起動を含む）を止める。設定の適用と policy イベントの記録・送信（`SessionStart` での
-送信判定）は続ける。`Stop` では送信しない。
+環境変数 `CC_GOVERNANCE_DISABLE` が空でないとき、**利用ログの収集とお知らせの表示**を
+止める。設定の適用と policy イベントの記録・送信（`SessionStart` での送信判定）・プラグインの更新の起動は続ける。`Stop` では送信しない。
 
 ## 蓄積と送信
 
@@ -106,8 +105,14 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
   `../knowledge/claude-code-behavior.md` の「settings.json の読み込み」、気づき方と復旧の順は `../guide/release.md`）。
   本体が読めてプラグインが読めないとき（BOM 付き・非 UTF-8 など）は hook が動き、適用を飛ばして全項目を
   `parse_failed` として記録する
-- 書き換える直前に、元のファイルを丸ごと `<config_dir>/governance/backups/` に日時付きで保存し、
-  新しい一定の世代数だけを残す。最新の世代と同じ内容なら保存しない。保存に失敗したら書かない
+- 書き換える直前に、元のファイルを丸ごと `<config_dir>/settings-backups/<YYYY_MMDD_HHMM>/`（ローカル時刻。
+  同じ名前があれば `-2`, `-3`…）に保存する。`statusLine` を書き換えるときだけ、書き換え前の `statusLine.command` に
+  書かれたパスのうち、`~` と環境変数を展開した後の絶対パスで実在する通常ファイルも写す（フォルダ・読めないファイル・
+  `plugin/hooks/_backup.py` の `MAX_STATUSLINE_FILE_BYTES` を超えるファイルは写さない）。
+  直前のフォルダ（連番は数値で並べる）と内容が同じなら作らない。`settings.json` を保存できなければ書かない。自動では消さない
+- 導入・更新の後の最初の `SessionStart` でも、適用より前の `settings.json` を同じ形で保存する。
+  前回動いた版を `${CLAUDE_PLUGIN_DATA}` に記録して今の版と比べ（記録が無いときも保存する）、
+  保存できなかったときは記録を更新せず次のセッションでまた試す
 - 結果はキーごとに policy イベントとして記録する。`key_name` は `SET` ならパスそのまま、ほかは
   `add:` / `remove:` / `once:` を前に付ける。`value` は `SET` / `ONCE` なら配る値（dict・list は
   JSON 文字列）、`ADD` / `REMOVE` なら今回足した・消した要素の JSON 配列（無ければ NULL）。
@@ -122,25 +127,49 @@ hook 自身は待たずに終わる。送信プロセスはキューを `spool/`
 **責務は標準設定を利用者の `settings.json` に書き戻すところまでである。**プロジェクトの設定や
 セッション中の変更による上書きは追わない。
 
-`<config_dir>/governance/` には、バックアップ・`ONCE` の記録（`once.json`）・`statusline.js` を置く。
+`<config_dir>/governance/` には、`ONCE` の記録（`once.json`）と `statusline.js` だけを置く。
 `statusline.js` は同梱の `plugin/statusline/statusline.js` を毎セッション、内容が違うときだけ複製する。
-この同期の失敗はほかの工程に波及させない。**このディレクトリはアンインストールしても残る。**
+この同期の失敗はほかの工程に波及させない。**このディレクトリと `settings-backups/` はアンインストールしても残る。**
 
 ## お知らせの配信
 
-`plugin/notices.json`（ロジックを持たない純データ）のうち、既読集合に無いものを、hook の
-JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポーリングも使わない。
+`plugin/notices.json`（ロジックを持たない純データ）のうち既読集合に無いものから、配列の順で先頭の
+1 件だけを hook の JSON 出力の `systemMessage` として返す。サーバもポーリングも使わない。
 
-- 各項目は任意で `url` を持てる。開いてよい形（`https://` のみ等）は `plugin/hooks/_notices.py`
-  が判定し、不正な `url` は項目ではなく `url` だけを無視する。有効な `url` は本文末尾に
-  `詳細: <url>` として付く
-- 既定ブラウザで開くのは、有効な `url` を持つ未読の先頭 1 件だけであり、対話セッション
-  （`CLAUDE_CODE_ENTRYPOINT` が `cli`）かつ既読の記録に成功したときに限る。
-  対応 OS は macOS と Windows である
+- 出すのは `SessionStart` の `source` が `startup` か `clear` のときだけである。`resume`・`compact`・
+  値が無い・未知の値のとき（標準入力が読めないときを含む）は出さず、既読にもしない
+- 既読にするのは出した 1 件だけで、残りの未読は次の `startup`・`clear` から 1 件ずつ出る。
+  標準出力への書き出しか既読の記録に失敗したときは既読にならず、次回また同じ 1 件が出る
+- `systemMessage` は `title` と `body` を改行でつないだもの（`title` が無ければ `body` だけ）である。各項目は任意で `url` を持てる。
+  表示してよい形（`https://` のみ等）は `plugin/hooks/_notices.py` が判定し、不正な `url` は項目ではなく
+  `url` だけを無視する。有効な `url` は本文末尾に `詳細: <url>` として付く
 - `claude -p` や Agent SDK からの起動（`CLAUDE_CODE_ENTRYPOINT` が `sdk-` 始まり）では、
   表示はするが既読にしない
 
+1 件ずつ出す理由と、`resume`・`compact` で出さない理由は `../decisions/plugin.md` にある。
 表示の接頭辞と長文の退避の挙動は `../knowledge/claude-code-behavior.md` にある。
+
+## プラグインの更新
+
+`session_start.py` は、`SessionStart` の `source` が `startup` で、非対話（`CLAUDE_CODE_ENTRYPOINT` が `sdk-` 始まり）
+でなく、前回起動してから `plugin/hooks/_updater.py` の `UPDATE_INTERVAL_SEC` 以上たっていれば、切り離したプロセスで
+次の 2 つを順に実行する。hook は待たずに終わり、新しい版が効くのは次の起動からである。
+
+```
+claude plugin marketplace update <marketplace>
+claude plugin update <plugin>@<marketplace> --scope user
+```
+
+- `<plugin>` は `plugin.json` の `name`、`<marketplace>` は `plugin/hooks/policy.py` の `MARKETPLACE`。
+  `name` が取れないときは起動しない
+- 起動の前に、時刻を `${CLAUDE_PLUGIN_DATA}` の `update_at`（mtime）に書く。書けなければ起動しない。
+  記録の時刻が未来なら起動する
+- `claude` が `PATH` の絶対パスの項目に無いとき・コマンドが失敗したとき・`COMMAND_TIMEOUT_SEC` で打ち切ったときは何もしない
+  （error 行も積まない）。1 つ目が失敗しても 2 つ目は実行する
+- 更新するのは user スコープの導入だけである。local・project スコープだけの導入では 2 つ目が失敗で終わる
+- 無効化スイッチでは止めない
+
+理由は `../decisions/plugin.md` にある。
 
 ## 改訂履歴
 
@@ -155,3 +184,6 @@ JSON 出力の `systemMessage` 1 つにまとめて返す。サーバもポー�
 - 2026-09-28: HTTP のエラー応答での送信の打ち切りと、error 行の状態コードごとの集約を書いた
 - 2026-09-28: 本体が読めない settings.json・アンインストールで消える状態・ONCE の記録の範囲・送る値・同じ内容のバックアップを取らないことを書いた。送る値に MCP の `tool_name` を含め、収集の分岐の範囲を実装にそろえた
 - 2026-09-28: `config.json` が無いときに退避も破棄もしないことと、spool が送信先を持たないことを書いた
+- 2026-10-09: お知らせを `startup` と `clear` のときに未読の先頭から 1 件ずつ出すことを書いた
+- 2026-10-09: バックアップの置き場を `settings-backups/` の日時のフォルダにし、自動では消さないこと・`statusLine` の指すファイルを写すこと・導入・更新の後にも保存することを書いた
+- 2026-10-09: 対話の `startup` でプラグインの更新を切り離して起動することと、無効化スイッチで止めないことを書いた

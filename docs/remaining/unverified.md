@@ -24,9 +24,9 @@
 | 事項 | 確かめること |
 | --- | --- |
 | `CLAUDE_CODE_ENTRYPOINT` の値 | 対話起動・`claude -p` それぞれで macOS と同じ `cli` / `sdk-cli` になるか |
-| `os.startfile` | 既定ブラウザが実際に開くか。コンソールウィンドウが一瞬でも出ないか |
 | 起動時間 | hook の応答を体感できるほど遅らせないか |
 | 収集と送信 | 並列の hook の追記で `queue.jsonl` の行が欠けないか。切り離した送信プロセスが Claude Code の終了後も送り切るか（`start_new_session` は POSIX でしか効かない） |
+| プラグインの更新の起動 | `PATH` の `claude` が `claude.cmd` のときも 2 段階の更新が起動し、切り離した子が hook の終了後も最後まで走って次の起動で新しい版になるか。コンソールの窓が出ないか。`%USERPROFILE%\.ssh\config` の別名で社内リポジトリに届くか |
 | E2E | `pytest e2e` が通るか。通らなければ、つまずいた点を `../guide/e2e.md` に反映する |
 
 **完了条件** — 結果を `../knowledge/claude-code-behavior.md` に記録すること。不合格なら報告する。
@@ -42,5 +42,6 @@
 | 事項 | 確かめること |
 | --- | --- |
 | `effort.level` | `claude -p` では、モデルが effort に対応するときだけ現れることを確認済み。**対話モードでは未検証**（自動操作が初回オンボーディングを突破できない） |
+| `compact` での `systemMessage` の表示 | 対話起動で圧縮（`/compact`・自動圧縮）の後に、`SessionStart` の hook が返した `systemMessage` が画面に表示されるかを確かめ、`../knowledge/claude-code-behavior.md` に記録する。表示されるなら、`compact` でも出すかを決める |
 | detach した送信プロセスが確実に走るか | 手動で `_sender.py` を叩くと即座に送信される一方、`claude -p` 終了後に queue が残留する現象を独立した 2 回の検証で観測した。**条件が未特定。**連続実行の間隔・並列度を変えて切り分ける |
 | `rotate` と追記の競合で行が失われるか | hook が `queue.jsonl` を開いてから書くまでの間に送信プロセスが退避すると、行は退避先のファイルに追記される。送信プロセスがそのファイルを読んだ後なら、2xx で消すときに行が失われる（推定）。追記と退避を競合させて行が欠けるかを確かめる |

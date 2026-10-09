@@ -1,11 +1,13 @@
 """settings.json への標準設定の適用（読み取り・mtime 検査・バックアップ・原子的置換）。"""
 
+import copy
 import json
 import os
 import tempfile
 from pathlib import Path
 from typing import Any, Optional
 
+import _backup
 import _govdir
 from _policy_ops import apply_ops, unapplied
 
@@ -53,8 +55,9 @@ def _stat_mtime_ns(path: Path) -> Optional[int]:
         return None
 
 
-def _write(config_path: Path, data: dict, expected_mtime_ns, gov_dir: Path) -> str:
-    """原子的に置換する。バックアップに失敗したら書かない。"""
+def _write(config_path: Path, data: dict, expected_mtime_ns, statusline: Any) -> str:
+    """原子的に置換する。バックアップに失敗したら書かない。
+    `statusline` は書き換える前の `statusLine` の値（書き換えないときは None）。"""
     try:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         fd, tmp_name = tempfile.mkstemp(
@@ -73,8 +76,8 @@ def _write(config_path: Path, data: dict, expected_mtime_ns, gov_dir: Path) -> s
         if _stat_mtime_ns(config_path) != expected_mtime_ns:
             return "skipped_conflict"
 
-        if expected_mtime_ns is not None and not _govdir.backup(config_path, gov_dir):
-            return "write_failed"
+        if expected_mtime_ns is not None:
+            _backup.backup(config_path, statusline)
 
         os.replace(tmp_path, config_path)
         replaced = True
@@ -101,10 +104,14 @@ def apply_settings(config_path, policy: Any, gov_dir: Path) -> list[Row]:
         return [_row(e) for e in unapplied(policy, "parse_failed")]
 
     done = _govdir.load_once(gov_dir)
+    statusline = copy.deepcopy(data.get("statusLine"))
     entries = apply_ops(data, policy, done, gov_dir.as_posix())
     pending = [e for e in entries if e["result"] == "pending"]
     if pending:
-        write_status = _write(config_path, data, mtime_ns, gov_dir)
+        changed = data.get("statusLine") != statusline
+        write_status = _write(
+            config_path, data, mtime_ns, statusline if changed else None
+        )
         for e in pending:
             e["result"] = write_status
 

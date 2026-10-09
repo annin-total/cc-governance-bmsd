@@ -4,7 +4,7 @@ AI Platform (AIP) の FaaS（WebApp Function type, Git mode）に、Bitbucket �
 
 ## 前提
 
-- デプロイ単位はこのリポジトリのルートである。サーバのソースは submodule `server/` にある
+- デプロイ単位はこのリポジトリのルートである。サーバのソースは `server/` にある
 - DB は SQLite を使う。DB ファイルと CSV は永続領域 `/mnt/data/` に置く
 - MySQL を採るときは、その前に `db.init` が MySQL の表を `DEFAULT CHARSET=utf8mb4` で作り、起動時に文字コードを検査するようにする。
   今の DDL（`contract.py` の `ddl()`）は文字コードを指定しないため、既定が utf8mb3・latin1 の DB では
@@ -49,7 +49,7 @@ Secret ファイルに `KEY=VALUE` 形式で書く。`entry.sh` が起動時に�
    - Name: 任意（例: `cc-governance-server`）
    - Ingress Path: `/cc-governance-server`
    - Function Base: **sh-centos-science**（例: `sh-centos-science-py39`）
-   - HTTP Access Mode: **Public Access**（社内 VPN に接続できる人なら誰でも到達できる）
+   - HTTP Access Mode: **Public Access**（社内 VPN 接続が可能な全員がアクセス可）
    - Input Method: **Git Repository**
       - Git Repository Url: `対象リポジトリの SSH URL`（HTTP は使えない）
       - Branch: デプロイ対象のブランチ
@@ -108,7 +108,6 @@ push だけでは反映されない。ソースの更新も Secret の変更も�
 
 - **Public Access が HTTPS かどうかは未検証**: 平文の HTTP なら、Basic 認証のパスワードと `ADMIN_PATH` が VPN の中を平文で流れる
 - **前段のリバースプロキシが `Authorization` ヘッダをアプリに渡すかどうかは未検証**: 渡さなければ、正しいパスワードでも画面は常に `401` になる
-- **submodule の取得は未検証**: AIP が clone 時に submodule `server/` を取得するか、取得元に到達できるかを確かめていない。取得できなければ `server/entry.sh` が存在せず起動しない
 - `sh-centos-science` は公式ドキュメント上 alpha 版扱いのため、AIP 側の仕様変更・非推奨化のリスクが残る
 
 ## その他
@@ -134,10 +133,13 @@ CSV は任意の補強であり、取り込まなくてもサーバは動く。�
 | --- | --- |
 | `cost_daily` | `CSV_DIR` の複製にある CSV を、画面から取り込み直せる |
 | `company_holidays` | 画面から登録し直す |
+| `org_roster`・`org_roster_files` | 手元の組織 CSV を、画面から月ごとに取り込み直す（サーバは組織 CSV のファイルを置かない） |
 | `events` | 再現できない。端末は受信済み（2xx）の分を spool から消すため、再送されない |
 | `policy_state` | 再現できない。準拠開始日は過去の観測にしか存在しない |
 | `errors` | `events` と同じ |
+| `summaries` | 再現できない。書き出しにも含まれない |
 
 ## 改訂履歴
 
 - 2026-09-30: CSV を画面で受け取って取り込む手順にし、`CSV_DIR` に書き込みの権限が要ること・一覧からの削除・`company_holidays` を失ったときを加えた
+- 2026-10-09: 組織の名簿とサマリーを失ったときを加えた

@@ -1,0 +1,10 @@
+{# 上段の要点のカードと、下段の詳しい一覧でできた画面。中身は screens/<画面>.py の定義から組み立てる。 #}
+{% extends "base.html" %}
+{% from "components/card.html" import card_groups %}
+{% from "components/tabs.html" import detail %}
+{% from "components/period.html" import switcher, span as period_span, at as period_at, stale %}
+{% block head_actions %}<div class="head-act">{% if period %}{{ switcher(period, request.endpoint, keep_asof) }}{{ period_span(span, cal, request.endpoint, {} if period == PERIOD_DEFAULT else {"period": period}) }}{% else %}{{ period_at(at, cal, request.endpoint) }}{% endif %}{{ stale(csv_stale, keep_asof) }}</div>{% endblock %}
+{% block content %}
+{{ card_groups(view.groups) }}
+{{ detail(view.tabs) }}
+{% endblock %}

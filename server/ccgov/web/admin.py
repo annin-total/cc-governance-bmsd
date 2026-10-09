@@ -1,0 +1,248 @@
+"""管理画面の Blueprint。Basic 認証・CSRF の検証・取込の大きさの上限と、6 画面（概況・コストと利用者・利用状況・policy・effect・収集の状態）・サマリー・データと設定を持つ。"""
+
+import hmac
+import time
+from typing import Callable, Optional
+
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+
+from ccgov.constants import CSV_UPLOAD_MAX_BYTES
+from ccgov.metrics import asof_calendar, calendar, windows
+from ccgov.reports import (
+    activity,
+    collect,
+    cost_page,
+    effect,
+    overview,
+    period_end,
+    policy,
+)
+from ccgov.reports import summary as summary_report
+from ccgov.vendor import contract
+from ccgov.web import (
+    csrf,
+    csv_files,
+    export,
+    filters,
+    labels,
+    org_csv,
+    settings,
+    summary,
+)
+from ccgov.web.screens import Screen, view
+from ccgov.web.screens import activity as activity_screen
+from ccgov.web.screens import collect as collect_screen
+from ccgov.web.screens import cost_page as cost_screen
+from ccgov.web.screens import effect as effect_screen
+from ccgov.web.screens import overview as overview_screen
+from ccgov.web.screens import policy as policy_screen
+
+# CSS を認証つきで配るため、静的配信はアプリ直下ではなくこの Blueprint が持つ。
+admin = Blueprint("admin", __name__, static_folder="static")
+# 期間を切り替える画面。ナビのリンクに選んだ期間を引き継ぐ
+PERIOD_SCREENS = ("admin.index", "admin.cost_view", "admin.activity_view")
+# 移した画面の古い URL から引き継ぐ問い合わせ（ほかは捨てる）
+_KEPT_ARGS = ("period", "asof")
+# 画面からファイルを受け取る経路と、大きさの上限を超えたときの応答
+_UPLOADS = {
+    csv_files.ENDPOINT: csv_files.too_large,
+    org_csv.ENDPOINT: org_csv.too_large,
+}
+
+
+@admin.before_request
+def _limit_upload() -> None:
+    """取込の経路にだけ本文の大きさの上限を掛ける。CSRF の照合が本文を読む前に決めるため、認証より先に登録する。"""
+    if request.endpoint in _UPLOADS:
+        request.max_content_length = CSV_UPLOAD_MAX_BYTES
+
+
+@admin.before_request
+def _require_admin_password():
+    """Basic 認証のパスワードだけを照合する。ユーザー名は問わない。"""
+    expected = current_app.config["ADMIN_PASSWORD"].encode("utf-8", "surrogateescape")
+    auth = request.authorization
+    password = (auth.password if auth else None) or ""
+    if not hmac.compare_digest(password.encode("utf-8"), expected):
+        return Response(
+            status=401,
+            headers={"WWW-Authenticate": 'Basic realm="admin", charset="UTF-8"'},
+        )
+    if request.method == "POST" and not csrf.valid(request.form.get(csrf.FIELD)):
+        return Response(labels.CSRF_FAILED, status=403, mimetype="text/plain")
+    return None
+
+
+def _basis() -> dict:
+    """今日・選べる範囲（`first`・`last`）・選んだ基準日（範囲の外なら None）・期間のページの終わり。1 リクエストで 1 回だけ数える。"""
+    if "basis" not in g:
+        today = _today()
+        first, last = settings.run(period_end.bounds, today)
+        asof = windows.pick(
+            calendar.parse_day(request.args.get("asof", "")), first, last
+        )
+        end = last if asof is None else asof
+        g.basis = {
+            "today": today,
+            "first": first,
+            "last": last,
+            "asof": asof,
+            "end": end,
+        }
+    return g.basis
+
+
+@admin.context_processor
+def _keep_asof() -> dict:
+    """リンクに引き継ぐ基準日（検証済みの日を書き直して付け、受け取った文字列を URL に戻さない）と、利用明細の古さ・今日。"""
+    b = _basis()
+    asof, last_csv = b["asof"], None if b["first"] is None else b["last"]
+    return {
+        "keep_asof": {} if asof is None else {"asof": filters.day(asof)},
+        "csv_stale": asof_calendar.stale(last_csv, b["today"]),
+        "today": b["today"],
+    }
+
+
+def _calendar(period: Optional[windows.Period] = None) -> Optional[dict]:
+    """期間のページのカレンダー。利用明細が無ければ None（基準日を選べない）。"""
+    basis = _basis()
+    if basis["first"] is None:
+        return None
+    start = None if period is None else period.start
+    prev = None if period is None else period.start - 1
+    return settings.run(period_end.calendar, basis, start, prev)
+
+
+def _period_key() -> str:
+    """`?period=` の値。知らない値は既定の期間にする。"""
+    key = request.args.get("period", windows.DEFAULT)
+    return key if key in windows.KEYS else windows.DEFAULT
+
+
+def _period() -> windows.Period:
+    """`?period=` の期間を、期間のページの終わりで切ったもの。"""
+    return windows.period(_period_key(), _basis()["end"])
+
+
+def _period_page(template: str, spec: Screen, build: Callable, *args, **context) -> str:
+    """期間のページを、`?period=` の期間の `build(conn, period, *args)` で描く。"""
+    period = _period()
+    data = settings.run(build, period, *args)
+    return render_template(
+        template,
+        view=view.build(spec, data),
+        period=period.key,
+        span=period,
+        cal=_calendar(period),
+        **context,
+    )
+
+
+@admin.route("/", strict_slashes=False)
+def index() -> str:
+    return _period_page(
+        "overview.html",
+        overview_screen.SCREEN,
+        overview.build,
+        _basis()["today"],
+        summary=settings.run(summary_report.latest),
+    )
+
+
+@admin.route("/cost")
+def cost_view() -> str:
+    return _period_page("cost.html", cost_screen.SCREEN, cost_page.build)
+
+
+def _today() -> int:
+    return contract.to_day(int(time.time()))
+
+
+@admin.route("/policy")
+def policy_view() -> str:
+    today = _basis()["today"]
+    data = settings.run(policy.build, today)
+    screen = view.build(policy_screen.SCREEN, data)
+    return render_template("screen.html", view=screen, at=today)
+
+
+@admin.route("/collect")
+def collect_view() -> str:
+    today = _basis()["today"]
+    screen = view.build(collect_screen.SCREEN, settings.run(collect.build, today))
+    return render_template("screen.html", view=screen, at=today)
+
+
+@admin.route("/effect")
+def effect_view() -> str:
+    end = _basis()["end"]
+    data = settings.run(effect.build, end)
+    screen = view.build(effect_screen.SCREEN, data)
+    return render_template("screen.html", view=screen, at=end, cal=_calendar())
+
+
+@admin.route("/activity")
+def activity_view() -> str:
+    return _period_page("screen.html", activity_screen.SCREEN, activity.build)
+
+
+@admin.route("/assets")
+def assets_moved() -> Response:
+    """スキル・コマンドの利用は利用状況に移った。期間と基準日だけを引き継ぐ。"""
+    kept = {k: request.args[k] for k in _KEPT_ARGS if k in request.args}
+    return redirect(url_for("admin.activity_view", **kept), code=301)
+
+
+@admin.route("/summary/new", methods=["GET", "POST"])
+def summary_new():
+    return summary.form(None, _basis())
+
+
+@admin.route("/summary/<sid>/edit", methods=["GET", "POST"])
+def summary_edit(sid: str):
+    return summary.form(sid, _basis())
+
+
+admin.add_url_rule("/summary", "summary_list", summary.page)
+admin.add_url_rule(
+    "/summary/<sid>/delete", "summary_delete", summary.delete, methods=["GET", "POST"]
+)
+admin.add_url_rule("/settings", "settings", settings.page)
+admin.add_url_rule(
+    "/settings/holidays", "add_holiday", settings.add_holiday, methods=["POST"]
+)
+admin.add_url_rule(
+    "/settings/holidays/<int:day>/delete",
+    "delete_holiday",
+    settings.delete_holiday,
+    methods=["POST"],
+)
+admin.add_url_rule("/settings/csv", "upload_csv", csv_files.upload, methods=["POST"])
+admin.add_url_rule(
+    "/settings/csv/delete", "delete_csv", csv_files.delete, methods=["POST"]
+)
+admin.add_url_rule("/settings/export/<month>", "export_month", export.download)
+admin.add_url_rule("/settings/org", "upload_org", org_csv.upload, methods=["POST"])
+admin.add_url_rule(
+    "/settings/org/<int:month>/delete",
+    "delete_org",
+    org_csv.delete,
+    methods=["POST"],
+)
+
+
+@admin.errorhandler(413)
+def _too_large(e):
+    """取込の経路なら大きさの上限の知らせを描く。ほかは Flask の既定の 413 のまま返す。"""
+    handler = _UPLOADS.get(request.endpoint)
+    return handler(e) if handler else e
