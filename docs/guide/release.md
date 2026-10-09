@@ -51,6 +51,7 @@ python scripts/validate.py
 - `.venv/bin/python scripts/check_settings_schema.py` が `[OK]` で終わる（`[NG]` のときの対処はスクリプトの冒頭）
 - 効果測定の対象の施策（`server/ccgov/constants.py` の `REFERENCE_KEY` / `REFERENCE_VALUE`）の値を変えたら、同じリリースでこの 2 つを差し替えた。差し替えると以前の実験は画面から消える（データは残る）。ほかの影響は `server/ccgov/constants.py` のコメントにある
 - 配布リポジトリの作業ブランチで `diff -r -x __pycache__ -x .DS_Store plugin/ ../cc-marketplace-governance-bmsd/plugins/governance/` が差分なしで終わる（このリポジトリから実行する）
+- お知らせは `notices.json` の末尾に足した（並び順で未読の先頭から 1 件ずつ出る）
 - `notices.json` の `url` は `https://` で始まり、意図したページを指している
 - `notices.json` を変えたら、「staging で確かめる」の対話の確認でお知らせが表示されることを見る（`pytest e2e` は見本の
   `notices.json` を使うため本物の文面を通らず、壊れた JSON は黙って空になる）
@@ -183,3 +184,4 @@ claude plugin update governance
 - 2026-09-28: ロールバックで戻らないもの、列を足すときの型・実行手段・端末を先に配ったときの欠損を加え、同期の確認項目に `contract.py` を加えた
 - 2026-09-28: 章番号での参照を見出し名に替え、staging の対話起動を `e2e.md` の手動確認に寄せ、knowledge・スクリプトと重なる記述を参照に縮めた
 - 2026-10-08: 版の分布とエラーを見る場所を、設定の適用状況のバージョンのタブと収集の状態のプラグインのエラーにし、staging の合格を分母に依らない「最新」の版で見るようにした
+- 2026-10-09: お知らせを `notices.json` の末尾に足すことを確認項目に加えた
