@@ -17,7 +17,7 @@
 | `decisions/plugin.md` | プラグインと契約の設計判断 |
 | `decisions/server.md` | サーバの設計判断 |
 | `guide/onboarding.md` | 利用者への導入案内と段階的な展開の進め方 |
-| `guide/release.md` | プラグインを配布リポジトリへ差し込んでリリースする手順 |
+| `guide/release.md` | リリースの前提・人が確かめる項目・配った後の作業（差し込みから PR までの手順はスキル `release-plugin`） |
 | `guide/deploy-aip.md` | サーバを実行基盤（AIP）へデプロイする手順 |
 | `guide/e2e.md` | 実機検証（`pytest e2e`）の正本。モジュールごとの目的・実行方法・罠 |
 | `knowledge/upstream-features.md` | Claude Code に実在する hook・キー・環境変数の目録 |

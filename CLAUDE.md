@@ -54,6 +54,7 @@ CCGOV_TEST_MYSQL_DSN=mysql://root:<pw>@127.0.0.1:13306 .venv/bin/python -m pytes
   - 文書・docstring・コメントの見直し: `.claude/skills/revise-docs/SKILL.md`
   - 仕様そのものを疑うレビュー: `.claude/skills/spec-bug-review/SKILL.md`
   - 実機検証（E2E）: `.claude/skills/e2e/SKILL.md`
+  - リリース（配布リポジトリへの差し込みから PR まで）: `.claude/skills/release-plugin/SKILL.md`
   - 記録した課題（`issues.md`）の棚卸しと片付け: `.claude/skills/resolve-issues/SKILL.md`
 
 ## Design
