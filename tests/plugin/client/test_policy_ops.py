@@ -135,15 +135,16 @@ def test_操作の結果(tmp_path, tables, before, after, expected):
 
 @pytest.mark.parametrize(("tables", "before"), [c[1:3] for c in CASES],
                          ids=[c[0] for c in CASES])  # fmt: skip
-def test_2回目は何も変えない(tmp_path, tables, before):
+def test_2回目は何も変えない(tmp_path, monkeypatch, tables, before):
     """冪等性。2 回目は書き込み対象が無く、ファイルもバックアップも増えない。"""
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path))
     path = _write(tmp_path, before)
     _apply(path, tables)
     raw = path.read_bytes()
-    backups = sorted((tmp_path / "governance").glob("backups/*"))
+    backups = sorted(tmp_path.glob("settings-backups/*/*"))
 
     rows = _apply(path, tables)
 
     assert {r for r, _v in rows.values()} <= {"already_ok", "skipped_missing"}
     assert path.read_bytes() == raw
-    assert sorted((tmp_path / "governance").glob("backups/*")) == backups
+    assert sorted(tmp_path.glob("settings-backups/*/*")) == backups

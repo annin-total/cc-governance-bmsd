@@ -186,6 +186,7 @@ STAGE = {
     "notices": ("お知らせの表示",),
     "statusline": ("ステータスラインの設定",),
     "mark_seen": ("表示済みの記録",),
+    "backup": ("設定のバックアップ",),
 }
 HEALTH_ITEM = {
     "events": ("受信した記録", "再送の重複を除く"),
