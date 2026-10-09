@@ -1,7 +1,5 @@
 """収集の状態の組み立て。基準日を持たず今日の時点で数える。
-
-受信は今日までの `RECENT_DAYS` 日と前の `RECENT_DAYS` 日、照合は利用明細の最終日までの `RECENT_DAYS` 日。
-"""
+受信は今日までの `RECENT_DAYS` 日と前の `RECENT_DAYS` 日、照合は利用明細の最終日までの `RECENT_DAYS` 日。"""
 
 from ccgov.constants import ERROR_COUNT_ELEVATED, RECENT_DAYS
 from ccgov.metrics import asof_calendar, delivery, health, rates, series, states
@@ -46,9 +44,7 @@ def errors(conn, today: int) -> dict:
     }
 
 
-def health_rows(
-    recent: dict, prev: dict, reconciliation: dict, null_now: dict, null_prev: dict
-) -> list:
+def health_rows(recent: dict, prev: dict, reconciliation: dict) -> list:
     """受信と項目の欠けの一覧。照合率は前の期間と比べない。欠けの差は百分率の差（pt）。"""
     rows = [
         {"group": "recv", "item": item, "unit": unit, "now": recent[key], "prev": prev[key],
@@ -59,8 +55,8 @@ def health_rows(
         {"group": "recv", "item": "reconciliation", "unit": "rate", "now": reconciliation["rate"],
          "prev": None, "diff": None, "state": None, "ratio": reconciliation}
     )  # fmt: skip
-    for key, rate in null_now.items():
-        before = null_prev.get(key)
+    for key, rate in recent["null_rates"].items():
+        before = prev["null_rates"].get(key)
         diff = None if rate is None or before is None else round(rate - before, 1)
         rows.append(
             {"group": "null", "item": key, "unit": "rate", "now": rate, "prev": before,
@@ -123,7 +119,5 @@ def build(conn, today: int) -> dict:
         "errors": errors(conn, today),
         "nulls": _nulls(recent["null_rates"]),
         "freshness": asof_calendar.freshness(match_end, today),
-        "health": health_rows(
-            recent, prev, reconciliation, recent["null_rates"], prev["null_rates"]
-        ),
+        "health": health_rows(recent, prev, reconciliation),
     }

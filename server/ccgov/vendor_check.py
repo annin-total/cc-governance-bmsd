@@ -1,7 +1,5 @@
 """`vendor/` の複製が直接編集されていないかを、ヘッダを除いた残りのハッシュと `*.sha256` で検査する。
-
-`entry.sh` が `pip install` の前に呼ぶので、標準ライブラリだけで書く。
-"""
+`entry.sh` が `pip install` の前に呼ぶので、標準ライブラリだけで書く。"""
 
 import hashlib
 import sys

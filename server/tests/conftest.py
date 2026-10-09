@@ -80,6 +80,15 @@ def table_body(html: str, testid: str, key: Optional[str] = None) -> str:
     raise AssertionError(f"table {' '.join(wanted)} が見つからない")
 
 
+def table_head(html: str, testid: str) -> list:
+    """`table_body` の `<thead>` の見出しセルの文字（タグを除き、空白を詰める）。"""
+    head = table_body(html, testid).split("</thead>")[0]
+    return [
+        " ".join(unescape(re.sub(r"<[^>]+>", "", th)).split())
+        for th in re.findall(r"<th\b[^>]*>(.*?)</th>", head, re.DOTALL)
+    ]
+
+
 def rows_in_table(html: str, testid: str, key: Optional[str] = None) -> list:
     """`table_body` の `<tr ...>`（属性つきを含む）を、最初の見出し行を除いて返す。"""
     return re.findall(r"<tr\b[^>]*>", table_body(html, testid, key))[1:]
@@ -126,6 +135,16 @@ def admin_client(flask_app):
     client = flask_app.test_client()
     client.environ_base["HTTP_AUTHORIZATION"] = basic_auth("pw")["Authorization"]
     return client
+
+
+def dated_client(monkeypatch, today: int):
+    """`app` を読み込み直し、基準日を `today` に固定したテストクライアント（認証ヘッダ付き）を返す。"""
+    import app as app_module
+    from ccgov.web import admin
+
+    importlib.reload(app_module)
+    monkeypatch.setattr(admin.time, "time", lambda: today * 86400)
+    return admin_client(app_module.app)
 
 
 @contextmanager
@@ -262,13 +281,26 @@ def cost_client(db_conn, monkeypatch):
     """`cost_data.py` の既知データを入れ、基準日を固定した `app` のテストクライアント（認証ヘッダ付き）。"""
     from cost_data import TODAY, seed
 
-    import app as app_module
-    from ccgov.web import admin
+    seed(db_conn)
+    return dated_client(monkeypatch, TODAY)
+
+
+@pytest.fixture
+def act_client(db_conn, monkeypatch):
+    """`activity_data.py` の既知データを入れ、基準日を固定した `app` のテストクライアント（認証ヘッダ付き）。"""
+    from activity_data import TODAY, seed
 
     seed(db_conn)
-    importlib.reload(app_module)
-    monkeypatch.setattr(admin.time, "time", lambda: TODAY * 86400)
-    return admin_client(app_module.app)
+    return dated_client(monkeypatch, TODAY)
+
+
+@pytest.fixture
+def named(cost_client, db_conn):
+    """`cost_client` に `names_data.py` の名簿を足したテストクライアント。"""
+    from names_data import seed_rosters
+
+    seed_rosters(db_conn)
+    return cost_client
 
 
 @pytest.fixture

@@ -7,7 +7,7 @@
 from typing import Optional
 
 from ccgov.constants import USER_COST_ELEVATED, USER_COST_HIGH
-from ccgov.metrics import states
+from ccgov.metrics import rates, states
 from ccgov.metrics.spend import BASES
 
 _SHOWN = (states.NG, states.WARN)
@@ -91,7 +91,7 @@ def card(found: list, basis: str, total: float) -> dict:
             "now": len(now),
             "prev": prev,
             "diff": len(now) - prev,
-            "share": round(cost / total * 100, 1) if total else None,
+            "share": rates.rate(cost, total),
             "new": sum(r["kind"] == "new" for r in now),
             "left": sum(r["kind"] == "left" and r["prev_state"] == s for r in mine),
         }

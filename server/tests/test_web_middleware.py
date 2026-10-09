@@ -24,20 +24,14 @@ def app_with_base_path(db_dsn):
 @pytest.mark.parametrize(
     "base_path, path, expected_status",
     [
-        (
-            "/gov/cc",
-            "/gov/cc/adm",
-            200,
-        ),  # 末尾スラッシュなしでリダイレクトしない
+        # 末尾スラッシュなしでリダイレクトしない
+        ("/gov/cc", "/gov/cc/adm", 200),
         ("/gov/cc", "/gov/cc/adm/", 200),
         ("/gov/cc", "/adm/", 200),  # 前段のリバースプロキシが既に除いて渡す経路
         ("/gov/cc", "/gov/cc", 404),  # 管理画面は ADMIN_PATH の下にしか無い
         ("/gov/cc", "/other", 404),
-        (
-            "/gov/cc/",
-            "/gov/cc/adm/",
-            200,
-        ),  # 末尾スラッシュ付き BASE_PATH でループしない
+        # 末尾スラッシュ付き BASE_PATH でループしない
+        ("/gov/cc/", "/gov/cc/adm/", 200),
         ("", "/adm/", 200),
         ("", "/", 404),
         ("", "/other", 404),

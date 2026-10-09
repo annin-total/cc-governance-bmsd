@@ -5,12 +5,10 @@ from ccgov.store import db
 
 def event_days(conn, start: int, end: int) -> list:
     """`start`〜`end` の `(user_email, day, 記録の件数)`。件数は `event_id` で一意化する。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            "SELECT user_email, day, COUNT(DISTINCT event_id) FROM events"
-            " WHERE day BETWEEN ? AND ? GROUP BY user_email, day"
-        ),
+    cur = db.execute(
+        conn,
+        "SELECT user_email, day, COUNT(DISTINCT event_id) FROM events"
+        " WHERE day BETWEEN ? AND ? GROUP BY user_email, day",
         (start, end),
     )
     return cur.fetchall()
@@ -18,11 +16,9 @@ def event_days(conn, start: int, end: int) -> list:
 
 def report_days(conn, start: int, end: int) -> list:
     """`start`〜`end` に設定の報告があった `(user_email, day)`。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            "SELECT DISTINCT user_email, day FROM policy_state WHERE day BETWEEN ? AND ?"
-        ),
+    cur = db.execute(
+        conn,
+        "SELECT DISTINCT user_email, day FROM policy_state WHERE day BETWEEN ? AND ?",
         (start, end),
     )
     return cur.fetchall()
@@ -30,9 +26,9 @@ def report_days(conn, start: int, end: int) -> list:
 
 def billed_users(conn, start: int, end: int) -> set:
     """`start`〜`end` に利用明細の行がある利用者。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q("SELECT DISTINCT user_email FROM cost_daily WHERE day BETWEEN ? AND ?"),
+    cur = db.execute(
+        conn,
+        "SELECT DISTINCT user_email FROM cost_daily WHERE day BETWEEN ? AND ?",
         (start, end),
     )
     return {row[0] for row in cur.fetchall()}

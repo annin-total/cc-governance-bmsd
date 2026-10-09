@@ -10,19 +10,9 @@ _ADMIN_PAGES = ["/", "/policy", "/effect", "/activity", "/collect"]
 
 
 @pytest.fixture
-def app_module(db_dsn, monkeypatch):
-    """`INGEST_TOKEN=tok` で読み込み直した `app` モジュールを返す。"""
-    import app as module
-
-    monkeypatch.setenv("INGEST_TOKEN", "tok")
-    importlib.reload(module)
-    return module
-
-
-@pytest.fixture
-def client(app_module):
+def client(ingest_client):
     """認証情報を持たないテストクライアント。"""
-    return app_module.app.test_client()
+    return ingest_client
 
 
 @pytest.mark.parametrize("page", _ADMIN_PAGES)

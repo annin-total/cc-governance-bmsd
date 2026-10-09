@@ -4,13 +4,11 @@
 """
 
 import re
-from pathlib import Path
 
 import pytest
 from conftest import ADMIN, card, card_value, table_rows
 from known_data import TODAY, insert_event
-
-_STATIC = Path(__file__).resolve().parent.parent / "ccgov" / "web" / "static"
+from test_web_visual_base import STATIC
 
 ASOF = "2024-10-03"
 
@@ -62,7 +60,7 @@ def test_header_no_longer_shows_today(today_client):
 
 
 def test_events_after_the_last_csv_day_are_not_counted(known_db, today_client):
-    """記録の窓も利用明細の最終日で切る。今日の記録は日ごとの利用にもスキルの利用にも入らない。"""
+    """記録を数える範囲も利用明細の最終日で切る。今日の記録は日ごとの利用にもスキルの利用にも入らない。"""
     insert_event(
         known_db, event_id="x1", day=TODAY, user_email="u1", hook_event="PostToolUse",
         session_id="s1", tool_name="Skill", skill_name="pdf",
@@ -169,8 +167,8 @@ def test_pages_outside_the_period_show_today_as_a_time_point(today_client, path)
 
 def test_time_point_looks_like_the_period_display():
     """「時点」は期間の表示（カレンダーの summary）と同じ 14px 相当・`--ink-2`。"""
-    css = (_STATIC / "layout.css").read_text()
-    summary = (_STATIC / "calendar.css").read_text()
+    css = (STATIC / "layout.css").read_text()
+    summary = (STATIC / "calendar.css").read_text()
     assert re.search(
         r"\.asof \{ color: var\(--ink-2\); font-size: var\(--fs-label\);", css
     )

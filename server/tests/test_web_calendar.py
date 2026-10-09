@@ -6,18 +6,16 @@
 import datetime
 import re
 from html.parser import HTMLParser
-from pathlib import Path
 
 import pytest
 from conftest import ADMIN
 from known_data import TODAY, insert_cost_daily, insert_event
+from test_web_visual_base import STATIC
 
 from ccgov.constants import CALENDAR_MONTHS_AROUND
 from ccgov.metrics.calendar import add_months, to_date, to_day
 from ccgov.store import db, queries_cost, queries_events
 from ccgov.web import labels
-
-_STATIC = Path(__file__).resolve().parent.parent / "ccgov" / "web" / "static"
 
 
 class _Calendar(HTMLParser):
@@ -187,14 +185,12 @@ def test_effect_has_a_calendar_without_previous_period(today_client):
     assert _pick(cal, "latest") == ADMIN + "/effect"
 
 
-@pytest.mark.parametrize("path", ["/policy", "/settings"])
-def test_pages_without_a_period_have_no_calendar(today_client, path):
-    assert _cal(today_client, path).found == 0
-
-
-@pytest.mark.parametrize("path", ["/", "/activity", "/effect"])
-def test_period_pages_have_one_calendar(today_client, path):
-    assert _cal(today_client, path).found == 1
+@pytest.mark.parametrize(
+    "path, found",
+    [("/policy", 0), ("/settings", 0), ("/", 1), ("/activity", 1), ("/effect", 1)],
+)
+def test_only_period_pages_have_one_calendar(today_client, path, found):
+    assert _cal(today_client, path).found == found
 
 
 def test_without_csv_there_is_no_calendar_and_no_warning(known_db, today_client):
@@ -250,14 +246,14 @@ def test_latest_button_goes_where_the_latest_pick_goes(today_client, args):
 
 
 def test_range_is_tinted_with_chip_up():
-    css = (_STATIC / "calendar.css").read_text()
+    css = (STATIC / "calendar.css").read_text()
     assert re.search(r"\.cal-day\.in-range \{ background: var\(--chip-up\); \}", css)
-    assert re.search(r"--chip-up: #[0-9a-f]{6};", (_STATIC / "tokens.css").read_text())
+    assert re.search(r"--chip-up: #[0-9a-f]{6};", (STATIC / "tokens.css").read_text())
 
 
 @pytest.mark.parametrize("cls", ["cal-picks", "cal-legend"])
 def test_lists_in_the_calendar_have_no_default_margin_padding_or_marker(cls):
-    css = (_STATIC / "calendar.css").read_text()
+    css = (STATIC / "calendar.css").read_text()
     applied = "".join(
         body
         for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css)

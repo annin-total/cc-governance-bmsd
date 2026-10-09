@@ -10,16 +10,10 @@ import pytest
 from conftest import ADMIN, card, table_body, table_rows
 from cost_data import A, B, C, E, html_of
 from known_data import TODAY, insert_cost_daily
-from names_data import OCT, SEP, put, seed_rosters
+from names_data import OCT, SEP, put
 
 from ccgov.metrics.windows import period
 from ccgov.reports import activity, collect, policy
-
-
-@pytest.fixture
-def named(cost_client, db_conn):
-    seed_rosters(db_conn)
-    return cost_client
 
 
 def _text(html: str) -> str:

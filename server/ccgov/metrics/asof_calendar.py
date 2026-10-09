@@ -41,9 +41,7 @@ def grid(
     span: tuple, bounds: tuple, shade: tuple, csv_days: set, wait_days: set
 ) -> list:
     """`span` の月ごとの格子。マスは月曜始まりで、月の初日の前を None で埋める。
-
-    `bounds` は選べる `(最初の日, 最終日)`、`shade` は選んだ期間の `(始まり, 終わり)`（始まりが None なら終わりの日だけを示す）。
-    """
+    `bounds` は選べる `(最初の日, 最終日)`、`shade` は選んだ期間の `(始まり, 終わり)`（始まりが None なら終わりの日だけを示す）。"""
     result = []
     for m_first, m_last in months(*span):
         lead = [None] * to_date(m_first).weekday()
