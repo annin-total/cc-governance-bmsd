@@ -1,12 +1,14 @@
-"""モジュール 1（導入）: git source の導入・キャッシュの複製・2 段階更新・SessionStart・uninstall。
+"""モジュール 1（導入）: git source の導入・キャッシュの複製・2 段階更新・SessionStart・hook からの更新・uninstall。
 
 すべて認証不要（未ログインの隔離環境）。
 """
 
 import json
+import subprocess
+import time
 from pathlib import Path
 
-from _flow import data_dir, install, ok, session
+from _flow import data_dir, install, install_path, ok, session
 from _market import (
     EXCLUDE,
     MARKETPLACE,
@@ -106,6 +108,46 @@ def test_SessionStartがinstallPathから動く(root, gitsrv):
     assert list(root.pycache_of(path / "hooks").glob("*.pyc")) != []
     assert not root.pycache_of(root.config / "plugins" / "marketplaces").exists()
     assert (root.config / "governance" / "statusline.js").is_file()
+
+
+def _startup_hook(root) -> None:
+    """導入済みの `session_start.py` を対話の `startup` として直接起動する（`claude -p` は非対話で更新しない）。"""
+    path = install_path(root)
+    env = root.env()
+    data = root.config / "plugins" / "data" / f"{PLUGIN}-{MARKETPLACE}"
+    env.update(CLAUDE_PLUGIN_ROOT=str(path), CLAUDE_PLUGIN_DATA=str(data))
+    res = subprocess.run(
+        ["python3", str(path / "hooks" / "session_start.py"), "SessionStart"],
+        input=json.dumps({"session_id": "e2e", "source": "startup"}),
+        env=env, cwd=root.project, capture_output=True, text=True, timeout=60,
+        check=False,
+    )  # fmt: skip
+    assert (res.returncode, res.stderr) == (0, ""), res
+
+
+def _wait_version(root, ver: str, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        recorded = root.json("plugins/installed_plugins.json")["plugins"][PLUGIN_ID]
+        if [e["version"] for e in recorded] == [ver]:
+            return
+        time.sleep(1)
+    raise AssertionError(f"{timeout} 秒たっても {ver} にならない: {recorded}")
+
+
+def test_startupのhookが切り離した更新で新版を入れる(root, gitsrv):
+    install(root, gitsrv, V1)
+    publish(root, V2)
+    _startup_hook(root)
+    # hook は待たずに戻るので、この時点ではまだ旧版でありうる。子の完了を記録の変化で待つ
+    _wait_version(root, V2, timeout=120)
+    _assert_installed(root, V2)
+    assert (data_dir(root) / "update_at").is_file()
+    requests = len(gitsrv.requests)
+    # 間隔の内側の startup では起動しない
+    _startup_hook(root)
+    time.sleep(5)
+    assert len(gitsrv.requests) == requests
 
 
 def test_uninstallでdataが消えgovernanceは残る(root, gitsrv):
