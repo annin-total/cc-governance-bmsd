@@ -6,7 +6,6 @@ from ccgov.store import db
 
 COLUMNS = ("id", "created", "updated", "asof", "title", "body")
 _SELECT = f"SELECT {', '.join(COLUMNS)} FROM summaries"
-# 作成時刻の新しい順。同じ秒に作った行は作った順（seq は作るたびに 1 つ増える）
 _NEWEST = " ORDER BY created DESC, seq DESC"
 
 
@@ -44,21 +43,18 @@ def delete(conn, sid: str) -> None:
 
 
 def get(conn, sid: str) -> Optional[tuple]:
-    cur = conn.cursor()
-    cur.execute(db.q(_SELECT + " WHERE id = ?"), (sid,))
+    cur = db.execute(conn, _SELECT + " WHERE id = ?", (sid,))
     row = cur.fetchone()
     return None if row is None else tuple(row)
 
 
 def all_rows(conn) -> list:
     """新しい順。"""
-    cur = conn.cursor()
-    cur.execute(_SELECT + _NEWEST)
+    cur = db.execute(conn, _SELECT + _NEWEST)
     return [tuple(r) for r in cur.fetchall()]
 
 
 def latest(conn) -> Optional[tuple]:
-    cur = conn.cursor()
-    cur.execute(_SELECT + _NEWEST + " LIMIT 1")
+    cur = db.execute(conn, _SELECT + _NEWEST + " LIMIT 1")
     row = cur.fetchone()
     return None if row is None else tuple(row)

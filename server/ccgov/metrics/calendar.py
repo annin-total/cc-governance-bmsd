@@ -3,8 +3,12 @@
 import bisect
 import calendar as _cal
 import datetime
+import re
+from typing import Optional
 
 _EPOCH = datetime.date(1970, 1, 1)
+# 3.11 以降の `date.fromisoformat` は YYYY-MM-DD 以外の形も受けるため、形は先に正規表現で絞る
+_ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
 def to_date(day: int) -> datetime.date:
@@ -13,6 +17,16 @@ def to_date(day: int) -> datetime.date:
 
 def to_day(date: datetime.date) -> int:
     return (date - _EPOCH).days
+
+
+def parse_day(text: str) -> Optional[int]:
+    """`YYYY-MM-DD` の epoch 日。日付の形でなければ None。"""
+    if not _ISO_DATE.fullmatch(text):
+        return None
+    try:
+        return to_day(datetime.date.fromisoformat(text))
+    except ValueError:
+        return None
 
 
 def month_bounds(day: int) -> tuple:
@@ -72,11 +86,16 @@ def sum_by_spans(values_by_day: dict, spans: list) -> list:
     return sums
 
 
-def distinct_by_spans(pairs: list, spans: list) -> list:
-    """`(day, キー)` の並びを、`spans` の各範囲で重複を除いて数える。"""
+def keys_by_spans(pairs: list, spans: list) -> list:
+    """`(day, キー)` の並びを、`spans` の各範囲のキーの集合にまとめる。"""
     find, keys = _span_of(spans), [set() for _ in spans]
     for day, key in pairs:
         i = find(day)
         if i is not None:
             keys[i].add(key)
-    return [len(k) for k in keys]
+    return keys
+
+
+def distinct_by_spans(pairs: list, spans: list) -> list:
+    """`(day, キー)` の並びを、`spans` の各範囲で重複を除いて数える。"""
+    return [len(k) for k in keys_by_spans(pairs, spans)]

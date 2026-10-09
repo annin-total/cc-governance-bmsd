@@ -1,10 +1,11 @@
 """コストと利用者のページ（`/cost`）のカードの検証。既知データは `cost_data.py`。"""
 
-import importlib
 import re
 
-from conftest import admin_client, card, card_value
+from conftest import card, card_value, dated_client
 from cost_data import TODAY, html_of
+
+from ccgov.store import queries_holidays
 
 LABELS = {
     "total": "コスト（利用明細）",
@@ -164,13 +165,15 @@ def test_12_months_do_not_compare_or_judge(cost_client):
 
 
 def test_page_without_csv_shows_dashes(db_conn, monkeypatch):
-    import app as app_module
-    from ccgov.web import admin
-
-    importlib.reload(app_module)
-    monkeypatch.setattr(admin.time, "time", lambda: TODAY * 86400)
-    cost_client = admin_client(app_module.app)
+    cost_client = dated_client(monkeypatch, TODAY)
     for query in ("", "?period=28", "?period=12m"):
         html = html_of(cost_client, query)
         assert card_value(html, LABELS["total"]) == "—"
         assert card_value(html, LABELS["billed"]) == "—"
+
+
+def test_recent_window_without_business_days_shows_dashes(cost_client, db_conn):
+    queries_holidays.add(db_conn, [19998, 19999, 20000, 20003, 20004], "年末年始")
+    html = html_of(cost_client)
+    assert card_value(html, LABELS["per_bd"]) == "—"
+    assert card_value(html, LABELS["per_user"]) == "—"

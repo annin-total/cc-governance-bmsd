@@ -16,9 +16,7 @@ def bounds(conn, today: int) -> tuple:
 
 def calendar(conn, basis: dict, start: Optional[int], prev: Optional[int]) -> dict:
     """基準日のカレンダー。`basis` は今日・選べる範囲・選んだ期間の終わり、`start`・`prev` は選んだ期間の始まりとその前日。
-
-    日の区分は描く月の中だけを引く。取り込み待ち（記録だけがある日）は利用明細の最終日より後〜今日に限る。
-    """
+    日の区分は描く月の中だけを引く。取り込み待ち（記録だけがある日）は利用明細の最終日より後〜今日に限る。"""
     today, first, last, end = (basis[k] for k in ("today", "first", "last", "end"))
     lo, hi = asof_calendar.shown_range(end, first, today)
     csv_days = set(queries_cost.days(conn, lo, hi))

@@ -1,12 +1,12 @@
 """サマリーの「下書きを作る」: 基準日の概況（7 日）のカードのうち注意・要確認を、画面の並びで 1 行ずつ本文に入れる。"""
 
-import importlib
 import re
 from html import unescape
 
 import pytest
-from conftest import ADMIN, admin_client, csrf_form
+from conftest import ADMIN, csrf_form, dated_client
 from known_data import TODAY, insert_cost_daily, insert_event
+from summary_data import textarea
 
 from ccgov.reports import summary
 from ccgov.web import summary_draft
@@ -68,14 +68,6 @@ def _draft(client, **form):
     return client.post(ADMIN + "/summary/new", data=csrf_form(client, data))
 
 
-def _body(html: str) -> str:
-    return unescape(
-        re.search(r'<textarea\b[^>]*name="body"[^>]*>(.*?)</textarea>', html, re.DOTALL)
-        .group(1)
-        .removeprefix("\n")
-    )
-
-
 def _title(html: str) -> str:
     return unescape(re.search(r'name="title"[^>]*value="([^"]*)"', html).group(1))
 
@@ -97,7 +89,7 @@ def test_draft_follows_the_overview_of_the_asof(today_client, known_db, asof):
     response = _draft(today_client, asof=asof)
     html = response.get_data(as_text=True)
     assert response.status_code == 200
-    lines = _body(html).split("\n")
+    lines = textarea(html).split("\n")
     assert [re.match(r"・(\S+) · ", ln).group(1) for ln in lines] == [
         s for s, _ in expected
     ]
@@ -113,7 +105,7 @@ def test_draft_replaces_the_body_and_keeps_a_custom_title(today_client):
         as_text=True
     )
     assert _title(html) == "自分の題"
-    assert "消える本文" not in _body(html) and _body(html).startswith("・")
+    assert "消える本文" not in textarea(html) and textarea(html).startswith("・")
 
 
 def test_draft_renames_a_default_shaped_title_to_the_asof(today_client):
@@ -124,14 +116,9 @@ def test_draft_renames_a_default_shaped_title_to_the_asof(today_client):
 
 
 def test_draft_without_warn_or_ng_keeps_the_body_and_says_so(db_conn, monkeypatch):
-    import app as app_module
-    from ccgov.web import admin
-
-    importlib.reload(app_module)
-    monkeypatch.setattr(admin.time, "time", lambda: TODAY * 86400)
-    client = admin_client(app_module.app)
+    client = dated_client(monkeypatch, TODAY)
     html = _draft(client, asof="", body="手で書いた本文").get_data(as_text=True)
-    assert _body(html) == "手で書いた本文"
+    assert textarea(html) == "手で書いた本文"
     assert "注意・要確認のカードはありません" in html
 
 
@@ -142,4 +129,4 @@ def test_draft_with_null_email_rows_is_200(today_client, known_db):
     insert_event(known_db, event_id="n1", day=20004, user_email=None, hook_event="Stop")
     response = _draft(today_client)
     assert response.status_code == 200
-    assert _body(response.get_data(as_text=True)).startswith("・")
+    assert textarea(response.get_data(as_text=True)).startswith("・")

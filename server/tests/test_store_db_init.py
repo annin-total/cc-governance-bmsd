@@ -1,5 +1,7 @@
 """`db.init()` の DDL 適用とインデックス作成（冪等性を含む）を確かめる。"""
 
+from contextlib import closing
+
 import pytest
 from conftest import MISSING_TABLE_ERRORS
 
@@ -44,32 +46,18 @@ def _has_table(conn, table: str) -> bool:
     return True
 
 
-def _indexes_with_columns(conn) -> set:
+def _assert_expected_indexes(conn) -> None:
+    """8 本のインデックスが期待どおりの列順と名前で揃っている。"""
     cur = conn.cursor()
-    result = set()
+    indexes, names = set(), []
     for table in ("events", "policy_state", "cost_daily"):
         cur.execute(f"PRAGMA index_list({table})")
         for row in cur.fetchall():
-            index_name = row[1]
-            cur.execute(f"PRAGMA index_info({index_name})")
-            columns = tuple(info_row[2] for info_row in cur.fetchall())
-            result.add((table, columns))
-    return result
-
-
-def _index_names(conn) -> list:
-    cur = conn.cursor()
-    names = []
-    for table in ("events", "policy_state", "cost_daily"):
-        cur.execute(f"PRAGMA index_list({table})")
-        names.extend(row[1] for row in cur.fetchall())
-    return sorted(names)
-
-
-def _assert_expected_indexes(conn) -> None:
-    """8 本のインデックスが期待どおりの列順と名前で揃っている。"""
-    assert _indexes_with_columns(conn) == _EXPECTED_INDEXES
-    assert _index_names(conn) == _EXPECTED_INDEX_NAMES
+            cur.execute(f"PRAGMA index_info({row[1]})")
+            indexes.add((table, tuple(info_row[2] for info_row in cur.fetchall())))
+            names.append(row[1])
+    assert indexes == _EXPECTED_INDEXES
+    assert sorted(names) == _EXPECTED_INDEX_NAMES
 
 
 @pytest.mark.sqlite_only
@@ -90,26 +78,20 @@ def test_init_creates_contract_and_server_tables(db_conn):
 def test_init_adds_errors_table_to_existing_db(db_dsn):
     """errors の無い既存 DB でも、init() で errors ができ、既存の行は残る。"""
     db.init()
-    conn = db.connect()
-    try:
+    with closing(db.connect()) as conn:
         cur = conn.cursor()
         cur.execute("INSERT INTO cost_daily (day, cost) VALUES (1, 1.0)")
         cur.execute("DROP TABLE errors")
         conn.commit()
         assert not _has_table(conn, "errors")
-    finally:
-        conn.close()
 
     db.init()
 
-    conn = db.connect()
-    try:
+    with closing(db.connect()) as conn:
         assert _has_table(conn, "errors")
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM cost_daily")
         assert cur.fetchone()[0] == 1
-    finally:
-        conn.close()
 
 
 @pytest.mark.sqlite_only
@@ -123,41 +105,31 @@ def test_init_twice_keeps_eight_indexes(db_dsn):
     """2 回目の init() でインデックスが重複して作られない。"""
     db.init()
     db.init()
-    conn = db.connect()
-    try:
+    with closing(db.connect()) as conn:
         _assert_expected_indexes(conn)
-    finally:
-        conn.close()
 
 
 @pytest.mark.sqlite_only
 def test_init_recreates_dropped_index(db_dsn):
     """インデックスを 1 本 DROP した状態から init() すれば 8 本に戻る。"""
     db.init()
-    conn = db.connect()
-    try:
+    with closing(db.connect()) as conn:
         cur = conn.cursor()
         cur.execute("PRAGMA index_list(events)")
         dropped_name = cur.fetchall()[0][1]
         cur.execute(f"DROP INDEX {dropped_name}")
         conn.commit()
-    finally:
-        conn.close()
 
     db.init()
 
-    conn = db.connect()
-    try:
+    with closing(db.connect()) as conn:
         _assert_expected_indexes(conn)
-    finally:
-        conn.close()
 
 
 def test_init_does_not_touch_existing_rows(db_dsn):
     """init() 済みのテーブルに INSERT した行は、再度の init() でも消えない。"""
     db.init()
-    conn = db.connect()
-    try:
+    with closing(db.connect()) as conn:
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO events (event_id, ts, day, user_email, host, hook_event,"
@@ -168,15 +140,10 @@ def test_init_does_not_touch_existing_rows(db_dsn):
             " NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)"
         )
         conn.commit()
-    finally:
-        conn.close()
 
     db.init()
 
-    conn = db.connect()
-    try:
+    with closing(db.connect()) as conn:
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM events")
         assert cur.fetchone()[0] == 1
-    finally:
-        conn.close()

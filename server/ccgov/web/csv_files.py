@@ -1,20 +1,15 @@
 """「データと設定」の取り込む: CSV の受け取りと、取り込み済みのファイルの削除。"""
 
-from typing import Optional
+from functools import partial
 
 from flask import current_app, redirect, request, url_for
 
 from ccgov.ingestion import csv_upload
 from ccgov.reports import csv_files
-from ccgov.web import labels, settings, text
+from ccgov.web import labels, settings
 
 ENDPOINT = "admin.upload_csv"
-
-
-def _rejected(e: csv_upload.Rejected, name: Optional[str] = None) -> dict:
-    reason, detail = e.args[0], e.args[1] if len(e.args) > 1 else ""
-    error = text.fill(labels.CSV_ERROR[reason], {"detail": detail})
-    return {"file": name, "error": error}
+_rejected = partial(settings.rejected, labels.CSV_ERROR)
 
 
 def upload():

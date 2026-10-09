@@ -10,9 +10,14 @@ import zipfile
 
 import pytest
 from conftest import ADMIN, admin_client
+from known_data import (
+    insert_cost_daily,
+    insert_error,
+    insert_event,
+    insert_policy_state,
+)
 
 from ccgov.metrics.calendar import to_day
-from ccgov.store import db
 from ccgov.vendor import contract
 from ccgov.web import labels
 
@@ -30,19 +35,10 @@ def _day(text: str) -> int:
     return to_day(datetime.date.fromisoformat(text))
 
 
-def _insert(conn, table: str, **values) -> None:
-    names = ", ".join(values)
-    marks = ", ".join("?" for _ in values)
-    conn.cursor().execute(
-        db.q(f"INSERT INTO {table} ({names}) VALUES ({marks})"), tuple(values.values())
-    )
-    conn.commit()
-
-
 def _event(conn, day: str, event_id: str, **values) -> None:
     d = _day(day)
     values = {"ts": d * 86400, "user_email": "a@example.com", **values}
-    _insert(conn, "events", event_id=event_id, day=d, **values)
+    insert_event(conn, event_id=event_id, day=d, **values)
 
 
 @pytest.fixture
@@ -60,9 +56,8 @@ def export_client(db_conn):
     _event(
         db_conn, "2026-08-01", "jst", ts=_day("2026-07-31") * 86400 + 15 * 3600 + 1800
     )
-    _insert(
+    insert_policy_state(
         db_conn,
-        "policy_state",
         event_id="p1",
         day=_day("2026-08-10"),
         user_email="b@example.com",
@@ -70,16 +65,15 @@ def export_client(db_conn):
         value="60",
         prev_value=None,
     )
-    _insert(
+    insert_error(
         db_conn,
-        "errors",
         event_id="x1",
         day=_day("2026-08-11"),
         user_email="c@example.com",
         stage="send",
         error_type="OSError",
     )
-    _insert(db_conn, "cost_daily", day=_day("2026-08-12"), user_email="a@example.com",
+    insert_cost_daily(db_conn, day=_day("2026-08-12"), user_email="a@example.com",
             cost=1.5, input_tokens=12345678901, source_file="aug.csv")  # fmt: skip
     import app as app_module
 
