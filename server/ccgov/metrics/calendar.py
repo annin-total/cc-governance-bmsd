@@ -86,11 +86,16 @@ def sum_by_spans(values_by_day: dict, spans: list) -> list:
     return sums
 
 
-def distinct_by_spans(pairs: list, spans: list) -> list:
-    """`(day, キー)` の並びを、`spans` の各範囲で重複を除いて数える。"""
+def keys_by_spans(pairs: list, spans: list) -> list:
+    """`(day, キー)` の並びを、`spans` の各範囲のキーの集合にまとめる。"""
     find, keys = _span_of(spans), [set() for _ in spans]
     for day, key in pairs:
         i = find(day)
         if i is not None:
             keys[i].add(key)
-    return [len(k) for k in keys]
+    return keys
+
+
+def distinct_by_spans(pairs: list, spans: list) -> list:
+    """`(day, キー)` の並びを、`spans` の各範囲で重複を除いて数える。"""
+    return [len(k) for k in keys_by_spans(pairs, spans)]

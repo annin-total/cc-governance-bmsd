@@ -47,24 +47,24 @@ def _delete(cur, month: int) -> None:
 
 def files(conn) -> list:
     """`(月, ファイル名, 行数, 取り込んだ日)` を新しい月から。"""
-    cur = conn.cursor()
-    cur.execute(
+    cur = db.execute(
+        conn,
         "SELECT month, source_file, row_count, imported_day FROM org_roster_files"
-        " ORDER BY month DESC"
+        " ORDER BY month DESC",
     )
     return [tuple(r) for r in cur.fetchall()]
 
 
 def units(conn) -> dict:
     """`{月: (部の数, 課の数)}`。課は部と組で数え、空の課は数えない。"""
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT month, COUNT(DISTINCT department) FROM org_roster GROUP BY month"
+    cur = db.execute(
+        conn, "SELECT month, COUNT(DISTINCT department) FROM org_roster GROUP BY month"
     )
     depts = dict(cur.fetchall())
-    cur.execute(
+    cur = db.execute(
+        conn,
         "SELECT month, COUNT(*) FROM (SELECT DISTINCT month, department, section"
-        " FROM org_roster WHERE section IS NOT NULL) s GROUP BY month"
+        " FROM org_roster WHERE section IS NOT NULL) s GROUP BY month",
     )
     sections = dict(cur.fetchall())
     return {m: (n, sections.get(m, 0)) for m, n in depts.items()}
@@ -72,29 +72,26 @@ def units(conn) -> dict:
 
 def listed(conn, start: int, end: int) -> dict:
     """`{月: 人数}`。`start`〜`end` にコスト（0 より大きい）があった利用者のうち、その月の名簿にいる人。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            "SELECT month, COUNT(*) FROM org_roster WHERE email IN"
-            " (SELECT DISTINCT user_email FROM cost_daily"
-            " WHERE day BETWEEN ? AND ? AND cost > 0) GROUP BY month"
-        ),
+    cur = db.execute(
+        conn,
+        "SELECT month, COUNT(*) FROM org_roster WHERE email IN"
+        " (SELECT DISTINCT user_email FROM cost_daily"
+        " WHERE day BETWEEN ? AND ? AND cost > 0) GROUP BY month",
         (start, end),
     )
     return dict(cur.fetchall())
 
 
 def months(conn) -> list:
-    cur = conn.cursor()
-    cur.execute("SELECT month FROM org_roster_files")
+    cur = db.execute(conn, "SELECT month FROM org_roster_files")
     return [r[0] for r in cur.fetchall()]
 
 
 def people(conn, month: int) -> dict:
     """`{メールアドレス: (氏名, 部, 課)}`（`month` の名簿）。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q("SELECT email, name, department, section FROM org_roster WHERE month = ?"),
+    cur = db.execute(
+        conn,
+        "SELECT email, name, department, section FROM org_roster WHERE month = ?",
         (month,),
     )
     return {r[0]: tuple(r[1:]) for r in cur.fetchall()}

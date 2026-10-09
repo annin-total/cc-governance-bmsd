@@ -7,18 +7,15 @@ from ccgov.store import db
 
 def day_range(conn) -> tuple:
     """`cost_daily` の最初と最後の `day`（空なら `(None, None)`）。"""
-    cur = conn.cursor()
-    cur.execute(db.q("SELECT MIN(day), MAX(day) FROM cost_daily"))
+    cur = db.execute(conn, "SELECT MIN(day), MAX(day) FROM cost_daily")
     return tuple(cur.fetchone())
 
 
 def days(conn, start: int, end: int) -> list:
     """`start`〜`end` に利用明細の行がある日（昇順）。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            "SELECT DISTINCT day FROM cost_daily WHERE day BETWEEN ? AND ? ORDER BY day"
-        ),
+    cur = db.execute(
+        conn,
+        "SELECT DISTINCT day FROM cost_daily WHERE day BETWEEN ? AND ? ORDER BY day",
         (start, end),
     )
     return [row[0] for row in cur.fetchall()]
@@ -35,13 +32,11 @@ def daily_cost(conn, start: Optional[int] = None, end: Optional[int] = None) -> 
     where, params = "", ()
     if start is not None and end is not None:
         where, params = " WHERE day BETWEEN ? AND ?", (start, end)
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            "SELECT day, provider, COALESCE(SUM(cost), 0) FROM cost_daily"
-            + where
-            + " GROUP BY day, provider ORDER BY day, provider"
-        ),
+    cur = db.execute(
+        conn,
+        "SELECT day, provider, COALESCE(SUM(cost), 0) FROM cost_daily"
+        + where
+        + " GROUP BY day, provider ORDER BY day, provider",
         params,
     )
     return cur.fetchall()
@@ -49,12 +44,10 @@ def daily_cost(conn, start: Optional[int] = None, end: Optional[int] = None) -> 
 
 def cost_user_count(conn, start: int, end: int) -> int:
     """`start`〜`end` にコスト（0 より大きい）があった利用者の数。"""
-    cur = conn.cursor()
-    cur.execute(
-        db.q(
-            "SELECT COUNT(DISTINCT user_email) FROM cost_daily"
-            " WHERE day BETWEEN ? AND ? AND cost > 0"
-        ),
+    cur = db.execute(
+        conn,
+        "SELECT COUNT(DISTINCT user_email) FROM cost_daily"
+        " WHERE day BETWEEN ? AND ? AND cost > 0",
         (start, end),
     )
     return cur.fetchone()[0]
@@ -62,15 +55,14 @@ def cost_user_count(conn, start: int, end: int) -> int:
 
 def source_files(conn) -> list:
     """取り込んだファイルごとの `(source_file, 最初の day, 最後の day)`。ファイル名の無い行は除く。"""
-    cur = conn.cursor()
-    cur.execute(
+    cur = db.execute(
+        conn,
         "SELECT source_file, MIN(day), MAX(day) FROM cost_daily"
-        " WHERE source_file IS NOT NULL GROUP BY source_file"
+        " WHERE source_file IS NOT NULL GROUP BY source_file",
     )
     return [tuple(row) for row in cur.fetchall()]
 
 
 def delete_source_file(conn, name: str) -> None:
-    cur = conn.cursor()
-    cur.execute(db.q("DELETE FROM cost_daily WHERE source_file = ?"), (name,))
+    db.execute(conn, "DELETE FROM cost_daily WHERE source_file = ?", (name,))
     conn.commit()

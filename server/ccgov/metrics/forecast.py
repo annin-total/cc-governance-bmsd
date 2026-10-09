@@ -1,16 +1,11 @@
 """月末のコストの見込みと、営業日ごと・暦日ごとの累積。
-
-見込み = 今月の実績 × 月の営業日数 ÷ 経過営業日。経過営業日が `FORECAST_MIN_BUSINESS_DAYS` 未満なら出さない。
-"""
+見込み = 今月の実績 × 月の営業日数 ÷ 経過営業日。経過営業日が `FORECAST_MIN_BUSINESS_DAYS` 未満なら出さない。"""
 
 from typing import Optional
 
 from ccgov.constants import FORECAST_MIN_BUSINESS_DAYS
 from ccgov.metrics import business_days as bd
-
-
-def _ratio(value: float, count: int) -> Optional[float]:
-    return value / count if count else None
+from ccgov.metrics import rates
 
 
 def month(
@@ -25,7 +20,7 @@ def month(
         if as_of is None
         else sum(totals.get(d, 0) for d in range(first, as_of + 1))
     )
-    per_bd = None if actual is None else _ratio(actual, len(done))
+    per_bd = None if actual is None else rates.per(actual, len(done))
     enough = len(done) >= FORECAST_MIN_BUSINESS_DAYS
     rows = _business_rows(
         totals, first, days, target, done, as_of, per_bd if enough else None

@@ -1,7 +1,5 @@
 """利用状況のページの組み立て。窓は期間のページの終わり（利用明細の最終日か基準日）までの N 日と前の N 日。
-
-12 か月では何も数えない（すべて記録から数える項目のため）。
-"""
+12 か月では何も数えない（すべて記録から数える項目のため）。"""
 
 from ccgov.constants import MODE_ROWS
 from ccgov.metrics import activity, calls, rates, session_size

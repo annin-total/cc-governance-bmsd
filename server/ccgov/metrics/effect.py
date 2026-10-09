@@ -10,15 +10,10 @@ SIDES = ("before", "after")
 
 
 def event_study(
-    start_dates: dict,
-    cost_by_key: dict,
-    min_day: Optional[int],
-    max_day: Optional[int],
+    start_dates: dict, cost_by_key: dict, min_day: Optional[int], max_day: Optional[int]
 ) -> list:
     """相対日ごとの `(相対日, 分母人数, 1 人あたりコスト, 1 人あたり処理トークン)` を返す。
-
-    分母はその相対日が `min_day`〜`max_day` に入る利用者。相対日 0 と分母 0 の相対日は出さない。
-    """
+    分母はその相対日が `min_day`〜`max_day` に入る利用者。相対日 0 と分母 0 の相対日は出さない。"""
     rows = []
     for relative_day in range(-EVENT_STUDY_SPAN, EVENT_STUDY_SPAN + 1):
         if relative_day == 0 or min_day is None:
@@ -42,10 +37,7 @@ def event_study(
 
 def summary(study: list) -> dict:
     """`event_study` の行を相対日の前（負）と後（正）に分け、のべ人日で重み付けした 1 人 1 日あたりの値にする。
-
-    `rows` は行ごとの dict（`side` が前後）、`people_min`・`people_max` は相対日ごとの分母人数の最小と最大。
-    相対日 0 の行は数えない。
-    """
+    `rows` は行ごとの dict（`side` が前後）、`people_min`・`people_max` は相対日ごとの分母人数の最小と最大。"""
     sides = {
         "before": [r for r in study if r[0] < 0],
         "after": [r for r in study if r[0] > 0],
@@ -72,9 +64,7 @@ def summary(study: list) -> dict:
 
 def sessions(rows: list) -> dict:
     """`(準拠開始日, セッションの最初の日, 最大, 自動コンパクト)` を前後に分け、中央値・件数・自動コンパクトの割合と区間ごとの行にする。
-
-    最初の日が準拠開始日のセッションと、最大の無い（応答終了の記録が無い）セッションは数えない。
-    """
+    最初の日が準拠開始日のセッションと、最大の無い（応答終了の記録が無い）セッションは数えない。"""
     sized: dict = {side: [] for side in SIDES}
     for start, first, size, auto in rows:
         if size is not None and first != start:

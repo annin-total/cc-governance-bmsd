@@ -1,7 +1,5 @@
 """セッションの大きさ（セッションごとの応答終了時のコンテキストの最大）と、自動コンパクトに達したセッションの割合。
-
-入力は `(セッション, 利用者, 窓, 最大, 自動コンパクト)`。窓は `recent`・`prev`。最大の無いセッション（応答終了の記録が無い）は数えない。
-"""
+入力は `(セッション, 利用者, 窓, 最大, 自動コンパクト)`。窓は `recent`・`prev`。最大の無いセッション（応答終了の記録が無い）は数えない。"""
 
 import math
 from typing import Optional
@@ -62,9 +60,7 @@ def summary(rows: list) -> dict:
         "q3": quantile(sizes["recent"], 0.75),
         "sessions": len(sized["recent"]),
         "prev_median": prev_median,
-        "change": None
-        if median is None or prev_median is None
-        else series.change_pct(median, prev_median),
+        "change": series.change_pct(median, prev_median),
         "auto": auto,
         "auto_share": share,
         "prev_auto_share": prev_share,
