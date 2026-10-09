@@ -6,6 +6,7 @@ from pathlib import Path
 import _govdir
 import _identity
 import _notices
+import _updater
 import pytest
 import session_start
 
@@ -67,6 +68,7 @@ _STAGE_CASES = {
     ),
     "notices": (_notices, "notices_step", _raiser, "notices"),
     "mark_seen": (session_start, "_mark_seen", _raiser, "mark_seen"),
+    "update": (_updater, "update_if_due", _raiser, "update"),
     "collect": (session_start, "_collect_step", _raiser, "collect"),
 }
 

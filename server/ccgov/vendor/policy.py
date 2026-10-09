@@ -12,12 +12,15 @@
 
 from typing import Any
 
+# 配布するマーケットプレイスの名前。hook からのプラグインの更新もこの名前を対象にする
+MARKETPLACE = "cc-marketplace-governance-bmsd"
+
 # 値で上書きする。dict・list も丸ごと置き換える。None はキーを消す
 SET: dict[str, Any] = {
     # 自動圧縮を早めに走らせ、長い文脈のまま払うコストを抑える（/effect の効果測定の対象）
     "env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60",
     # このプラグインの更新を端末へ自動で届ける（社外のマーケットプレイスは既定で自動更新しない）
-    "extraKnownMarketplaces.cc-marketplace-governance-bmsd.autoUpdate": True,
+    f"extraKnownMarketplaces.{MARKETPLACE}.autoUpdate": True,
     # Claude Code 本体の版を全員そろえる。施策は全員が最新の版にいることを前提にする
     "autoUpdatesChannel": "latest",
     # 利用者が自動更新を切っていても打ち消す。キーを消さず "0" で上書きするのは、settings の env が
