@@ -42,24 +42,15 @@
 {%- for c in cols %}<rect class="hit" x="{{ c.hit_x }}" y="0" width="{{ c.hit_w }}" height="{{ h }}" data-tip="{{ c.tip }}" data-gx="{{ c.gx if c.gx is defined else c.cx }}"><title>{{ c.tip }}</title></rect>{% endfor -%}
 {%- endmacro %}
 
-{# 縦棒（前は薄く、直近は濃く。基準線があれば点線で重ね、下回る直近の棒は淡くする） #}
+{# 縦棒（前は薄く、直近は濃く）。基準線（cols）は点線で重ね、下回る直近の棒は淡くする。分布（dist）は平均の実線・中央値の点線を重ねる。
+   線の有無は is number で見る（cols の geo は mean_x・median_x を持たず、未定義は is not none を真にする） #}
 {% macro cols(v) -%}
 {%- set g = v.geo -%}
 <svg class="spark" viewBox="0 0 {{ g.w }} {{ g.h }}" preserveAspectRatio="none" aria-hidden="true">
   {%- for b in g.bars %}<rect class="{{ b.cls }}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}"/>{% endfor %}
-  {%- if g.avg_y is not none %}<line class="avg" x1="0" x2="{{ g.w }}" y1="{{ g.avg_y }}" y2="{{ g.avg_y }}" vector-effect="non-scaling-stroke"/>{% endif %}
-  <line class="spark-guide" x1="0" x2="0" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>
-  {{ hits(g.bars, g.h) }}
-</svg>
-{%- endmacro %}
-
-{# 分布（区間ごとの人数の棒）と、平均の実線・中央値の点線 #}
-{% macro dist(v) -%}
-{%- set g = v.geo -%}
-<svg class="spark" viewBox="0 0 {{ g.w }} {{ g.h }}" preserveAspectRatio="none" aria-hidden="true">
-  {%- for b in g.bars %}<rect class="{{ b.cls }}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}"/>{% endfor %}
-  {%- if g.mean_x is not none %}<line class="mean" x1="{{ g.mean_x }}" x2="{{ g.mean_x }}" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>{% endif %}
-  {%- if g.median_x is not none %}<line class="median" x1="{{ g.median_x }}" x2="{{ g.median_x }}" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>{% endif %}
+  {%- if g.avg_y is number %}<line class="avg" x1="0" x2="{{ g.w }}" y1="{{ g.avg_y }}" y2="{{ g.avg_y }}" vector-effect="non-scaling-stroke"/>{% endif %}
+  {%- if g.mean_x is number %}<line class="mean" x1="{{ g.mean_x }}" x2="{{ g.mean_x }}" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>{% endif %}
+  {%- if g.median_x is number %}<line class="median" x1="{{ g.median_x }}" x2="{{ g.median_x }}" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>{% endif %}
   <line class="spark-guide" x1="0" x2="0" y1="0" y2="{{ g.h }}" vector-effect="non-scaling-stroke"/>
   {{ hits(g.bars, g.h) }}
 </svg>
@@ -104,8 +95,7 @@
 {% macro viz(v) -%}
 {%- if v.kind == "spark" -%}{{ spark(v.geo) }}
 {%- elif v.kind == "meter" -%}<span class="meter {{ v.tone }}"{% if v.tip %} data-tip="{{ v.tip }}" title="{{ v.tip }}"{% endif %}><i style="width: {{ v.pct|round(1) }}%"></i></span>
-{%- elif v.kind == "cols" -%}{{ cols(v) }}
-{%- elif v.kind == "dist" -%}{{ dist(v) }}
+{%- elif v.kind in ("cols", "dist") -%}{{ cols(v) }}
 {%- elif v.kind == "cum" -%}{{ cum_card(v) }}
 {%- elif v.kind == "bands" -%}{{ bands(v) }}
 {%- elif v.kind == "over" -%}{{ over(v) }}
