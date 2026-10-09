@@ -44,3 +44,26 @@ def test_行を書かないhookはNG(tmp_path, monkeypatch):
     hooks._run_hook_commands(hooks_json, hooks.load_hook_commands(hooks_json), tmp_path)
 
     assert report.FAIL
+
+
+def _write_notices(plugin_dir: Path, ids: list) -> None:
+    items = [{"id": i, "title": "件名", "body": "本文"} for i in ids]
+    (plugin_dir / "notices.json").write_text(json.dumps(items), encoding="utf-8")
+
+
+def test_お知らせのidが重複していればNG(tmp_path, monkeypatch):
+    monkeypatch.setattr(report, "FAIL", False)
+    _write_notices(tmp_path, ["n-1", "n-2", "n-1"])
+
+    files.check_notices_unique_ids(tmp_path)
+
+    assert report.FAIL
+
+
+def test_お知らせのidが重複していなければ通る(tmp_path, monkeypatch):
+    monkeypatch.setattr(report, "FAIL", False)
+    _write_notices(tmp_path, ["n-1", "n-2"])
+
+    files.check_notices_unique_ids(tmp_path)
+
+    assert not report.FAIL

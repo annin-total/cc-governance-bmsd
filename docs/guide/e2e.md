@@ -92,7 +92,7 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
   `Claude Code-credentials-<8 桁>` ができ、ルートを消しても残る。消すときは、末尾の 8 桁が消した config の項目だけを
   `security delete-generic-password -s 'Claude Code-credentials-<8 桁>'` で消す（8 桁の求め方は
   `docs/knowledge/claude-code-behavior.md`）。末尾の無い `Claude Code-credentials` は本人の認証なので消さない
-- `url` 付きの項目は、`<ルート>/config/plugins/cache/` 配下の installPath にある `notices.json` に足す。
+- お知らせの項目は、`<ルート>/config/plugins/cache/` 配下の installPath にある `notices.json` に足す。
   git source では hook は cache から動く（`docs/knowledge/claude-code-behavior.md`）
 - **この `claude` を、別の Claude Code セッションの中（Bash 等）から起動しない。**起動形態を示す環境変数
   （`CLAUDECODE` 等）を継承し、判定が汚れる。`env -i` で空の環境から起動し、コマンドの最低限の変数と
@@ -131,18 +131,18 @@ env -i HOME="$HOME" USER="$USER" TERM="$TERM" PATH="$PATH" CLAUDE_CONFIG_DIR=<�
 
 ### 手動確認項目
 
-準備は「手動確認の準備」。`url` 付きの項目を足し、この順に行う（後の確認で既読になるため）。
+準備は「手動確認の準備」。`url` 付きの項目を見本の前（配列の先頭）に足し、この順に行う（後の確認で既読になるため）。
 
-1. **`-p` では開かない**: 「手動確認の準備」と同じ起動のしかた（`env -i`・`--settings`・空の `project/`）で、`claude` に `-p ok` を付けて実行する。
-   合格: ブラウザが開かず、`<ルート>/config/plugins/data/` 配下に `seen.json` が無い
-2. **対話での見え方**: 対話で起動する。合格: 題名・本文・`詳細: <url>` がそろって表示される
-   （表示の接頭辞と長文の退避は `docs/knowledge/claude-code-behavior.md`）
-3. **URL が開くか**: 2 と同じ起動で、既定ブラウザが先頭の有効な `url` を 1 回だけ開く。合格: 開いた
-   タブが 1 つで、開き直した次のセッションではお知らせも表示されずブラウザも開かない
+1. **`-p` では既読にしない**: 「手動確認の準備」と同じ起動のしかた（`env -i`・`--settings`・空の `project/`）で、`claude` に `-p ok` を付けて実行する。
+   合格: `<ルート>/config/plugins/data/` 配下に `seen.json` が無い
+2. **新規の起動で 1 件**: 対話で起動する。合格: 足した項目だけが、題名・本文・`詳細: <url>` がそろって表示され、
+   見本の項目は表示されない（表示の接頭辞と長文の退避は `docs/knowledge/claude-code-behavior.md`）
+3. **再開では出ない**: 2 のセッションを終了し、同じ起動のしかたに `--resume` を付けて再開する。合格: お知らせが表示されない
+4. **次の未読**: 同じ起動のしかたで新しく起動する。合格: 見本の項目だけが表示される
 
 ### 実物でも確かめられない限界
 
-ブラウザ起動は OS に依存する観測であり、自動では確かめない。
+画面での見え方（2〜4）は対話起動でしか観測できず、自動では確かめない。
 
 ## 収集（モジュール 4）
 
@@ -236,3 +236,4 @@ DB は SQLite だけで、MySQL は確かめない。AIP の前段のリバー�
 - 2026-09-29: 見た目の規約の参照先を `design-system.md` にし、error 行が出る場所を刷新後の画面の語で書いた
 - 2026-09-30: CSV の取込を「データと設定」の画面で受け取る手順にし、手動確認の画面に `/settings` を加えた
 - 2026-10-09: 手動確認で開くページを今の管理画面の構成に合わせた
+- 2026-10-09: お知らせの手動確認を、新規の起動で 1 件ずつ出て再開では出ないことを見る形にした

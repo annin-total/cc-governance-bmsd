@@ -1,4 +1,4 @@
-"""`_notices.py` の未読の選別・URL バリデーション・表示文字列・既読の書き込みを検証する。"""
+"""`_notices.py` の未読の選別・URL バリデーション・表示文字列・起動形態の判定・既読の書き込みを検証する。"""
 
 import json
 import os
@@ -194,10 +194,13 @@ def test_valid_url_missing_key_returns_none():
 
 
 def test_invalid_url_item_still_shown_but_no_url_in_message():
-    notices = [
-        {"id": "n-1", "title": "件名", "body": "本文", "url": "javascript:alert(1)"}
-    ]
-    message = _notices._format_message(notices)
+    notice = {
+        "id": "n-1",
+        "title": "件名",
+        "body": "本文",
+        "url": "javascript:alert(1)",
+    }
+    message = _notices._format_message(notice)
     assert "件名" in message
     assert "本文" in message
     assert "詳細:" not in message
@@ -208,54 +211,103 @@ def test_invalid_url_item_still_shown_but_no_url_in_message():
 
 
 def test_format_message_appends_detail_line_when_body_present():
-    notices = [
-        {"id": "n-1", "title": "件名", "body": "本文", "url": "https://example.com"}
-    ]
-    message = _notices._format_message(notices)
+    notice = {
+        "id": "n-1",
+        "title": "件名",
+        "body": "本文",
+        "url": "https://example.com",
+    }
+    message = _notices._format_message(notice)
     assert message == "件名\n本文\n詳細: https://example.com"
 
 
 def test_format_message_detail_line_alone_when_body_empty():
-    notices = [{"id": "n-1", "title": "件名", "body": "", "url": "https://example.com"}]
-    message = _notices._format_message(notices)
+    notice = {"id": "n-1", "title": "件名", "body": "", "url": "https://example.com"}
+    message = _notices._format_message(notice)
     assert message == "件名\n詳細: https://example.com"
 
 
 def test_format_message_detail_line_without_title():
-    notices = [{"id": "n-1", "body": "本文", "url": "https://example.com"}]
-    message = _notices._format_message(notices)
+    notice = {"id": "n-1", "body": "本文", "url": "https://example.com"}
+    message = _notices._format_message(notice)
     assert message == "本文\n詳細: https://example.com"
 
 
 def test_format_message_no_detail_line_when_url_missing():
-    notices = [{"id": "n-1", "title": "件名", "body": "本文"}]
-    message = _notices._format_message(notices)
+    notice = {"id": "n-1", "title": "件名", "body": "本文"}
+    message = _notices._format_message(notice)
     assert "詳細:" not in message
 
 
-# ---- first_url ----
+# ---- notices_step: source と 1 件ずつ ----
 
 
-def test_first_url_skips_invalid_and_returns_first_valid():
-    unread = [
-        {"id": "n-1", "body": "b1", "url": "javascript:alert(1)"},
-        {"id": "n-2", "body": "b2", "url": "not a url"},
-        {"id": "n-3", "body": "b3", "url": "https://example.com/first-valid"},
-        {"id": "n-4", "body": "b4", "url": "https://example.com/second-valid"},
-    ]
-    assert _notices.first_url(unread) == "https://example.com/first-valid"
+@pytest.mark.parametrize("source", ["startup", "clear"])
+def test_notices_step_shows_only_first_unread(notices_file, unread_ids, source):
+    output, notice, _seen = _notices.notices_step(False, source, _notices._NOTICES_PATH)
+    assert notice["id"] == "n-001"
+    assert output == {"systemMessage": f"件名1\n本文1 {MARKER}"}
 
 
-def test_first_url_returns_none_when_no_valid_url():
-    unread = [
-        {"id": "n-1", "body": "b1"},
-        {"id": "n-2", "body": "b2", "url": "javascript:alert(1)"},
-    ]
-    assert _notices.first_url(unread) is None
+def test_notices_step_skips_seen_and_shows_next(notices_file, tmp_path, unread_ids):
+    _write_seen(tmp_path, ["n-001"])
+    output, notice, seen = _notices.notices_step(
+        False, "startup", _notices._NOTICES_PATH
+    )
+    assert notice["id"] == "n-002"
+    assert output == {"systemMessage": "件名2\n本文2"}
+    assert seen == {"n-001"}
 
 
-def test_first_url_empty_list_returns_none():
-    assert _notices.first_url([]) is None
+@pytest.mark.parametrize(
+    "source", ["resume", "compact", None, "", "other", ["startup"]]
+)
+def test_notices_step_other_sources_show_nothing(notices_file, unread_ids, source):
+    assert _notices.notices_step(False, source, _notices._NOTICES_PATH) == (
+        {},
+        None,
+        set(),
+    )
+
+
+def test_notices_step_disabled_shows_nothing(notices_file, unread_ids):
+    assert _notices.notices_step(True, "startup", _notices._NOTICES_PATH) == (
+        {},
+        None,
+        set(),
+    )
+
+
+def test_notices_step_all_seen_shows_nothing(notices_file, tmp_path, unread_ids):
+    _write_seen(tmp_path, ["n-001", "n-002"])
+    output, notice, _seen = _notices.notices_step(
+        False, "startup", _notices._NOTICES_PATH
+    )
+    assert (output, notice) == ({}, None)
+
+
+# ---- is_headless ----
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("cli", False),
+        ("sdk-cli", True),
+        ("sdk-ts", True),
+        ("sdk-py", True),
+        ("claude-vscode", False),
+        ("", False),
+        (None, False),
+    ],
+)
+def test_is_headless_by_entrypoint(monkeypatch, value, expected):
+    """`CLAUDE_CODE_ENTRYPOINT` が `sdk-` で始まるときだけ真。"""
+    if value is None:
+        monkeypatch.delenv("CLAUDE_CODE_ENTRYPOINT", raising=False)
+    else:
+        monkeypatch.setenv("CLAUDE_CODE_ENTRYPOINT", value)
+    assert _notices.is_headless() is expected
 
 
 # ---- _write_seen ----

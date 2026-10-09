@@ -25,6 +25,7 @@
 - `contract.py` か `policy.py` を変えたら `scripts/sync_contract.py` を実行し、サーバ側の複製も同じリリースで更新した。`.venv/bin/python scripts/sync_contract.py --check` が `OK` で終わる（`../spec/server.md` の「契約の複製」）
 - `.venv/bin/python scripts/check_settings_schema.py` が `[OK]` で終わる（`[NG]` のときの対処はスクリプトの冒頭）
 - 効果測定の対象の施策（`server/ccgov/constants.py` の `REFERENCE_KEY` / `REFERENCE_VALUE`）の値を変えたら、同じリリースでこの 2 つを差し替えた。差し替えると以前の実験は画面から消える（データは残る）。ほかの影響は `server/ccgov/constants.py` のコメントにある
+- お知らせは `notices.json` の末尾に足した（並び順で未読の先頭から 1 件ずつ出る）
 - `notices.json` の `url` は `https://` で始まり、意図したページを指している
 - `notices.json` を変えたら、導入の確認の対話でお知らせが表示されることを見る（`pytest e2e` は見本の
   `notices.json` を使うため本物の文面を通らず、壊れた JSON は黙って空になる）
@@ -93,3 +94,4 @@ claude plugin update governance
 - 2026-10-08: 版の分布とエラーを見る場所を、設定の適用状況のバージョンのタブと収集の状態のプラグインのエラーにし、staging の合格を分母に依らない「最新」の版で見るようにした
 - 2026-10-09: 差し込みから PR の作成までの手順をスキル `release-plugin` へ移し、この文書を前提・確認項目・配った後の作業に絞った
 - 2026-10-09: `staging` ブランチをやめて PR に出す作業ブランチで導入を確かめるようにし、開発リポジトリの `main` 以外のブランチからも配れるようにした
+- 2026-10-09: お知らせを `notices.json` の末尾に足すことを確認項目に加えた

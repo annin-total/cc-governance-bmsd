@@ -73,6 +73,25 @@ def check_all_py_syntax(plugin_dir: Path) -> None:
         ok("すべての *.py が構文として妥当")
 
 
+# --- notices.json の id が重複しない（重複すると 1 件を既読にしたとき同じ id の別のお知らせが出ない）---
+def check_notices_unique_ids(plugin_dir: Path) -> None:
+    try:
+        with (plugin_dir / "notices.json").open(encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        ng("notices.json: 読めない")
+        return
+    items = data if isinstance(data, list) else []
+    ids = [
+        n["id"] for n in items if isinstance(n, dict) and isinstance(n.get("id"), str)
+    ]
+    duplicates = sorted({i for i in ids if ids.count(i) > 1})
+    if duplicates:
+        ng(f"notices.json: id が重複している: {', '.join(duplicates)}")
+    else:
+        ok("notices.json: id の重複なし")
+
+
 def _is_dev_artifact(path: Path) -> bool:
     name = path.name
     if name in DEV_ARTIFACT_NAMES:
